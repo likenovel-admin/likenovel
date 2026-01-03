@@ -1,0 +1,11 @@
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /home/ln-admin/likenovel/cms
+file_exists_behavior: OVERWRITE
+hooks:
+  ApplicationStart:
+    - location: run_cms.sh
+      timeout: 300
+      runas: ln-admin

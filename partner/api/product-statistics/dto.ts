@@ -1,0 +1,17 @@
+import { IProductStatistic } from "@/types/product-statistics";
+
+export interface IGetProductStatisticsResponse {
+  total_count: number;
+  page: number;
+  count_per_page: number;
+  results: IProductStatistic[];
+}
+
+export interface IGetProductStatisticParams {
+  page?: number;
+  count_per_page?: number;
+  search_target?: string;
+  search_word?: string;
+  search_start_date?: string;
+  search_end_date?: string;
+}

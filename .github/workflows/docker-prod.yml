@@ -1,0 +1,99 @@
+name: Build & Push Docker images (prod)
+
+on:
+  push:
+    branches: ["prod"]
+    paths:
+      - "service/**"
+      - "partner/**"
+      - "cms/**"
+      - ".github/workflows/docker-prod.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-prod
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ---------------------------------------------------------------------
+      # Build env files (DO NOT COMMIT)
+      # ---------------------------------------------------------------------
+      - name: Write .env.production (PROD) - service(user web)
+        working-directory: service
+        run: |
+          set -e
+          printf '%s' "${{ secrets.SERVICE_ENV_PROD }}" | tr -d '\r' > .env.production
+
+      - name: Write .env.production (PROD) - partner
+        working-directory: partner
+        run: |
+          set -e
+          printf '%s' "${{ secrets.PARTNER_ENV_PROD }}" | tr -d '\r' > .env.production
+
+      - name: Write .env.production (PROD) - cms
+        working-directory: cms
+        run: |
+          set -e
+          printf '%s' "${{ secrets.CMS_ENV_PROD }}" | tr -d '\r' > .env.production
+
+      # ---------------------------------------------------------------------
+      # Build & Push (prod-latest + prod-${SHA})
+      # ---------------------------------------------------------------------
+      - name: Build & Push - service(user web)
+        uses: docker/build-push-action@v6
+        with:
+          context: service
+          file: service/Dockerfile
+          push: true
+          build-args: |
+            ENV_FILE=.env.production
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_SERVICE }}:prod-latest
+            ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_SERVICE }}:prod-${{ github.sha }}
+
+      - name: Build & Push - partner
+        uses: docker/build-push-action@v6
+        with:
+          context: partner
+          file: partner/Dockerfile
+          push: true
+          build-args: |
+            ENV_FILE=.env.production
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_PARTNER }}:prod-latest
+            ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_PARTNER }}:prod-${{ github.sha }}
+
+      - name: Build & Push - cms
+        uses: docker/build-push-action@v6
+        with:
+          context: cms
+          file: cms/Dockerfile
+          push: true
+          build-args: |
+            ENV_FILE=.env.production
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_CMS }}:prod-latest
+            ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_CMS }}:prod-${{ github.sha }}
+
+

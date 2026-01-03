@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  likenovel-partner:
+    image: aiaracorp1/likenovel-partner:prod
+    container_name: likenovel-partner
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - likenovel-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  likenovel-network:
+    driver: bridge

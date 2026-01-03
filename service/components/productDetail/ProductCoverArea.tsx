@@ -1,0 +1,751 @@
+import { useReportProduct } from "@/app/api/query/product";
+import Modal from "@/components/common/Modal";
+import ReportModal from "@/components/modal/ReportModal";
+import { useAuthWrapper } from "@/hooks/useAuthWrapper";
+import useAuthStore from "@/store/authStore";
+import useConfirmStore from "@/store/confirmStore";
+import useModalStore from "@/store/modalStore";
+import useToastStore from "@/store/toastStore";
+import { IEvaluation, IProduct } from "@/types";
+import { formatKoreanNumber } from "@/utils/formatKoreanNumber";
+import {
+  getLatestEpisodeDate,
+  isEndDateExpired,
+} from "@/utils/getLatestEpisodeDate";
+import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import { getUpdateFrequency } from "@/utils/getUpdateFrequency";
+import {
+  findPreviousNonMatchingPath,
+  logNavigationHistory,
+} from "@/utils/navigationHistory";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useRef, useState } from "react";
+import BookmarkButton from "../common/BookmarkButton";
+import Button from "../common/Button";
+import ProductReaction from "../common/ProductReaction";
+import ProductStateBadge from "../common/ProductStateBadge";
+import Spinner from "../common/Spinner";
+import SquareBadge from "../common/SquareBadge";
+import UserNickname from "../common/UserNickname";
+import SuggestionModal from "../modal/SuggestionModal";
+import Another from "/public/images/another.svg";
+import ArrowDown from "/public/images/arrow-down.svg";
+import Bookmark from "/public/images/bookmark.svg";
+import Return from "/public/images/return.svg";
+import ThumbsUp from "/public/images/thumbs-up-gray.svg";
+import View from "/public/images/view.svg";
+
+interface Props {
+  data: IProduct;
+  isSuccess?: boolean;
+  isLoading?: boolean;
+  evaluations: Partial<IEvaluation>;
+  episodeId?: number;
+  latestEpisodeNo?: number;
+  episodeCount?: number;
+  firstEpisodeId?: number;
+}
+
+const ProductCoverArea = ({
+  data,
+  isSuccess,
+  isLoading,
+  evaluations,
+  episodeId,
+  latestEpisodeNo,
+  episodeCount,
+  firstEpisodeId,
+}: Props) => {
+  const router = useRouter();
+  const { user } = useAuthStore();
+  const { setToast } = useToastStore();
+  const { setConfirm } = useConfirmStore();
+  const { setModal } = useModalStore();
+  const { withLoginRequired } = useAuthWrapper();
+  const reportProduct = useReportProduct();
+  const [openSuggestionModal, setOpenSuggestionModal] = useState(false);
+  const [isSynopsisOpen, setIsSynopsisOpen] = useState(false);
+  const [isExtraOpen, setIsExtraOpen] = useState(false);
+  const [isActiveBookmark, setIsActiveBookmark] = useState(false);
+  const [showReadMore, setShowReadMore] = useState(false);
+  const extraMenuRef = useRef<HTMLDivElement | null>(null);
+  const synopsisRef = useRef<HTMLDivElement | null>(null);
+
+  const isShowButtonProposal =
+    user &&
+    (user?.userRole === "CP" || user?.userRole === "editor") &&
+    data?.productType !== "paid" &&
+    data?.priceType !== "paid";
+  const isAuthor = user?.userId === data?.authorId;
+  const isAdminCPEditor =
+    user?.userRole === "CP" ||
+    user?.userRole === "editor" ||
+    user?.userRole === "admin";
+
+  const handleGoBack = () => {
+    // If user is author, redirect to author home, otherwise go back
+    if (isAuthor) {
+      router.push("/product/author");
+    } else {
+      // Check if user came from viewer to product detail
+
+      // Log navigation history for debugging
+      if (process.env.NODE_ENV === "development") {
+        logNavigationHistory();
+      }
+
+      // Find the most recent path that is not /product/* or /viewer/*
+      const previousPath = findPreviousNonMatchingPath([
+        /^\/product\/\d+$/, // Match /product/{id}
+        /^\/viewer\/\d+$/, // Match /viewer/{id}
+      ]);
+
+      if (previousPath) {
+        router.push(previousPath);
+      } else {
+        router.back();
+      }
+    }
+  };
+  const copyToClipboard = () => {
+    navigator.clipboard
+      .writeText(window.location.href)
+      .then(() => {
+        setToast({
+          message: (
+            <span className="flex items-center gap-13pxr text-14pxr md:text-16pxr">
+              URL이 복사되었습니다.
+            </span>
+          ),
+          type: "success",
+        });
+      })
+      .catch((err) => {
+        console.error("URL 복사 실패:", err);
+      });
+    setIsExtraOpen(false);
+  };
+
+  const handleReportProduct = withLoginRequired((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const handleConfirm = async (
+      selectedValue: string,
+      reportContent: string
+    ) => {
+      if (reportProduct.isPending) return;
+      try {
+        reportProduct.mutate(
+          {
+            product_id: data.productId,
+            reportType: selectedValue,
+            content: reportContent,
+          },
+          {
+            onSuccess: () => {
+              setToast({
+                message: "작품 신고가 완료되었습니다.",
+                type: "success",
+              });
+            },
+            onError: (error: any) => {
+              setToast({
+                message:
+                  error?.response?.data?.message || "작품 신고에 실패했습니다.",
+                type: "error",
+              });
+            },
+          }
+        );
+      } catch (error) {
+        setToast({
+          message: "작품 신고에 실패했습니다.",
+          type: "error",
+        });
+      }
+    };
+    setModal(
+      <ReportModal
+        reportType="product"
+        reportOptions={[
+          { value: "option1", label: "신고내용1" },
+          { value: "option2", label: "신고내용2" },
+          { value: "option3", label: "신고내용3" },
+        ]}
+        onConfirm={handleConfirm}
+      />
+    );
+  });
+
+  const handleSuggestionContract = () => {
+    setOpenSuggestionModal(true);
+  };
+
+  const handleClickFirstOrContinueRead = () => {
+    if (episodeCount === 0) {
+      setConfirm({
+        content: "열람 가능한 회차가 없습니다.",
+        buttonCount: 1,
+      });
+      return;
+    }
+
+    // If user hasn't read any episode (latestEpisodeNo === 0), redirect to first episode
+    // Otherwise, redirect to the latest read episode
+    const targetEpisodeId = latestEpisodeNo === 0 ? firstEpisodeId : episodeId;
+
+    if (targetEpisodeId) {
+      // Add fromProduct query param to track navigation source
+      router.push(`/viewer/${targetEpisodeId}?fromProduct=${data.productId}`);
+    }
+  };
+
+  useEffect(() => {
+    if (data?.synopsis) {
+      setShowReadMore(data.synopsis.length > 98);
+    }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        extraMenuRef.current &&
+        !extraMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsExtraOpen(false);
+      }
+      if (
+        synopsisRef.current &&
+        !synopsisRef.current.contains(event.target as Node)
+      ) {
+        setIsSynopsisOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [data?.synopsis]);
+
+  useEffect(() => {
+    if (!isLoading && isSuccess && !data) {
+      setConfirm({
+        content: "존재하지 않는 작품입니다.",
+        confirmText: "홈으로 이동",
+        onConfirm: () => {
+          router.push("/");
+        },
+        buttonCount: 1,
+      });
+    }
+  }, [isLoading]);
+
+  const renderButtonInterest = () => {
+    if (
+      !user ||
+      !user.userId ||
+      (data.interestStatus === "no_interest" && !data.badge?.interestEndDate)
+    )
+      return null;
+    if (
+      data.interestStatus === "no_interest" &&
+      data.badge?.interestEndDate &&
+      isEndDateExpired(data.badge.interestEndDate)
+    ) {
+      return (
+        <div className="relative group flex justify-center items-center">
+          <img
+            src="/images/fire-off.png"
+            alt="관심 끊김"
+            width={20}
+            height={26}
+            className="w-[20px] h-[26px] md:w-[20px] md:h-[26px]"
+          />
+          {/* <div className="absolute bottom-full mb-2 hidden group-hover:block z-50">
+            <div className="relative bg-black-100 text-white text-12pxr px-10pxr py-6pxr rounded-[8px] whitespace-nowrap">
+              관심탈락
+              <div className="absolute w-2 h-2 bg-black-100 rotate-45 left-1/2 -translate-x-1/2 -bottom-[3px]" />
+            </div>
+          </div> */}
+        </div>
+      );
+    } else if (
+      data.interestStatus === "interest_active" ||
+      data.interestStatus === "interest_ending_soon"
+    ) {
+      return (
+        <div className="relative group flex justify-center items-center">
+          <img
+            src="/images/test/fire.svg"
+            alt="관심 유지중"
+            width={20}
+            height={26}
+            className="w-[20px] h-[26px] md:w-[20px] md:h-[26px]"
+          />
+          {/* <div className="absolute bottom-full mb-2 hidden group-hover:block z-50">
+            <div className="relative bg-black-100 text-white text-12pxr px-10pxr py-6pxr rounded-[8px] whitespace-nowrap">
+              관심유지중
+              <div className="absolute w-2 h-2 bg-black-100 rotate-45 left-1/2 -translate-x-1/2 -bottom-[3px]" />
+            </div>
+          </div> */}
+        </div>
+      );
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="px-16pxr md:px-0 w-full max-w-[1120px] mx-auto">
+        <button
+          className="flex items-center gap-6pxr mt-0 md:mt-10pxr mb-15pxr"
+          onClick={handleGoBack}
+        >
+          <Return className="w-[10px] md:w-[17px] md:h-[18px]" />
+          <span className="text-13pxr md:text-15pxr">이전 페이지</span>
+        </button>
+      </div>
+      <div className="md:hidden relative h-[230px] z-20">
+        {!isLoading && data && (
+          <>
+            {data.image && data.image.coverImagePath ? (
+              <img
+                src={data.image.coverImagePath}
+                alt={data.title}
+                width={150}
+                height={230}
+                className={`object-cover min-w-[150px] h-[230px] rounded-[10px]`}
+              />
+            ) : (
+              <img
+                src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
+                alt={data.title}
+                width={150}
+                height={230}
+                className={`object-cover min-w-[150px] h-[230px] rounded-[10px]`}
+              />
+            )}
+            {data.priceType === "paid" && data.badge && (
+              <div
+                className={`absolute flex bottom-[5px] left-[5px] gap-[2px]`}
+              >
+                <SquareBadge
+                  type={getPromotionBadgeType(
+                    data.badge?.waitForFreeYn || data.badge?.waitingForFreeYn,
+                    data.badge?.freeEpisodeTicketCount,
+                    data.badge?.timepassFromTo,
+                    data.badge?.sixNinePathYn
+                  )}
+                  freeEpisodeNumber={data.badge?.freeEpisodeTicketCount}
+                  timePassValue={data.badge?.timepassFromTo}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+      <div className="flex w-full max-w-[1200px] gap-[2px] mx-auto">
+        <div className="relative flex flex-col w-full md:max-w-[850px] min-h-[300px] md:min-h-[460px] bg-white md:rounded-l-[20px] p-25pxr md:p-40pxr mt-[-30px] md:mt-0">
+          {isLoading && (
+            <div className="w-full h-full flex justify-center items-center">
+              <Spinner />
+            </div>
+          )}
+          {!isLoading && data && (
+            <>
+              <div className="flex gap-30pxr">
+                <div className="hidden md:block relative md:h-[220px] lg:h-[300px]">
+                  {data.image && data.image.coverImagePath ? (
+                    <img
+                      src={data.image.coverImagePath}
+                      alt={data.title}
+                      width={210}
+                      height={300}
+                      className={`object-cover md:min-w-[150px] lg:min-w-[210px] md:h-[220px] lg:h-[300px] rounded-[10px]`}
+                    />
+                  ) : (
+                    <img
+                      src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
+                      alt={data.title}
+                      width={210}
+                      height={300}
+                      className={`object-cover md:min-w-[150px] lg:min-w-[210px] md:h-[220px] lg:h-[300px] rounded-[10px]`}
+                    />
+                  )}
+                  {data.priceType === "paid" && data.badge && (
+                    <div
+                      className={`absolute flex bottom-[10px] left-[10px] gap-[2px]`}
+                    >
+                      <SquareBadge
+                        type={getPromotionBadgeType(
+                          data.badge?.waitForFreeYn ||
+                            data.badge?.waitingForFreeYn,
+                          data.badge?.freeEpisodeTicketCount,
+                          data.badge?.timepassFromTo,
+                          data.badge?.sixNinePathYn
+                        )}
+                        freeEpisodeNumber={data.badge?.freeEpisodeTicketCount}
+                        timePassValue={data.badge?.timepassFromTo}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div
+                  className={`flex flex-col items-center md:items-start gap-4pxr md:gap-10pxr w-full mt-30pxr ${
+                    data?.badge ? "md:mt-0" : "md:mt-20pxr"
+                  }`}
+                >
+                  {data?.badge && <ProductStateBadge product={data} />}
+                  <span className="text-21pxr md:text-25pxr lg:text-30pxr font-semibold md:leading-[29px] lg:leading-[35px]">
+                    {data.title}
+                  </span>
+                  <div className="flex flex-col items-center md:items-start gap-2pxr md:gap-6pxr">
+                    <div className="flex flex-wrap gap-5pxr md:gap-12pxr items-center">
+                      <UserNickname
+                        product={data as any}
+                        userNickname={data.authorNickname || ""}
+                        hasGle
+                      />
+                      <div className="w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
+                      <span className="text-13pxr md:text-15pxr text-dark-gray-500">
+                        {getLatestEpisodeDate(
+                          data.properties?.latestEpisodeDate || ""
+                        )}
+                      </span>
+                    </div>
+                    {data.trendindex && data.properties && (
+                      <>
+                        <div className="flex items-center flex-wrap">
+                          <span className="text-13pxr md:text-15pxr text-dark-gray-500">
+                            {/* 총 {data.trendindex?.hasEpisodeCount}화 */}총{" "}
+                            {data.totalOpenEpisodeCount}화
+                          </span>
+                          <div className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
+                          <span className="text-13pxr md:text-15pxr text-dark-gray-500">
+                            {getUpdateFrequency(
+                              data.properties?.updateFrequency || ""
+                            )}
+                          </span>
+                        </div>
+                        {user && (isAdminCPEditor || isAuthor) ? (
+                          <div className="flex items-center justify-center md:justify-start gap-10pxr flex-wrap">
+                            <div>
+                              <span className="text-13pxr md:text-14pxr text-dark-gray-200">
+                                CP조회수
+                              </span>
+                              <span className="text-13pxr md:text-14pxr text-dark-gray-500">
+                                &nbsp;{data.trendindex?.cpHitCount}
+                              </span>
+                            </div>
+                            <div className="w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
+                            <div>
+                              <span className="text-13pxr md:text-14pxr text-dark-gray-200">
+                                연독률
+                              </span>
+                              <span className="text-13pxr md:text-14pxr text-dark-gray-500">
+                                &nbsp;
+                                {Math.round(
+                                  Number(data.trendindex?.readThroughRate || 0)
+                                )}
+                                %
+                              </span>
+                            </div>
+                            <div className="w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
+                            <div>
+                              <span className="text-13pxr md:text-14pxr text-dark-gray-200">
+                                주평균 연재횟수
+                              </span>
+                              <span className="text-13pxr md:text-14pxr text-dark-gray-500">
+                                &nbsp;{data.properties?.averageWeeklyEpisodes}
+                              </span>
+                            </div>
+                            <div className="hidden md:block w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
+                            <div className="hidden md:block">
+                              <span className="text-13pxr md:text-14pxr text-dark-gray-200">
+                                주요독자층
+                              </span>
+                              <span className="text-13pxr md:text-14pxr text-dark-gray-500">
+                                &nbsp;
+                                {data.trendindex?.primaryReaderGroup?.["1"] ??
+                                  ""}
+                                ,&nbsp;
+                                {data.trendindex?.primaryReaderGroup?.["2"] ??
+                                  ""}
+                              </span>
+                            </div>
+                          </div>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                  {data.trendindex && (
+                    <div className="flex gap-7pxr md:gap-15pxr md:mt-15pxr items-center">
+                      {user && (isAdminCPEditor || isAuthor) && (
+                        <>
+                          <div className="md:hidden">
+                            <span className="text-13pxr md:text-14pxr text-dark-gray-200">
+                              주요독자층
+                            </span>
+                            <span className="text-13pxr md:text-14pxr text-dark-gray-500">
+                              &nbsp;
+                              {data.trendindex?.primaryReaderGroup?.["1"] ?? ""}
+                              ,&nbsp;
+                              {data.trendindex?.primaryReaderGroup?.["2"] ?? ""}
+                            </span>
+                          </div>
+                          <div className="md:hidden w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
+                        </>
+                      )}
+                      <div className="flex items-center gap-5pxr">
+                        <View className="w-[16px] h-[15px] text-dark-gray-400" />
+                        <span className="text-13pxr text-dark-gray-400">
+                          {formatKoreanNumber(data.trendindex?.hitCount || 0)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-5pxr">
+                        <ThumbsUp className="w-[18px] h-[15px] mr-[-3px]" />
+                        <span className="text-13pxr text-dark-gray-400">
+                          {formatKoreanNumber(
+                            data.trendindex?.recommendCount || 0
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-5pxr">
+                        <Bookmark className="w-[13px] h-[15px] text-dark-gray-400" />
+                        <span className="text-13pxr text-dark-gray-400">
+                          {formatKoreanNumber(
+                            data.trendindex?.bookmarkCount || 0
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <div
+                    className={`relative max-w-[530px] mt-10pxr`}
+                    ref={synopsisRef}
+                  >
+                    <span
+                      className={`${data.trendindex ? "line-clamp-2" : ""}`}
+                    >
+                      {data?.synopsis
+                        ?.split("\\n")
+                        .map((paragraph: any, index: number) => (
+                          <p
+                            key={index}
+                            className="text-14pxr md:text-15pxr text-dark-gray-400 mb-4pxr"
+                          >
+                            {paragraph}
+                          </p>
+                        ))}
+                    </span>
+                    {showReadMore && data.trendindex && (
+                      <div className="absolute right-0 flex items-center gap-5pxr mt-2pxr">
+                        <button
+                          className="text-14pxr"
+                          onClick={() => setIsSynopsisOpen(!isSynopsisOpen)}
+                        >
+                          더보기
+                        </button>
+                        <ArrowDown className="w-[10px] h-[10px] text-dark-gray-300" />
+                      </div>
+                    )}
+                    {isSynopsisOpen && (
+                      <div className="absolute top-[99px] left-[-10px] inset-0 z-50 flex items-center justify-center w-[105%] md:w-[110%]">
+                        <div className="relative bg-white border border-light-gray-200 rounded-[10px] shadow-sm">
+                          <div className="relative p-4 w-[100%] h-[200px] overflow-auto">
+                            <div className="text-14pxr md:text-15pxr text-dark-gray-400">
+                              {data.synopsis
+                                ?.split("\\n")
+                                .map((paragraph: any, index: number) => (
+                                  <p key={index} className="mb-4pxr">
+                                    {paragraph}
+                                  </p>
+                                ))}
+                            </div>
+                          </div>
+                          <div className="flex w-full justify-end items-center gap-5pxr h-[30px] py-5pxr pr-10pxr border border-t-light-gray-200 border-b-0 border-l-0 border-r-0 bg-[#FAFAFA] rounded-b-[10px]">
+                            <button
+                              className="text-14pxr"
+                              onClick={() => setIsSynopsisOpen(!isSynopsisOpen)}
+                            >
+                              접기
+                            </button>
+                            <ArrowDown
+                              className={`w-[10px] h-[10px] text-dark-gray-300 rotate-180`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+          {!isLoading && data && (
+            <>
+              <div className="flex justify-between items-center max-w-[770px] mt-25pxr">
+                <div className="flex flex-wrap max-w-[400px] gap-5pxr mt-14pxr">
+                  {data.keywords?.map((keyword: any, index: number) => (
+                    <div
+                      key={index}
+                      className="bg-light-gray-100 rounded-[100px] text-13pxr text-dark-gray-400 min-w-[50px] px-12pxr py-4pxr"
+                    >
+                      #{keyword}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-8pxr flex-wrap">
+                  <Button
+                    variant="primary"
+                    size="xl"
+                    className="hidden md:block w-[200px]"
+                    onClick={() => {
+                      // if (data.priceType === "paid") {
+                      withLoginRequired(handleClickFirstOrContinueRead)();
+                      // } else {
+                      //   handleClickFirstOrContinueRead();
+                      // }
+                    }}
+                  >
+                    {latestEpisodeNo !== 0
+                      ? `${latestEpisodeNo}회 보기`
+                      : "첫회 보기"}
+                  </Button>
+                  {isShowButtonProposal && (
+                    <Button
+                      variant="secondary"
+                      size="xl"
+                      className="hidden md:block w-[150px]"
+                      onClick={handleSuggestionContract}
+                    >
+                      계약제안
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="flex md:hidden mt-30pxr gap-5pxr">
+                <Button
+                  variant="primary"
+                  size="md"
+                  className={`${isShowButtonProposal ? "w-[70%]" : "w-full"} `}
+                  onClick={() => {
+                    // if (data.priceType === "paid") {
+                    withLoginRequired(handleClickFirstOrContinueRead)();
+                    // } else {
+                    // handleClickFirstOrContinueRead();
+                    // }
+                  }}
+                >
+                  {latestEpisodeNo !== 0
+                    ? `${latestEpisodeNo}회 보기`
+                    : "첫회 보기"}
+                </Button>
+                {isShowButtonProposal && (
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    className="w-[30%]"
+                    onClick={handleSuggestionContract}
+                  >
+                    계약제안
+                  </Button>
+                )}
+              </div>
+              <div className="absolute top-[-235px] md:top-[20px] right-[10px] flex gap-10pxr">
+                {renderButtonInterest()}
+                <BookmarkButton
+                  productId={data.productId}
+                  bookmarkYn={data.properties?.bookmarkYn || "N"}
+                  buttonStyle=""
+                  bookmarkStyle="w-[20px] h-[25px] text-dark-gray-200 hover:text-dark-gray-500"
+                  activeBookmarkStyle="w-[20px] h-[25px]"
+                />
+                <button
+                  className="text-dark-gray-100 hover:text-dark-gray-500 p-2"
+                  onClick={() => {
+                    setIsExtraOpen(!isExtraOpen);
+                  }}
+                >
+                  <Another className="w-[3px] h-[15px]" />
+                </button>
+              </div>
+            </>
+          )}
+          {isExtraOpen && (
+            <div
+              className="absolute right-[20px] md:right-[-55px] top-[-200px] md:top-[45px] flex flex-col bg-white border border-light-gray-500 rounded-[8px] z-10"
+              ref={extraMenuRef}
+            >
+              {/* TODO: 신고 모달 추가 */}
+              <button
+                className="text-14pxr px-[9px] py-[10px] hover:bg-light-gray-100"
+                onClick={handleReportProduct}
+              >
+                신고
+              </button>
+              <div className="w-full border border-t-light-gray-200 border-b-0 border-l-0 border-r-0" />
+              <button
+                className="text-14pxr px-[9px] py-[10px] hover:bg-light-gray-100"
+                onClick={copyToClipboard}
+              >
+                URL 복사
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="hidden md:flex min-w-[327px] justify-center bg-white rounded-r-[20px] pb-[20px] lg:pb-0">
+          <div className="min-w-[270px]">
+            <div className="flex gap-10pxr items-center mt-30pxr mb-15pxr">
+              <span className="text-20pxr font-semibold">평가</span>
+              <div className="h-[12px] border border-t-0 border-b-0 border-l-light-gray-500 border-r-0" />
+              <div>
+                <span className="text-13pxr text-dark-gray-300">총</span>
+                <span className="text-13pxr text-primary-100 font-semibold">
+                  &nbsp;
+                  {evaluations
+                    ? Object.values(evaluations).reduce(
+                        (total, count) => total + count,
+                        0
+                      )
+                    : 0}
+                  명&nbsp;
+                </span>
+                <span className="text-13pxr text-dark-gray-300">참여 중</span>
+              </div>
+            </div>
+            {evaluations && <ProductReaction evaluations={evaluations} />}
+          </div>
+        </div>
+      </div>
+      <div className="md:hidden flex w-full justify-center bg-white px-16pxr">
+        <div className="w-full ">
+          <div className="flex gap-10pxr items-center mt-30pxr mb-15pxr">
+            <span className="text-18pxr font-semibold">평가</span>
+            <div className="h-[12px] border border-t-0 border-b-0 border-l-light-gray-500 border-r-0" />
+            <div>
+              <span className="text-13pxr text-dark-gray-300">총</span>
+              <span className="text-13pxr text-primary-100 font-semibold">
+                &nbsp;
+                {evaluations
+                  ? Object.values(evaluations).reduce(
+                      (total, count) => total + count,
+                      0
+                    )
+                  : 0}
+                명&nbsp;
+              </span>
+              <span className="text-13pxr text-dark-gray-300">참여 중</span>
+            </div>
+          </div>
+          {evaluations && <ProductReaction evaluations={evaluations} />}
+        </div>
+      </div>
+      <Modal size="sm" />
+      <SuggestionModal
+        isOpen={openSuggestionModal}
+        setIsOpen={setOpenSuggestionModal}
+        onClose={() => setOpenSuggestionModal(false)}
+        title={data?.title}
+        productId={data?.productId}
+      />
+    </div>
+  );
+};
+export default ProductCoverArea;

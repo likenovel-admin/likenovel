@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: likenovel-admin
+  labels:
+    app: likenovel-admin
+    environment: development
+    version: v1.0.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: likenovel-admin
+  template:
+    metadata:
+      labels:
+        app: likenovel-admin
+    spec:
+      containers:
+        - name: likenovel-admin
+          image: aiaracorp1/likenovel-admin:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3002

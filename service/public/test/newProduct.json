@@ -1,0 +1,63 @@
+{
+  "productId": 9999,
+  "adultYn": "N",
+  "title": "세계 정복급 악역으로 오해받고 있습니다",
+  "rank": {
+    "currentRank": 1,
+    "rankIndicator": 5
+  },
+  "genre": ["판타지"],
+  "authorNickname": "김작가",
+  "keywords": ["빌런", "회귀"],
+  "badge": {
+    "waitForFreeYn": "Y",
+    "episodeUploadYn": "N",
+    "timepassFromTo": "6-9",
+    "newReleaseYn": "Y",
+    "freeEpisodeTicketCount": 3,
+    "authorEventLevelBadgeImagePath": "https://cdn.likenovel.dev/badge/level/event/1.webp",
+    "interestEndDate": "2024-12-31T23:59:59Z"
+  },
+  "productType": "normal",
+  "priceType": "paid",
+  "illustratorNickname": "ArtWiz",
+  "trendindex": {
+    "readThroughRate": 85.6,
+    "readThroughIndicator": 3,
+    "cpHitCount": 1200,
+    "cpHitIndicator": 2,
+    "totalInterestCount": 4500,
+    "totalInterestIndicator": 4,
+    "interestSustainCount": 800,
+    "interestSustainIndicator": 2,
+    "interestLossCount": 150,
+    "interestLossIndicator": 1,
+    "hitCount": 5000,
+    "hitIndicator": 4,
+    "recommendCount": 2000,
+    "recommendIndicator": 3,
+    "notRecommendCount": 50,
+    "notRecommendIndicator": 1,
+    "bookmarkCount": 300,
+    "bookmarkIndicator": 2,
+    "hasEpisodeCount": 50,
+    "readedEpisodeCount": 30,
+    "primaryReaderGroup": {
+      "1": "10대 남자",
+      "2": "40대 여자"
+    }
+  },
+  "properties": {
+    "updateFrequency": "{\"MON\":\"Y\"}",
+    "averageWeeklyEpisodes": 2,
+    "latestEpisodeDate": "2024-11-18T10:00:00Z"
+  },
+  "advancePayment": 1000000,
+  "state": {
+    "ongoingState": "ongoing"
+  },
+  "contract": {
+    "monopolyYn": "N",
+    "cpContractYn": "Y"
+  }
+}

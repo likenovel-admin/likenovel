@@ -1,0 +1,23 @@
+{
+  "userId": 1,
+  "userRole": "user",
+  "userNickname": "차가운제로콜라",
+  "userEmail": "user123@naver.com",
+  "userProfileImagePath": "",
+  "userInterestLevelBadgeImagePath": "/images/badge_interest1.jpg",
+  "userEventLevelBadgeImagePath": "/images/badge_event1.jpg",
+  "totalHitCount": 100000,
+  "totalHitIndicator": -1,
+  "totalBookMarkCount": 10000,
+  "totalBookmarkIndicator": 1,
+  "totalRecommendCount": 10000,
+  "totalRecommendIndicator": 1,
+  "totalCpHitCount": 10000,
+  "totalCpHitIndicator": 1,
+  "totalInterestCount": 100000,
+  "totalInterestIndicator": 1,
+  "totalInterestSustainCount": 10000,
+  "totalInterestSustainIndicator": 1,
+  "totalInterestLossCount": 10000,
+  "totalInterestLossIndicator": -1
+}

@@ -1,0 +1,83 @@
+image: atlassian/default-image:3
+
+options:
+  size: 2x
+definitions:
+  services:
+    docker:
+      memory: 5120
+
+pipelines:
+  branches:
+    main:
+      - step:
+          size: 8x
+          name: Build and Push Docker Image
+          # runs-on:
+          #   - self.hosted
+          #   - linux
+          script:
+            - echo "Docker Build and Push - Dev"
+            - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+            - export DOCKER_BUILDKIT=1
+            - docker build -f Dockerfile --build-arg ENV_FILE="$ENV_FILE" -t aiaracorp1/likenovel-partner:dev .
+            - docker push aiaracorp1/likenovel-partner:dev
+          services:
+            - docker
+          caches:
+            - docker
+          when: on_success
+
+      - step:
+          name: Deploy to Dev (Kubernetes)
+          deployment: Test
+          # runs-on:
+          #   - self.hosted
+          #   - linux
+          script:
+            - echo "$FREEZER_PEM" | base64 -d > freezer.pem
+            - chmod 400 freezer.pem
+            - ssh-keyscan -p "$FREEZER_K8S_MASTER_PORT" "$FREEZER_K8S_MASTER_IP" >> ~/.ssh/known_hosts
+            - scp -P "$FREEZER_K8S_MASTER_PORT" -i freezer.pem -r ./kubernetes/* "$FREEZER_K8S_MASTER_USER@$FREEZER_K8S_MASTER_IP:~/services/likenovel/partner"
+            - ssh -p "$FREEZER_K8S_MASTER_PORT" -i freezer.pem "$FREEZER_K8S_MASTER_USER@$FREEZER_K8S_MASTER_IP" "sh -f ~/services/likenovel/partner/likenovel-partner.sh"
+            - echo 'DONE DEPLOY DEV'
+          services:
+            - docker
+          when: on_success
+
+    production:
+      - step:
+          size: 8x
+          name: Build and Push Docker Image
+          # runs-on:
+          #   - self.hosted
+          #   - linux
+          script:
+            - echo "Docker Build and Push - Production"
+            - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+            - export DOCKER_BUILDKIT=1
+            - docker build -f Dockerfile --build-arg ENV_FILE="$ENV_FILE" -t aiaracorp1/likenovel-partner:prod .
+            - docker push aiaracorp1/likenovel-partner:prod
+          services:
+            - docker
+          caches:
+            - docker
+          when: on_success
+
+      - step:
+          name: Deploy to Production (Docker Compose)
+          deployment: Production
+          # runs-on:
+          #   - self.hosted
+          #   - linux
+          script:
+            - echo "$LIVE_PEM" | base64 -d > live.pem
+            - chmod 400 live.pem
+            - ssh-keyscan "$LIVE_IP" >> ~/.ssh/known_hosts
+            - ssh -i live.pem "$LIVE_USER@$LIVE_IP" "mkdir -p ~/likenovel/partner/docker"
+            - scp -i live.pem ./prod.docker-compose.yml "$LIVE_USER@$LIVE_IP:~/likenovel/partner/docker/"
+            - ssh -i live.pem "$LIVE_USER@$LIVE_IP" "cd ~/likenovel/partner/docker && docker compose -f prod.docker-compose.yml pull && docker compose -f prod.docker-compose.yml up -d"
+            - echo 'DONE DEPLOY PRODUCTION'
+          services:
+            - docker
+          when: on_success

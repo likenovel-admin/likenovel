@@ -1,0 +1,632 @@
+[
+  {
+    "productId": 9999,
+    "adultYn": "N",
+    "title": "세계 정복급 악역으로 오해받고 있습니다",
+    "rank": {
+      "currentRank": 1,
+      "rankIndicator": 5
+    },
+    "genre": ["판타지"],
+    "authorNickname": "김작가",
+    "keywords": ["빌런", "회귀"],
+    "badge": {
+      "waitForFreeYn": "Y",
+      "episodeUploadYn": "N",
+      "timepassFromTo": "6-9",
+      "newReleaseYn": "Y",
+      "freeEpisodeTicketCount": 3,
+      "authorEventLevelBadgeImagePath": "https://cdn.likenovel.dev/badge/level/event/1.webp",
+      "interestEndDate": "2024-12-31T23:59:59Z"
+    },
+    "productType": "normal",
+    "priceType": "paid",
+    "illustratorNickname": "ArtWiz",
+    "trendindex": {
+      "readThroughRate": 85.6,
+      "readThroughIndicator": 3,
+      "cpHitCount": 1200,
+      "cpHitIndicator": 2,
+      "totalInterestCount": 4500,
+      "totalInterestIndicator": 4,
+      "interestSustainCount": 800,
+      "interestSustainIndicator": 2,
+      "interestLossCount": 150,
+      "interestLossIndicator": 1,
+      "hitCount": 5000,
+      "hitIndicator": 4,
+      "recommendCount": 2000,
+      "recommendIndicator": 3,
+      "notRecommendCount": 50,
+      "notRecommendIndicator": 1,
+      "bookmarkCount": 300,
+      "bookmarkIndicator": 2,
+      "hasEpisodeCount": 50,
+      "readedEpisodeCount": 30,
+      "primaryReaderGroup": {
+        "1": "10대 남자",
+        "2": "40대 여자"
+      }
+    },
+    "properties": {
+      "updateFrequency": "{\"MON\":\"Y\"}",
+      "averageWeeklyEpisodes": 2,
+      "latestEpisodeDate": "2024-11-18T10:00:00Z"
+    },
+    "advancePayment": 1000000,
+    "state": {
+      "ongoingState": "ongoing"
+    },
+    "contract": {
+      "monopolyYn": "N",
+      "cpContractYn": "Y"
+    }
+  },
+  {
+    "productId": 10000,
+    "adultYn": "Y",
+    "title": "흑막에게 사랑받는 법",
+    "rank": {
+      "currentRank": 3,
+      "rankIndicator": 1
+    },
+    "genre": ["로맨스", "스릴러"],
+    "authorNickname": "이로맨",
+    "keywords": ["흑막", "복수"],
+    "badge": {
+      "waitForFreeYn": "N",
+      "episodeUploadYn": "Y",
+      "timepassFromTo": "10-12",
+      "newReleaseYn": "N",
+      "freeEpisodeTicketCount": 0,
+      "authorEventLevelBadgeImagePath": "https://cdn.likenovel.dev/badge/level/event/1.webp",
+      "interestEndDate": "2024-12-15T23:59:59Z"
+    },
+    "productType": "premium",
+    "priceType": "free",
+    "illustratorNickname": "DrawMaster",
+    "trendindex": {
+      "readThroughRate": 75.3,
+      "readThroughIndicator": 4,
+      "cpHitCount": 1000,
+      "cpHitIndicator": 3,
+      "totalInterestCount": 3800,
+      "totalInterestIndicator": 3,
+      "interestSustainCount": 700,
+      "interestSustainIndicator": 2,
+      "interestLossCount": 300,
+      "interestLossIndicator": 1,
+      "hitCount": 4500,
+      "hitIndicator": 4,
+      "recommendCount": 1800,
+      "recommendIndicator": 2,
+      "notRecommendCount": 100,
+      "notRecommendIndicator": 1,
+      "bookmarkCount": 400,
+      "bookmarkIndicator": 3,
+      "hasEpisodeCount": 70,
+      "readedEpisodeCount": 50,
+      "primaryReaderGroup": {
+        "1": "20대 여자",
+        "2": "30대 남자"
+      }
+    },
+    "properties": {
+      "updateFrequency": "{\"FRI\":\"Y\"}",
+      "averageWeeklyEpisodes": 3,
+      "latestEpisodeDate": "2024-11-20T12:00:00Z"
+    },
+    "advancePayment": 2000000,
+    "state": {
+      "ongoingState": "ongoing"
+    },
+    "contract": {
+      "monopolyYn": "Y",
+      "cpContractYn": "N"
+    }
+  },
+  {
+    "productId": 10001,
+    "adultYn": "N",
+    "title": "전설의 용사가 되려면",
+    "rank": {
+      "currentRank": 5,
+      "rankIndicator": 2
+    },
+    "genre": ["판타지", "모험"],
+    "authorNickname": "용사작가",
+    "keywords": ["용사", "성장"],
+    "badge": {
+      "waitForFreeYn": "Y",
+      "episodeUploadYn": "Y",
+      "timepassFromTo": "14-16",
+      "newReleaseYn": "N",
+      "freeEpisodeTicketCount": 5,
+      "authorEventLevelBadgeImagePath": "https://cdn.likenovel.dev/badge/level/event/1.webp",
+      "interestEndDate": "2024-11-30T23:59:59Z"
+    },
+    "productType": "normal",
+    "priceType": "paid",
+    "illustratorNickname": "FantasyArt",
+    "trendindex": {
+      "readThroughRate": 90.2,
+      "readThroughIndicator": 5,
+      "cpHitCount": 1400,
+      "cpHitIndicator": 4,
+      "totalInterestCount": 5000,
+      "totalInterestIndicator": 5,
+      "interestSustainCount": 1200,
+      "interestSustainIndicator": 3,
+      "interestLossCount": 200,
+      "interestLossIndicator": 2,
+      "hitCount": 6000,
+      "hitIndicator": 5,
+      "recommendCount": 2500,
+      "recommendIndicator": 4,
+      "notRecommendCount": 80,
+      "notRecommendIndicator": 2,
+      "bookmarkCount": 500,
+      "bookmarkIndicator": 4,
+      "hasEpisodeCount": 80,
+      "readedEpisodeCount": 60,
+      "primaryReaderGroup": {
+        "1": "10대 남자",
+        "2": "30대 여자"
+      }
+    },
+    "properties": {
+      "updateFrequency": "{\"WED\":\"Y\"}",
+      "averageWeeklyEpisodes": 3,
+      "latestEpisodeDate": "2024-11-21T15:00:00Z"
+    },
+    "advancePayment": 3000000,
+    "state": {
+      "ongoingState": "ongoing"
+    },
+    "contract": {
+      "monopolyYn": "N",
+      "cpContractYn": "N"
+    }
+  },
+  {
+    "productId": 10002,
+    "adultYn": "N",
+    "title": "마왕의 재림: 새로운 세계로",
+    "rank": {
+      "currentRank": 2,
+      "rankIndicator": 4
+    },
+    "genre": ["판타지", "액션"],
+    "authorNickname": "재림작가",
+    "keywords": ["마왕", "이세계"],
+    "badge": {
+      "waitForFreeYn": "Y",
+      "episodeUploadYn": "N",
+      "timepassFromTo": "8-10",
+      "newReleaseYn": "Y",
+      "freeEpisodeTicketCount": 2,
+      "authorEventLevelBadgeImagePath": "https://cdn.likenovel.dev/badge/level/event/1.webp",
+      "interestEndDate": "2024-12-25T23:59:59Z"
+    },
+    "productType": "premium",
+    "priceType": "free",
+    "illustratorNickname": "DarkFantasyArt",
+    "trendindex": {
+      "readThroughRate": 88.0,
+      "readThroughIndicator": 4,
+      "cpHitCount": 1350,
+      "cpHitIndicator": 3,
+      "totalInterestCount": 4000,
+      "totalInterestIndicator": 3,
+      "interestSustainCount": 850,
+      "interestSustainIndicator": 3,
+      "interestLossCount": 100,
+      "interestLossIndicator": 1,
+      "hitCount": 5300,
+      "hitIndicator": 4,
+      "recommendCount": 2200,
+      "recommendIndicator": 3,
+      "notRecommendCount": 60,
+      "notRecommendIndicator": 1,
+      "bookmarkCount": 380,
+      "bookmarkIndicator": 3,
+      "hasEpisodeCount": 60,
+      "readedEpisodeCount": 40,
+      "primaryReaderGroup": {
+        "1": "10대 여자",
+        "2": "20대 남자"
+      }
+    },
+    "properties": {
+      "updateFrequency": "{\"MON\":\"Y\"}",
+      "averageWeeklyEpisodes": 2,
+      "latestEpisodeDate": "2024-11-19T10:00:00Z"
+    },
+    "advancePayment": 1800000,
+    "state": {
+      "ongoingState": "ongoing"
+    },
+    "contract": {
+      "monopolyYn": "N",
+      "cpContractYn": "N"
+    }
+  },
+  {
+    "productId": 10003,
+    "adultYn": "Y",
+    "title": "황제의 그림자",
+    "rank": {
+      "currentRank": 10,
+      "rankIndicator": -1
+    },
+    "genre": ["역사", "드라마"],
+    "authorNickname": "황제작가",
+    "keywords": ["권력", "정치"],
+    "badge": {
+      "waitForFreeYn": "N",
+      "episodeUploadYn": "Y",
+      "timepassFromTo": "20-22",
+      "newReleaseYn": "N",
+      "freeEpisodeTicketCount": 1,
+      "authorEventLevelBadgeImagePath": "https://cdn.likenovel.dev/badge/level/event/1.webp",
+      "interestEndDate": "2024-12-20T23:59:59Z"
+    },
+    "productType": "normal",
+    "priceType": "paid",
+    "illustratorNickname": "HistoricalArt",
+    "trendindex": {
+      "readThroughRate": 73.4,
+      "readThroughIndicator": 3,
+      "cpHitCount": 950,
+      "cpHitIndicator": 2,
+      "totalInterestCount": 2900,
+      "totalInterestIndicator": 3,
+      "interestSustainCount": 700,
+      "interestSustainIndicator": 2,
+      "interestLossCount": 250,
+      "interestLossIndicator": 2,
+      "hitCount": 4200,
+      "hitIndicator": 3,
+      "recommendCount": 1500,
+      "recommendIndicator": 2,
+      "notRecommendCount": 120,
+      "notRecommendIndicator": 2,
+      "bookmarkCount": 220,
+      "bookmarkIndicator": 2,
+      "hasEpisodeCount": 30,
+      "readedEpisodeCount": 15,
+      "primaryReaderGroup": {
+        "1": "40대 남자",
+        "2": "30대 여자"
+      }
+    },
+    "properties": {
+      "updateFrequency": "{\"MON\":\"Y\"}",
+      "averageWeeklyEpisodes": 1,
+      "latestEpisodeDate": "2024-11-22T09:00:00Z"
+    },
+    "advancePayment": 2500000,
+    "state": {
+      "ongoingState": "stop"
+    },
+    "contract": {
+      "monopolyYn": "N",
+      "cpContractYn": "N"
+    }
+  },
+  {
+    "productId": 10004,
+    "adultYn": "N",
+    "title": "히어로의 은퇴 일지",
+    "rank": {
+      "currentRank": 8,
+      "rankIndicator": 2
+    },
+    "genre": ["코미디", "액션"],
+    "authorNickname": "히어로작가",
+    "keywords": ["히어로", "일상"],
+    "badge": {
+      "waitForFreeYn": "Y",
+      "episodeUploadYn": "N",
+      "timepassFromTo": "12-14",
+      "newReleaseYn": "Y",
+      "freeEpisodeTicketCount": 4,
+      "authorEventLevelBadgeImagePath": "https://cdn.likenovel.dev/badge/level/event/1.webp",
+      "interestEndDate": "2024-12-18T23:59:59Z"
+    },
+    "productType": "normal",
+    "priceType": "paid",
+    "illustratorNickname": "FunArt",
+    "trendindex": {
+      "readThroughRate": 82.7,
+      "readThroughIndicator": 4,
+      "cpHitCount": 1200,
+      "cpHitIndicator": 3,
+      "totalInterestCount": 3700,
+      "totalInterestIndicator": 3,
+      "interestSustainCount": 950,
+      "interestSustainIndicator": 3,
+      "interestLossCount": 130,
+      "interestLossIndicator": 1,
+      "hitCount": 4800,
+      "hitIndicator": 4,
+      "recommendCount": 2000,
+      "recommendIndicator": 3,
+      "notRecommendCount": 40,
+      "notRecommendIndicator": 1,
+      "bookmarkCount": 350,
+      "bookmarkIndicator": 3,
+      "hasEpisodeCount": 55,
+      "readedEpisodeCount": 40,
+      "primaryReaderGroup": {
+        "1": "20대 남자",
+        "2": "30대 여자"
+      }
+    },
+    "properties": {
+      "updateFrequency": "{\"MON\":\"Y\"}",
+      "averageWeeklyEpisodes": 2,
+      "latestEpisodeDate": "2024-11-23T14:00:00Z"
+    },
+    "advancePayment": 1500000,
+    "state": {
+      "ongoingState": "ongoing"
+    },
+    "contract": {
+      "monopolyYn": "N",
+      "cpContractYn": "N"
+    }
+  },
+  {
+    "productId": 10005,
+    "adultYn": "N",
+    "title": "용사의 마지막 퀘스트",
+    "rank": {
+      "currentRank": 15,
+      "rankIndicator": -3
+    },
+    "genre": ["판타지", "모험"],
+    "authorNickname": "용사작가",
+    "keywords": ["용사", "여정"],
+    "badge": {
+      "waitForFreeYn": "N",
+      "episodeUploadYn": "Y",
+      "timepassFromTo": "9-12",
+      "newReleaseYn": "N",
+      "freeEpisodeTicketCount": 2,
+      "authorEventLevelBadgeImagePath": "https://cdn.likenovel.dev/badge/level/event/1.webp",
+      "interestEndDate": "2024-12-28T23:59:59Z"
+    },
+    "productType": "normal",
+    "priceType": "free",
+    "illustratorNickname": "AdventureArt",
+    "trendindex": {
+      "readThroughRate": 70.2,
+      "readThroughIndicator": 3,
+      "cpHitCount": 900,
+      "cpHitIndicator": 2,
+      "totalInterestCount": 2800,
+      "totalInterestIndicator": 2,
+      "interestSustainCount": 750,
+      "interestSustainIndicator": 2,
+      "interestLossCount": 200,
+      "interestLossIndicator": 2,
+      "hitCount": 4000,
+      "hitIndicator": 3,
+      "recommendCount": 1400,
+      "recommendIndicator": 2,
+      "notRecommendCount": 80,
+      "notRecommendIndicator": 2,
+      "bookmarkCount": 150,
+      "bookmarkIndicator": 1,
+      "hasEpisodeCount": 40,
+      "readedEpisodeCount": 25,
+      "primaryReaderGroup": {
+        "1": "30대 남자",
+        "2": "10대 여자"
+      }
+    },
+    "properties": {
+      "updateFrequency": "{\"MON\":\"Y\"}",
+      "averageWeeklyEpisodes": 1,
+      "latestEpisodeDate": "2024-11-21T08:00:00Z"
+    },
+    "advancePayment": 1000000,
+    "state": {
+      "ongoingState": "ongoing"
+    },
+    "contract": {
+      "monopolyYn": "N",
+      "cpContractYn": "N"
+    }
+  },
+  {
+    "productId": 10006,
+    "adultYn": "Y",
+    "title": "어둠 속의 군주",
+    "rank": {
+      "currentRank": 7,
+      "rankIndicator": 1
+    },
+    "genre": ["판타지", "스릴러"],
+    "authorNickname": "어둠작가",
+    "keywords": ["군주", "복수"],
+    "badge": {
+      "waitForFreeYn": "Y",
+      "episodeUploadYn": "N",
+      "timepassFromTo": "18-20",
+      "newReleaseYn": "N",
+      "freeEpisodeTicketCount": 5,
+      "authorEventLevelBadgeImagePath": "https://cdn.likenovel.dev/badge/level/event/1.webp",
+      "interestEndDate": "2024-12-30T23:59:59Z"
+    },
+    "productType": "premium",
+    "priceType": "paid",
+    "illustratorNickname": "DarkArt",
+    "trendindex": {
+      "readThroughRate": 90.1,
+      "readThroughIndicator": 5,
+      "cpHitCount": 1500,
+      "cpHitIndicator": 4,
+      "totalInterestCount": 5000,
+      "totalInterestIndicator": 4,
+      "interestSustainCount": 1200,
+      "interestSustainIndicator": 4,
+      "interestLossCount": 100,
+      "interestLossIndicator": 1,
+      "hitCount": 6000,
+      "hitIndicator": 5,
+      "recommendCount": 2500,
+      "recommendIndicator": 4,
+      "notRecommendCount": 30,
+      "notRecommendIndicator": 1,
+      "bookmarkCount": 450,
+      "bookmarkIndicator": 4,
+      "hasEpisodeCount": 70,
+      "readedEpisodeCount": 50,
+      "primaryReaderGroup": {
+        "1": "20대 여자",
+        "2": "30대 남자"
+      }
+    },
+    "properties": {
+      "updateFrequency": "{\"MON\":\"Y\"}",
+      "averageWeeklyEpisodes": 3,
+      "latestEpisodeDate": "2024-11-20T14:00:00Z"
+    },
+    "advancePayment": 3000000,
+    "state": {
+      "ongoingState": "ongoing"
+    },
+    "contract": {
+      "monopolyYn": "N",
+      "cpContractYn": "N"
+    }
+  },
+  {
+    "productId": 10007,
+    "adultYn": "N",
+    "title": "학교에서 살아남기",
+    "rank": {
+      "currentRank": 12,
+      "rankIndicator": -2
+    },
+    "genre": ["일상", "코미디"],
+    "authorNickname": "학생작가",
+    "keywords": ["학교", "생존"],
+    "badge": {
+      "waitForFreeYn": "Y",
+      "episodeUploadYn": "Y",
+      "timepassFromTo": "16-18",
+      "newReleaseYn": "Y",
+      "freeEpisodeTicketCount": 3,
+      "authorEventLevelBadgeImagePath": "https://cdn.likenovel.dev/badge/level/event/1.webp",
+      "interestEndDate": "2024-12-27T23:59:59Z"
+    },
+    "productType": "normal",
+    "priceType": "free",
+    "illustratorNickname": "SchoolArt",
+    "trendindex": {
+      "readThroughRate": 78.9,
+      "readThroughIndicator": 4,
+      "cpHitCount": 1100,
+      "cpHitIndicator": 3,
+      "totalInterestCount": 3600,
+      "totalInterestIndicator": 3,
+      "interestSustainCount": 950,
+      "interestSustainIndicator": 3,
+      "interestLossCount": 180,
+      "interestLossIndicator": 2,
+      "hitCount": 4500,
+      "hitIndicator": 4,
+      "recommendCount": 1900,
+      "recommendIndicator": 3,
+      "notRecommendCount": 70,
+      "notRecommendIndicator": 2,
+      "bookmarkCount": 320,
+      "bookmarkIndicator": 3,
+      "hasEpisodeCount": 50,
+      "readedEpisodeCount": 35,
+      "primaryReaderGroup": {
+        "1": "10대 남자",
+        "2": "20대 여자"
+      }
+    },
+    "properties": {
+      "updateFrequency": "{\"MON\":\"Y\"}",
+      "averageWeeklyEpisodes": 2,
+      "latestEpisodeDate": "2024-11-22T11:00:00Z"
+    },
+    "advancePayment": 1200000,
+    "state": {
+      "ongoingState": "ongoing"
+    },
+    "contract": {
+      "monopolyYn": "N",
+      "cpContractYn": "N"
+    }
+  },
+  {
+    "productId": 10008,
+    "adultYn": "N",
+    "title": "별이 빛나는 도시",
+    "rank": {
+      "currentRank": 5,
+      "rankIndicator": 3
+    },
+    "genre": ["로맨스", "드라마"],
+    "authorNickname": "별작가",
+    "keywords": ["도시", "사랑"],
+    "badge": {
+      "waitForFreeYn": "N",
+      "episodeUploadYn": "N",
+      "timepassFromTo": "19-22",
+      "newReleaseYn": "Y",
+      "freeEpisodeTicketCount": 4,
+      "authorEventLevelBadgeImagePath": "https://cdn.likenovel.dev/badge/level/event/1.webp",
+      "interestEndDate": "2024-12-29T23:59:59Z"
+    },
+    "productType": "premium",
+    "priceType": "paid",
+    "illustratorNickname": "RomanticArt",
+    "trendindex": {
+      "readThroughRate": 85.3,
+      "readThroughIndicator": 4,
+      "cpHitCount": 1300,
+      "cpHitIndicator": 3,
+      "totalInterestCount": 4100,
+      "totalInterestIndicator": 3,
+      "interestSustainCount": 1000,
+      "interestSustainIndicator": 3,
+      "interestLossCount": 140,
+      "interestLossIndicator": 1,
+      "hitCount": 5200,
+      "hitIndicator": 4,
+      "recommendCount": 2300,
+      "recommendIndicator": 4,
+      "notRecommendCount": 50,
+      "notRecommendIndicator": 1,
+      "bookmarkCount": 380,
+      "bookmarkIndicator": 3,
+      "hasEpisodeCount": 60,
+      "readedEpisodeCount": 45,
+      "primaryReaderGroup": {
+        "1": "20대 여자",
+        "2": "30대 여자"
+      }
+    },
+    "properties": {
+      "updateFrequency": "{\"MON\":\"Y\"}",
+      "averageWeeklyEpisodes": 2,
+      "latestEpisodeDate": "2024-11-25T10:00:00Z"
+    },
+    "advancePayment": 2000000,
+    "state": {
+      "ongoingState": "ongoing"
+    },
+    "contract": {
+      "monopolyYn": "N",
+      "cpContractYn": "N"
+    }
+  }
+]

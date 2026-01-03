@@ -1,0 +1,470 @@
+import {
+  useSelectUserPromotionIssuanceStatus,
+  useUserDirectPromotionEnd,
+  useUserDirectPromotionSave,
+  useUserDirectPromotionStart,
+  useUserDirectPromotionStop,
+  useUserIssueDirectPromotion,
+} from "@/app/api/query/mypage/user";
+import type { DirectPromotion as DirectPromotionType } from "@/app/api/query/mypage/user/dto";
+import { useSelectProductDetail } from "@/app/api/query/product";
+import Button from "@/components/common/Button";
+import useBottomSheetStore from "@/store/bottomSheetStore";
+import useConfirmStore from "@/store/confirmStore";
+import useModalStore from "@/store/modalStore";
+import useToastStore from "@/store/toastStore";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import MessageBubble from "../common/MessageBubble";
+import SettingLevel from "../viewer/SettingLevel";
+import CircleWarnYellow from "/public/images/circle-warn-yellow.svg";
+
+interface DirectPromotionProps {
+  directPromotions?: DirectPromotionType[];
+  productId?: number;
+}
+
+const DirectPromotion = ({
+  directPromotions = [],
+  productId,
+}: DirectPromotionProps) => {
+  const [promotionCounts, setPromotionCounts] = useState<{
+    [key: string]: number;
+  }>({});
+  const { closeModal: _closeModal } = useModalStore();
+  const { closeBottomSheet } = useBottomSheetStore();
+  const { setConfirm } = useConfirmStore();
+  const { setToast } = useToastStore();
+  const queryClient = useQueryClient();
+  const startDirectPromotionMutation = useUserDirectPromotionStart();
+  const endDirectPromotionMutation = useUserDirectPromotionEnd();
+  const stopDirectPromotionMutation = useUserDirectPromotionStop();
+  const saveDirectPromotionMutation = useUserDirectPromotionSave();
+  const issueDirectPromotionMutation = useUserIssueDirectPromotion();
+
+  // Get reader-of-prev promotion ID
+  const readerOfPrevPromotion = directPromotions.find(
+    (promo) => (promo as any).type === "reader-of-prev"
+  );
+
+  // Fetch issuance status for reader-of-prev promotion
+  const { data: issuanceStatus } = useSelectUserPromotionIssuanceStatus(
+    readerOfPrevPromotion?.id || 0
+  );
+
+  console.log("Reader of prev promotion:", readerOfPrevPromotion);
+  console.log("Issuance status:", issuanceStatus);
+
+  // Fetch product details to get public episode count
+  const { data: productDetail } = useSelectProductDetail(productId || 0);
+
+  // Calculate number of public episodes
+  const publicEpisodeCount =
+    productDetail?.data?.episodes?.filter((episode) => {
+      // Check if episode is public (openYn === "Y" or episodeOpenYn === "Y")
+      const isOpen = episode.episodeOpenYn === "Y";
+
+      // Check if publishReserveDate has passed (episode is already published)
+      const now = new Date();
+      const publishDate = episode.publishReserveDate
+        ? new Date(episode.publishReserveDate)
+        : null;
+      const isPublished = !publishDate || publishDate <= now;
+
+      return isOpen || isPublished;
+    }).length || 0; // Default to 18 if no data
+
+  const closeModal = () => {
+    _closeModal();
+    closeBottomSheet();
+  };
+
+  // Helper function to get promotion label based on type
+  const getPromotionLabel = (type: string) => {
+    switch (type) {
+      case "free-for-first":
+        return "첫 방문자 무료 대여권";
+      case "reader-of-prev":
+        return "선작 독자 무료 대여권";
+      default:
+        return "프로모션";
+    }
+  };
+
+  // Function to update individual promotion count
+  const updatePromotionCount = (promotionId: string, newCount: number) => {
+    setPromotionCounts((prev) => ({
+      ...prev,
+      [promotionId]: newCount,
+    }));
+  };
+
+  // Function to get current count for a promotion
+  const getPromotionCount = (promotion: any) => {
+    const promotionId =
+      promotion.id || `${promotion.type}_${promotion.product_id}`;
+    return (
+      promotionCounts[promotionId] ?? promotion.num_of_ticket_per_person ?? 3
+    );
+  };
+
+  const handlePromotionAction = (
+    promotion: any,
+    action: "start" | "stop" | "end" | "issue"
+  ) => {
+    if (
+      startDirectPromotionMutation.isPending ||
+      endDirectPromotionMutation.isPending ||
+      saveDirectPromotionMutation.isPending ||
+      stopDirectPromotionMutation.isPending ||
+      issueDirectPromotionMutation.isPending
+    )
+      return;
+
+    const actionConfig = {
+      start: {
+        confirmText: "시작하시겠습니까?",
+        confirmButton: "시작",
+        successMessage: "프로모션이 시작되었습니다.",
+        errorMessage: "프로모션 시작에 실패했습니다.",
+        mutation: () => startDirectPromotionMutation.mutateAsync(promotion.id!),
+      },
+      stop: {
+        confirmText: "프로모션을 중지하시겠습니까?",
+        confirmButton: "중지",
+        successMessage: "프로모션이 중지되었습니다.",
+        errorMessage: "프로모션 중지에 실패했습니다.",
+        mutation: () => stopDirectPromotionMutation.mutateAsync(promotion.id!),
+      },
+      end: {
+        confirmText: "프로모션을 종료하시겠습니까?",
+        confirmButton: "종료",
+        successMessage: "프로모션이 종료되었습니다.",
+        errorMessage: "프로모션 종료에 실패했습니다.",
+        mutation: () => endDirectPromotionMutation.mutateAsync(promotion.id!),
+      },
+      issue: {
+        confirmText: "대여권을 발급하시겠습니까?",
+        confirmButton: "발급",
+        successMessage: "대여권이 발급되었습니다.",
+        errorMessage: "대여권 발급에 실패했습니다.",
+        mutation: () => issueDirectPromotionMutation.mutateAsync(promotion.id!),
+      },
+    };
+
+    const config = actionConfig[action];
+
+    setConfirm({
+      content: config.confirmText,
+      confirmText: config.confirmButton,
+      onConfirm: async () => {
+        try {
+          await config.mutation();
+          setToast({
+            message: config.successMessage,
+            type: "success",
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["selectUserProductsWithPromotions"],
+          });
+          closeModal();
+        } catch (error: any) {
+          setToast({
+            message: error?.response?.data?.message || config.errorMessage,
+            type: "error",
+          });
+        }
+      },
+    });
+  };
+
+  const handleSave = () => {
+    if (!productId || saveDirectPromotionMutation.isPending) return;
+
+    // Build request body based on promotion types
+    const data: {
+      num_of_ticket_per_person_for_free_for_first?: number;
+      num_of_ticket_per_person_for_reader_of_prev?: number;
+    } = {
+      num_of_ticket_per_person_for_free_for_first: 0,
+      num_of_ticket_per_person_for_reader_of_prev: 0,
+    };
+
+    // If there are existing promotions, use their values
+    if (directPromotions.length > 0) {
+      directPromotions.forEach((promotion) => {
+        const currentCount = getPromotionCount(promotion);
+
+        if (promotion.type === "free-for-first") {
+          data.num_of_ticket_per_person_for_free_for_first = currentCount;
+        } else if (promotion.type === "reader-of-prev") {
+          data.num_of_ticket_per_person_for_reader_of_prev = currentCount;
+        }
+      });
+    } else {
+      // If no existing promotions, use the custom counts or default to 3
+      data.num_of_ticket_per_person_for_free_for_first =
+        promotionCounts["free-for-first"] ?? 1;
+      data.num_of_ticket_per_person_for_reader_of_prev =
+        promotionCounts["reader-of-prev"] ?? 1;
+    }
+
+    // Call the save API
+    saveDirectPromotionMutation.mutate(
+      { id: productId, data },
+      {
+        onSuccess: () => {
+          setToast({
+            message: "프로모션 설정이 저장되었습니다.",
+            type: "success",
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["selectUserProductsWithPromotions"],
+          });
+          closeModal();
+        },
+        onError: (error: any) => {
+          setToast({
+            message:
+              error?.response?.data?.message ||
+              "프로모션 설정 저장에 실패했습니다.",
+            type: "error",
+          });
+        },
+      }
+    );
+  };
+
+  // Define default promotion types if no existing promotions
+  const defaultPromotionTypes = [
+    { type: "free-for-first", label: "첫 방문자 무료 대여권" },
+    { type: "reader-of-prev", label: "선작 독자 무료 대여권" },
+  ];
+
+  // Create a list of promotions to display - either existing or default
+  const promotionsToDisplay =
+    directPromotions.length > 0
+      ? directPromotions
+      : defaultPromotionTypes.map((promo) => ({
+          type: promo.type,
+          status: "stop" as const,
+          num_of_ticket_per_person: 1,
+        }));
+
+  return (
+    <div className="w-[100vw] md:w-[527px]">
+      <div className="h-[76px]">
+        <div className="flex justify-end items-center h-[17px] mt-[16px] mr-[16px] mb-[4px] relative">
+          <button
+            onClick={closeModal}
+            className="right-0 top-0 p-2 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="닫기"
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 15 15"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M1.5 1.5L13.5 13.5M13.5 1.5L1.5 13.5"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div className="flex justify-center items-center pb-[16px] relative">
+          <span className="font-bold text-22pxr">직접 프로모션</span>
+        </div>
+      </div>
+      <div className="flex flex-col bg-light-gray-100 gap-4 p-4">
+        {promotionsToDisplay.map((promotion: any, index) => (
+          <div
+            key={promotion.id || `${promotion.type}_${index}`}
+            className="flex justify-between bg-white rounded-xl pr-5 h-[95px] items-center relative"
+          >
+            {promotion.status === "ing" &&
+              promotion.type === "free-for-first" && (
+                <div className="absolute top-[-10px] left-[0px]">
+                  <MessageBubble>진행중</MessageBubble>
+                </div>
+              )}
+            <div className="px-4 pt-3 pb-4 text-20pxr flex flex-col gap-2 font-medium">
+              {getPromotionLabel(promotion.type)}
+              <span className="text-16pxr">명당 증정 대여권</span>
+              {promotion.type === "reader-of-prev" && (
+                <div className="flex items-center gap-5pxr">
+                  <CircleWarnYellow className="w-[14px] h-[14px]" />
+                  <span className="text-14pxr text-[#7C8189]">
+                    매주 월요일 초기화
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col items-end">
+              <SettingLevel
+                count={
+                  promotionCounts[
+                    promotion.id ? promotion.id + "" : promotion.type
+                  ] ??
+                  promotion.num_of_ticket_per_person ??
+                  3
+                }
+                setCount={(newCount) =>
+                  updatePromotionCount(
+                    promotion.id ? promotion.id + "" : promotion.type,
+                    newCount
+                  )
+                }
+                maximum={publicEpisodeCount}
+              />
+              {/* {promotion.type === "free-for-first" && (
+                <Button
+                  size="sm"
+                  className="w-70pxr box-border bg-primary-100! px-[4px] text-[11px] md:w-[100px] md:h-[38px] md:text-14pxr mt-[9px]"
+                >
+                  시작
+                </Button>
+              )}
+              {promotion.type === "reader-of-prev" && (
+                <Button
+                  size="sm"
+                  className="w-70pxr box-border !bg-blue-500 px-[4px] text-[11px] md:w-[100px] md:h-[38px] md:text-14pxr mt-[9px]"
+                >
+                  발급
+                </Button>
+              )} */}
+              {promotion.type === "free-for-first" && (
+                <>
+                  {(() => {
+                    const status = promotion.status || "stop";
+                    const isLoading =
+                      startDirectPromotionMutation.isPending ||
+                      endDirectPromotionMutation.isPending ||
+                      saveDirectPromotionMutation.isPending ||
+                      stopDirectPromotionMutation.isPending ||
+                      issueDirectPromotionMutation.isPending;
+
+                    // Determine button config based on status
+                    if (status === "ing") {
+                      // Promotion is running - show End button
+                      return (
+                        <Button
+                          size="sm"
+                          className="w-70pxr box-border px-[4px] text-[11px] md:w-[100px] md:h-[38px] md:text-14pxr mt-[9px]"
+                          variant="black"
+                          onClick={() =>
+                            handlePromotionAction(promotion, "stop")
+                          }
+                          disabled={isLoading}
+                        >
+                          중지
+                        </Button>
+                      );
+                    }
+                    if (status === "pending" || status === "stop") {
+                      // Promotion is stopped - show Start button
+                      return (
+                        <Button
+                          size="sm"
+                          className="w-70pxr !bg-primary-100 box-border px-[4px] text-[11px] md:w-[100px] md:h-[38px] md:text-14pxr mt-[9px]"
+                          variant="black"
+                          onClick={() =>
+                            handlePromotionAction(promotion, "start")
+                          }
+                          disabled={isLoading}
+                        >
+                          시작
+                        </Button>
+                      );
+                    }
+                  })()}
+                </>
+              )}
+              {promotion.type === "reader-of-prev" && (
+                <>
+                  {issuanceStatus &&
+                  issuanceStatus?.issued_this_week === false &&
+                  promotion.status !== "end" ? (
+                    <Button
+                      size="sm"
+                      className="w-70pxr box-border !bg-blue-500 px-[4px] text-[11px] md:w-[100px] md:h-[38px] md:text-14pxr mt-[9px]"
+                      onClick={() => handlePromotionAction(promotion, "issue")}
+                      disabled={
+                        startDirectPromotionMutation.isPending ||
+                        endDirectPromotionMutation.isPending ||
+                        saveDirectPromotionMutation.isPending ||
+                        stopDirectPromotionMutation.isPending ||
+                        issueDirectPromotionMutation.isPending
+                      }
+                    >
+                      발급
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="w-70pxr !bg-gray-300 box-border px-[4px] text-[11px] md:w-[100px] md:h-[38px] md:text-14pxr mt-[9px]"
+                      variant="black"
+                      disabled
+                    >
+                      발급 완료
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* {directPromotions.length > 0 && (
+          <div
+            className="flex justify-between bg-white rounded-xl pr-5 h-[95px] items-center relative cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={handlePromotionStop}
+          >
+            <div className="px-4 pt-3 pb-4 text-20pxr flex flex-col gap-2 font-medium">
+              프로모션 중지
+            </div>
+          </div>
+        )} */}
+      </div>
+      <div className="flex pt-19pxr mb-30pxr mx-34pxr gap-8pxr max-w-full">
+        <Button
+          className="rounded-[14px] w-[38.3%]"
+          variant="secondary"
+          size={"xl"}
+          onClick={closeModal}
+          disabled={
+            startDirectPromotionMutation.isPending ||
+            endDirectPromotionMutation.isPending ||
+            saveDirectPromotionMutation.isPending ||
+            stopDirectPromotionMutation.isPending ||
+            issueDirectPromotionMutation.isPending
+          }
+          type="button"
+        >
+          취소
+        </Button>
+        <Button
+          className="flex-1 rounded-[14px]"
+          size={"xl"}
+          type="button"
+          disabled={
+            startDirectPromotionMutation.isPending ||
+            endDirectPromotionMutation.isPending ||
+            saveDirectPromotionMutation.isPending ||
+            stopDirectPromotionMutation.isPending ||
+            issueDirectPromotionMutation.isPending
+          }
+          onClick={handleSave}
+        >
+          {directPromotions.length > 0 ? "수정" : "적용"}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default DirectPromotion;

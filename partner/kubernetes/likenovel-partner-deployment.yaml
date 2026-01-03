@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: likenovel-partner
+  labels:
+    app: likenovel-partner
+    environment: development
+    version: v1.0.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: likenovel-partner
+  template:
+    metadata:
+      labels:
+        app: likenovel-partner
+    spec:
+      containers:
+        - name: likenovel-partner
+          image: aiaracorp1/likenovel-partner:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3001

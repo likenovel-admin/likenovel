@@ -1,0 +1,72 @@
+image: atlassian/default-image:3
+
+options:
+  size: 2x
+
+definitions:
+  services:
+    docker:
+      memory: 5192
+
+pipelines:
+  branches:
+    main:
+      - step:
+          size: 4x
+          name: Build and Push Development
+          script:
+            - echo "Docker Build and Push for Development"
+            - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+            - docker build --no-cache --rm --build-arg ENV_FILE=.env -f Dockerfile -t aiaracorp1/likenovel-admin:latest .
+            - docker push aiaracorp1/likenovel-admin:latest
+          services:
+            - docker
+          caches:
+            - docker
+          when: on_success
+
+      - step:
+          name: Deploy to Development
+          deployment: Test
+          script:
+            - echo "$FREEZER_PEM" | base64 -d > freezer.pem
+            - chmod 400 freezer.pem
+            - ssh-keyscan -p "$FREEZER_K8S_MASTER_PORT" "$FREEZER_K8S_MASTER_IP" >> ~/.ssh/known_hosts
+            - scp -P "$FREEZER_K8S_MASTER_PORT" -i freezer.pem -r ./kubernetes/* "$FREEZER_K8S_MASTER_USER@$FREEZER_K8S_MASTER_IP:~/services/likenovel/admin"
+            - ssh -p "$FREEZER_K8S_MASTER_PORT" -i freezer.pem "$FREEZER_K8S_MASTER_USER@$FREEZER_K8S_MASTER_IP" "sh -f services/likenovel/admin/likenovel-admin.sh"
+            - echo 'DONE DEPLOY DEVELOPMENT'
+          services:
+            - docker
+          when: on_success
+
+    production:
+      - step:
+          size: 4x
+          name: Build and Push Production
+          script:
+            - echo "Docker Build and Push for Production"
+            - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+            - docker build --no-cache --rm --build-arg ENV_FILE=.env.production -f Dockerfile -t aiaracorp1/likenovel-admin:production .
+            - docker push aiaracorp1/likenovel-admin:production
+          services:
+            - docker
+          caches:
+            - docker
+          when: on_success
+
+      - step:
+          name: Deploy to Production
+          deployment: Production
+          script:
+            - echo "$LIVE_PEM" | base64 -d > live.pem
+            - chmod 400 live.pem
+            - ssh-keyscan -p 22 "$LIVE_IP" >> ~/.ssh/known_hosts
+            - scp -i live.pem docker-compose.prod.yml "$LIVE_USER@$LIVE_IP:~/likenovel/cms/docker"
+            - ssh -i live.pem "$LIVE_USER@$LIVE_IP" "cd ~/likenovel/cms/docker && docker compose -f docker-compose.prod.yml pull"
+            - ssh -i live.pem "$LIVE_USER@$LIVE_IP" "cd ~/likenovel/cms/docker && docker compose -f docker-compose.prod.yml down"
+            - ssh -i live.pem "$LIVE_USER@$LIVE_IP" "cd ~/likenovel/cms/docker && docker compose -f docker-compose.prod.yml up -d"
+            - echo 'DONE DEPLOY PRODUCTION'
+          when: on_success
+
+      # production:
+        # - step:

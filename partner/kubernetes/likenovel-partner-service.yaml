@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: likenovel-partner
+  name: likenovel-partner-service
+spec:
+  type: ClusterIP
+  selector:
+    app: likenovel-partner
+  ports:
+    - port: 80
+      targetPort: 3001

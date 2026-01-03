@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: likenovel-user-service
+  name: likenovel-user-service
+spec:
+  type: ClusterIP
+  selector:
+    app: likenovel-user-service
+  ports:
+    - port: 80
+      targetPort: 3000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: likenovel-user-service
+  labels:
+    app: likenovel-user-service
+    environment: development
+    version: v1.0.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: likenovel-user-service
+  template:
+    metadata:
+      labels:
+        app: likenovel-user-service
+    spec:
+      containers:
+        - name: likenovel-user-service
+          image: aiaracorp1/likenovel-user:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000

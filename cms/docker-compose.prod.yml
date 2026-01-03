@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  likenovel-admin:
+    image: aiaracorp1/likenovel-admin:production
+    container_name: likenovel-admin
+    restart: always
+    ports:
+      - "3002:3002"
+    volumes:
+      - ~/likenovel/docker:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - HOSTNAME=0.0.0.0
+    networks:
+      - likenovel-network
+
+networks:
+  likenovel-network:
+    driver: bridge

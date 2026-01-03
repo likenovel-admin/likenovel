@@ -1,0 +1,61 @@
+export interface IEvent {
+  id: number;
+  title: string;
+  start_date: string;
+  end_date: string;
+  type: string;
+  target_product_ids: string;
+  reward_type: string;
+  reward_amount: number;
+  reward_max_people: number;
+  show_yn_thumbnail_img: "Y" | "N";
+  show_yn_detail_img: "Y" | "N";
+  show_yn_product: "Y" | "N";
+  show_yn_information: "Y" | "N";
+  thumbnail_image_id: number;
+  detail_image_id: number;
+  account_name: string;
+  product_ids: string;
+  information: string;
+  created_id: number;
+  created_date: string;
+  updated_id: number | null;
+  updated_date: string;
+  link: string;
+  product_title: string;
+  status: string;
+  show: "Y" | "N";
+}
+
+export interface IEventDetail {
+  id: number;
+  title: string;
+  start_date: string;
+  end_date: string;
+  type: string;
+  target_product_ids: string;
+  reward_type: string | null;
+  reward_amount: number;
+  reward_max_people: number;
+  show_yn_thumbnail_img: "Y" | "N";
+  show_yn_detail_img: "Y" | "N";
+  show_yn_product: "Y" | "N";
+  show_yn_information: "Y" | "N";
+  thumbnail_image_id: number;
+  detail_image_id: number;
+  account_name: string;
+  product_ids: string;
+  information: string;
+  created_id: number;
+  created_date: string;
+  updated_id: number | null;
+  updated_date: string;
+  link: string;
+  product_title: string;
+  status: string;
+  show: "Y" | "N";
+  thumbnail_image_path: string | null;
+  detail_image_path: string | null;
+  thumbnail_image_filename: string | null;
+  detail_image_filename: string | null;
+}

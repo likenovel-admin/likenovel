@@ -1,0 +1,188 @@
+import { useMyEvaluation, useMySummary } from "@/app/api/query/author/product";
+import ProductReaction from "@/components/common/ProductReaction";
+import Spinner from "@/components/common/Spinner";
+import { mergeKeysEvaluation, sumTimesEvaluation } from "@/utils/common";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useMemo } from "react";
+import RankIndicator from "../common/RankIndicator";
+import UserNickname from "../common/UserNickname";
+import ArrowRight from "/public/images/arrow-right-medium.svg";
+import BookmarkDetail from "/public/images/bookmark-detail.svg";
+import FireDetail from "/public/images/fire-detail.svg";
+import FireEmptyDetail from "/public/images/fire-empty-detail.svg";
+import Office from "/public/images/office.svg";
+import ThumbsUpDetail from "/public/images/thumbs-up-detail.svg";
+import ViewDetail from "/public/images/view-detail.svg";
+
+const MyProductManageAreaMobile = () => {
+  const router = useRouter();
+  const { data: summaryData, isLoading, error } = useMySummary();
+  const { data: evaluationData, isLoading: evaluationLoading } =
+    useMyEvaluation();
+
+  const ratingData = evaluationData?.data || {};
+
+  const totalParticipants = useMemo(() => {
+    if (evaluationData?.data) {
+      return sumTimesEvaluation(
+        evaluationData?.data as unknown as Record<string, number>
+      ).toLocaleString("ko-KR");
+    }
+    return 0;
+  }, [evaluationData]);
+
+  const manageData = summaryData?.data
+    ? [
+        {
+          icon: <ViewDetail />,
+          title: "총 조회수",
+          count: summaryData.data.totalViewCount,
+          indicator: summaryData.data.totalViewCountIndicator,
+        },
+        {
+          icon: <BookmarkDetail />,
+          title: "총 선작수",
+          count: summaryData.data.totalBookmarkCount,
+          indicator: summaryData.data.totalBookmarkCountIndicator,
+        },
+        {
+          icon: <ThumbsUpDetail />,
+          title: "총 추천수",
+          count: summaryData.data.totalRecommendCount,
+          indicator: summaryData.data.totalRecommendCountIndicator,
+        },
+        {
+          icon: <Office />,
+          title: "CP 조회수",
+          count: summaryData.data.totalCPViewCount,
+          indicator: summaryData.data.totalCPViewCountIndicator,
+        },
+        {
+          icon: <FireDetail />,
+          title: "누적 관심 수",
+          count: summaryData.data.interestTotalCount,
+          indicator: summaryData.data.interestTotalCountIndicator,
+        },
+        {
+          icon: <FireDetail />,
+          title: "관심 유지",
+          count: summaryData.data.interestSustainCount,
+          indicator: summaryData.data.interestSustainCountIndicator,
+        },
+        {
+          icon: <FireEmptyDetail />,
+          title: "관심 이탈",
+          count: summaryData.data.interestLossCount,
+          indicator: summaryData.data.interestLossCountIndicator,
+        },
+      ]
+    : [];
+
+  if (isLoading || evaluationLoading) {
+    return (
+      <div className="w-full min-h-screen flex justify-center items-center mt-[-100px]">
+        <Spinner />
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col">
+      <div className="flex flex-col px-16pxr">
+        <div className="flex justify-between items-center w-full mt-20pxr">
+          <div className="flex gap-7pxr items-center">
+            <Image
+              src={
+                summaryData?.data.profileImagePath ||
+                "/images/profile-basic.svg"
+              }
+              alt="프로필 이미지"
+              width={58}
+              height={58}
+              className="min-w-[50px] h-[50px] rounded-full"
+            />
+            <div className="flex flex-col">
+              <div
+                className="flex items-center gap-10pxr max-w-[500px] cursor-pointer"
+                // TODO: 마이페이지로 이동
+                onClick={() => {
+                  router.push("/product/mypage/home");
+                }}
+              >
+                <UserNickname
+                  product={
+                    { badgeImagePath: summaryData?.data.badgeImagePath } as any
+                  }
+                  userNickname={`${summaryData?.data.nickname}님`}
+                  textStyle="text-15pxr font-semibold"
+                  badgeStyle="w-[17px] h-[17px]"
+                  spanStyle="max-w-[120px]"
+                />
+                <ArrowRight className="w-[8px] h-[10px] text-dark-gray-600" />
+              </div>
+              <span className="text-11pxr text-dark-gray-300">
+                {summaryData?.data.email}
+              </span>
+            </div>
+          </div>
+          <button
+            className="flex items-center justify-center w-[110px] h-[40px] border border-primary-100 text-primary-100 text-13pxr font-medium rounded-[14px] hover:bg-primary-100 hover:text-white"
+            //   TODO: 작품 등록 페이지로 이동
+            onClick={() => {
+              router.push("/product/author/making-product");
+            }}
+          >
+            새로운 작품 등록
+          </button>
+        </div>
+        <div className="w-full border border-t-light-gray-400 border-b-0 border-l-0 border-r-0 mt-20pxr mb-30pxr" />
+        <div className="grid grid-cols-2 gap-20pxr">
+          {manageData.map((item, index) => (
+            <div className="flex gap-10pxr" key={item.title}>
+              <div className="flex justify-center items-center w-[45px] h-[45px] border border-light-gray-300 rounded-full">
+                {item.icon}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-13pxr font-medium text-dark-gray-400">
+                  {item.title}
+                </span>
+                <div className="flex items-center gap-7pxr">
+                  <span className="text-15pxr font-semibold">
+                    {(item.count || 0).toLocaleString()}
+                  </span>
+                  <RankIndicator
+                    rankIndicator={item.indicator}
+                    alignLocation="center"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="w-full h-[10px] bg-light-gray-200 mt-30pxr" />
+      <div className="md:hidden flex w-full justify-center bg-white px-16pxr">
+        <div className="w-full ">
+          <div className="flex gap-10pxr items-center mt-30pxr mb-15pxr">
+            <span className="text-17pxr font-semibold">평가</span>
+            <div className="h-[12px] border border-t-0 border-b-0 border-l-light-gray-500 border-r-0" />
+            <div>
+              <span className="text-13pxr text-dark-gray-300">총</span>
+              <span className="text-13pxr text-primary-100 font-semibold">
+                &nbsp;{totalParticipants}명&nbsp;
+              </span>
+              <span className="text-13pxr text-dark-gray-300">참여 중</span>
+            </div>
+          </div>
+          <ProductReaction
+            evaluations={mergeKeysEvaluation(
+              ratingData as unknown as Record<string, number>
+            )}
+          />
+        </div>
+      </div>
+      <div className="w-full border border-t-light-gray-400 border-b-0 border-l-0 border-r-0 mt-30pxr" />
+    </div>
+  );
+};
+export default MyProductManageAreaMobile;

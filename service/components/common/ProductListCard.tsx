@@ -1,0 +1,907 @@
+import { useUpdateConversionProduct } from "@/app/api/query/author/product";
+import ApplyPaidModal from "@/components/modal/ApplyPaidModal";
+import { useAdultCoverImage } from "@/hooks/useAdultCoverImage";
+import useMediaDevice from "@/hooks/useMediaDevice";
+import useAuthStore from "@/store/authStore";
+import useModalStore from "@/store/modalStore";
+import useToastStore from "@/store/toastStore";
+import { IProduct } from "@/types";
+import { getLatestEpisodeDate } from "@/utils/getLatestEpisodeDate";
+import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import { getUpdateFrequency } from "@/utils/getUpdateFrequency";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import GeneralPromotionModal from "../modal/GeneralPromotionModal";
+import BookmarkButton from "./BookmarkButton";
+import Button from "./Button";
+import InterestBadge from "./InterestBadge";
+import ProductRemarkContent from "./ProductRemarkContent";
+import ProductStateBadge from "./ProductStateBadge";
+import RankIndicator from "./RankIndicator";
+import RankingBadge from "./RankingBadge";
+import SquareBadge from "./SquareBadge";
+import UserNickname from "./UserNickname";
+import Bookmark from "/public/images/bookmark.svg";
+import Check from "/public/images/check.svg";
+import Clock from "/public/images/clock.svg";
+import ExclamationMark from "/public/images/exclamation-mark.svg";
+import Medal from "/public/images/medal.svg";
+import ThumbsUp from "/public/images/thumbs-up-gray.svg";
+import TriangleWarnRed from "/public/images/triangle-warn-red.svg";
+import View from "/public/images/view.svg";
+import Won from "/public/images/won.svg";
+
+interface Props {
+  data: IProduct;
+  hasRank?: boolean;
+  hasGle?: boolean;
+  hasInterestBadge?: boolean;
+  hasPromotionBadge?: boolean;
+  isAuthorPage?: boolean;
+  isReviewPage?: boolean;
+  isAdultFilterEnabled?: boolean;
+  refetch?: () => void;
+}
+
+const ProductListCard = ({
+  data,
+  hasRank = false,
+  hasInterestBadge = false,
+  hasPromotionBadge = false,
+  isAuthorPage = false,
+  isReviewPage = false,
+  isAdultFilterEnabled = false,
+  hasGle = true,
+  refetch,
+}: Props) => {
+  const router = useRouter();
+  const device = useMediaDevice();
+  const renderAdultCoverImage = useAdultCoverImage();
+  const { setModal } = useModalStore();
+  const { setToast } = useToastStore();
+  const updateConversionProductMutation = useUpdateConversionProduct();
+  const { user } = useAuthStore();
+
+  // Check if current user is the author of this product
+  const isProductAuthor = user?.userId === data.authorId;
+  const isCPAdmin = user?.userRole === "CP" || user?.userRole === "admin";
+  const [daysAgo, setDaysAgo] = useState<number | null>(null);
+  const [isActiveBookmark, setIsActiveBookmark] = useState(false);
+  const [isClicked, setIsClicked] = useState(false);
+  const [isOpenHelper, setIsOpenHelper] = useState<{
+    type: "normal" | "paid";
+    isOpen: boolean;
+  }>({
+    type: "normal",
+    isOpen: false,
+  });
+  useEffect(() => {
+    const calculateDaysAgo = () => {
+      const currentDate = new Date();
+      const lastEpisodeDate = new Date(
+        data.properties?.latestEpisodeDate ?? ""
+      );
+      const timeDifference = currentDate.getTime() - lastEpisodeDate.getTime();
+      const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+      return daysDifference;
+    };
+    setDaysAgo(calculateDaysAgo());
+  }, [data.properties?.latestEpisodeDate]);
+
+  const handleOpenGeneralPromotion = () => {
+    const handleConfirm = async () => {
+      if (updateConversionProductMutation.isPending) {
+        return;
+      }
+      try {
+        await updateConversionProductMutation.mutateAsync(
+          {
+            productId: data.productId,
+            category: "rank-up",
+          },
+          {
+            onSuccess: () => {
+              setToast({
+                message: "일반 승급 신청이 완료되었습니다.",
+                type: "success",
+              });
+              refetch && refetch();
+            },
+            onError: (error: any) => {
+              setToast({
+                message:
+                  error?.response?.data?.message ||
+                  "일반 승급 신청에 실패했습니다. 다시 시도해 주세요.",
+                type: "error",
+              });
+            },
+          }
+        );
+      } catch (error) {
+        setToast({
+          message: "일반 승급 신청에 실패했습니다. 다시 시도해 주세요.",
+          type: "error",
+        });
+      }
+    };
+
+    setModal(<GeneralPromotionModal data={data} onConfirm={handleConfirm} />);
+  };
+
+  const handleOpenApplyPaid = () => {
+    const handleConfirm = async () => {
+      if (updateConversionProductMutation.isPending) {
+        return;
+      }
+      try {
+        await updateConversionProductMutation.mutateAsync(
+          {
+            productId: data.productId,
+            category: "paid",
+          },
+          {
+            onSuccess: () => {
+              setToast({
+                message: "유료 전환 신청이 완료되었습니다.",
+                type: "success",
+              });
+              refetch && refetch();
+            },
+            onError: (error: any) => {
+              setToast({
+                message:
+                  error?.response?.data?.message ||
+                  "유료 전환 신청에 실패했습니다. 다시 시도해 주세요.",
+                type: "error",
+              });
+            },
+          }
+        );
+      } catch (error) {
+        setToast({
+          message: "유료 전환 신청에 실패했습니다. 다시 시도해 주세요.",
+          type: "error",
+        });
+      }
+    };
+
+    setModal(<ApplyPaidModal data={data} onConfirm={handleConfirm} />);
+  };
+
+  return (
+    <>
+      <div
+        className={`relative flex w-full justify-between min-h-[155px] md:min-h-[208px] rounded-[10px] md:border border-light-gray-500 ${
+          isAuthorPage ? "" : "cursor-pointer"
+        }  md:hover:shadow-lg`}
+      >
+        <div
+          className={`relative flex items-start ${
+            isAuthorPage ? "w-[60%] cursor-pointer" : "w-full"
+          }  gap-12pxr md:gap-20pxr p-[16px] md:p-[20px]`}
+          onClick={() => {
+            // Navigate to author page if user is the product author (in review page context)
+            // Otherwise navigate to regular product detail page
+            if (device !== "mobile") {
+              isAuthorPage
+                ? router.push(
+                    `/product/author/episode-manager/${data.productId}`
+                  )
+                : router.push(`/product/${data.productId}`);
+            }
+          }}
+        >
+          {hasRank && data.rank && (
+            <>
+              <span className="md:hidden min-w-[14px] text-17pxr font-bold">
+                {data.rank?.currentRank || 0}
+              </span>
+              <div className="hidden md:block">
+                <RankingBadge
+                  rank={data.rank?.currentRank || 0}
+                  rankIndicator={data.rank?.rankIndicator || 0}
+                />
+              </div>
+            </>
+          )}
+          <div
+            className="relative bg-black-100 min-w-[86px] md:min-w-[110px] h-[130px] md:h-[166px] rounded-[10px]"
+            onClick={() => {
+              setIsClicked(!isClicked);
+            }}
+          >
+            {isAdultFilterEnabled ? (
+              <>
+                {renderAdultCoverImage(
+                  data,
+                  110,
+                  166,
+                  `hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px]`
+                )}
+                {renderAdultCoverImage(
+                  data,
+                  110,
+                  166,
+                  `md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] ${
+                    isClicked ? "opacity-0" : "opacity-100"
+                  }`
+                )}
+              </>
+            ) : data.image && data.image.coverImagePath ? (
+              <>
+                <Image
+                  src={data.image.coverImagePath}
+                  alt={data.title}
+                  width={110}
+                  height={166}
+                  className={`hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px]`}
+                />
+                <Image
+                  src={data.image.coverImagePath}
+                  alt={data.title}
+                  width={110}
+                  height={166}
+                  className={`md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] ${
+                    isClicked ? "opacity-0" : "opacity-100"
+                  }`}
+                />
+              </>
+            ) : (
+              <>
+                <Image
+                  src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
+                  alt={data.title}
+                  width={110}
+                  height={166}
+                  className={`hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px]`}
+                />
+                <Image
+                  src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
+                  alt={data.title}
+                  width={110}
+                  height={166}
+                  className={`md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] ${
+                    isClicked ? "opacity-0" : "opacity-100"
+                  }`}
+                />
+              </>
+            )}
+            {isClicked ? (
+              <div
+                className={`md:hidden absolute w-[75px] top-[5px] left-[5px] flex flex-wrap`}
+              >
+                {Array.from(
+                  new Set([...(data.genre || []), ...(data.keywords || [])])
+                ).map((item: string, index: number) => (
+                  <span
+                    key={index}
+                    className={`text-white text-10pxr mr-[1px]`}
+                  >
+                    #{item}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <>
+                {hasPromotionBadge &&
+                  data.priceType === "paid" &&
+                  data.badge && (
+                    <div
+                      className={`absolute flex bottom-[5px] md:top-[5px] left-[5px] gap-[2px]`}
+                    >
+                      <SquareBadge
+                        type={getPromotionBadgeType(
+                          data.badge?.waitForFreeYn ||
+                            data.badge?.waitingForFreeYn,
+                          data.badge?.freeEpisodeTicketCount,
+                          data.badge?.timepassFromTo,
+                          data.badge?.sixNinePathYn
+                        )}
+                        freeEpisodeNumber={data.badge?.freeEpisodeTicketCount}
+                        timePassValue={data.badge?.timepassFromTo}
+                      />
+                    </div>
+                  )}
+              </>
+            )}
+          </div>
+          <div className=" flex flex-col w-full gap-3pxr">
+            <div className="hidden md:flex items-center gap-7pxr">
+              <span className="text-17pxr font-semibold">{data.title}</span>
+              <ProductStateBadge product={data} hasFreeOrPaidBadge />
+            </div>
+            <div className="md:hidden flex flex-col gap-3pxr">
+              <div className="flex gap-10pxr">
+                <ProductStateBadge product={data} hasFreeOrPaidBadge />
+                {hasInterestBadge && (
+                  <InterestBadge
+                    product={data}
+                    width={16}
+                    height={21}
+                    style="md:hidden mt-[-4px]"
+                  />
+                )}
+              </div>
+              <span
+                className="text-14pxr font-semibold"
+                onClick={() => router.push(`/product/${data.productId}`)}
+              >
+                {data.title}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-5pxr md:gap-12pxr items-center">
+              <UserNickname
+                userNickname={data.authorNickname || ""}
+                product={data}
+                hasGle={hasGle}
+              />
+              {data.properties && data.properties?.latestEpisodeDate && (
+                <>
+                  <div className="w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
+                  <span className="text-13pxr md:text-15pxr text-dark-gray-500">
+                    {getLatestEpisodeDate(data.properties?.latestEpisodeDate)}
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="flex items-center">
+              {/* <span className="text-12pxr md:text-14pxr text-dark-gray-500">
+                {data.trendindex?.hasEpisodeCount && (
+                  <>총 {data.trendindex?.hasEpisodeCount}화</>
+                )}
+              </span>
+              {data.trendindex?.hasEpisodeCount &&
+                !isAuthorPage &&
+                data.properties?.updateFrequency && (
+                  <div className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
+                )} */}
+              {/* <span className="text-12pxr md:text-14pxr text-dark-gray-500">
+                {!!data.totalOpenEpisodeCount && (
+                  <>총 {data.totalOpenEpisodeCount}화</>
+                )}
+              </span>
+              {!!data.totalOpenEpisodeCount &&
+                !isAuthorPage &&
+                !!data.properties?.updateFrequency && (
+                  <div className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
+                )} */}
+              <span className="text-12pxr md:text-14pxr text-dark-gray-500">
+                총 {data.totalOpenEpisodeCount}화
+              </span>
+              {!isAuthorPage && !!data.properties?.updateFrequency && (
+                <div className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
+              )}
+              {!isAuthorPage && !!data.properties?.updateFrequency && (
+                <>
+                  <span className="text-12pxr md:text-14pxr text-dark-gray-500">
+                    {getUpdateFrequency(data.properties?.updateFrequency || "")}
+                  </span>
+                </>
+              )}
+              {!isAuthorPage &&
+                getUpdateFrequency(data.properties?.updateFrequency || "") &&
+                data.genre.length > 0 && (
+                  <div className="md:hidden w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
+                )}
+              {data.genre.length > 0 && (
+                <span className="md:hidden text-12pxr md:text-14pxr text-dark-gray-500">
+                  {data.genre[0]}
+                </span>
+              )}
+            </div>
+            <div>
+              {isAuthorPage && data.contract ? (
+                <>
+                  <div className="flex gap-4pxr">
+                    <span className="text-12pxr md:text-14pxr text-dark-gray-300">
+                      선인세 :
+                    </span>
+                    <span className="text-12pxr md:text-14pxr text-dark-gray-500">
+                      {data.contract?.advancePayment?.toLocaleString() ?? 0}원
+                    </span>
+                  </div>
+                  <div className="flex gap-4pxr">
+                    <span className="text-12pxr md:text-14pxr text-dark-gray-300">
+                      제안받은 수 :
+                    </span>
+                    <span className="text-12pxr md:text-14pxr text-dark-gray-500">
+                      {data.contract?.offerCount}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="hidden md:flex flex-wrap gap-6pxr mt-17pxr">
+                    {Array.from(
+                      new Set([...(data.genre || []), ...(data.keywords || [])])
+                    ).map((item: string, index: number) => (
+                      <div
+                        className="flex px-8pxr py-4pxr bg-light-gray-100 rounded-full"
+                        key={index}
+                      >
+                        <span className="text-13pxr text-dark-gray-400">
+                          #{item}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            {isAuthorPage ? (
+              <>
+                {data.trendindex && (
+                  <div className="flex w-full mt-5pxr md:mt-18pxr gap-15pxr mb-10pxr">
+                    <div className="flex items-center gap-3pxr">
+                      <View className="w-[14px] h-[12px] text-dark-gray-400" />
+                      <span className="text-11pxr md:text-13pxr text-dark-gray-400">
+                        {data.trendindex.hitCount}
+                      </span>
+                      <RankIndicator
+                        rankIndicator={data.trendindex.hitIndicator ?? 0}
+                        textStyles="text-10pxr"
+                      />
+                    </div>
+                    <div className="flex items-center gap-3pxr">
+                      <ThumbsUp className="w-[15px] h-[12px]" />
+                      <span className="text-11pxr md:text-13pxr text-dark-gray-400">
+                        {data.trendindex.recommendCount}
+                      </span>
+                      <RankIndicator
+                        rankIndicator={data.trendindex.recommendIndicator ?? 0}
+                        textStyles="text-10pxr"
+                      />
+                    </div>
+                    <div className="flex items-center gap-3pxr">
+                      <Bookmark className="w-[10px] h-[15px] text-dark-gray-400" />
+                      <span className="text-11pxr md:text-13pxr text-dark-gray-400">
+                        {data.trendindex.bookmarkCount}
+                      </span>
+                      <RankIndicator
+                        rankIndicator={data.trendindex.bookmarkIndicator ?? 0}
+                        textStyles="text-10pxr"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {data.priceType === "free" &&
+                (data?.productType === "free" ? (
+                  <div className="md:hidden flex gap-12pxr items-center">
+                    {/* TODO: api 연결 */}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="flex w-[130px] gap-5pxr text-12pxr font-normal"
+                      onClick={handleOpenGeneralPromotion}
+                    >
+                      <Medal />
+                      일반 승급 신청
+                    </Button>
+                    <button
+                      className={`flex justify-center items-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
+                        isOpenHelper.isOpen
+                          ? "bg-black-100 hover:bg-dark-gray-600"
+                          : "hover:bg-light-gray-100"
+                      }`}
+                      onClick={() => {
+                        setIsOpenHelper({
+                          type: "normal",
+                          isOpen: !isOpenHelper.isOpen,
+                        });
+                      }}
+                    >
+                      <ExclamationMark
+                        className={`${
+                          isOpenHelper.isOpen
+                            ? "text-white"
+                            : "text-dark-gray-300"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                ) : (
+                  data?.productType === "normal" &&
+                  data.state &&
+                  data.state?.convertToPaidState !== "review" &&
+                  data.state?.convertToPaidState !== "approval" &&
+                  data.state?.canApplyForPaid === true
+                )) ? (
+                  <div className="md:hidden flex gap-12pxr items-center">
+                    {/* TODO: api 연결 */}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="flex w-[135px] gap-5pxr text-12pxr font-normal"
+                      onClick={handleOpenApplyPaid}
+                    >
+                      <div className="flex justify-center items-center w-[18px] h-[18px] bg-[#FFBC39] rounded-full">
+                        <Won className="w-[11px] h-[6px] ml-[1px]" />
+                      </div>
+                      유료 전환 신청
+                    </Button>
+                    <button
+                      className={`flex justify-center items-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
+                        isOpenHelper.isOpen
+                          ? "bg-black-100 hover:bg-dark-gray-600"
+                          : "hover:bg-light-gray-100"
+                      }`}
+                      onClick={() => {
+                        setIsOpenHelper({
+                          type: "paid",
+                          isOpen: !isOpenHelper.isOpen,
+                        });
+                      }}
+                    >
+                      <ExclamationMark
+                        className={`${
+                          isOpenHelper.isOpen
+                            ? "text-white"
+                            : "text-dark-gray-300"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                ) : (
+                  ""
+                )}
+              </>
+            ) : (
+              <>
+                <div className="hidden md:block border border-t-light-gray-400 border-b-0 border-l-0 border-r-0 mt-[8px] mb-[8px]" />
+                <div className="flex w-full gap-12pxr md:gap-24pxr">
+                  {data.trendindex && (
+                    <>
+                      <div className="flex items-center gap-3pxr">
+                        <View className="w-[14px] h-[12px] text-dark-gray-400" />
+                        <span className="text-11pxr md:text-13pxr text-dark-gray-400">
+                          {data.trendindex.hitCount}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3pxr">
+                        <ThumbsUp className="w-[15px] h-[12px]" />
+                        <span className="text-11pxr md:text-13pxr text-dark-gray-400">
+                          {data.trendindex.recommendCount}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3pxr">
+                        <Bookmark className="w-[10px] h-[15px] text-dark-gray-400" />
+                        <span className="text-11pxr md:text-13pxr text-dark-gray-400">
+                          {data.trendindex.bookmarkCount}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  <div className="hidden md:block ml-14pxr">
+                    <ProductRemarkContent
+                      data={data}
+                      remarkContent={
+                        data.properties?.remarkContentSnippet ?? ""
+                      }
+                      isFree={data.priceType === "free"}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+            {hasInterestBadge && (
+              <InterestBadge
+                product={data}
+                width={16}
+                height={21}
+                style="hidden md:block absolute right-[20px]"
+              />
+            )}
+          </div>
+        </div>
+        {isAuthorPage &&
+          data.priceType === "free" &&
+          (data?.productType === "free" ? (
+            <div className="hidden md:flex absolute bottom-[30px] right-[230px] gap-12pxr items-center">
+              <button
+                className={`flex justify-center items-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
+                  isOpenHelper.isOpen
+                    ? "bg-black-100 hover:bg-dark-gray-600"
+                    : "hover:bg-light-gray-100"
+                }`}
+                onClick={() => {
+                  setIsOpenHelper({
+                    type: "normal",
+                    isOpen: !isOpenHelper.isOpen,
+                  });
+                }}
+              >
+                <ExclamationMark
+                  className={`${
+                    isOpenHelper.isOpen ? "text-white" : "text-dark-gray-300"
+                  }`}
+                />
+              </button>
+              {/* TODO: api 연결 */}
+              <Button
+                variant="secondary"
+                className="flex w-[130px] gap-5pxr text-14pxr font-normal"
+                onClick={handleOpenGeneralPromotion}
+              >
+                <Medal />
+                일반 승급 신청
+              </Button>
+            </div>
+          ) : data?.productType === "normal" &&
+            data.state &&
+            data.state?.convertToPaidState !== "review" &&
+            data.state?.convertToPaidState !== "approval" &&
+            data.state?.canApplyForPaid === true ? (
+            <div className="hidden md:flex absolute bottom-[30px] right-[230px] gap-12pxr items-center">
+              <button
+                className={`flex justify-center items-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
+                  isOpenHelper.isOpen
+                    ? "bg-black-100 hover:bg-dark-gray-600"
+                    : "hover:bg-light-gray-100"
+                }`}
+                onClick={() => {
+                  setIsOpenHelper({
+                    type: "paid",
+                    isOpen: !isOpenHelper.isOpen,
+                  });
+                }}
+              >
+                <ExclamationMark
+                  className={`${
+                    isOpenHelper.isOpen ? "text-white" : "text-dark-gray-300"
+                  }`}
+                />
+              </button>
+              {/* TODO: api 연결 */}
+              <Button
+                variant="secondary"
+                className="flex w-[135px] gap-5pxr text-14pxr font-normal"
+                onClick={handleOpenApplyPaid}
+              >
+                <div className="flex justify-center items-center w-[18px] h-[18px] bg-[#FFBC39] rounded-full">
+                  <Won className="w-[11px] h-[6px] ml-[1px]" />
+                </div>
+                유료 전환 신청
+              </Button>
+            </div>
+          ) : (
+            ""
+          ))}
+        {isAuthorPage &&
+          data?.productType === "normal" &&
+          data.state &&
+          data.state?.convertToPaidState &&
+          data.state?.convertToPaidState !== "not_applied" &&
+          (data.state?.convertToPaidState === "review" ? (
+            <div className="flex absolute top-[30px] right-[20px] md:right-[230px] items-center gap-3pxr md:gap-6pxr">
+              <Clock className="w-[15px] md:w-[18px] h-[15px] md:h-[18px] text-[#2F7FFF]" />
+              <span className="text-12pxr md:text-14pxr text-[#2F7FFF]">
+                심사중
+              </span>
+            </div>
+          ) : data.state?.convertToPaidState === "rejected" ? (
+            <div className="flex absolute top-[30px] right-[20px] md:right-[230px] items-center gap-2pxr">
+              <TriangleWarnRed className="mb-[-5px] w-[18px] md:w-[23px] h-[18px] md:h-[23px]" />
+              <span className="text-12pxr md:text-14pxr text-red-100">
+                반려
+              </span>
+            </div>
+          ) : (
+            <div className="flex absolute top-[30px] right-[20px] md:right-[230px] items-center gap-6pxr">
+              <div className="flex items-center justify-center w-[15px] md:w-[18px] h-[15px] md:h-[18px] bg-[#09ABDF] rounded-full">
+                <Check className="w-[8px] text-white" />
+              </div>
+              <span className="text-12pxr md:text-14pxr text-[#09ABDF]">
+                승인
+              </span>
+            </div>
+          ))}
+        <div
+          className={`hidden md:flex flex-col ${
+            isAuthorPage ? "min-w-[200px]" : "min-w-[180px]"
+          } min-h-[208px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0 px-17pxr py-26pxr gap-6pxr`}
+        >
+          {isAuthorPage ? (
+            <>
+              {data.trendindex && (
+                <>
+                  <div className="flex justify-between gap-20pxr">
+                    <span className="text-13pxr text-dark-gray-300">
+                      CP조회수
+                    </span>
+                    <div className="flex gap-4pxr">
+                      <span className="text-13pxr text-dark-gray-500">
+                        {data.trendindex.cpHitCount}
+                      </span>
+                      <div className="mt-4pxr">
+                        <RankIndicator
+                          rankIndicator={data.trendindex.hitIndicator ?? 0}
+                          textStyles="text-10pxr"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between gap-20pxr">
+                    <span className="text-13pxr text-dark-gray-300">
+                      연독률
+                    </span>
+                    <div className="flex gap-4pxr">
+                      <span className="text-13pxr text-dark-gray-500">
+                        {Number(data.trendindex.readThroughRate || 0).toFixed(
+                          2
+                        )}
+                        %
+                      </span>
+                      <div className="mt-4pxr">
+                        <RankIndicator
+                          rankIndicator={
+                            data.trendindex.readThroughIndicator ?? 0
+                          }
+                          textStyles="text-10pxr"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between gap-20pxr">
+                    <span className="text-13pxr text-dark-gray-300">
+                      누적 관심수
+                    </span>
+                    <div className="flex gap-4pxr">
+                      <span className="text-13pxr text-dark-gray-500">
+                        {data.trendindex.totalInterestCount}
+                      </span>
+                      <div className="mt-4pxr">
+                        <RankIndicator
+                          rankIndicator={
+                            data.trendindex.totalInterestIndicator ?? 0
+                          }
+                          textStyles="text-10pxr"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between gap-20pxr">
+                    <span className="text-13pxr text-dark-gray-300">
+                      관심유지
+                    </span>
+                    <div className="flex gap-4pxr">
+                      <span className="text-13pxr text-dark-gray-500">
+                        {data.trendindex.interestSustainCount}
+                      </span>
+                      <div className="mt-4pxr">
+                        <RankIndicator
+                          rankIndicator={
+                            data.trendindex.interestSustainIndicator ?? 0
+                          }
+                          textStyles="text-10pxr"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between gap-20pxr">
+                    <span className="text-13pxr text-dark-gray-300">
+                      관심이탈
+                    </span>
+                    <div className="flex gap-4pxr">
+                      <span className="text-13pxr text-dark-gray-500">
+                        {data.trendindex.interestLossCount}
+                      </span>
+                      <div className="mt-4pxr">
+                        <RankIndicator
+                          rankIndicator={
+                            data.trendindex.interestLossIndicator ?? 0
+                          }
+                          textStyles="text-10pxr"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between gap-20pxr">
+                    <span className="text-13pxr text-dark-gray-300">
+                      주요 독자층
+                    </span>
+                    <span className="text-13pxr text-dark-gray-500">
+                      {data.trendindex.primaryReaderGroup?.["1"] ?? ""} <br />
+                      {data.trendindex.primaryReaderGroup?.["2"] ?? ""}
+                    </span>
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            data.trendindex &&
+            data.properties && (
+              <>
+                {(isCPAdmin || isProductAuthor) && (
+                  <>
+                    <div className="flex justify-between gap-20pxr">
+                      <span className="text-13pxr text-dark-gray-300">
+                        CP조회수
+                      </span>
+                      <span className="text-13pxr text-dark-gray-500">
+                        {data.trendindex.cpHitCount}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-20pxr">
+                      <span className="text-13pxr text-dark-gray-300">
+                        연독률
+                      </span>
+                      <span className="text-13pxr text-dark-gray-500">
+                        {Number(data.trendindex.readThroughRate || 0).toFixed(
+                          2
+                        )}
+                        %
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-20pxr">
+                      <span className="text-13pxr text-dark-gray-300">
+                        주평균 연재횟수
+                      </span>
+                      <span className="text-13pxr text-dark-gray-500">
+                        {data.properties.averageWeeklyEpisodes}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-20pxr">
+                      <span className="text-13pxr text-dark-gray-300">
+                        주요 독자층
+                      </span>
+                      <span className="text-13pxr text-dark-gray-500">
+                        {data.trendindex.primaryReaderGroup?.["1"] ?? ""} <br />
+                        {data.trendindex.primaryReaderGroup?.["2"] ?? ""}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </>
+            )
+          )}
+        </div>
+        {!isAuthorPage && (
+          <>
+            <BookmarkButton
+              productId={data.productId}
+              bookmarkYn={data.properties?.bookmarkYn || "N"}
+              buttonStyle="absolute bottom-[17px] right-[11px] p-2"
+              bookmarkStyle="w-[16px] h-[19px] text-dark-gray-200 hover:text-dark-gray-500"
+              activeBookmarkStyle="w-[16px] h-[19px]"
+            />
+            <div className="absolute bottom-[17px] right-[38px] p-2 md:hidden">
+              <ProductRemarkContent
+                data={data}
+                remarkContent={data.properties?.remarkContentSnippet ?? ""}
+                isFree={data.priceType === "free"}
+              />
+            </div>
+          </>
+        )}
+
+        {isAuthorPage && isOpenHelper.isOpen && (
+          <div
+            className={`absolute bottom-[-50px] md:bottom-[-30px] ${
+              isOpenHelper.type === "normal"
+                ? "right-[60px] md:right-[200px] w-[250px]"
+                : "right-[58px] md:right-[215px] w-[235px]"
+            } inline-block h-[60px] p-7pxr text-12pxr text-white bg-black-100 rounded-[14px] z-10 leading-[15px]`}
+          >
+            {isOpenHelper.type === "normal" ? (
+              <span>
+                글자 수 및 회차 수 기준을 총족하면 일반으로 승급 신청이
+                가능합니다. 작품은 무료-자유에서 무료-일반으로 옮겨집니다.
+              </span>
+            ) : (
+              <span>
+                유료 전환 신청 후 심사는 최대 1주가 소요되며, <br /> 승인 또는
+                반려가 될 수 있습니다. <br /> 반려 후에는 1회 재신청이
+                가능합니다.
+              </span>
+            )}
+            <div className="absolute top-[-4px] left-3/4 md:left-1/4 w-2 h-2 bg-black-100 rotate-45"></div>
+          </div>
+        )}
+      </div>
+      <div className="md:hidden w-[93%] ml-[16px] border border-t-light-gray-400 border-b-0 border-l-0 border-r-0" />
+    </>
+  );
+};
+export default ProductListCard;

@@ -1,0 +1,52 @@
+# =========================================================
+# likenovel (monorepo) - 공통 gitignore
+# ---------------------------------------------------------
+# 목적:
+# - zip 기반 신규 프로젝트를 GitHub에 올릴 때, 시크릿/빌드산출물/캐시가 실수로 커밋되는 것을 방지
+# =========================================================
+
+# --- env (DO NOT COMMIT) ---
+**/.env
+**/.env.*
+
+# --- secrets (DO NOT COMMIT) ---
+**/secrets/*.json
+**/secrets/*.pem
+**/secrets/*.p8
+**/*.pem
+**/*.p8
+
+# --- nested git repos inside zip (DO NOT COMMIT) ---
+**/.git/
+**/.git/**
+
+# --- Node / Next ---
+**/node_modules/
+**/.next/
+**/out/
+**/build/
+**/*.tsbuildinfo
+
+# --- Python ---
+**/__pycache__/
+**/*.pyc
+**/.venv/
+**/venv/
+
+# --- Logs ---
+**/*.log
+**/logs/
+
+# --- OS / IDE ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- legacy extracted folders (safe to delete after migration) ---
+# 폴더 평탄화 후 남아있는 구(old) 폴더들이 실수로 커밋되는 것을 방지합니다.
+likenovel-user/
+likenovel-partner/
+likenovel-cms/
+
+

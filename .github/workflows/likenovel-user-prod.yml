@@ -1,0 +1,96 @@
+name: (LEGACY) Deploy likenovel-user (prod / CodeDeploy)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: likenovel-user-prod
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Enable Corepack (Yarn)
+        working-directory: service
+        run: corepack enable
+
+      - name: Install dependencies (Yarn)
+        working-directory: service
+        run: yarn --immutable
+
+      - name: Write build env (.env.production) (PROD)
+        working-directory: service
+        run: |
+          # NOTE: 이 파일은 빌드에만 사용합니다. zip 번들에는 포함되지 않도록 제외 규칙이 있습니다.
+          printf '%s' "${{ secrets.USER_WEB_ENV_PROD }}" > .env.production
+
+      - name: Build (Next.js)
+        working-directory: service
+        run: yarn build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Create CodeDeploy bundle (zip)
+        working-directory: service
+        env:
+          BUNDLE_NAME: likenovel-user-prod-${{ github.sha }}.zip
+        run: |
+          set -e
+          zip -r "../$BUNDLE_NAME" . \
+            -x "**/.git/**" \
+            -x "**/node_modules/**" \
+            -x "**/out/**" \
+            -x "**/build/**" \
+            -x "**/.env" \
+            -x "**/.env.*" \
+            -x "**/*.log"
+
+      - name: Upload bundle to S3
+        env:
+          CODEDEPLOY_S3_BUCKET: ${{ secrets.CODEDEPLOY_S3_BUCKET }}
+          CODEDEPLOY_S3_PREFIX: ${{ secrets.CODEDEPLOY_S3_PREFIX_USER_WEB_PROD }}
+          BUNDLE_NAME: likenovel-user-prod-${{ github.sha }}.zip
+        run: |
+          set -e
+          S3_KEY="${CODEDEPLOY_S3_PREFIX}/${BUNDLE_NAME}"
+          echo "S3_KEY=$S3_KEY"
+          aws s3 cp "$BUNDLE_NAME" "s3://${CODEDEPLOY_S3_BUCKET}/${S3_KEY}"
+
+      - name: Trigger CodeDeploy (PROD)
+        env:
+          CODEDEPLOY_APP_NAME: ${{ secrets.CODEDEPLOY_APP_NAME_USER_WEB_PROD }}
+          CODEDEPLOY_GROUP_NAME: ${{ secrets.CODEDEPLOY_GROUP_NAME_USER_WEB_PROD }}
+          CODEDEPLOY_S3_BUCKET: ${{ secrets.CODEDEPLOY_S3_BUCKET }}
+          CODEDEPLOY_S3_PREFIX: ${{ secrets.CODEDEPLOY_S3_PREFIX_USER_WEB_PROD }}
+          BUNDLE_NAME: likenovel-user-prod-${{ github.sha }}.zip
+        run: |
+          set -e
+          S3_KEY="${CODEDEPLOY_S3_PREFIX}/${BUNDLE_NAME}"
+          DEPLOY_ID=$(aws deploy create-deployment \
+            --application-name "$CODEDEPLOY_APP_NAME" \
+            --deployment-group-name "$CODEDEPLOY_GROUP_NAME" \
+            --file-exists-behavior OVERWRITE \
+            --s3-location bucket="$CODEDEPLOY_S3_BUCKET",key="$S3_KEY",bundleType=zip \
+            --query deploymentId --output text)
+          echo "DEPLOY_ID=$DEPLOY_ID"
+          aws deploy wait deployment-successful --deployment-id "$DEPLOY_ID"
+
+

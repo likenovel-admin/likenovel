@@ -1,0 +1,30 @@
+export interface ISaleByEpisode {
+  id: number;
+  product_id: number;
+  episode_id: number;
+  title: string;
+  author_nickname: string;
+  episode_no: number;
+  contract_type: string | null;
+  cp_company_name: string | null;
+  paid_open_date: string | null;
+  count_total_sales: number;
+  sum_total_sales_price: number;
+  count_normal_sales: number;
+  sum_normal_price: number;
+  count_discount_sales: number;
+  sum_discount_price: number;
+  count_paid_ticket_sales: number;
+  sum_paid_ticket_price: number;
+  count_comped_ticket_sales: number;
+  sum_comped_ticket_price: number;
+  count_free_ticket_sales: number;
+  sum_free_ticket_price: number;
+  count_total_refund: number;
+  sum_total_refund_price: number;
+  created_id: number;
+  created_date: string;
+  updated_id: number;
+  updated_date: string;
+  episode_title: string;
+}

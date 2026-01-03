@@ -1,0 +1,154 @@
+import { useGetInfiniteEpisodeList } from "@/app/api/query/product";
+import { IGetEpisodeProductParams } from "@/app/api/query/product/dto";
+import Spinner from "@/components/common/Spinner";
+import useModalStore from "@/store/modalStore";
+import { getEpisodeBadge } from "@/utils/getEpisodeBadge";
+import { getFormattingDate } from "@/utils/getFormattingDate";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import EpisodeCard from "./EpisodeCard";
+import Align from "/public/images/align.svg";
+
+interface EpisodeModalProps {
+  productId?: number;
+}
+
+const EpisodeModal = ({ productId }: EpisodeModalProps) => {
+  const router = useRouter();
+  const { closeModal } = useModalStore();
+  const [alignType, setAlignType] = useState<"new" | "old">("new");
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  const queryParams: IGetEpisodeProductParams = {
+    product_id: productId?.toString() || "0",
+    order_by: "episodeNo",
+    order_dir: alignType === "new" ? "desc" : "asc",
+    limit: 20,
+  };
+
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useGetInfiniteEpisodeList(queryParams);
+
+  const handleAlignType = () => {
+    setAlignType(alignType === "new" ? "old" : "new");
+  };
+
+  const allEpisodes = useMemo(() => {
+    if (!data) return [];
+    // API already returns episodes in the correct order based on order_dir
+    // No need to sort again on client-side
+    return data.pages.flatMap((page) => page.data.episodes);
+  }, [data]);
+
+  // Intersection Observer for infinite scroll
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [target] = entries;
+      if (target.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    [fetchNextPage, hasNextPage, isFetchingNextPage]
+  );
+
+  useEffect(() => {
+    const element = observerTarget.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(handleObserver, {
+      threshold: 0.1,
+    });
+
+    observer.observe(element);
+
+    return () => {
+      observer.unobserve(element);
+    };
+  }, [handleObserver]);
+  if (isLoading) {
+    return (
+      <div className="px-6 py-20 flex justify-center items-center">
+        <Spinner size={40} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="px-6 py-20 flex justify-center items-center">
+        <p className="text-gray-500">
+          에피소드 목록을 불러오는데 실패했습니다.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-6">
+      <div className="flex justify-between items-center mt-[15px] mb-[13px]">
+        <h1 className="font-bold text-22pxr">회차 리스트</h1>
+        <button className="flex items-center gap-2" onClick={handleAlignType}>
+          <Align />
+          <span className="text-dark-gray-400 text-14pxr">
+            {alignType === "old" ? "최신화부터" : "첫화부터"}
+          </span>
+        </button>
+      </div>
+      <div className="flex flex-col gap-2">
+        {allEpisodes.length === 0 ? (
+          <div className="py-20 flex justify-center items-center">
+            <p className="text-gray-500">등록된 에피소드가 없습니다.</p>
+          </div>
+        ) : (
+          <>
+            {allEpisodes.map((episode) => {
+              // Map API response to EpisodeCard props
+              const episodeType = getEpisodeBadge(episode);
+              const badges = {
+                free: episodeType === "free",
+                rental: episodeType === "rental",
+                collect: episodeType === "collect",
+              };
+
+              return (
+                <EpisodeCard
+                  key={episode.episodeId}
+                  episode={episode.episodeNo}
+                  episodeTitle={episode.episodeTitle}
+                  badges={badges}
+                  isRead={episode?.usage?.readYn === "Y" || false}
+                  uploadDate={
+                    episode.createdDate
+                      ? getFormattingDate(episode.createdDate, "YYYY.MM.DD")
+                      : ""
+                  } // TODO: Format date properly
+                  viewCount={episode.countHit}
+                  likeCount={episode.countLike || 0}
+                  onClick={() => {
+                    router.push(`/viewer/${episode.episodeId}`);
+                    closeModal();
+                  }}
+                />
+              );
+            })}
+            {/* Intersection Observer Target */}
+            <div ref={observerTarget} className="h-4" />
+            {/* Loading indicator for next page */}
+            {isFetchingNextPage && (
+              <div className="py-4 flex justify-center items-center">
+                <Spinner size={30} />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+export default EpisodeModal;

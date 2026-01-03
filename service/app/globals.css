@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "../node_modules/slick-carousel/slick/slick.css";
+@import "../node_modules/slick-carousel/slick/slick-theme.css";
+
+:root {
+  --foreground-rgb: #111317;
+  --background-rgb: #ffffff;
+  --text-gray: #2c3038;
+  --light-theme-bg: #f9f8f8;
+  --dark-theme-bg: #292c32;
+  --dark-theme-content: #e4e4e4;
+  --green-theme-bg: #c7d5c4;
+  --blue-theme-bg: #c3cad2;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-start-rgb));
+}
+body,
+html {
+  font-synthesis: none;
+}
+
+@layer base {
+  :root {
+    --pc-web-width: 1280px;
+    --gnb-selected-color: #0255d9;
+  }
+}
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/PretendardVariable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "NanumMyeongjo";
+  src: url("/fonts/NanumMyeongjo-Regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "MaruBuri";
+  src: url("/fonts/MaruBuri-Regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer slick {
+  .slider-container {
+    width: 100%;
+    max-width: 1280px;
+    margin: auto;
+  }
+
+  .slick-list {
+    border-radius: 30px;
+    height: 400px !important;
+  }
+
+  .slick-slide {
+    height: 400px !important;
+    border-radius: 30px;
+    padding-right: 5px;
+  }
+
+  .slick-center {
+    min-width: 300px;
+  }
+}
+
+@layer scroll {
+  .scroll-hidden {
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch; /* 모바일에서 부드러운 스크롤링 */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scroll-hidden::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer tiptap {
+  .ProseMirror-focused {
+    outline: none !important;
+  }
+  .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: #adb5bd;
+    pointer-events: none;
+    height: 0;
+  }
+
+  /* Image styles for TipTap editor */
+  .ProseMirror img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1rem 0;
+    border-radius: 4px;
+  }
+
+  /* Override prose styles that might hide images */
+  .prose img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+  }
+}
+
+.pill {
+  @apply w-full rounded-2xl border border-gray-200 bg-white
+    text-left transition hover:border-gray-300
+     focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black;
+}
+.pill-selected {
+  @apply bg-[#0CA9DC] text-white border-transparent hover:border-transparent;
+}
+
+.epub-container {
+  width: 100% !important;
+  max-width: 100% !important;
+}

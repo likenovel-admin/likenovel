@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  likenovel-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_SERVER_URI=https://cloud.aiaracorp.com:8800
+        - NEXT_PUBLIC_WWW_SERVER_URI=https://cloud.aiaracorp.com:3300
+    container_name: likenovel-user
+    ports:
+      - "3300:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NEXT_PUBLIC_API_SERVER_URI=https://cloud.aiaracorp.com:8800
+      - NEXT_PUBLIC_WWW_SERVER_URI=https://cloud.aiaracorp.com:3300
+    volumes:
+      - ./public:/app/public:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - likenovel-network
+
+networks:
+  likenovel-network:
+    driver: bridge
+
+volumes:
+  node_modules:
