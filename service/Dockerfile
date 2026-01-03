@@ -45,6 +45,12 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 
+# Copy environment files
+# - Next.js 서버 런타임에서 `.env` / `.env.production`을 읽어 `process.env`로 로드할 수 있습니다.
+# - 특히 IRON_SESSION_PASSWORD, NICE_* 등 서버 전용 값은 런타임에 필요하므로 포함합니다.
+COPY --from=build --chown=nextjs:nodejs /app/.env .env
+COPY --from=build --chown=nextjs:nodejs /app/.env.production .env.production
+
 USER nextjs
 
 EXPOSE 3000
