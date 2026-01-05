@@ -149,7 +149,17 @@ instance.interceptors.response.use(
           const res = await axios.put("/api/v1/command/auth/token/reissue", requestData, {
             withCredentials: true,
           });
-          const newAccessToken = res.data.token.access_token;
+          /**
+           * 토큰 재발급 응답 파싱
+           * - 백엔드/문서 버전에 따라 응답 구조가 달라질 수 있어 방어적으로 처리합니다.
+           *   - (current) { data: { token: { accessToken } } }
+           *   - (legacy)  { token: { access_token } } 등
+           */
+          const newAccessToken =
+            res?.data?.data?.token?.accessToken ||
+            res?.data?.data?.auth?.accessToken ||
+            res?.data?.token?.access_token ||
+            res?.data?.token?.accessToken;
           if (newAccessToken) {
             setAccessToken(newAccessToken);
             instance.defaults.headers.common[
@@ -160,6 +170,7 @@ instance.interceptors.response.use(
             ] = `Bearer ${newAccessToken}`;
             return instance(originalRequest);
           } else {
+            console.error("[auth] ❌ Token reissue response missing access token.");
             const currentUrl = encodeURIComponent(window.location.pathname);
             window.location.href = `/login?redirect=${currentUrl}`;
             signOut();
