@@ -29,8 +29,34 @@ instance.interceptors.request.use(
     const accessToken =
       localStorage.getItem("access_token") ||
       sessionStorage.getItem("access_token");
+    /**
+     * Authorization 헤더 동기화(Defensive)
+     * - 토큰이 없는데도 axios defaults에 Authorization이 남아있으면(이전 세션/로그아웃/재발급 실패 후)
+     *   로그인 페이지에서도 잘못된 Bearer가 전송되어 401 루프(→ reissue → signOut)가 발생할 수 있습니다.
+     * - 토큰이 있으면 설정, 없으면 헤더/기본값을 반드시 제거합니다.
+     */
     if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
+      // Set header on this request
+      (config.headers as any).Authorization = `Bearer ${accessToken}`;
+    } else {
+      // Remove stale headers (AxiosHeaders / plain object 모두 대응)
+      try {
+        if (typeof (config.headers as any)?.delete === "function") {
+          (config.headers as any).delete("Authorization");
+        } else {
+          delete (config.headers as any)?.Authorization;
+          delete (config.headers as any)?.authorization;
+        }
+      } catch (e) {
+        console.error("[auth] Failed to clear request Authorization header:", e);
+      }
+
+      try {
+        delete (instance.defaults.headers.common as any).Authorization;
+        delete (instance.defaults.headers.common as any).authorization;
+      } catch (e) {
+        console.error("[auth] Failed to clear axios default Authorization header:", e);
+      }
     }
     return config;
   },
@@ -171,16 +197,40 @@ instance.interceptors.response.use(
             return instance(originalRequest);
           } else {
             console.error("[auth] ❌ Token reissue response missing access token.");
+            // Clear any stale Authorization to avoid 401 loop
+            try {
+              delete (instance.defaults.headers.common as any).Authorization;
+              delete (originalRequest.headers as any)?.Authorization;
+              delete (originalRequest.headers as any)?.authorization;
+            } catch (e) {
+              console.error("[auth] Failed to clear Authorization after reissue miss:", e);
+            }
             const currentUrl = encodeURIComponent(window.location.pathname);
             window.location.href = `/login?redirect=${currentUrl}`;
             signOut();
           }
         } catch (error: any) {
+          // Clear any stale Authorization to avoid 401 loop
+          try {
+            delete (instance.defaults.headers.common as any).Authorization;
+            delete (originalRequest.headers as any)?.Authorization;
+            delete (originalRequest.headers as any)?.authorization;
+          } catch (e) {
+            console.error("[auth] Failed to clear Authorization after reissue error:", e);
+          }
           const currentUrl = encodeURIComponent(window.location.pathname);
           window.location.href = `/login?redirect=${currentUrl}`;
           signOut();
         }
       } else {
+        // Clear any stale Authorization to avoid 401 loop
+        try {
+          delete (instance.defaults.headers.common as any).Authorization;
+          delete (originalRequest.headers as any)?.Authorization;
+          delete (originalRequest.headers as any)?.authorization;
+        } catch (e) {
+          console.error("[auth] Failed to clear Authorization (no refresh token):", e);
+        }
         const currentUrl = encodeURIComponent(window.location.pathname);
         window.location.href = `/login?redirect=${currentUrl}`;
         signOut();
