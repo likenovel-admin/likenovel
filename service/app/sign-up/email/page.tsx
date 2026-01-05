@@ -53,25 +53,42 @@ const Email = () => {
       const formData: IForm = JSON.parse(storedData);
       const requestData: IEmailSignUpRequest =
         transformFormDataToRequestData(formData);
-      const res = await signUpMutate(requestData);
-      if (res.data.data) {
-        signIn(
-          {
-            accessToken: res.data.data.auth.accessToken,
-            refreshToken: res.data.data.auth.refreshToken,
-            expiresIn: res.data.data.auth.accessTokenExpiresIn,
-            refreshExpiresIn: res.data.data.auth.refreshTokenExpiresIn,
-          },
-          res.data.data.auth.recentSignInType,
-          {
-            userId: res.data.data.auth.userId,
-            birthDate: res.data.data.auth.birthDate,
-            gender: res.data.data.auth.gender,
-          },
-          "Y" // Default to keep sign in for new sign-ups
-        );
+      try {
+        const res = await signUpMutate(requestData);
+        if (res.data.data) {
+          signIn(
+            {
+              accessToken: res.data.data.auth.accessToken,
+              refreshToken: res.data.data.auth.refreshToken,
+              expiresIn: res.data.data.auth.accessTokenExpiresIn,
+              refreshExpiresIn: res.data.data.auth.refreshTokenExpiresIn,
+            },
+            res.data.data.auth.recentSignInType,
+            {
+              userId: res.data.data.auth.userId,
+              birthDate: res.data.data.auth.birthDate,
+              gender: res.data.data.auth.gender,
+            },
+            "Y" // Default to keep sign in for new sign-ups
+          );
+          router.push("/");
+          return;
+        }
+
+        // 정상 응답 형태가 아니면 사용자에게 명확히 안내
+        setError("email", {
+          type: "manual",
+          message: "회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.",
+        });
+      } catch (error: any) {
+        // 서버에서 내려준 message를 우선 노출(예: 409 이미 존재하는 이메일)
+        const message =
+          error?.response?.data?.message ||
+          "회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.";
+
+        setIsCheckedEmail(false);
+        setError("email", { type: "manual", message });
       }
-      router.push("/");
     } else {
       console.error("No form data found in session storage.");
     }

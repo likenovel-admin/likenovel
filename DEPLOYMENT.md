@@ -329,6 +329,172 @@ sudo systemctl reload nginx
 
 > 운영과 동일하게 Docker 기반으로 가면, prod 전환도 같은 방식으로 안전하게 할 수 있습니다.
 
+---
+
+## (중요) 스테이징에서 “작품등록/유료전환(결제)”을 안전하게 테스트하려면: API/DB 분리
+현재 dev 웹(`likenovel.dev`)은 프론트가 분리되어 있어도, **API가 운영(`api.likenovel.net`)을 바라보면 DB가 공유**됩니다.  
+이 상태에서 dev에서 작품을 등록하거나 유료 전환/결제를 테스트하면 **운영 DB에 데이터가 들어갈 수 있습니다.**
+
+따라서 “진짜 스테이징”을 위해 아래 3가지를 분리합니다.
+- **dev DB**: 운영 RDS 스냅샷 복원으로 생성(개인정보 포함이므로 Public access 금지)
+- **dev API**: ln-was에서 `api-dev` 프로세스를 별도 포트로 실행(예: 3011)
+- **api.likenovel.dev**: ln-web Nginx에서 dev API로 프록시
+
+### 1) dev RDS 생성(운영 스냅샷 복원)
+- **Public access**: 반드시 `No`
+- **VPC security group**: MySQL(3306) 인바운드는 **ln-was(10.0.100.110)만 허용**(가능하면 SG로 지정)
+- Endpoint 예: `likenovel-dev.<...>.ap-northeast-2.rds.amazonaws.com`
+
+> RDS의 비밀번호는 “조회”가 불가능합니다. 필요하면 dev RDS에서만 **재설정**하세요(운영 RDS에는 영향 없음).
+
+### 2) ln-was에서 dev API(`api-dev`) 실행 (포트: 3011 권장)
+운영 API는 `3010`을 사용하므로 dev는 `3011`로 분리합니다.
+
+```bash
+# ln-was(10.0.100.110)에서
+cd /home/ln-admin/likenovel/api
+
+# 기존 api-dev가 있으면 제거(환경변수 갱신 방지)
+pm2 delete api-dev || true
+
+# dev DB로 연결 + dev FE 도메인으로 리다이렉트 설정
+DB_IP="<DEV_RDS_ENDPOINT>" \
+DB_PORT="3306" \
+DB_USER_ID="<DEV_DB_USER>" \
+DB_USER_PW="<DEV_DB_PASSWORD>" \
+FE_DOMAIN="https://likenovel.dev" \
+FE_WWW_DOMAIN="https://www.likenovel.dev" \
+pm2 start /home/ln-admin/likenovel/api/.venv/bin/gunicorn \
+  --name api-dev \
+  --interpreter /home/ln-admin/likenovel/api/.venv/bin/python \
+  -- app.main:be_app \
+  --bind 10.0.100.110:3011 \
+  --workers 2 \
+  --worker-class uvicorn.workers.UvicornWorker \
+  --pid /home/ln-admin/likenovel/api/gunicorn-dev.pid \
+  --log-level info \
+  -c /home/ln-admin/likenovel/api/gconf.py
+
+pm2 save
+pm2 list
+```
+
+정상 확인(200이면 OK):
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" http://10.0.100.110:3011/docs
+pm2 logs api-dev --lines 50
+```
+
+> ⚠️ 결제(PortOne) 테스트를 할 경우, dev에서는 반드시 **테스트 키/시크릿**으로 분리하세요.  
+> (DB를 dev로 분리해도 “외부 결제”는 실제 결제가 발생할 수 있습니다)
+
+### 3) ln-web Nginx에 `api.likenovel.dev` 추가
+운영 `api.likenovel.net` 설정을 그대로 복사해서, `server_name`과 `proxy_pass`만 dev로 바꿉니다.  
+운영을 건드리지 않도록 **새 파일**로 추가하는 것을 권장합니다.
+
+```bash
+sudo tee /etc/nginx/conf.d/ln_api_dev.conf > /dev/null <<'NGINX'
+# FastAPI dev (api.likenovel.dev) -> ln-was api-dev(3011)
+server {
+  listen 443 ssl;
+  server_name api.likenovel.dev;
+
+  ssl_certificate /home/ln-admin/.ssh/cf_ssl.crt;
+  ssl_certificate_key /home/ln-admin/.ssh/cf_ssl.pem;
+
+  location / {
+    if ($request_method = OPTIONS) {
+      add_header 'Access-Control-Allow-Origin' "$cors_allow" always;
+      add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE, PATCH' always;
+      add_header 'Access-Control-Allow-Headers' 'Authorization,Content-Type,X-CSRF-Token,Access-Control-Allow-Credentials,Access-Control-Allow-Methods' always;
+      add_header 'Access-Control-Max-Age' 86400 always;
+      add_header 'Access-Control-Allow-Credentials' 'true' always;
+      return 204;
+    }
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_pass http://10.0.100.110:3011;
+
+    add_header 'Access-Control-Allow-Origin' "$cors_allow" always;
+    add_header 'Access-Control-Allow-Credentials' 'true' always;
+    add_header 'Vary' 'Origin' always;
+
+    # cloudflare restoring original visitor IPs
+    set_real_ip_from 173.245.48.0/20;
+    set_real_ip_from 103.21.244.0/22;
+    set_real_ip_from 103.22.200.0/22;
+    set_real_ip_from 103.31.4.0/22;
+    set_real_ip_from 141.101.64.0/18;
+    set_real_ip_from 108.162.192.0/18;
+    set_real_ip_from 190.93.240.0/20;
+    set_real_ip_from 188.114.96.0/20;
+    set_real_ip_from 197.234.240.0/22;
+    set_real_ip_from 198.41.128.0/17;
+    set_real_ip_from 162.158.0.0/15;
+    set_real_ip_from 104.16.0.0/13;
+    set_real_ip_from 104.24.0.0/14;
+    set_real_ip_from 172.64.0.0/13;
+    set_real_ip_from 131.0.72.0/22;
+    set_real_ip_from 2400:cb00::/32;
+    set_real_ip_from 2606:4700::/32;
+    set_real_ip_from 2803:f800::/32;
+    set_real_ip_from 2405:b500::/32;
+    set_real_ip_from 2405:8100::/32;
+    set_real_ip_from 2a06:98c0::/29;
+    set_real_ip_from 2c0f:f248::/32;
+
+    real_ip_header CF-Connecting-IP;
+  }
+}
+NGINX
+```
+
+적용:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+테스트(SNI까지 맞추기 위해 `--resolve` 사용 권장):
+
+```bash
+curl -kI https://api.likenovel.dev/docs --resolve api.likenovel.dev:443:127.0.0.1 | head
+```
+
+### 4) CORS 허용 도메인(`$cors_allow`)에 `.dev` 추가(필수)
+`Access-Control-Allow-Origin`이 `$cors_allow`로 설정되어 있으므로, `.dev`와 로컬 도메인을 허용해야 브라우저에서 호출이 됩니다.
+
+아래로 위치를 찾은 뒤:
+
+```bash
+sudo grep -R "cors_allow" -n /etc/nginx | head
+```
+
+`map $http_origin $cors_allow { ... }`에 다음 origin들을 추가하세요(예시):
+- `https://likenovel.dev`, `https://www.likenovel.dev`
+- `https://partner.likenovel.dev`
+- `https://cms.likenovel.dev`
+- `http://localhost:3000`, `http://localhost:3001`, `http://localhost:3002`
+
+수정 후:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### 5) dev 프론트 env를 `api.likenovel.dev`로 전환
+GitHub Secrets에서 dev 환경변수를 다음으로 교체한 뒤(dev 이미지 재빌드):
+- user(`SERVICE_ENV_DEV`): `NEXT_PUBLIC_API_SERVER_URI`, `API_SERVER_URI` → `https://api.likenovel.dev`
+- partner/cms(`PARTNER_ENV_DEV`, `CMS_ENV_DEV`): `NEXT_PUBLIC_API_URL` → `https://api.likenovel.dev`
+
+그 다음 ln-web에서 dev 컨테이너만 `pull && up -d` 하면 dev는 dev DB로만 동작합니다.
+
 ## Docker 기반 CI/CD (권장: 현재 ln-web 운영 방식)
 ### 1) 브랜치 전략
 - **dev**: 스테이징 이미지 빌드/푸시 (`.github/workflows/docker-dev.yml`)

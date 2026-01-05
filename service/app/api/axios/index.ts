@@ -141,10 +141,14 @@ instance.interceptors.response.use(
         const requestData = transformDataToRequestData();
 
         try {
-          const res = await axios.put(
-            "v1/command/auth/token/reissue",
-            requestData
-          );
+          /**
+           * 토큰 재발급 요청
+           * - 기존 코드는 `axios.put("v1/...")` 형태라 현재 라우트에 상대경로로 붙어 404가 날 수 있습니다.
+           * - 반드시 절대경로(`/api/v1/...`)로 호출하여 어떤 페이지에서도 동일하게 동작하도록 합니다.
+           */
+          const res = await axios.put("/api/v1/command/auth/token/reissue", requestData, {
+            withCredentials: true,
+          });
           const newAccessToken = res.data.token.access_token;
           if (newAccessToken) {
             setAccessToken(newAccessToken);
