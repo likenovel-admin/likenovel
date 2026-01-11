@@ -1,0 +1,3 @@
+[submodule "likenovel-service-api/likenovel-service-api"]
+	path = likenovel-service-api/likenovel-service-api
+	url = https://github.com/likenovel-admin/likenovel-service-api.git
