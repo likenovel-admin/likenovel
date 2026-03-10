@@ -3,6 +3,8 @@
 import {
   IAddEditPublisherPromotionResponse,
   IDeletePublisherPromotionResponse,
+  IPublisherPromotionConfigRequest,
+  IPublisherPromotionConfigResponse,
   IGetPublisherPromotionCategoriesResponse,
   IGetPublisherPromotionParams,
   IGetPublisherPromotionResponse,
@@ -39,6 +41,34 @@ export const useGetPublisherPromotionDetail = (id: string) => {
           method: "GET",
         });
       return res;
+    },
+  });
+};
+
+export const useGetPublisherPromotionConfig = () => {
+  return useQuery<IPublisherPromotionConfigResponse>({
+    queryKey: ["GetPublisherPromotionConfig"],
+    queryFn: async () => {
+      return await apiClient.request<IPublisherPromotionConfigResponse>({
+        url: "/v1/query/admins/publisher-promotion/config",
+        method: "GET",
+      });
+    },
+  });
+};
+
+export const useEditPublisherPromotionConfig = () => {
+  return useMutation<
+    IAddEditPublisherPromotionResponse,
+    Error,
+    IPublisherPromotionConfigRequest
+  >({
+    mutationFn: async (body: IPublisherPromotionConfigRequest) => {
+      return await apiClient.request<IAddEditPublisherPromotionResponse>({
+        url: "/v1/command/admins/publisher-promotion/config",
+        method: "PUT",
+        body,
+      });
     },
   });
 };

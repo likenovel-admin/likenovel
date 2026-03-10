@@ -226,6 +226,10 @@ export interface IProduct {
   latestEpisodeDate?: string;
   interestEndDate?: string;
   authorEventLevelBadgeImagePath?: string;
+  singleRegularPrice?: number;
+  singleRentalPrice?: number;
+  seriesRegularPrice?: number;
+  publishRegularYn?: "Y" | "N";
   totalOpenEpisodeCount: number;
   readedEpisodeCount?: number;
 }

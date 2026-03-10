@@ -19,16 +19,23 @@ import { useGetProductDiscoveryStatisticsDetail } from "@/api/product-discovery-
 import { useSearchParams } from "next/navigation";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import { format } from "date-fns";
-import { useMemo } from "react";
 import ViewsPerEpisode from "@/app/discover-products/chart/components/views-per-episode";
 import TargetReaderAnalysisDetails from "@/app/discover-products/chart/components/target-reader-analysis-details";
 import RecommendSimilarWorks from "@/app/discover-products/chart/components/recommend-similar-works";
+import { useProfile } from "@/hooks/useProfile";
 
 const DiscoverProductsChart = () => {
+  const { isAuthor, isPartner } = useProfile();
   const searchParams = useSearchParams();
   const id = searchParams.get("productId");
+  const scope = searchParams.get("mode") === "summary" && isPartner === true
+    ? "contracted"
+    : undefined;
+  const isSummaryView =
+    isAuthor === true ||
+    (isPartner === true && searchParams.get("mode") === "summary");
   const { data, isLoading, isFetching } =
-    useGetProductDiscoveryStatisticsDetail(id || "");
+    useGetProductDiscoveryStatisticsDetail(id || "", scope);
 
   return (
     <div className="relative">
@@ -40,8 +47,10 @@ const DiscoverProductsChart = () => {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="text-zinc-100 text-xs">
-                <BreadcrumbLink href="/discover-products">
-                  발굴작품 조회
+                <BreadcrumbLink
+                  href={isSummaryView ? "/discover-products?mode=summary" : "/discover-products"}
+                >
+                  {isSummaryView ? "작품요약" : "발굴작품 조회"}
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator className="text-zinc-100" />
@@ -65,55 +74,7 @@ const DiscoverProductsChart = () => {
         </div>
         <div className="text-3xl font-semibold mb-2">{data?.title || ""}</div>
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 auto-rows-auto md:grid-rows-2 gap-2">
-            <div className="flex flex-col justify-between row-span-2 rounded-lg bg-[#38B3F4] mx-1 px-4">
-              <div className="flex flex-1 items-center gap-2 text-sm text-zinc-100">
-                <div className="bg-[#54C1FB] rounded-full p-2.5">
-                  <svg
-                    width="20"
-                    height="23"
-                    viewBox="0 0 20 23"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M12.8808 5.20703H7.01538C3.61538 6.84806 0 11.4077 0 16.1876C0 22.1717 4.47692 22.2965 10 22.2965C15.5231 22.2965 20 22.1717 20 16.1876C20 11.404 16.2846 6.84806 12.8808 5.20703Z"
-                      fill="white"
-                    />
-                    <path
-                      d="M7.5849 5.20271V4.13186L5.05988 1.55854C4.94235 1.38391 5.00301 1.15986 5.19637 1.04454L5.68545 0.751288C7.08066 -0.088913 8.96494 0.00663923 10.2388 0.975342L10.6748 1.30813C11.1601 1.68045 11.8425 1.80236 12.4643 1.63103L13.7951 1.262C14.5685 1.04783 15.2623 1.73317 14.9021 2.35591L13.052 4.13516V5.206"
-                      fill="white"
-                    />
-                    <rect
-                      x="5.09998"
-                      y="3.69922"
-                      width="9"
-                      height="2.01053"
-                      fill="#54C1FB"
-                    />
-                    <path
-                      d="M10 6.21094C10 6.21094 13.5556 8.81919 14 12.2425"
-                      stroke="#54C1FB"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M9 6.21094C9 6.21094 7.25 8.48371 7 10.232"
-                      stroke="#54C1FB"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-                <span className="font-semibold">발굴가치</span>
-              </div>
-              <div className="flex flex-1 items-center justify-end text-5xl text-zinc-100 font-semibold">
-                {/* 높음 */}
-                {data?.excavation_value}
-              </div>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 auto-rows-auto md:grid-rows-2 gap-2">
             <div className="flex flex-1 items-center gap-2 bg-white rounded-lg text-black mx-1 p-4 shadow">
               <div className="bg-[#FBF3EC] rounded-full md:p-2.5">
                 <svg
@@ -299,68 +260,6 @@ const DiscoverProductsChart = () => {
                 <div className="text-sm">신규독자 유입율</div>
                 <div className="text-xl font-semibold">
                   {data?.new_reader_inflow_rate}%
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-1 items-center gap-2 bg-white rounded-lg text-black mx-1 p-4 shadow">
-              <div className="bg-[#FBF3EC] rounded-full md:p-2.5">
-                <svg
-                  width="20"
-                  height="21"
-                  viewBox="0 0 20 21"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <rect
-                    y="0.710938"
-                    width="20"
-                    height="20.1053"
-                    rx="4"
-                    fill="#FFBD3D"
-                  />
-                  <rect
-                    x="8"
-                    y="0.710938"
-                    width="4"
-                    height="4.02105"
-                    fill="#FFEECC"
-                  />
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M8.8474 15.7401C8.58519 15.7451 8.32141 15.647 8.12132 15.4459L5.29289 12.6026C4.90237 12.21 4.90237 11.5735 5.29289 11.1809C5.68342 10.7883 6.31658 10.7883 6.70711 11.1809L8.84445 13.3295L13.1032 9.04834C13.4937 8.65576 14.1269 8.65576 14.5174 9.04834C14.9079 9.44092 14.9079 10.0774 14.5174 10.47L9.56767 15.4458C9.36906 15.6455 9.10769 15.7436 8.8474 15.7401Z"
-                    fill="#FFEECC"
-                  />
-                </svg>
-              </div>
-              <div>
-                <div className="text-sm">라이크노벨 평가</div>
-                <div className="flex flex-1 flex-col sm:flex-row items-center gap-1 text-[12px] font-semibold break-keep md:pt-0 ">
-                  <span>창의력 {data?.score1}점</span>
-                  <span>
-                    <svg
-                      width="8"
-                      height="9"
-                      viewBox="0 0 8 9"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <circle cx="4" cy="4.5" r="4" fill="#D9D9D9" />
-                    </svg>
-                  </span>
-                  <span>완성도 {data?.score2}점</span>
-                  <span>
-                    <svg
-                      width="8"
-                      height="9"
-                      viewBox="0 0 8 9"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <circle cx="4" cy="4.5" r="4" fill="#D9D9D9" />
-                    </svg>
-                  </span>
-                  <span>대중성 {data?.score3}점</span>
                 </div>
               </div>
             </div>

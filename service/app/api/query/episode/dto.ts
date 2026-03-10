@@ -29,6 +29,7 @@ export interface IUseSelectEpisodesResponse {
   data: {
     latestEpisodeNo: number;
     latestEpisodeId: number;
+    latestEpisodeTitle: string;
     episodes: ISelectEpisodeObject[];
     pagination: {
       totalCount: number;
@@ -42,8 +43,11 @@ export interface ISelectViewerPathResponse {
   data: {
     product_id: number; // 작품 ID
     title: string; // 작품 제목
+    coverImagePath: string | null; // 작품 표지 이미지 경로
     episodeTitle: string; // 에피소드 제목
     epubFilePath: string; // EPUB 파일 경로 (URL)
+    privateYn?: "Y" | "N"; // 회차 비공개 여부
+    productPrivateYn?: "Y" | "N"; // 작품 비공개 여부
     bingeWatchYn: "Y" | "N"; // 정주행 여부
     commentCount: number; // 댓글 수
     recommendYn: "Y" | "N"; // 추천 여부
@@ -56,6 +60,8 @@ export interface ISelectViewerPathResponse {
     nextEpisodeId: number; // 다음 에피소드 ID
     previousEpisodeId: number; // 전에피소드 ID
     liked: "Y" | "N"; // 좋아요 여부
+    priceType?: "free" | "paid" | null;
+    ownType?: "rental" | "own" | null;
     previousEpisodeOwnType: "rental" | "own" | null;
     nextEpisodeOwnType: "rental" | "own" | null;
     nextEpisodePriceType: "free" | "paid" | null;

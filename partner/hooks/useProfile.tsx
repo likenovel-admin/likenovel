@@ -36,7 +36,10 @@ export function useProfile() {
 
   return {
     userProfile,
+    roleType: isInitialized ? userProfile?.role_type : undefined,
     isAdmin: isInitialized ? userProfile?.role_type === "admin" : undefined,
+    isPartner: isInitialized ? userProfile?.role_type === "cp" : undefined,
+    isAuthor: isInitialized ? userProfile?.role_type === "user" : undefined,
     isLoading,
     isInitialized,
   };

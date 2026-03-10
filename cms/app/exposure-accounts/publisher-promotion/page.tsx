@@ -1,5 +1,9 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import {
+  useEditPublisherPromotionConfig,
+  useGetPublisherPromotionConfig,
+} from "@/api/publisherPromotion";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -10,8 +14,16 @@ import { IGetPublisherPromotionParams } from "@/api/publisherPromotion/dto";
 import { SearchText } from "@/components/common/SearchText";
 import PublisherPromotionTable from "@/app/exposure-accounts/publisher-promotion/PublisherPromotionTable";
 import PaginationControls from "@/components/common/PaginationControls";
-import { calculatePageCount } from "@/lib/utils";
+import { calculatePageCount, catchErrorMessage, showAlert } from "@/lib/utils";
 import FullPageLoader from "@/components/common/FullPageLoader";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 export default function Page() {
   // const isMobile = useIsMobile()
@@ -22,6 +34,8 @@ export default function Page() {
     search_target: "",
     search_word: "",
   });
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [slotTitle, setSlotTitle] = useState("");
 
   const {
     data,
@@ -34,10 +48,17 @@ export default function Page() {
     search_target: filters.search_target || undefined,
     search_word: filters.search_word || undefined,
   });
+  const { data: configData, refetch: refetchConfig } =
+    useGetPublisherPromotionConfig();
+  const editPublisherPromotionConfig = useEditPublisherPromotionConfig();
 
   useEffect(() => {
     refetch();
   }, [filters]);
+
+  useEffect(() => {
+    setSlotTitle(configData?.data?.title || "");
+  }, [configData]);
 
   const handleChangePage = (page: number) => {
     setFilers({
@@ -58,6 +79,29 @@ export default function Page() {
     });
   };
 
+  const handleSaveSlotTitle = () => {
+    const normalizedTitle = slotTitle.trim();
+    if (editPublisherPromotionConfig.isPending) {
+      return;
+    }
+    if (!normalizedTitle) {
+      showAlert("오류", "구좌명을 입력해주세요.", "확인");
+      return;
+    }
+    editPublisherPromotionConfig.mutate(
+      { title: normalizedTitle },
+      {
+        onSuccess: async () => {
+          await refetchConfig();
+          setIsConfigOpen(false);
+        },
+        onError: (error: any) => {
+          showAlert("오류", catchErrorMessage(error), "확인");
+        },
+      }
+    );
+  };
+
   return (
     <>
       {/*{isMobile && <SidebarTrigger />}*/}
@@ -73,13 +117,18 @@ export default function Page() {
               onSearch={handleOnSearch}
               onReset={handleOnReset}
             />
-            <Button
-              onClick={() =>
-                route.push("/exposure-accounts/publisher-promotion/add")
-              }
-            >
-              + 작품 추가
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setIsConfigOpen(true)}>
+                구좌명 편집
+              </Button>
+              <Button
+                onClick={() =>
+                  route.push("/exposure-accounts/publisher-promotion/add")
+                }
+              >
+                + 작품 추가
+              </Button>
+            </div>
           </div>
           <PublisherPromotionTable
             data={data?.results ?? []}
@@ -101,6 +150,28 @@ export default function Page() {
           />
           <FullPageLoader isLoading={isLoadingData || isFetching} />
         </div>
+        <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>출판사 프로모션 구좌명 편집</DialogTitle>
+            </DialogHeader>
+            <div className="py-2">
+              <Input
+                value={slotTitle}
+                onChange={(event) => setSlotTitle(event.target.value)}
+                placeholder="구좌명을 입력하세요"
+                maxLength={100}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsConfigOpen(false)}>
+                취소
+              </Button>
+              <Button onClick={handleSaveSlotTitle}>저장</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <FullPageLoader isLoading={editPublisherPromotionConfig.isPending} />
       </SidebarInset>
     </>
   );

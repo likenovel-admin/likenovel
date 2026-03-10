@@ -1,7 +1,7 @@
 import { ko } from "date-fns/locale/ko";
 import dayjs from "dayjs";
 import Image from "next/image";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useState } from "react";
 import ReactDatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import Input from "../input";
@@ -21,6 +21,7 @@ export interface DatePickerProps {
   showTimeSelect?: boolean;
   showChangeYearOrMonth?: boolean;
   onChange?: (date: Date | null) => void;
+  disabled?: boolean;
 }
 
 const DatePicker = ({
@@ -35,8 +36,13 @@ const DatePicker = ({
   showTimeSelect,
   placeholder,
   showChangeYearOrMonth,
+  disabled,
   ...props
 }: DatePickerProps) => {
+  // Preserve outer references for CustomInput closure (inner params shadow these names)
+  const dateValue = value;
+  const handleDateChange = onChange;
+
   const CustomInput = ({
     onBlur,
     onChange,
@@ -60,6 +66,7 @@ const DatePicker = ({
             labelStyle={labelStyle}
             inputStyle={inputStyle}
             readOnly
+            disabled={disabled}
             gap={gap}
             full
             isError={isError}
@@ -71,41 +78,28 @@ const DatePicker = ({
                 alt="calendar"
                 width={20}
                 height={20}
-                className="mr-3 cursor-pointer"
-                onClick={onClick}
+                className={`mr-3 ${disabled ? "opacity-40" : "cursor-pointer"}`}
+                onClick={disabled ? undefined : onClick}
               />
             }
           />
         </div>
         {showTimeSelect && (
-          <>
-            <div className="flex gap-1 items-center h-fit flex-1">
-              <Input
-                onBlur={onBlur}
-                onChange={onChange}
-                onClick={onClick}
-                onFocus={onFocus}
-                onKeyDown={onKeyDown}
-                value={value ? dayjs(value).format("HH") : ""}
-                inputStyle={inputStyle}
-                readOnly
-              />
-              시
-            </div>
-            <div className="flex gap-1 items-center h-fit flex-1">
-              <Input
-                onBlur={onBlur}
-                onChange={onChange}
-                onClick={onClick}
-                onFocus={onFocus}
-                onKeyDown={onKeyDown}
-                inputStyle={inputStyle}
-                value={value ? dayjs(value).format("mm") : ""}
-                readOnly
-              />
-              분
-            </div>
-          </>
+          <div className="flex gap-1 items-center h-fit flex-1">
+            <input
+              type="time"
+              value={dateValue ? dayjs(dateValue).format("HH:mm") : ""}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                const current = dateValue ? dayjs(dateValue) : dayjs();
+                const [h, m] = e.target.value.split(":").map(Number);
+                const merged = current.hour(h).minute(m).second(0).toDate();
+                handleDateChange?.(merged);
+              }}
+              disabled={disabled}
+              className="w-full p-2 border border-gray-300 rounded-lg text-14pxr text-dark-gray-400 font-normal disabled:opacity-40"
+            />
+          </div>
         )}
       </div>
     );
@@ -134,10 +128,7 @@ const DatePicker = ({
       customInput={<CustomInput />}
       locale={"ko"}
       showPopperArrow={false}
-      showTimeInput={showTimeSelect}
-      shouldCloseOnSelect={!showTimeSelect}
-      //@ts-ignore
-      customTimeInput={<CustomTimeInput />}
+      shouldCloseOnSelect
       renderCustomHeader={({
         date,
         decreaseMonth,
@@ -194,131 +185,9 @@ const DatePicker = ({
           </button>
         </div>
       )}
+      disabled={disabled}
       {...props}
     />
-  );
-};
-
-const CustomTimeInput = ({
-  date,
-  onChange,
-}: {
-  date: Date;
-  onChange: (time: string) => void;
-}) => {
-  const day = dayjs(date);
-
-  // 현재 24시간제 시/분
-  const hour24 = day.hour();
-  const minute = day.minute();
-
-  // 12시간제 표시용
-  const defaultHour = day.format("hh"); // 01 ~ 12
-  const defaultMinute = day.format("mm");
-
-  // ✅ "오전" / "오후" 를 현재 시각 기준으로 계산 (초기값만)
-  const [selectedPeriod, setSelectedPeriod] = useState(
-    hour24 >= 12 ? "오후" : "오전"
-  );
-
-  // ✅ FIX: date가 외부에서 완전히 새로운 날짜로 변경되었을 때만 동기화
-  // (시/분/오전오후 변경에는 반응하지 않음)
-  const [prevDate, setPrevDate] = useState<string>(day.format("YYYY-MM-DD"));
-
-  useEffect(() => {
-    const currentDate = day.format("YYYY-MM-DD");
-    // 날짜(년월일)가 바뀌었을 때만 period 재설정
-    if (currentDate !== prevDate) {
-      setSelectedPeriod(hour24 >= 12 ? "오후" : "오전");
-      setPrevDate(currentDate);
-    }
-  }, [day.format("YYYY-MM-DD"), hour24, prevDate]);
-
-  const hours = Array.from({ length: 12 }, (_, i) =>
-    (i + 1).toString().padStart(2, "0")
-  );
-  const minutes = ["00", "10", "20", "30", "40", "50"];
-  const periods = ["오전", "오후"];
-
-  const handleTimeChange = (
-    value: string,
-    type: "hour" | "minute" | "period"
-  ) => {
-    const currentHour12 = day.format("hh"); // 12시간제 기준 현재 시
-    const currentMinute = day.format("mm");
-
-    const hour12 = type === "hour" ? value : currentHour12;
-    const minuteStr = type === "minute" ? value : currentMinute;
-    const period = type === "period" ? value : selectedPeriod;
-
-    let h = parseInt(hour12, 10);
-
-    // ✅ FIX: 12시간제 → 24시간제 변환 (오전/오후 맞게)
-    if (period === "오후") {
-      // 오후 12시(정오)는 12시 그대로
-      if (h === 12) {
-        h = 12;
-      } else {
-        // 오후 1~11시는 +12 (13~23시)
-        h = h + 12;
-      }
-    } else {
-      // 오전
-      if (h === 12) {
-        // 오전 12시(자정)는 0시
-        h = 0;
-      }
-      // 오전 1~11시는 그대로 (1~11시)
-    }
-
-    const hStr = String(h).padStart(2, "0");
-    const timeStr = `${hStr}:${minuteStr}`;
-
-    // ✅ FIX: period 상태 업데이트 (오전/오후 변경 시)
-    if (type === "period") {
-      setSelectedPeriod(period);
-    }
-
-    // react-datepicker 에서 요구하는 포맷: "HH:mm"
-    onChange(timeStr);
-  };
-
-  return (
-    <>
-      <select
-        value={defaultHour}
-        onChange={(e) => handleTimeChange(e.target.value, "hour")}
-        className="p-2 border border-gray-300 rounded-lg flex-1 text-14pxr text-dark-gray-400 font-normal"
-      >
-        {hours.map((h) => (
-          <option key={h} value={h}>
-            {h}시
-          </option>
-        ))}
-      </select>
-      <select
-        value={defaultMinute}
-        onChange={(e) => handleTimeChange(e.target.value, "minute")}
-        className="p-2 border border-gray-300 rounded-lg flex-1 text-14pxr text-dark-gray-400 font-normal"
-      >
-        {minutes.map((m) => (
-          <option key={m} value={m}>
-            {m}분
-          </option>
-        ))}
-      </select>
-      <select
-        value={selectedPeriod}
-        onChange={(e) => handleTimeChange(e.target.value, "period")}
-        className="p-2 border border-gray-300 rounded-lg flex-1 text-14pxr text-dark-gray-400 font-normal"
-      >
-        {periods.map((p) => (
-          <option key={p} value={p}>
-            {p}
-          </option>
-        ))}
-      </select>
-    </>
   );
 };
 

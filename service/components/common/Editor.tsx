@@ -3,6 +3,7 @@ import {
   useSelectStoragePath,
 } from "@/app/api/query/author/episode";
 import useToastStore from "@/store/toastStore";
+import { prepareWebpUpload } from "@/utils/webpUpload";
 import Bold from "@tiptap/extension-bold";
 import BulletList from "@tiptap/extension-bullet-list";
 import CharacterCount from "@tiptap/extension-character-count";
@@ -36,6 +37,35 @@ const Editor = ({ value, onChange }: Props) => {
   const { setToast } = useToastStore();
   const [hasShownLimitWarning, setHasShownLimitWarning] = useState(false);
 
+  /**
+   * 메모장(plain text) 붙여넣기에서 줄바꿈/공백이 깨져 보이는 문제를 방지합니다.
+   *
+   * - TipTap 기본 paste는 HTML/리치텍스트를 우선으로 정규화하면서 `\r\n` 개행을
+   *   문단/스타일로 재해석할 수 있습니다.
+   * - 메모장은 보통 `text/html`을 제공하지 않으므로, `text/plain`만 존재하는 경우에만
+   *   붙여넣기를 가로채서 `\r\n`/`\n`를 HardBreak로 직접 삽입합니다.
+   * - 리치텍스트(웹/워드 등)는 기본 동작을 유지합니다.
+   */
+  const pastePlainTextPreserveNewlines = (rawText: string) => {
+    const normalized = rawText.replace(/\r\n/g, "\n");
+    const lines = normalized.split("\n");
+
+    // TipTap insertContent에 넣을 노드 배열 구성
+    // - 각 줄은 텍스트 노드로 삽입
+    // - 줄 구분은 hardBreak로 삽입 (메모장 개행을 그대로 재현)
+    const contentToInsert: Array<{ type: string; text?: string }> = [];
+    lines.forEach((line, idx) => {
+      if (line.length > 0) {
+        contentToInsert.push({ type: "text", text: line });
+      }
+      if (idx < lines.length - 1) {
+        contentToInsert.push({ type: "hardBreak" });
+      }
+    });
+
+    editor?.chain().focus().insertContent(contentToInsert).run();
+  };
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -49,13 +79,14 @@ const Editor = ({ value, onChange }: Props) => {
         inline: false,
         allowBase64: true,
       }),
-      Placeholder.configure({ placeholder: "내용을 입력하세요." }),
+      Placeholder.configure({ placeholder: " " }),
       CharacterCount.configure({ limit: MAX_CHARACTERS }),
     ],
     content: value,
     editorProps: {
       handlePaste: (_view, event) => {
         const pastedText = event.clipboardData?.getData("text/plain") || "";
+        const pastedHtml = event.clipboardData?.getData("text/html") || "";
         const currentCharCount = editor?.storage.characterCount.characters() || 0;
         const totalChars = currentCharCount + pastedText.length;
 
@@ -68,6 +99,15 @@ const Editor = ({ value, onChange }: Props) => {
           });
           return true; // Prevent default paste behavior
         }
+
+        // 메모장/단순 텍스트(HTML 없음) 붙여넣기는 개행을 HardBreak로 보존
+        // - HTML이 있는 경우(웹/문서 등)는 기본 paste 유지
+        if (pastedText && !pastedHtml) {
+          event.preventDefault();
+          pastePlainTextPreserveNewlines(pastedText);
+          return true;
+        }
+
         return false; // Allow default paste behavior
       },
     },
@@ -103,16 +143,12 @@ const Editor = ({ value, onChange }: Props) => {
     try {
       setIsUploading(true);
       if (file) {
-        const originalName = file.name;
-        const baseName =
-          originalName.substring(0, originalName.lastIndexOf(".")) ||
-          originalName;
-        const newFileName = `${baseName}.webp`;
-        const response = await mutateAsync(newFileName);
+        const { uploadFile, uploadFileName } = await prepareWebpUpload(file);
+        const response = await mutateAsync(uploadFileName);
 
         await handleUpload(
           response.data.episodeImageUploadPath,
-          file,
+          uploadFile,
           response.data.episodeImageFileId
         );
       } else {
@@ -275,7 +311,7 @@ const Editor = ({ value, onChange }: Props) => {
         />
       </div>
       <div
-        className={`editor-container w-full rounded-b-[6px] min-h-[500px] max-h-[880px] overflow-y-auto pb-[45px] ${
+        className={`editor-container w-full rounded-b-[6px] min-h-[500px] max-h-[880px] md:h-[500px] md:min-h-[100px] md:max-h-none md:resize-y overflow-y-auto pb-[45px] ${
           isFocused
             ? "border-[2px] border-primary-100"
             : "border border-light-gray-500"

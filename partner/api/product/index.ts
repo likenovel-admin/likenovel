@@ -1,7 +1,10 @@
 "use client";
 import {
+  ICreateProductRequest,
+  ICreateProductResponse,
   IGetCPCompanyResponse,
   IGetProductDetailResponse,
+  IProductDetailsGroupResponse,
   IGetProductGenreResponse,
   IGetProductParams,
   IGetProductsResponse,
@@ -47,6 +50,22 @@ export const useGetProductDetail = (id: string, enabled: boolean) => {
       return res;
     },
     enabled,
+    refetchOnMount: "always",
+  });
+};
+
+export const useGetProductDetailsGroup = (id: string, enabled: boolean) => {
+  return useQuery<IProductDetailsGroupResponse>({
+    queryKey: ["GetProductDetailsGroup", JSON.stringify(id)],
+    queryFn: async () => {
+      const res = await apiClient.request<IProductDetailsGroupResponse>({
+        url: `/v1/query/products/${id}/details-group`,
+        method: "GET",
+      });
+      return res;
+    },
+    enabled,
+    refetchOnMount: "always",
   });
 };
 
@@ -74,6 +93,18 @@ export const useGetProductCpCompany = () => {
         method: "GET",
       });
       return res;
+    },
+  });
+};
+
+export const useCreateProduct = () => {
+  return useMutation<ICreateProductResponse, Error, ICreateProductRequest>({
+    mutationFn: async (body: ICreateProductRequest) => {
+      return await apiClient.request<ICreateProductResponse>({
+        url: "/v1/command/products",
+        method: "POST",
+        body,
+      });
     },
   });
 };

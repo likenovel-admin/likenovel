@@ -3,6 +3,7 @@ import Input from "@/components/form/input";
 import BirthdateSelector from "@/components/signUp/BirthdateSelector";
 import BottomButton from "@/components/signUp/BottomButton";
 import LogoButton from "@/components/signUp/LogoButton";
+import { SOCIAL_SIGNUP_PENDING_SESSION_KEY } from "@/constants/onboarding";
 import useToastStore from "@/store/toastStore";
 import { getStateAndReDirectUri } from "@/utils/getStateAndRedirectUri";
 import dayjs from "dayjs";
@@ -55,6 +56,9 @@ const SocialAddInform = () => {
   const onSubmit = async (formData: ISocialAddForm) => {
     const { gender } = formData;
     const formattedBirthDate = dayjs(formData.birthDate).format("YYYY-MM-DD");
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY, "Y");
+    }
     if (provider === "google") {
       const isKeepSignIn = getBooleanValue(keepSignInValue);
       const { state, redirectUri } = getStateAndReDirectUri(

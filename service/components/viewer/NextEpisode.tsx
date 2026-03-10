@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import ArrowRight from "/public/images/arrow-right-medium.svg";
 import useModalStore from "@/store/modalStore";
 import { TYPE_MODAL } from "@/constants/common";
+import Image from "next/image";
 
 interface NextEpisodeProps {
   currentEpisodeId: number;
@@ -16,8 +17,14 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
   const { data: nextEpisodeData } = useSelectNextEpisodeInfo(data?.data?.nextEpisodeId || 0);
 
   if (!data?.data?.nextEpisodeId) {
-    return null;
+    return (
+      <div className="w-full text-center py-[20px] mt-[10px]">
+        <p className="text-sm text-[#4D5159]">다음화가 없습니다.</p>
+      </div>
+    );
   }
+
+  const coverImagePath = data.data.coverImagePath;
 
   const handleNextEpisode = () => {
     const episode = data?.data;
@@ -45,12 +52,25 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
   };
 
   return (
-    <section className="w-full rounded-[20px] border border-line bg-card/60 px-[22px] py-[21px] sm:p-5 mt-[10px]">
+    <section
+      className="w-full rounded-[20px] border border-line bg-card/60 px-[22px] py-[21px] sm:p-5 mt-[10px] cursor-pointer hover:bg-gray-50 transition"
+      onClick={handleNextEpisode}
+    >
       <div className="flex items-center gap-4">
-        <div className="h-20 w-16 shrink-0 overflow-hidden rounded-md bg-white/10">
-          <div className="h-full w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-            <span className="text-xs text-gray-500">다음화</span>
-          </div>
+        <div className="h-20 w-16 shrink-0 overflow-hidden rounded-md">
+          {coverImagePath ? (
+            <Image
+              src={coverImagePath}
+              alt="표지"
+              width={64}
+              height={80}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+              <span className="text-xs text-gray-500">다음화</span>
+            </div>
+          )}
         </div>
 
         <div className="flex-1">
@@ -62,13 +82,7 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
           </p>
         </div>
 
-        <button
-          className="rounded-full p-2 hover:bg-white/5 transition"
-          aria-label="next episode"
-          onClick={handleNextEpisode}
-        >
-          <ArrowRight className="h-[7px] w-[11px]" />
-        </button>
+        <ArrowRight className="h-[7px] w-[11px] shrink-0" />
       </div>
     </section>
   );

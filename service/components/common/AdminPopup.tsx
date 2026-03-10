@@ -6,36 +6,77 @@ import {
   setLocalStorage,
   STORAGE_KEYS,
 } from "@/utils/localStorage";
+import {
+  ONBOARDING_FIRST_LOGIN_SESSION_KEY,
+  ONBOARDING_STATUS_CHANGED_EVENT,
+} from "@/constants/onboarding";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+
+const POPUP_SHOWN_SESSION_KEY = "popup_shown_on_main_session";
 
 /**
  * AdminPopup Component
  * Displays popup images configured from CMS admin panel
  * Features:
  * - Shows popup when displayStatus is "shown" in CMS
+ * - Shows only on main page ("/")
  * - Close button to dismiss popup
- * - "Don't show for 7 days" button to hide popup for 7 days
+ * - "오늘 하루 보지 않기" 버튼으로 1일 숨김
+ * - Shows once per browser session on main page
  * - Stores hide preference in localStorage
  */
 const AdminPopup = () => {
   const { data: popupsData } = useSelectPopups();
+  const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(false);
   const [currentPopup, setCurrentPopup] = useState<IPopup | null>(null);
+  const [onboardingStatusVersion, setOnboardingStatusVersion] = useState(0);
 
   useEffect(() => {
-    // Check if there are active popups
-    const activePopups = popupsData?.data;
+    if (typeof window === "undefined") return;
+    const handleOnboardingStatusChanged = () => {
+      setOnboardingStatusVersion((prev) => prev + 1);
+    };
+    window.addEventListener(
+      ONBOARDING_STATUS_CHANGED_EVENT,
+      handleOnboardingStatusChanged
+    );
+    return () => {
+      window.removeEventListener(
+        ONBOARDING_STATUS_CHANGED_EVENT,
+        handleOnboardingStatusChanged
+      );
+    };
+  }, []);
 
-    if (!activePopups) {
+  useEffect(() => {
+    // Show popup only on main page
+    if (pathname !== "/") {
       setIsVisible(false);
       return;
     }
 
-    // Get the first active popup
-    const popup = activePopups;
+    if (typeof window !== "undefined") {
+      const pendingOnboarding =
+        sessionStorage.getItem(ONBOARDING_FIRST_LOGIN_SESSION_KEY) === "Y";
+      if (pendingOnboarding) {
+        setIsVisible(false);
+        return;
+      }
+    }
+
+    const popup = popupsData?.data;
+
+    if (!popup) {
+      setCurrentPopup(null);
+      setIsVisible(false);
+      return;
+    }
+
     setCurrentPopup(popup);
 
-    // Check localStorage for "don't show for 7 days" preference
+    // Check localStorage for 1-day hide preference
     const closedUntilData = getLocalStorage<Record<string, string>>(
       STORAGE_KEYS.POPUP_CLOSED_UNTIL
     );
@@ -44,44 +85,64 @@ const AdminPopup = () => {
       const closedUntil = new Date(closedUntilData[popup.id]);
       const now = new Date();
 
-      // If current time is before the "closed until" date, don't show popup
       if (now < closedUntil) {
         setIsVisible(false);
         return;
       }
     }
 
-    // Show popup
+    // Show only once per browser session on main page
+    if (typeof window !== "undefined") {
+      let shownPopupIds: Record<string, boolean> = {};
+
+      try {
+        const raw = sessionStorage.getItem(POPUP_SHOWN_SESSION_KEY);
+        shownPopupIds = raw
+          ? (JSON.parse(raw) as Record<string, boolean>)
+          : {};
+      } catch {
+        shownPopupIds = {};
+      }
+
+      if (shownPopupIds[popup.id]) {
+        setIsVisible(false);
+        return;
+      }
+
+      sessionStorage.setItem(
+        POPUP_SHOWN_SESSION_KEY,
+        JSON.stringify({
+          ...shownPopupIds,
+          [popup.id]: true,
+        })
+      );
+    }
+
     setIsVisible(true);
-  }, [popupsData]);
+  }, [popupsData, pathname, onboardingStatusVersion]);
 
   const handleClose = () => {
     setIsVisible(false);
   };
 
-  const handleDontShowFor7Days = () => {
+  const handleDontShowFor1Day = () => {
     if (!currentPopup) return;
 
-    // Calculate date 7 days from now
+    // Calculate date 1 day from now
     const closedUntil = new Date();
-    closedUntil.setDate(closedUntil.getDate() + 7);
+    closedUntil.setDate(closedUntil.getDate() + 1);
 
-    // Get existing data or create new object
     const existingData =
       getLocalStorage<Record<string, string>>(
         STORAGE_KEYS.POPUP_CLOSED_UNTIL
       ) || {};
 
-    // Update with new popup close date
     const updatedData = {
       ...existingData,
       [currentPopup.id]: closedUntil.toISOString(),
     };
 
-    // Save to localStorage
     setLocalStorage(STORAGE_KEYS.POPUP_CLOSED_UNTIL, updatedData);
-
-    // Hide popup
     setIsVisible(false);
   };
 
@@ -91,46 +152,31 @@ const AdminPopup = () => {
     }
   };
 
-  if (!isVisible || !currentPopup || !currentPopup.url) return null;
+  if (!isVisible || !currentPopup) return null;
 
   return (
     <div className="fixed z-[100] flex inset-0 bg-black/50 justify-center items-center">
       <div className="relative rounded-[20px] border border-light-gray-400 m-[15px] shadow-xl bg-white max-w-[90vw] max-h-[90vh] overflow-hidden">
-        {/* Close button */}
-        {/* <div className="absolute top-4 right-4 z-10">
-          <button
-            onClick={handleClose}
-            className="w-30pxr h-30pxr rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-md"
-            aria-label="Close popup"
-          >
-            <Close className="w-[15px] h-[15px]" />
-          </button>
-        </div> */}
-
-        {/* Popup content */}
         <div className="flex flex-col">
-          {/* Image - clickable if linkUrl exists */}
           <div
             className={currentPopup.url ? "cursor-pointer" : ""}
             onClick={handleImageClick}
           >
             <picture>
-              {/* Desktop image */}
               <img
                 src={currentPopup.imagePath}
-                alt={"popup"}
+                alt="popup"
                 className="w-full h-auto max-h-[70vh] object-contain"
               />
             </picture>
           </div>
 
-          {/* Action buttons */}
           <div className="w-full border-t border-light-gray-500 flex">
             <button
               className="flex-1 h-[40px] md:h-[60px] hover:bg-light-gray-300 transition-colors text-12pxr md:text-16pxr font-medium"
-              onClick={handleDontShowFor7Days}
+              onClick={handleDontShowFor1Day}
             >
-              7일 동안 보지 않기
+              오늘 하루 보지 않기
             </button>
             <div className="w-[1px] bg-light-gray-500" />
             <button

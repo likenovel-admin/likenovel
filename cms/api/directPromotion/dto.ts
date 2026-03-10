@@ -14,3 +14,16 @@ export interface IGetDirectPromotionParams {
   search_word?: string;
   status?: string;
 }
+
+export interface IPostDirectPromotionGiftRequest {
+  product_ids: number[];
+  num_of_ticket_per_person: number;
+  start_date: string;
+  end_date: string;
+}
+
+export interface IPostDirectPromotionGiftResponse {
+  result: {
+    created_count: number;
+  };
+}

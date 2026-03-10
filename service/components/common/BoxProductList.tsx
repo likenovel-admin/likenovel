@@ -17,7 +17,7 @@ const BoxProductList = ({ data, pageType, hasLank = false }: Props) => {
   const renderAdultCoverImage = useAdultCoverImage();
   return (
     <div className="max-w-[1120px] mx-auto mt-20pxr md:mt-0">
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 2md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-7 2xl:grid-cols-7 gap-10pxr md:gap-15pxr pl-16pxr md:pl-0">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 2md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-7 2xl:grid-cols-7 gap-10pxr md:gap-15pxr px-16pxr md:px-0">
         {data.map((product) => (
           <div
             key={product.productId}
@@ -33,16 +33,24 @@ const BoxProductList = ({ data, pageType, hasLank = false }: Props) => {
                 215,
                 "object-cover min-w-[95px] md:min-w-[148px] min-h-[150px] md:h-[215px] rounded-[10px]"
               )}
+              <InterestBadge
+                product={product as unknown as IProduct}
+                width={10}
+                height={14}
+                style="absolute top-[5px] right-[5px] md:hidden"
+              />
               {hasLank && (
                 <div className="absolute top-[-5px] left-[10px] hidden md:block">
                   <RankingBadge rank={product.rank?.currentRank || 0} />
                 </div>
               )}
-              <div className="absolute flex justify-center items-center top-0 left-0 md:hidden bg-black-100 w-[30px] h-[30px] rounded-tl-[10px] rounded-br-[10px]">
-                <span className="text-14pxr text-white">
-                  {product.rank?.currentRank}
-                </span>
-              </div>
+              {hasLank && (
+                <div className="absolute flex justify-center items-center top-0 left-0 md:hidden bg-black-100 w-[30px] h-[30px] rounded-tl-[10px] rounded-br-[10px]">
+                  <span className="text-14pxr text-white">
+                    {product.rank?.currentRank}
+                  </span>
+                </div>
+              )}
               <div className="absolute flex gap-[2px] bottom-[5px] left-[5px]">
                 {pageType === "paid" && (
                   <SquareBadge
@@ -63,7 +71,7 @@ const BoxProductList = ({ data, pageType, hasLank = false }: Props) => {
               </div>
             </div>
             <div className="relative max-w-[137px] mt-13pxr">
-              <span className="text-15pxr md:text-16pxr font-medium line-clamp-2">
+              <span className="text-15pxr md:text-16pxr font-medium line-clamp-1">
                 {product.title}
               </span>
               <UserNickname
@@ -76,7 +84,7 @@ const BoxProductList = ({ data, pageType, hasLank = false }: Props) => {
                 product={product as unknown as IProduct}
                 width={10}
                 height={14}
-                style="absolute bottom-[5px] right-0 md:right-[-10px]"
+                style="hidden md:block absolute bottom-[5px] right-[-10px]"
               />
             </div>
           </div>

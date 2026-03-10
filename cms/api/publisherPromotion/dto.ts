@@ -24,6 +24,16 @@ export interface IPublisherPromotionRequest {
   show_order: number;
 }
 
+export interface IPublisherPromotionConfigResponse {
+  data: {
+    title: string;
+  };
+}
+
+export interface IPublisherPromotionConfigRequest {
+  title: string;
+}
+
 export interface IAddEditPublisherPromotionResponse {
   data: {
     message: string;

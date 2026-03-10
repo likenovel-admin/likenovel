@@ -196,7 +196,7 @@ const ProductCoverArea = ({
                   </span>
                   <span className="mx-2 text-gray-300">|</span>연독률{" "}
                   <span className="text-[#4D5159]">
-                    {data.trendindex?.readThroughRate}%
+                    {data.trendindex?.readThroughRate ? `${data.trendindex.readThroughRate}%` : '-'}
                   </span>
                 </div>
               </div>
@@ -245,6 +245,7 @@ const ProductCoverArea = ({
             notices={notices}
             productId={data?.productId || 0}
             comments={comments}
+            updateFrequency={data?.properties?.updateFrequency}
           />
         </div>
       </div>

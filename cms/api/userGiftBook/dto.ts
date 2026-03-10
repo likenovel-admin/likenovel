@@ -15,3 +15,16 @@ export interface IGetUserGiftBookParams {
 }
 
 export type IGetUserGiftBookDownloadResponse = HistoryEntry;
+
+export interface IPostAdminDirectGiftRequest {
+  user_ids: number[];
+  amount: number;
+  reason: string;
+  expiration_date: string;
+}
+
+export interface IPostAdminDirectGiftResponse {
+  result: {
+    created_count: number;
+  };
+}

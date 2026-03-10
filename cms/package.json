@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/check-utf8.mjs .",
     "build": "next build",
     "start": "PORT=3002 next start",
     "lint": "next lint"

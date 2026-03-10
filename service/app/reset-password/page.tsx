@@ -1,5 +1,8 @@
 "use client";
-import { usePasswordReset } from "@/app/api/auth";
+import {
+  usePasswordReset,
+  usePublicPasswordReset,
+} from "@/app/api/auth";
 import Button from "@/components/common/Button";
 import Input from "@/components/form/input";
 import HeaderFindId from "@/components/menu/HeaderFindId";
@@ -22,8 +25,10 @@ export default function Page() {
   const searchParams = useSearchParams();
   const methods = useForm<IResetForm>();
   const resetPassword = usePasswordReset();
+  const publicResetPassword = usePublicPasswordReset();
   const { setToast } = useToastStore();
   const [email, setEmail] = useState("");
+  const [token, setToken] = useState("");
 
   const {
     handleSubmit,
@@ -33,9 +38,10 @@ export default function Page() {
     formState: { errors },
   } = methods;
 
-  // Get email from query params
+  // Get email and token from query params
   useEffect(() => {
     const emailParam = searchParams.get("email");
+    const tokenParam = searchParams.get("token");
     if (!emailParam) {
       setToast({
         message: "이메일 정보가 없습니다. 다시 시도해주세요.",
@@ -45,11 +51,8 @@ export default function Page() {
       return;
     }
     setEmail(emailParam);
+    if (tokenParam) setToken(tokenParam);
   }, [searchParams, router, setToast]);
-
-  const handleFindId = () => {
-    router.push("/find-id-ok");
-  };
 
   const validatePassword = (password: string) => {
     if (
@@ -63,8 +66,10 @@ export default function Page() {
     return true;
   };
 
+  const isLoading = resetPassword.isPending || publicResetPassword.isPending;
+
   const onSubmit = async (formData: IResetForm) => {
-    if (resetPassword.isPending) return;
+    if (isLoading) return;
 
     if (!email) {
       setToast({
@@ -74,28 +79,37 @@ export default function Page() {
       return;
     }
 
-    const requestData = {
-      email: email,
-      password: formData.password,
+    const onSuccess = () => {
+      setToast({
+        message: "비밀번호가 성공적으로 변경되었습니다.",
+        type: "success",
+      });
+      router.push("/");
     };
-    await resetPassword.mutateAsync(requestData, {
-      onSuccess: () => {
-        setToast({
-          message: "비밀번호가 성공적으로 변경되었습니다.",
-          type: "success",
-        });
-        router.push("/");
-      },
-      onError: (error: any) => {
-        const errorMessage =
-          error?.response?.data?.message ||
-          "비밀번호 재설정에 실패했습니다. 다시 시도해주세요.";
-        setToast({
-          message: errorMessage,
-          type: "error",
-        });
-      },
-    });
+
+    const onError = (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        "비밀번호 재설정에 실패했습니다. 다시 시도해주세요.";
+      setToast({
+        message: errorMessage,
+        type: "error",
+      });
+    };
+
+    if (token) {
+      // 이메일 인증 링크를 통한 재설정
+      await publicResetPassword.mutateAsync(
+        { email, token, password: formData.password },
+        { onSuccess, onError }
+      );
+    } else {
+      // 기존 NICE 본인인증을 통한 재설정
+      await resetPassword.mutateAsync(
+        { email, password: formData.password },
+        { onSuccess, onError }
+      );
+    }
   };
 
   return device === "desktop" ? (
@@ -164,8 +178,8 @@ export default function Page() {
                   size="xl"
                   type="submit"
                   className="w-full h-[54px] rounded-[10px] !bg-[#111317] text-white"
-                  isLoading={resetPassword.isPending}
-                  disabled={resetPassword.isPending}
+                  isLoading={isLoading}
+                  disabled={isLoading}
                 >
                   확인
                 </Button>
@@ -232,8 +246,8 @@ export default function Page() {
               size="xl"
               type="submit"
               className="w-full h-[54px] rounded-[10px] !bg-[#111317] text-white"
-              isLoading={resetPassword.isPending}
-              disabled={resetPassword.isPending}
+              isLoading={isLoading}
+              disabled={isLoading}
             >
               확인
             </Button>

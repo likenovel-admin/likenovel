@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthenticate";
 import { LogoutEventTarget } from "@/lib/auth";
 import { useProfileStore } from "@/store/useProfileStore";
 
-const publicRoutes = ["/login", "/register"];
+const publicRoutes = ["/login", "/register", "/auth/relay"];
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -19,16 +19,25 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const receiveMessage = (event: any) => {
+    const receiveMessage = (
+      event: MessageEvent<{
+        sharedState?: {
+          accessToken?: string;
+          refreshToken?: string;
+          id?: number;
+        };
+      }>
+    ) => {
       console.log("event", event);
       if (event.origin !== process.env.NEXT_PUBLIC_CMS_SITE_URL) return;
 
-      console.log("Received data:", event.data.sharedState);
-      const data = event.data.sharedState;
+      console.log("Received data:", event.data?.sharedState);
+      const data = event.data?.sharedState;
+      if (!data) {
+        return;
+      }
       if (data.accessToken) {
-        if (data?.accessToken) {
-          localStorage.setItem("token", data.accessToken);
-        }
+        localStorage.setItem("token", data.accessToken);
       }
       if (data?.refreshToken) {
         localStorage.setItem("refreshToken", data.refreshToken);

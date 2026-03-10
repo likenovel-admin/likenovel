@@ -3,6 +3,7 @@ import { useSelectUserInfo } from "@/app/api/query/mypage/user";
 import ExclamationTooltip from "@/components/common/ExclamationTooltip";
 import Spinner from "@/components/common/Spinner";
 import HomeItem from "@/components/mypage/HomeItem";
+import TasteDashboard from "@/components/recommendation/TasteDashboard";
 import { useRouter } from "next/navigation";
 
 const Page = () => {
@@ -111,6 +112,9 @@ const Page = () => {
           />
         </li> */}
       </ul>
+      <div className="px-4 max-w-[500px] mx-auto mt-16pxr">
+        <TasteDashboard />
+      </div>
     </div>
   );
 };

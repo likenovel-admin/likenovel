@@ -36,6 +36,7 @@ export interface IMakeProductRequest {
   open_yn: "Y" | "N";
   monopoly_yn: "Y" | "N";
   cp_contract_yn: "Y" | "N";
+  product_type?: "normal" | null;
 }
 
 export interface ISelectEpisodeCountResponse {
@@ -63,6 +64,8 @@ export interface IMakingProductObject {
   paidSettingDate: Date | null;
   paidEpisodeNo: number | null;
   priceType: "free" | "paid";
+  paidApprovedYn?: "Y" | "N";
+  productType?: "normal" | null;
 }
 export interface ISelectMakingProductResponse {
   data: IMakingProductObject;

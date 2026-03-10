@@ -1,6 +1,4 @@
 import { clearLocalStorage } from "@/lib/utils";
-import { useAuthStore } from "@/store/useAuthenticate";
-// import { useAuthStore } from "@/store/useAuthenticate";
 import { Mutex } from "async-mutex";
 import queryString from "query-string";
 
@@ -22,28 +20,43 @@ const API_URL = "/api";
 class ApiClient {
   private mutex = new Mutex();
 
-  private token = localStorage.getItem("token");
+  private getStoredToken() {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("token");
+  }
 
-  private async getToken(refreshToken: string) {
-    const res = await fetch(`${API_URL}/getToken`, {
-      method: "POST",
-      body: JSON.stringify({ refreshToken }),
-      referrerPolicy: "unsafe-url",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    });
+  private async reissueToken(accessToken: string, refreshToken: string) {
+    try {
+      const res = await fetch(`${API_URL}/v1/command/auth/token/reissue`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        }),
+      });
 
-    return res.json();
+      if (!res.ok) return null;
+      const json = await res.json();
+      return (
+        json?.data?.auth?.accessToken ||
+        json?.data?.token?.accessToken ||
+        null
+      );
+    } catch {
+      return null;
+    }
   }
 
   private async fetchWithAuth(endpoint: string, options: RequestInit) {
+    const token = this.getStoredToken();
     const authOptions = {
       ...options,
       headers: {
         ...(options.headers || {}),
-        Authorization: `Bearer ${this.token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     };
 
@@ -102,32 +115,30 @@ class ApiClient {
       (response.status === 401 || response.status === 403) &&
       !url.includes("/login")
     ) {
-      this.token = null;
-      clearLocalStorage();
-      // setIsAuthenticated(false);
-      // window.location.href = "/login";
-      // await this.mutex.waitForUnlock();
-      // if (!this.mutex.isLocked()) {
-      //   const release = await this.mutex.acquire();
-      //   try {
-      //     const refreshToken = localStorage.getItem("refreshToken");
-      //     if (!refreshToken) return response as T;
-      //     const { data } = await this.getToken(refreshToken);
-      //     if (data) {
-      //       localStorage.setItem("token", data);
-      //       response = await this.fetchWithAuth(url, options);
-      //     } else {
-      //       sessionStorage.removeItem("userProfile");
-      //       localStorage.removeItem("token");
-      //       localStorage.removeItem("refreshToken");
-      //     }
-      //   } finally {
-      //     release();
-      //   }
-      // } else {
-      //   await this.mutex.waitForUnlock();
-      //   response = await this.fetchWithAuth(url, options);
-      // }
+      await this.mutex.waitForUnlock();
+      if (!this.mutex.isLocked()) {
+        const release = await this.mutex.acquire();
+        try {
+          const refreshToken = localStorage.getItem("refreshToken");
+          const accessToken = this.getStoredToken() || "";
+          if (!refreshToken) {
+            clearLocalStorage();
+            return response as T;
+          }
+          const newToken = await this.reissueToken(accessToken, refreshToken);
+          if (newToken) {
+            localStorage.setItem("token", newToken);
+            response = await this.fetchWithAuth(url, options);
+          } else {
+            clearLocalStorage();
+          }
+        } finally {
+          release();
+        }
+      } else {
+        await this.mutex.waitForUnlock();
+        response = await this.fetchWithAuth(url, options);
+      }
     }
 
     let json: any;
@@ -145,10 +156,15 @@ class ApiClient {
     } else if (responseType === "text") {
       json = await response.text();
     } else {
-      try {
-        json = await response.json();
-      } catch (error) {
-        json = await response.json();
+      const rawText = await response.text();
+      if (!rawText) {
+        json = {};
+      } else {
+        try {
+          json = JSON.parse(rawText);
+        } catch {
+          json = { message: rawText };
+        }
       }
     }
 
@@ -164,7 +180,6 @@ class ApiClient {
 
       if (accessToken) {
         localStorage.setItem("token", accessToken);
-        this.token = accessToken;
       }
 
       if (refreshToken) {

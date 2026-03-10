@@ -4,6 +4,8 @@ import {
   IAdminDetailResponse,
   ILoginInRequest,
   ILoginInResponse,
+  IPartnerRelayConsumeRequest,
+  IPartnerRelayConsumeResponse,
 } from "@/api/auth/dto";
 import apiClient from "@/lib/apiClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -41,4 +43,20 @@ export const getAdminDetail = async (id: number) => {
     method: "GET",
   });
   return res;
+};
+
+export const usePartnerRelayConsume = () => {
+  return useMutation<
+    IPartnerRelayConsumeResponse,
+    Error,
+    IPartnerRelayConsumeRequest
+  >({
+    mutationFn: async (data: IPartnerRelayConsumeRequest) => {
+      return await apiClient.request<IPartnerRelayConsumeResponse>({
+        url: "/v1/command/auth/token/partner-relay/consume",
+        method: "POST",
+        body: data,
+      });
+    },
+  });
 };

@@ -76,6 +76,7 @@ const ProductListCard = ({
     type: "normal",
     isOpen: false,
   });
+  const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
   useEffect(() => {
     const calculateDaysAgo = () => {
       const currentDate = new Date();
@@ -312,14 +313,16 @@ const ProductListCard = ({
               <ProductStateBadge product={data} hasFreeOrPaidBadge />
             </div>
             <div className="md:hidden flex flex-col gap-3pxr">
-              <div className="flex gap-10pxr">
-                <ProductStateBadge product={data} hasFreeOrPaidBadge />
+              <div className="flex items-start justify-between">
+                <div className="flex gap-10pxr">
+                  <ProductStateBadge product={data} hasFreeOrPaidBadge />
+                </div>
                 {hasInterestBadge && (
                   <InterestBadge
                     product={data}
                     width={16}
                     height={21}
-                    style="md:hidden mt-[-4px]"
+                    style="md:hidden mt-[-4px] ml-10pxr"
                   />
                 )}
               </div>
@@ -367,7 +370,7 @@ const ProductListCard = ({
                   <div className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
                 )} */}
               <span className="text-12pxr md:text-14pxr text-dark-gray-500">
-                총 {data.totalOpenEpisodeCount}화
+                총 {data.totalOpenEpisodeCount}{data.publishRegularYn === "N" ? "권" : "화"}
               </span>
               {!isAuthorPage && !!data.properties?.updateFrequency && (
                 <div className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
@@ -712,7 +715,7 @@ const ProductListCard = ({
                     </span>
                     <div className="flex gap-4pxr">
                       <span className="text-13pxr text-dark-gray-500">
-                        {data.trendindex.cpHitCount}
+                        {data.trendindex.cpHitCount || '-'}
                       </span>
                       <div className="mt-4pxr">
                         <RankIndicator
@@ -728,10 +731,7 @@ const ProductListCard = ({
                     </span>
                     <div className="flex gap-4pxr">
                       <span className="text-13pxr text-dark-gray-500">
-                        {Number(data.trendindex.readThroughRate || 0).toFixed(
-                          2
-                        )}
-                        %
+                        {data.trendindex.readThroughRate ? `${Number(data.trendindex.readThroughRate).toFixed(1)}%` : '-'}
                       </span>
                       <div className="mt-4pxr">
                         <RankIndicator
@@ -749,7 +749,7 @@ const ProductListCard = ({
                     </span>
                     <div className="flex gap-4pxr">
                       <span className="text-13pxr text-dark-gray-500">
-                        {data.trendindex.totalInterestCount}
+                        {data.trendindex.totalInterestCount || '-'}
                       </span>
                       <div className="mt-4pxr">
                         <RankIndicator
@@ -767,7 +767,7 @@ const ProductListCard = ({
                     </span>
                     <div className="flex gap-4pxr">
                       <span className="text-13pxr text-dark-gray-500">
-                        {data.trendindex.interestSustainCount}
+                        {data.trendindex.interestSustainCount || '-'}
                       </span>
                       <div className="mt-4pxr">
                         <RankIndicator
@@ -785,7 +785,7 @@ const ProductListCard = ({
                     </span>
                     <div className="flex gap-4pxr">
                       <span className="text-13pxr text-dark-gray-500">
-                        {data.trendindex.interestLossCount}
+                        {data.trendindex.interestLossCount || '-'}
                       </span>
                       <div className="mt-4pxr">
                         <RankIndicator
@@ -814,51 +814,115 @@ const ProductListCard = ({
             data.properties && (
               <>
                 {(isCPAdmin || isProductAuthor) && (
-                  <>
-                    <div className="flex justify-between gap-20pxr">
-                      <span className="text-13pxr text-dark-gray-300">
-                        CP조회수
-                      </span>
-                      <span className="text-13pxr text-dark-gray-500">
-                        {data.trendindex.cpHitCount}
-                      </span>
-                    </div>
-                    <div className="flex justify-between gap-20pxr">
-                      <span className="text-13pxr text-dark-gray-300">
-                        연독률
-                      </span>
-                      <span className="text-13pxr text-dark-gray-500">
-                        {Number(data.trendindex.readThroughRate || 0).toFixed(
-                          2
-                        )}
-                        %
-                      </span>
-                    </div>
-                    <div className="flex justify-between gap-20pxr">
-                      <span className="text-13pxr text-dark-gray-300">
-                        주평균 연재횟수
-                      </span>
-                      <span className="text-13pxr text-dark-gray-500">
-                        {data.properties.averageWeeklyEpisodes}
-                      </span>
-                    </div>
-                    <div className="flex justify-between gap-20pxr">
-                      <span className="text-13pxr text-dark-gray-300">
-                        주요 독자층
-                      </span>
-                      <span className="text-13pxr text-dark-gray-500">
-                        {data.trendindex.primaryReaderGroup?.["1"] ?? ""} <br />
-                        {data.trendindex.primaryReaderGroup?.["2"] ?? ""}
-                      </span>
-                    </div>
-                  </>
+                  <div className="flex justify-between gap-20pxr">
+                    <span className="text-13pxr text-dark-gray-300">
+                      CP조회수
+                    </span>
+                    <span className="text-13pxr text-dark-gray-500">
+                      {data.trendindex.cpHitCount || '-'}
+                    </span>
+                  </div>
                 )}
+                <div className="flex justify-between gap-20pxr">
+                  <span className="text-13pxr text-dark-gray-300">연독률</span>
+                  <span className="text-13pxr text-dark-gray-500">
+                    {data.trendindex.readThroughRate ? `${Number(data.trendindex.readThroughRate).toFixed(1)}%` : '-'}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-20pxr">
+                  <span className="text-13pxr text-dark-gray-300">
+                    주평균 연재횟수
+                  </span>
+                  <span className="text-13pxr text-dark-gray-500">
+                    {data.properties.averageWeeklyEpisodes ? Number(data.properties.averageWeeklyEpisodes).toFixed(1) : '-'}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-20pxr">
+                  <span className="text-13pxr text-dark-gray-300">
+                    주요 독자층
+                  </span>
+                  <span className="text-13pxr text-dark-gray-500">
+                    {data.trendindex.primaryReaderGroup?.["1"] || "-"}
+                    {data.trendindex.primaryReaderGroup?.["2"] ? (
+                      <>
+                        <br />
+                        {data.trendindex.primaryReaderGroup?.["2"]}
+                      </>
+                    ) : null}
+                  </span>
+                </div>
               </>
             )
           )}
         </div>
         {!isAuthorPage && (
           <>
+            {data.trendindex && data.properties && (
+              <>
+                <button
+                  className={`absolute bottom-[17px] right-[38px] md:hidden flex items-center justify-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
+                    isMobileStatsOpen ? "bg-black-100" : "bg-white"
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsMobileStatsOpen((prev) => !prev);
+                  }}
+                  aria-label={isMobileStatsOpen ? "통계 접기" : "통계 펼치기"}
+                >
+                  <span
+                    className={`text-12pxr font-semibold leading-none ${
+                      isMobileStatsOpen ? "text-white" : "text-dark-gray-300"
+                    }`}
+                  >
+                    i
+                  </span>
+                </button>
+                {isMobileStatsOpen && (
+                  <div className="absolute bottom-[52px] right-[10px] md:hidden z-10 min-w-[190px] rounded-[10px] bg-white border border-light-gray-500 p-10pxr">
+                    {(isCPAdmin || isProductAuthor) && (
+                      <div className="flex justify-between gap-16pxr">
+                        <span className="text-11pxr text-dark-gray-300">
+                          CP조회수
+                        </span>
+                        <span className="text-11pxr text-dark-gray-500">
+                          {data.trendindex.cpHitCount || '-'}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between gap-16pxr">
+                      <span className="text-11pxr text-dark-gray-300">
+                        연독률
+                      </span>
+                      <span className="text-11pxr text-dark-gray-500">
+                        {data.trendindex.readThroughRate ? `${Number(data.trendindex.readThroughRate).toFixed(1)}%` : '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-16pxr">
+                      <span className="text-11pxr text-dark-gray-300">
+                        주평균 연재횟수
+                      </span>
+                      <span className="text-11pxr text-dark-gray-500">
+                        {data.properties.averageWeeklyEpisodes ? Number(data.properties.averageWeeklyEpisodes).toFixed(1) : '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-16pxr">
+                      <span className="text-11pxr text-dark-gray-300">
+                        주요 독자층
+                      </span>
+                      <span className="text-11pxr text-dark-gray-500 text-right">
+                        {data.trendindex.primaryReaderGroup?.["1"] || "-"}
+                        {data.trendindex.primaryReaderGroup?.["2"] ? (
+                          <>
+                            <br />
+                            {data.trendindex.primaryReaderGroup?.["2"]}
+                          </>
+                        ) : null}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
             <BookmarkButton
               productId={data.productId}
               bookmarkYn={data.properties?.bookmarkYn || "N"}
@@ -866,7 +930,7 @@ const ProductListCard = ({
               bookmarkStyle="w-[16px] h-[19px] text-dark-gray-200 hover:text-dark-gray-500"
               activeBookmarkStyle="w-[16px] h-[19px]"
             />
-            <div className="absolute bottom-[17px] right-[38px] p-2 md:hidden">
+            <div className="absolute bottom-[17px] right-[65px] p-2 md:hidden">
               <ProductRemarkContent
                 data={data}
                 remarkContent={data.properties?.remarkContentSnippet ?? ""}

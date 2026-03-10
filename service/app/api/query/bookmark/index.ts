@@ -17,12 +17,13 @@ export const useAllBookmarkDelete = () => {
   });
 };
 
-export const useSelectBookmarks = () => {
+export const useSelectBookmarks = (enabled: boolean = true) => {
   return useQuery({
     queryKey: ["selectBookmarks"],
-    queryFn: async () => {      
-      const response = await instance.get(`/v1/query/products/bookmark`);      
-      return response.data.data;    
-    } 
+    queryFn: async () => {
+      const response = await instance.get(`/v1/query/products/bookmark`);
+      return response.data.data;
+    },
+    enabled,
   });
 };

@@ -4,11 +4,10 @@ import { IUseSelectProductsResponse } from "../product/dto";
 
 export const useSelectTop50Products = (productAreaType: string = "freeTop") => {
   return useQuery<IUseSelectProductsResponse, unknown>({
-    queryKey: ["selectTop50Products"],
+    queryKey: ["selectTop50Products", productAreaType],
     queryFn: async () => {
-      // const response = await instance.get(`/v1/query/products/managed?area="${productAreaType}"&limit=50`);
       const response = await instance.get(
-        `/v1/query/products/managed?division=main&area=${productAreaType}`
+        `/v1/query/products/managed?division=main&area=${productAreaType}&limit=50`
       );
       return response.data;
     },

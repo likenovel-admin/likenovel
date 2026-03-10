@@ -5,6 +5,7 @@ import { instance } from "../axios";
 import {
   IEmailSignUpRequest,
   IPasswordResetRequest,
+  IPublicPasswordResetRequest,
   ISelectUserResponse,
   ISignInRequest,
   ISignInResponse,
@@ -74,6 +75,25 @@ export const useIdentityPasswordAuth = () => {
         "/v1/command/auth/identity/password/reset",
         data
       );
+    },
+  });
+};
+
+export const usePasswordResetSendEmail = () => {
+  return useMutation({
+    mutationFn: async (data: { email: string }) => {
+      return await instance.post(
+        "/v1/command/auth/password/reset/send-code",
+        data
+      );
+    },
+  });
+};
+
+export const usePublicPasswordReset = () => {
+  return useMutation({
+    mutationFn: async (data: IPublicPasswordResetRequest) => {
+      return await instance.put("/v1/command/auth/password/reset", data);
     },
   });
 };

@@ -9,12 +9,20 @@ import { useRouter } from "next/navigation";
 interface Props {
   data: IProductDiscoveryStatistics[];
   loading?: boolean;
+  hideEvaluationColumn?: boolean;
+  summaryMode?: boolean;
 }
 
-export default function DiscoverProductsTable({ data, loading }: Props) {
+export default function DiscoverProductsTable({
+  data,
+  loading,
+  hideEvaluationColumn = false,
+  summaryMode = false,
+}: Props) {
   const route = useRouter();
   const handleClickProduct = (id?: string) => {
-    route.push(`/discover-products/chart?productId=${id || ""}`);
+    const modeQuery = summaryMode ? "&mode=summary" : "";
+    route.push(`/discover-products/chart?productId=${id || ""}${modeQuery}`);
   };
   const columns: Column[] = [
     {
@@ -47,12 +55,7 @@ export default function DiscoverProductsTable({ data, loading }: Props) {
     {
       header: "연독률",
       key: "reading_rate",
-      render: (_, row: IProductDiscoveryStatistics) => `${row.reading_rate}%`,
-    },
-    {
-      header: "주요",
-      key: "score1",
-      render: (_, row: IProductDiscoveryStatistics) => row.score1.toString(),
+      render: (_, row: IProductDiscoveryStatistics) => row.reading_rate ? `${row.reading_rate}%` : '-',
     },
     {
       header: "독자수",
@@ -71,7 +74,7 @@ export default function DiscoverProductsTable({ data, loading }: Props) {
       key: "primary_reader_group1",
     },
     {
-      header: "등록일 ",
+      header: "최근 업로드일",
       key: "updated_date",
       render: (_, row: IProductDiscoveryStatistics) =>
         row.updated_date
@@ -79,6 +82,15 @@ export default function DiscoverProductsTable({ data, loading }: Props) {
           : "-",
     },
   ];
+
+  if (!hideEvaluationColumn) {
+    columns.splice(4, 0, {
+      header: "작품평가",
+      key: "score1",
+      render: (_, row: IProductDiscoveryStatistics) => row.score1.toString(),
+    });
+  }
+
   return (
     <>
       <CommonTable

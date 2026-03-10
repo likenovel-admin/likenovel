@@ -1,4 +1,5 @@
 "use client";
+
 import { getDownloadProducts, useGetProducts } from "@/api/product";
 import { IGetProductParams } from "@/api/product/dto";
 import WorksTable from "@/app/products/DataTable";
@@ -10,17 +11,14 @@ import PageHeader from "@/components/ui/page-header";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { item_per_page } from "@/constants/common";
 import { productRatingsCode, productStatusCode } from "@/constants/product";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { downloadExcel } from "@/lib/excelDownload";
 import { calculatePageCount, catchErrorMessage, showAlert } from "@/lib/utils";
 import { IProduct } from "@/types/product";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function Page() {
-  // const isMobile = useIsMobile()
   const route = useRouter();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -33,12 +31,7 @@ export default function Page() {
     search_word: "",
   });
 
-  const {
-    data,
-    refetch,
-    isLoading: isLoadingData,
-    isFetching,
-  } = useGetProducts({
+  const { data, refetch, isLoading: isLoadingData, isFetching } = useGetProducts({
     page: filters.page,
     count_per_page: filters.count_per_page,
     search_target: filters.search_target || undefined,
@@ -49,7 +42,7 @@ export default function Page() {
 
   useEffect(() => {
     refetch();
-  }, [filters]);
+  }, [filters, refetch]);
 
   const handleDownloadExcel = async () => {
     await downloadExcel({
@@ -66,7 +59,7 @@ export default function Page() {
         "작가명",
         "회차수",
         "계약 유형",
-        "담당CP",
+        "해당CP",
         "작품 등록일",
         "유료 전환일",
         "ISBN",
@@ -75,7 +68,7 @@ export default function Page() {
         "연령등급",
         "1차 장르",
         "2차 장르",
-        "판매 형태",
+        "판매 상태",
         "독점 여부",
       ],
       fields: [
@@ -86,25 +79,21 @@ export default function Page() {
         "contract_type",
         "cp_company_name",
         (row: IProduct) =>
-          row.created_date
-            ? format(new Date(row.created_date), "yyyy.MM.dd")
-            : "-",
+          row.created_date ? format(new Date(row.created_date), "yyyy.MM.dd") : "-",
         (row: IProduct) =>
           row.paid_open_date
             ? format(new Date(row.paid_open_date), "yyyy.MM.dd")
             : "-",
         "isbn",
         "uci",
-        // "status_code",
         (row: IProduct) =>
           row.status_code ? productStatusCode[row.status_code] : "",
-        // "ratings_code",
         (row: IProduct) =>
           row.ratings_code ? productRatingsCode[row.ratings_code] : "",
         "primary_genre",
         "sub_genre",
         "price_type",
-        (row: IProduct) => (row.monopoly_yn === "Y" ? "예" : "비독점"),
+        (row: IProduct) => (row.monopoly_yn === "Y" ? "독점" : "비독점"),
       ],
       filename: "작품 리스트",
       onStart: () => setIsLoading(true),
@@ -122,9 +111,10 @@ export default function Page() {
     });
   };
 
-  const handleOnSearch = (filters: IGetProductParams) => {
-    setFilers(filters);
+  const handleOnSearch = (searchFilters: IGetProductParams) => {
+    setFilers(searchFilters);
   };
+
   const handleOnReset = () => {
     setFilers({
       page: 1,
@@ -137,60 +127,63 @@ export default function Page() {
   };
 
   return (
-    <>
-      {/*{isMobile && <SidebarTrigger />}*/}
-      <SidebarInset className="bg-sidebar-inset-background">
-        <PageHeader
-          title="작품 리스트"
-          parent="작품 관리"
-          child="작품 리스트"
-        />
+    <SidebarInset className="bg-sidebar-inset-background">
+      <PageHeader
+        title="작품 리스트"
+        parent="작품 관리"
+        child="작품 리스트"
+      />
 
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="flex items-center justify-between gap-2 px-4">
-            <Search3TypeNText
-              options1={[
-                { value: "product-title", label: "작품명" },
-                { value: "product-id", label: "작품ID" },
-                { value: "author-name", label: "작가명" },
-                { value: "cp-name", label: "CP명" },
-              ]}
-              option2Placeholder="계약 유형"
-              options2={[
-                { value: "normal", label: "일반" },
-                { value: "cp", label: "CP" },
-              ]}
-              option3Placeholder="연재 상태"
-              options3={[
-                { value: "ongoing", label: "연재중" },
-                { value: "rest", label: "휴재중" },
-                { value: "end", label: "완결" },
-                { value: "stop", label: "연재중지" },
-              ]}
-              onSearch={handleOnSearch}
-              onReset={handleOnReset}
-            />
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+        <div className="flex items-center justify-between gap-2 px-4">
+          <Search3TypeNText
+            options1={[
+              { value: "product-title", label: "작품명" },
+              { value: "product-id", label: "작품ID" },
+              { value: "author-name", label: "작가명" },
+              { value: "cp-name", label: "CP명" },
+            ]}
+            option2Placeholder="계약 유형"
+            options2={[
+              { value: "normal", label: "일반" },
+              { value: "cp", label: "CP" },
+            ]}
+            option3Placeholder="연재 상태"
+            options3={[
+              { value: "ongoing", label: "연재중" },
+              { value: "rest", label: "휴재중" },
+              { value: "end", label: "완결" },
+              { value: "stop", label: "연재중지" },
+            ]}
+            onSearch={handleOnSearch}
+            onReset={handleOnReset}
+          />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => route.push("/products/upload?mode=create")}
+            >
+              신규작품생성
+            </Button>
             <Button variant="outline" onClick={handleDownloadExcel}>
               엑셀 다운로드
             </Button>
           </div>
-          <WorksTable
-            data={data?.results ?? []}
-            loading={isLoadingData || isFetching}
-          />
-          <PaginationControls
-            page={filters.page || 1}
-            setPage={handleChangePage}
-            totalPages={calculatePageCount(
-              data?.total_count || 0,
-              filters.count_per_page || 8
-            )}
-          />
-          <FullPageLoader
-            isLoading={isLoading || isLoadingData || isFetching}
-          />
         </div>
-      </SidebarInset>
-    </>
+
+        <WorksTable data={data?.results ?? []} loading={isLoadingData || isFetching} />
+
+        <PaginationControls
+          page={filters.page || 1}
+          setPage={handleChangePage}
+          totalPages={calculatePageCount(
+            data?.total_count || 0,
+            filters.count_per_page || 8
+          )}
+        />
+
+        <FullPageLoader isLoading={isLoading || isLoadingData || isFetching} />
+      </div>
+    </SidebarInset>
   );
 }

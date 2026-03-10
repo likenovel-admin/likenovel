@@ -99,6 +99,22 @@ const data = {
           title: "테마 키워드 관리",
           url: "/products/theme-keyword",
         },
+        {
+          title: "유통작품관리",
+          url: "/products/distribution",
+        },
+        {
+          title: "작품 평가",
+          url: "/products/product-evaluation",
+        },
+        {
+          title: "AI 작품 메타정보",
+          url: "/products/ai-metadata",
+        },
+        {
+          title: "AI 온보딩 작품",
+          url: "/products/ai-onboarding",
+        },
       ],
     },
     {

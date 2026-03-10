@@ -3,6 +3,8 @@ import React, { PropsWithChildren, useState } from "react";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 
 const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
       <div className="max-w-md w-full bg-white text-red-700 border border-red-300 rounded shadow p-6">
@@ -15,7 +17,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
             ✕
           </button>
         </div>
-        <p className="mt-2 text-sm whitespace-pre-wrap">{error.message}</p>
+        <p className="mt-2 text-sm whitespace-pre-wrap">{errorMessage}</p>
         <div className="mt-4 flex justify-end">
           <button
             onClick={resetErrorBoundary}

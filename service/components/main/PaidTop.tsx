@@ -49,22 +49,11 @@ const PaidTop = ({ data }: Props) => {
   const lastPage = Math.max(0, totalItems - PAGE_SIZE);
 
   const handleNextPage = () => {
-    // Old logic: Move to next page
-    // if ((currentPage + 1) * PAGE_SIZE < data.length) {
-    //   setCurrentPage(currentPage + 1);
-    // }
-
-    // New logic: Move one item forward
-    if (currentPage < lastPage) {
-      setCurrentPage(currentPage + 1);
-    }
+    setCurrentPage(currentPage >= lastPage ? 0 : currentPage + 1);
   };
 
   const handlePrevPage = () => {
-    // New logic remains same as old
-    if (currentPage > 0) {
-      setCurrentPage(currentPage - 1);
-    }
+    setCurrentPage(currentPage <= 0 ? lastPage : currentPage - 1);
   };
 
   return (
@@ -121,7 +110,7 @@ const PaidTop = ({ data }: Props) => {
                 </span>
                 <div className="border-l-dark-gray-500 border border-r-0 border-t-0 border-b-0 h-[15px] mt-[4px] md:hidden" />
                 <div className="max-w-[80px] md:max-w-[170px]">
-                  <span className="text-white text-14pxr md:text-16pxr line-clamp-2 mb-13pxr">
+                  <span className="text-white text-14pxr md:text-16pxr line-clamp-1">
                     {product.title}
                   </span>
                   <UserNickname
@@ -138,14 +127,12 @@ const PaidTop = ({ data }: Props) => {
             <CircleArrow
               direction="left"
               onClick={handlePrevPage}
-              isDisabled={currentPage === 0}
             />
           </div>
-          <div className="absolute top-[40%] right-[15px] z-5 hidden lg:block">
+          <div className="absolute top-[40%] right-[-15px] z-5 hidden lg:block">
             <CircleArrow
               direction="right"
               onClick={handleNextPage}
-              isDisabled={currentPage === lastPage}
             />
           </div>
         </div>

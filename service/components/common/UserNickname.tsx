@@ -1,5 +1,6 @@
 import { IProduct } from "@/types";
 import Image from "next/image";
+
 interface Props {
   userNickname: string;
   userEventLevelBadge?: string;
@@ -9,6 +10,7 @@ interface Props {
   badgeStyle?: string;
   spanStyle?: string;
 }
+
 const UserNickname = ({
   userNickname,
   userEventLevelBadge = "",
@@ -16,7 +18,7 @@ const UserNickname = ({
   hasGle = false,
   textStyle = "text-13pxr md:text-15pxr text-dark-gray-500",
   badgeStyle = "w-[14px] h-[16px]",
-  spanStyle = "line-clamp-1",
+  spanStyle = "truncate",
 }: Props) => {
   const eventLevelBadge = product
     ? product?.badge?.authorEventLevelBadgeImagePath ||
@@ -24,23 +26,21 @@ const UserNickname = ({
     : userEventLevelBadge;
 
   return (
-    <div className="flex items-center gap-4pxr">
-      <span className={`${textStyle} ${spanStyle}`}>
+    <div className="inline-flex items-center gap-4pxr min-w-0 max-w-full">
+      <span className={`${textStyle} ${spanStyle} min-w-0 max-w-full`}>
         {userNickname || product?.authorNickname}
       </span>
-      {hasGle && (
-        <span className="text-13pxr md:text-15pxr text-dark-gray-300">글</span>
-      )}
       {eventLevelBadge && (
         <Image
           src={eventLevelBadge}
           alt="작가 등급"
           width={14}
           height={16}
-          className={`${badgeStyle}`}
+          className={`${badgeStyle} shrink-0`}
         />
       )}
     </div>
   );
 };
+
 export default UserNickname;

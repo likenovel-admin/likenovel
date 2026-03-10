@@ -17,7 +17,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Controller, FormProvider, useForm } from "react-hook-form";
+import { Controller, FormProvider, useForm, FieldErrors } from "react-hook-form";
 import CheckBox from "../common/CheckBox";
 import Editor from "../common/Editor";
 import DatePicker from "../form/datepicker";
@@ -101,7 +101,6 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
     control,
     watch,
     setValue,
-    formState: { errors },
   } = methods;
 
   const categoryValue = watch("category");
@@ -141,11 +140,17 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
     };
   };
 
-  const onError = (errors: any) => {
-    const errorKeys = Object.keys(errors);
-    if (errorKeys.length === 1 && errorKeys.includes("content")) {
+  const onError = (errors: FieldErrors<IMakeEpisodeForm>) => {
+    let message: string | undefined;
+    if (errors.title?.message) {
+      message = errors.title.message as string;
+    } else if (errors.content?.message) {
+      message = errors.content.message as string;
+    }
+
+    if (message) {
       setToast({
-        message: "내용을 입력해주세요.",
+        message,
         type: "error",
       });
     }
@@ -168,14 +173,17 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
         formData.evaluationOpen === "comment"
           ? "Y"
           : "N",
-      episode_open_yn: formData.isEpisodeOpen,
+      episode_open_yn:
+        formData.hasPublishEpisodeDate === "Y"
+          ? "N"
+          : formData.isEpisodeOpen,
       publish_reserve_yn: formData.hasPublishEpisodeDate,
       publish_reserve_date:
         formData.publishEpisodeDate !== undefined &&
         formData.publishEpisodeDate !== null
           ? dayjs(formData.publishEpisodeDate).utc().format()
           : null,
-      price_type: formData.priceType,
+      price_type: null,
     };
   };
 
@@ -433,7 +441,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
               label="제목"
               labelStyle={requiredLabelClassName}
               maxLength={30}
-              placeholder="회차 제목을 입력하세요."
+              placeholder="회차명을 입력해주세요 (최대 30자)"
               inputStyle={inputTextClassName}
               {...register("title", { required: "제목을 입력해주세요." })}
               additionalText={
@@ -466,7 +474,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
               maxLength={800}
               placeholder={"내용을 입력하세요."}
               disabled={watch("category") === "notice"}
-              inputStyle={`text-14pxr md:text-16pxr h-[212px] text-dark-gray-500 placeholder:text-dark-gray-100 w-[100%] resize-none overflow-y-auto ${
+              inputStyle={`text-14pxr md:text-16pxr h-[212px] md:min-h-[100px] text-dark-gray-500 placeholder:text-dark-gray-100 w-[100%] resize-none md:resize-y overflow-y-auto ${
                 watch("category") === "notice"
                   ? "bg-gray-100 cursor-not-allowed"
                   : ""
@@ -517,7 +525,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
                   activeOptionStyle="border-primary-100"
                   options={[
                     {
-                      label: "공개",
+                      label: "즉시공개",
                       value: "Y",
                     },
                     {
@@ -543,7 +551,9 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
                     onChange={(e) => {
                       const isChecked = e.target.checked;
                       checkboxField.onChange(isChecked ? "Y" : "N");
-                      if (!isChecked) {
+                      if (isChecked) {
+                        setValue("isEpisodeOpen", "N");
+                      } else {
                         setValue("publishEpisodeDate", null);
                       }
                     }}
@@ -574,68 +584,22 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
                 )}
               />
             )}
-            <Controller
-              name="priceType"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  label="유료 여부"
-                  labelStyle={requiredLabelClassName}
-                  optionsStyle="peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md cursor-pointer"
-                  options={[
-                    {
-                      label: "유료",
-                      value: "paid",
-                    },
-                    {
-                      label: "무료",
-                      value: "free",
-                    },
-                  ]}
-                  {...field}
-                  checkedValue={field.value}
-                />
-              )}
-            />
           </section>
         </div>
         {actionType === "save" ? (
           <BottomButton
             actionType="save"
             isSubmitting={isMutating}
-            onSave={() => {
-              if (!errors.title && !errors.content) {
-                handleSubmit(handleSave, onError)();
-              }
-            }}
-            onSubmit={() => {
-              if (!errors.title && !errors.content) {
-                handleSubmit(handleSubmitForm, onError)();
-              }
-            }}
+            onSave={() => handleSubmit(handleSave, onError)()}
+            onSubmit={() => handleSubmit(handleSubmitForm, onError)()}
           />
         ) : (
           <BottomButton
             actionType="submit"
             isSubmitting={isMutating}
-            onSave={() => {
-              if (!errors.title && !errors.content) {
-                handleSubmit(handleSave, onError)();
-              }
-            }}
-            onSubmit={() => {
-              console.log("onSubmit");
-
-              if (!errors.title && !errors.content) {
-                handleSubmit(handleSubmitForm, onError)();
-              }
-            }}
-            onUpdate={() => {
-              if (!errors.title && !errors.content) {
-                handleSubmit(handleUpdate, onError)();
-              }
-            }}
+            onSave={() => handleSubmit(handleSave, onError)()}
+            onSubmit={() => handleSubmit(handleSubmitForm, onError)()}
+            onUpdate={() => handleSubmit(handleUpdate, onError)()}
           />
         )}
       </form>

@@ -10,6 +10,7 @@ import CacheUseModal from "@/components/modal/CacheUseModal";
 import DonateModal from "@/components/modal/DonateModal";
 import RentalStatusModal from "@/components/modal/RentalStatusModal";
 import ReportReasonModal from "@/components/modal/ReportReasonModal";
+import AiChatPanel from "@/components/recommendation/AiChatPanel";
 import SearchModal from "@/components/search/SearchModal";
 import ErrorBoundaryWrapper from "@/hooks/useErrorBoundary";
 import ReactQueryProvider from "@/hooks/useReactQuery";
@@ -50,6 +51,7 @@ export default function RootLayout({
                 <AuthInitializer />
                 <NavigationTracker />
                 {children}
+                <AiChatPanel />
                 {modal}
                 <div id="modal-root" />
                 <Confirm />

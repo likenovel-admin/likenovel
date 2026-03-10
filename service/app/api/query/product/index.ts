@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+import { InfiniteData, useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { instance } from "../../axios";
 import { IUseSelectPanelsResponse } from "../banner/dto";
 import {
@@ -17,7 +17,14 @@ import {
 } from "./dto";
 
 export const useSelectProducts = (adult_yn?: string): any => {
-  const limit = 27;
+  /**
+   * 메인 TOP 구좌에서 노출 가능한 최대치(모바일 40개 요구사항)를 만족하기 위해
+   * API 호출 limit을 40으로 고정합니다.
+   *
+   * - FreeTop: 모바일 최대 40개, PC 최대 30개(렌더링에서 slice)
+   * - PaidTop도 동일 limit로 더 많이 받아오지만, UI는 자체 로직으로 노출량이 제한됨
+   */
+  const limit = 40;
   const adultYnParam = adult_yn || "N";
 
   const banners = useQuery<IUseSelectPanelsResponse, unknown>({
@@ -64,6 +71,8 @@ export const useSelectProducts = (adult_yn?: string): any => {
   return {
     data: {
       publisherPromotionProducts: publisherPromotionProducts.data?.data ?? [],
+      publisherPromotionTitle:
+        publisherPromotionProducts.data?.title ?? "출판사 프로모션",
       banners: banners.data?.data ?? {
         primaryPanels: [],
         secondaryPanels: [],
@@ -103,6 +112,8 @@ export const useSelectBannerPromotionPaid = (): any => {
   return {
     data: {
       publisherPromotionProducts: publisherPromotionProducts.data?.data ?? [],
+      publisherPromotionTitle:
+        publisherPromotionProducts.data?.title ?? "출판사 프로모션",
       banners: banners.data?.data ?? [],
     },
     isSuccess: banners.isSuccess && publisherPromotionProducts.isSuccess,
@@ -228,6 +239,63 @@ export const useSelectFreeAllProducts = (
     },
   });
 
+export const useSelectFreeAllProductsInfinite = (
+  productType: "normal" | "free",
+  genres?: string[],
+  limit?: number,
+  adult_yn?: string
+) => {
+  /**
+   * 무료연재(전체) 페이지에서 27개(page=1)만 보이는 문제를 해결하기 위해,
+   * 동일 API(`/v1/query/products/all`)를 useInfiniteQuery로 페이지네이션하여 누적 로딩합니다.
+   *
+   * - 서버 응답에 pagination 메타가 없어서, `마지막 페이지의 data 길이 < limit`이면 종료로 판단합니다.
+   * - 디자인은 그대로 두고, ProductArea에서 IntersectionObserver로 fetchNextPage만 트리거합니다.
+   */
+  const itemsPerPage = limit ? limit : 27;
+  const adultYnParam = adult_yn || "N";
+
+  // NOTE: TanStack Query(v5)에서 pageParam 기본 타입은 unknown이므로,
+  // pageParam 타입을 number로 명시해 빌드 타입 에러를 방지합니다.
+  return useInfiniteQuery<
+    IUseSelectProductsResponse,
+    unknown,
+    InfiniteData<IUseSelectProductsResponse, number>,
+    readonly unknown[],
+    number
+  >({
+    queryKey: [
+      "selectFreeAllProductsInfinite",
+      productType,
+      genres,
+      itemsPerPage,
+      adultYnParam,
+    ],
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => {
+      const genresQueryString =
+        genres && genres.length > 0
+          ? genres.map((genre) => `genres=${genre}`).join("&")
+          : "";
+
+      const baseUrl = `/v1/query/products/all?price_type=free&product_type=${productType}&page=${pageParam}&limit=${itemsPerPage}${
+        adultYnParam ? `&adult_yn=${adultYnParam}` : ""
+      }`;
+      const finalUrl = genresQueryString
+        ? `${baseUrl}&${genresQueryString}`
+        : baseUrl;
+
+      const response = await instance.get(finalUrl);
+      return response.data;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const lastCount = lastPage?.data?.length ?? 0;
+      if (lastCount < itemsPerPage) return undefined;
+      return allPages.length + 1;
+    },
+  });
+};
+
 export const useSelectPaidAllProducts = (
   stateType: "ongoing" | "end",
   genres?: string[],
@@ -255,6 +323,61 @@ export const useSelectPaidAllProducts = (
       return response.data;
     },
   });
+
+export const useSelectPaidAllProductsInfinite = (
+  stateType: "ongoing" | "end" | "standalone",
+  genres?: string[],
+  limit?: number,
+  adult_yn?: string
+) => {
+  /**
+   * 유료 페이지에서 1페이지(기본 27개)만 보이는 문제를 해결하기 위해,
+   * 동일 API(`/v1/query/products/all`)를 useInfiniteQuery로 페이지네이션하여 누적 로딩합니다.
+   *
+   * - 서버 응답에 pagination 메타가 없어서, `마지막 페이지의 data 길이 < limit`이면 종료로 판단합니다.
+   * - UI 변경 없이, 화면(ProductArea)에서 IntersectionObserver로 fetchNextPage만 트리거합니다.
+   */
+  const itemsPerPage = limit ? limit : 27;
+  const adultYnParam = adult_yn || "N";
+
+  return useInfiniteQuery<
+    IUseSelectProductsResponse,
+    unknown,
+    InfiniteData<IUseSelectProductsResponse, number>,
+    readonly unknown[],
+    number
+  >({
+    queryKey: [
+      "selectPaidAllProductsInfinite",
+      stateType,
+      genres,
+      itemsPerPage,
+      adultYnParam,
+    ],
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => {
+      const genresQueryString =
+        genres && genres.length > 0
+          ? genres.map((genre) => `genres=${genre}`).join("&")
+          : "";
+
+      const baseUrl = `/v1/query/products/all?price_type=paid&product_state=${stateType}&page=${pageParam}&limit=${itemsPerPage}${
+        adultYnParam ? `&adult_yn=${adultYnParam}` : ""
+      }`;
+      const finalUrl = genresQueryString
+        ? `${baseUrl}&${genresQueryString}`
+        : baseUrl;
+
+      const response = await instance.get(finalUrl);
+      return response.data;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const lastCount = lastPage?.data?.length ?? 0;
+      if (lastCount < itemsPerPage) return undefined;
+      return allPages.length + 1;
+    },
+  });
+};
 
 export const useSelectInterestDropProducts = () => {
   return useQuery<IUseSelectProductsResponse, unknown>({

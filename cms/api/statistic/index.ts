@@ -14,6 +14,10 @@ import {
 import apiClient from "@/lib/apiClient";
 import { useQuery } from "@tanstack/react-query";
 
+export interface ICancelCashOrderReqBody {
+  reason?: string;
+}
+
 export const useGetStatisticSite = (params: IGetStatisticSiteParams) => {
   return useQuery<IGetStatisticSiteResponse>({
     queryKey: ["GetStatisticSite", JSON.stringify(params)],
@@ -90,6 +94,18 @@ export const getStatisticPaymentByUserDownload = async (
     url: "/v1/query/statistics/payment-by-user/all",
     method: "GET",
     queryParams: params,
+  });
+  return res;
+};
+
+export const cancelCashOrderByOrderId = async (
+  orderId: number,
+  body: ICancelCashOrderReqBody = {}
+) => {
+  const res = await apiClient.request<{ result: boolean; data?: any }>({
+    url: `/v1/command/admins/cash-orders/${orderId}/cancel`,
+    method: "POST",
+    body,
   });
   return res;
 };

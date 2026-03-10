@@ -18,7 +18,10 @@ import { useMemo } from "react";
 interface Props {
   productId?: number;
   isPaidProduct?: boolean;
+  isVolumeProduct?: boolean;
   episodeTypePaidCount?: number;
+  ownPrice?: number;
+  rentalPrice?: number;
   interestStatus: ProductInterestStatus;
   interestEndDate?: string;
   authorId: number;
@@ -29,7 +32,10 @@ interface Props {
 const ButtonBottom = ({
   productId,
   isPaidProduct,
+  isVolumeProduct,
   episodeTypePaidCount,
+  ownPrice = 0,
+  rentalPrice = 0,
   interestStatus,
   interestEndDate,
   authorId,
@@ -134,15 +140,20 @@ const ButtonBottom = ({
     });
   });
 
-  const bulkPurchasePrice = episodeTypePaidCount
-    ? episodeTypePaidCount * 100
-    : 0;
+  const bulkPurchasePrice = isVolumeProduct
+    ? ownPrice
+    : episodeTypePaidCount
+      ? episodeTypePaidCount * 100
+      : 0;
   const formattedPrice = bulkPurchasePrice.toLocaleString("ko-KR");
 
   const handleBulkPurchaseClick = withLoginRequired(() => {
     setTypeModal(TYPE_MODAL.CASH_USE, {
       productId,
       price: bulkPurchasePrice,
+      ownPrice,
+      rentalPrice,
+      purchaseMode: isVolumeProduct ? "volume" : "serial",
       episodeCount: episodeTypePaidCount,
     });
   });
@@ -230,12 +241,13 @@ const ButtonBottom = ({
               대여권 {ticketCounts.total}장
             </Button>
           )}
-          {episodeTypePaidCount && episodeTypePaidCount > 0 ? (
+          {((isVolumeProduct && ownPrice > 0) ||
+            (!isVolumeProduct && episodeTypePaidCount && episodeTypePaidCount > 0)) ? (
             <Button
               className="flex gap-3pxr md:gap-7pxr items-center justify-center flex-1 md:flex-none md:w-[176px] md:h-[52px] h-[48px] bg-primary-200 rounded-10px md:rounded-14px text-12pxr md:text-14pxr !text-white hover:opacity-70 px-8pxr md:px-16pxr"
               onClick={handleBulkPurchaseClick}
             >
-              일괄구매 {formattedPrice}원
+              {isVolumeProduct ? "소장/대여" : `일괄구매 ${formattedPrice}원`}
             </Button>
           ) : null}
         </div>

@@ -12,6 +12,7 @@ interface Props {
   isRecentSingIn?: boolean;
   onGoogleClick?: () => void;
   onAppleClick?: () => void;
+  onBeforeRedirect?: () => void;
   disabled?: boolean;
 }
 
@@ -24,6 +25,7 @@ const SocialLoginButton = ({
   isRecentSingIn = false,
   onGoogleClick,
   onAppleClick,
+  onBeforeRedirect,
   disabled = false,
 }: Props) => {
   const naverLogin = (isKeepSignIn: boolean) => {
@@ -107,15 +109,22 @@ const SocialLoginButton = ({
     <button
       type={type}
       disabled={disabled}
-      onClick={() =>
-        provider === "naver"
-          ? naverLogin(isKeepSignIn)
-          : provider === "kakao"
-          ? kakaoLogin(isKeepSignIn)
-          : provider === "google"
-          ? onGoogleClick && onGoogleClick()
-          : onAppleClick && onAppleClick()
-      }
+      onClick={() => {
+        onBeforeRedirect?.();
+        if (provider === "naver") {
+          naverLogin(isKeepSignIn);
+          return;
+        }
+        if (provider === "kakao") {
+          kakaoLogin(isKeepSignIn);
+          return;
+        }
+        if (provider === "google") {
+          onGoogleClick && onGoogleClick();
+          return;
+        }
+        onAppleClick && onAppleClick();
+      }}
       className={`${baseButtonStyle} ${buttonStyle(provider, isSignIn)} ${
         disabled ? "opacity-50 cursor-not-allowed" : ""
       }`}

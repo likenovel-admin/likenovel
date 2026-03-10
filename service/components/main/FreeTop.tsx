@@ -2,7 +2,7 @@ import { useAdultCoverImage } from "@/hooks/useAdultCoverImage";
 import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import CircleArrow from "../common/CircleArrow";
 import ErrorArea from "../common/ErrorArea";
 import InterestBadge from "../common/InterestBadge";
@@ -15,7 +15,18 @@ interface Props {
   data: IProduct[] | null;
 }
 
-const PAGE_SIZE = 9;
+// 메인 "인기 무료 Top" 노출 상한(요구사항)
+const MOBILE_MAX_ITEMS = 40;
+const DESKTOP_MAX_ITEMS = 30;
+
+// PC(md 이상)에서 한 화면(페이지)당 노출 개수
+const DESKTOP_PAGE_COLS = 5;
+const DESKTOP_PAGE_ROWS = 3;
+const DESKTOP_PAGE_SIZE = DESKTOP_PAGE_COLS * DESKTOP_PAGE_ROWS; // 15
+
+// 모바일(md 미만): 문피아 스타일에 맞게 "2열 x 4행"이 보이도록 구성(가로 스와이프)
+const MOBILE_GRID_COLS_VISIBLE = 2;
+const MOBILE_GRID_ROWS = 4;
 
 const FreeTop = ({ data }: Props) => {
   const router = useRouter();
@@ -26,24 +37,23 @@ const FreeTop = ({ data }: Props) => {
     return <ErrorArea />;
   }
 
-  const currentProducts = data.slice(
-    currentPage * PAGE_SIZE,
-    (currentPage + 1) * PAGE_SIZE
+  const mobileProducts = data.slice(0, MOBILE_MAX_ITEMS);
+  const desktopProducts = data.slice(0, DESKTOP_MAX_ITEMS);
+
+  const currentProducts = desktopProducts.slice(
+    currentPage * DESKTOP_PAGE_SIZE,
+    (currentPage + 1) * DESKTOP_PAGE_SIZE
   );
 
-  const totalItems = data.length;
-  const lastPage = Math.ceil(totalItems / PAGE_SIZE) - 1;
+  const totalItems = desktopProducts.length;
+  const lastPage = Math.ceil(totalItems / DESKTOP_PAGE_SIZE) - 1;
 
   const handleNextPage = () => {
-    if ((currentPage + 1) * PAGE_SIZE < data.length) {
-      setCurrentPage(currentPage + 1);
-    }
+    setCurrentPage(currentPage >= lastPage ? 0 : currentPage + 1);
   };
 
   const handlePrevPage = () => {
-    if (currentPage > 0) {
-      setCurrentPage(currentPage - 1);
-    }
+    setCurrentPage(currentPage <= 0 ? lastPage : currentPage - 1);
   };
 
   const renderPaginationDots = () => {
@@ -68,115 +78,146 @@ const FreeTop = ({ data }: Props) => {
           router.push("/product/top50/free-top");
         }}
       />
-      <div className="overflow-x-auto overflow-y-hidden scroll-hidden">
-        <div className="w-[880px] md:w-[1120px]">
-          <div className="mt-10pxr md:mt-20pxr grid grid-cols-3 gap-[12px] pl-16pxr md:pl-0">
-            {(currentProducts as unknown as IProduct[]).map(
-              (product, index) => (
-                <div
-                  key={`${product.productId}-${index}`}
-                  className={`flex w-full min-w-[240px] h-[109px] md:max-w-[352px] md:h-[160px] border border-white md:border-light-gray-400  md:shadow-sm rounded-[10px] cursor-pointer relative ${
-                    index % 3 === 0
-                      ? "order-1"
-                      : index % 3 === 1
-                      ? "order-2"
-                      : "order-3"
-                  }`}
-                  onClick={() => {
-                    router.push(`/product/${product.productId}`);
-                  }}
-                >
+      {/* 모바일: 문피아 스타일(2열 x 4행) 가로 스와이프 구좌 */}
+      <div className="md:hidden overflow-x-auto overflow-y-hidden scroll-hidden">
+        <div className="pl-16pxr pr-16pxr">
+          <div
+            className="mt-10pxr grid w-max grid-flow-col auto-cols-[var(--freeTopColW)] grid-rows-4 gap-x-12pxr gap-y-10pxr"
+            style={
+              {
+                // "한 화면에 2열이 정확히 보이도록" 컬럼 폭을 viewport 기준으로 고정합니다.
+                // - 좌/우 패딩: 16px * 2 = 32px (바깥 wrapper가 담당)
+                // - gap-x: 12px (컬럼 사이 간격)
+                ["--freeTopColW" as any]: "calc((100vw - 32px - 12px) / 2)",
+              } as CSSProperties
+            }
+          >
+            {(mobileProducts as unknown as IProduct[]).map((product, index) => (
+              <div
+                key={`${product.productId}-${index}`}
+                className="flex items-center gap-10pxr cursor-pointer min-w-0"
+                onClick={() => {
+                  router.push(`/product/${product.productId}`);
+                }}
+              >
+                <div className="relative shrink-0">
                   {renderAdultCoverImage(
                     product,
-                    110,
-                    158,
-                    "object-cover w-[80px] md:w-[110px] h-[110px] md:h-[158px] rounded-lg md:rounded-l-lg md:rounded-r-none"
+                    56,
+                    56,
+                    "object-cover w-[56px] h-[56px] rounded-[10px]"
                   )}
-                  <div className="absolute top-[-5px] left-[10px] hidden md:block">
-                    <RankingBadge rank={product.rank?.currentRank || 0} />
-                  </div>
-                  <div className="md:hidden flex items-center px-[20px]">
-                    <span className="text-17pxr font-semibold">
-                      {product.rank?.currentRank}
+                  <div className="absolute -top-4pxr -left-4pxr">
+                    <span className="inline-flex items-center justify-center w-[20px] h-[20px] rounded-full bg-black/70 text-white text-11pxr font-semibold">
+                      {product.rank?.currentRank || 0}
                     </span>
                   </div>
-                  <div className="flex flex-col justify-between w-[150px] md:w-[230px] pt-10pxr md:pt-18pxr pb-12pxr md:pl-19pxr">
-                    <div className="w-full mr-[20px]">
-                      <span className="relative w-[140px] md:w-[200px] text-14pxr md:text-17pxr font-medium md:font-semibold leading-[19px] md:leading-[22px] line-clamp-2">
-                        {product.title}
-                        {getIsNewEpisode(
-                          product.properties?.latestEpisodeDate || ""
-                        ) && (
-                          <div className="absolute bottom-[2px] inline-block ml-[5px]">
-                            <SquareBadge type="up" />
-                          </div>
-                        )}
-                      </span>
-                      <div className="flex items-center mt-10pxr">
-                        {product.genre?.map((item, index) => (
-                          <div className="flex items-center" key={index}>
-                            <span className="text-12pxr md:text-14pxr text-primary-100">
-                              {item}
-                            </span>
-                            {index === 0 &&
-                              product.genre &&
-                              product.genre[1] &&
-                              product.genre[1] !== "" && (
-                                <div className="w-3pxr h-3pxr bg-primary-100 rounded-full mx-2" />
-                              )}
-                          </div>
-                        ))}
-                        <InterestBadge
-                          product={product as unknown as IProduct}
-                          width={10}
-                          height={14}
-                          style="md:hidden ml-7pxr"
-                        />
-                      </div>
+                </div>
 
-                      <div className="flex mt-2pxr md:hidden">
-                        <UserNickname
-                          userNickname={product.authorNickname || ""}
-                          product={product as unknown as IProduct}
-                          textStyle="text-12pxr text-dark-gray-400"
-                          badgeStyle="w-[14px] h-[14px]"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="border border-b border-white md:border-light-gray-100 w-[210px]" />
-                      <div className="hidden md:flex justify-between mt-9pxr items-center">
-                        <UserNickname
-                          userNickname={product.authorNickname || ""}
-                          product={product as unknown as IProduct}
-                          textStyle="text-13pxr text-dark-gray-400"
-                        />
-                        {/* TODO: 3시간 후 관심 식는 아이콘 표시 추가 */}
-                        <InterestBadge
-                          product={product as unknown as IProduct}
-                          width={16}
-                          height={21}
-                          style="hidden md:block mr-10pxr"
-                        />
-                      </div>
-                    </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-12pxr leading-16pxr text-dark-gray-500 font-semibold line-clamp-1">
+                    {product.title}
+                  </div>
+                  <div className="mt-2pxr flex items-center justify-between min-w-0">
+                    <span className="text-10pxr text-dark-gray-200 line-clamp-1">
+                      {product.authorNickname || ""}
+                    </span>
+                    <InterestBadge
+                      product={product as unknown as IProduct}
+                      width={10}
+                      height={14}
+                      style=""
+                    />
                   </div>
                 </div>
-              )
-            )}
+              </div>
+            ))}
           </div>
+        </div>
+      </div>
+
+      {/* PC/태블릿: 5x3 그리드(페이지네이션) */}
+      <div className="hidden md:block">
+        <div className="w-[1120px]">
+          <div className="mt-20pxr grid grid-flow-col grid-cols-5 grid-rows-3 gap-[10px]">
+            {(currentProducts as unknown as IProduct[]).map((product, index) => (
+              <div
+                key={`${product.productId}-${index}`}
+                className="flex w-full min-w-0 h-[116px] border border-light-gray-400 shadow-sm rounded-[10px] cursor-pointer relative bg-white overflow-hidden"
+                onClick={() => {
+                  router.push(`/product/${product.productId}`);
+                }}
+              >
+                {renderAdultCoverImage(
+                  product,
+                  72,
+                  104,
+                  "object-cover w-[72px] h-[104px] rounded-l-[10px]"
+                )}
+                {/* PC 랭킹 배지: 커버 좌상단에 딱 맞게 오버레이 */}
+                <div className="absolute top-0 left-0 scale-[0.8] origin-top-left">
+                  <RankingBadge rank={product.rank?.currentRank || 0} />
+                </div>
+
+                <div className="flex flex-col justify-between flex-1 min-w-0 pt-10pxr pb-10pxr pl-10pxr pr-8pxr">
+                  <div className="min-w-0">
+                    <div className="relative text-14pxr font-semibold leading-[18px] line-clamp-2">
+                      {product.title}
+                      {getIsNewEpisode(
+                        product.properties?.latestEpisodeDate || ""
+                      ) && (
+                        <span className="inline-block ml-[4px] align-middle">
+                          <SquareBadge type="up" />
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center mt-6pxr min-w-0">
+                      {product.genre?.slice(0, 2).map((item, idx) => (
+                        <div className="flex items-center min-w-0" key={idx}>
+                          <span className="text-12pxr text-primary-100 line-clamp-1">
+                            {item}
+                          </span>
+                          {idx === 0 &&
+                            product.genre &&
+                            product.genre[1] &&
+                            product.genre[1] !== "" && (
+                              <div className="w-3pxr h-3pxr bg-primary-100 rounded-full mx-2" />
+                            )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-8pxr min-w-0">
+                    <div className="min-w-0">
+                      <UserNickname
+                        userNickname={product.authorNickname || ""}
+                        product={product as unknown as IProduct}
+                        textStyle="text-12pxr text-dark-gray-300"
+                      />
+                    </div>
+                    <InterestBadge
+                      product={product as unknown as IProduct}
+                      width={14}
+                      height={18}
+                      style=""
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div className="absolute top-[50%] left-[-15px] z-5 hidden lg:block">
             <CircleArrow
               direction="left"
               onClick={handlePrevPage}
-              isDisabled={currentPage === 0}
             />
           </div>
-          <div className="absolute top-[50%] right-[0px] z-5 hidden lg:block">
+          <div className="absolute top-[50%] right-[-15px] z-5 hidden lg:block">
             <CircleArrow
               direction="right"
               onClick={handleNextPage}
-              isDisabled={currentPage === lastPage}
             />
           </div>
           <div className="hidden lg:flex justify-center mt-6">

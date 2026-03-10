@@ -10,9 +10,10 @@ import MainHeader from "../common/MainHeader";
 import SquareBadge from "../common/SquareBadge";
 interface Props {
   data: IProduct[] | null;
+  title?: string;
 }
 
-const CPPromotion = ({ data }: Props) => {
+const CPPromotion = ({ data, title = "출판사 프로모션" }: Props) => {
   const router = useRouter();
 
   console.log("data", data);
@@ -25,7 +26,7 @@ const CPPromotion = ({ data }: Props) => {
     <div className="mb-[10px]">
       {/* TODO: 더보기 클릭 시 페이지 이동 추가 */}
       <MainHeader
-        headerText="출판사 프로모션"
+        headerText={title}
         hasMoreButton
         moreButtonOnClick={() => {
           router.push("/product/promotion");
@@ -75,7 +76,7 @@ const CPPromotion = ({ data }: Props) => {
                   </div>
                 </div>
                 <div className="relative max-w-[137px] mt-13pxr">
-                  <span className="text-15pxr md:text-16pxr font-medium line-clamp-2">
+                  <span className="text-15pxr md:text-16pxr font-medium line-clamp-1">
                     {product.title}
                   </span>
                   <UserNickname

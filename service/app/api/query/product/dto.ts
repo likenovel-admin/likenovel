@@ -21,6 +21,7 @@ export interface IUseSelect69PassProductsResponse {
 
 export interface IPublisherPromotionProductsResponse {
   data: IProduct[];
+  title?: string;
 }
 
 interface SelectProductDetailResponseObject {
@@ -70,6 +71,7 @@ export interface IEpisodeListResponse {
   data: {
     latestEpisodeNo: number;
     latestEpisodeId: number;
+    latestEpisodeTitle: string;
     pagination: {
       totalCount: number;
       page: number;
@@ -114,6 +116,7 @@ export interface IGetAvailableTicketsResponse {
     "6-9-path": number;
     gift: number;
   };
+  wff_next_charge_at: string | null;
 }
 
 export interface ISuggestByRecentViewedResponse {

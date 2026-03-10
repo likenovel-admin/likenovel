@@ -1,4 +1,5 @@
 "use client";
+import { usePasswordResetSendEmail } from "@/app/api/auth";
 import Input from "@/components/form/input";
 import HeaderFindId from "@/components/menu/HeaderFindId";
 import useMediaDevice from "@/hooks/useMediaDevice";
@@ -15,6 +16,7 @@ export default function Page() {
   const searchParams = useSearchParams();
   const { setToast } = useToastStore();
   const [email, setEmail] = useState("");
+  const sendResetEmail = usePasswordResetSendEmail();
 
   // Show toast if there's an error from NICE callback
   useEffect(() => {
@@ -54,20 +56,15 @@ export default function Page() {
     }
   }, [searchParams, setToast, router]);
 
-  const handleFindPassword = async () => {
-    console.log("onClickCertify - Find Password");
-
-    // Validate email
+  const validateEmail = () => {
     if (!email || !email.trim()) {
       setToast({
         message: "이메일 주소를 입력해주세요.",
         type: "error",
         duration: 3000,
       });
-      return;
+      return false;
     }
-
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setToast({
@@ -75,8 +72,13 @@ export default function Page() {
         type: "error",
         duration: 3000,
       });
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleFindPassword = async () => {
+    if (!validateEmail()) return;
 
     try {
       // Save email to session first
@@ -93,8 +95,6 @@ export default function Page() {
           throw error;
         });
 
-      console.log("token_data:", token_data);
-
       const form = document.getElementById("form") as HTMLFormElement;
       const left = screen.width / 2 - 500 / 2;
       const top = screen.height / 2 - 800 / 2;
@@ -102,7 +102,6 @@ export default function Page() {
 
       if (form && token_data.data) {
         const { encData, integrityValue, tokenVersionId } = token_data.data;
-        console.log(">>>>>>>", encData, integrityValue, tokenVersionId);
 
         window.open("", "nicePopup", option);
 
@@ -113,21 +112,55 @@ export default function Page() {
         form.submit();
       }
     } catch (error: any) {
-      console.error("Error during NICE verification:", error);
       setToast({
-        message:
-          error.response?.data?.error ||
-          "본인인증 요청 중 오류가 발생했습니다.",
+        message: "본인인증 요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
         type: "error",
         duration: 3000,
       });
     }
   };
 
+  const handleEmailReset = async () => {
+    if (!validateEmail()) return;
+    if (sendResetEmail.isPending) return;
+
+    try {
+      await sendResetEmail.mutateAsync({ email });
+      setToast({
+        message:
+          "인증메일을 발송했습니다. 메일에서 비밀번호 재설정을 진행해주세요.",
+        type: "success",
+        duration: 5000,
+      });
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ||
+        "메일 발송에 실패했습니다. 다시 시도해주세요.";
+      setToast({
+        message: msg,
+        type: "error",
+        duration: 5000,
+      });
+    }
+  };
+
+  const EmailResetLink = () => (
+    <button
+      type="button"
+      onClick={handleEmailReset}
+      disabled={sendResetEmail.isPending}
+      className="text-sm text-[#4D5159] underline underline-offset-2 hover:opacity-80 disabled:opacity-50"
+    >
+      {sendResetEmail.isPending
+        ? "발송 중..."
+        : "혹시 본인인증이 안된 상태라면?"}
+    </button>
+  );
+
   return device === "desktop" ? (
     <div className="min-h-screen flex justify-center items-center bg-[#F9FAFB]">
       <section className="w-full max-w-md">
-        <div className="mx-auto rounded-[40px] bg-white w-[500px] h-[560px]">
+        <div className="mx-auto rounded-[40px] bg-white w-[500px]">
           <div className="px-[100px] py-[76px] text-center">
             {/* Logo */}
             <div className="flex justify-center">
@@ -191,6 +224,10 @@ export default function Page() {
             >
               휴대폰 본인 인증 하기
             </button>
+
+            <div className="mt-[12px]">
+              <EmailResetLink />
+            </div>
 
             {/* Links */}
             <div className="mt-[16px] flex gap-[22px] justify-center">
@@ -262,6 +299,10 @@ export default function Page() {
         >
           휴대폰 본인 인증 하기
         </button>
+
+        <div className="mt-[12px] text-center">
+          <EmailResetLink />
+        </div>
 
         <p className="mt-[30px] flex gap-[19px] justify-center text-sm text-[#111317] tracking-[-0.02em]">
           아이디를 잊으셨나요?

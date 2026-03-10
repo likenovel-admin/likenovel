@@ -1,8 +1,9 @@
 "use client";
 import {
+  useCanCreateNormal,
   useMakeProduct,
   useSelectEpisodeCount,
-  useSelectGenres,
+
   useSelectMakingProduct,
   useUpdateProduct,
 } from "@/app/api/query/author/product";
@@ -32,6 +33,7 @@ import CheckboxGroup from "../form/checkbox/CheckboxGroup";
 import DatePicker from "../form/datepicker";
 import Input from "../form/input";
 import SelectBox from "../form/selectbox";
+import Toggle from "../form/toggle";
 import TextArea from "../form/textarea";
 import OperationPolicyModal from "../modal/OperationPolicyModal";
 import BaseSearchTag from "./BaseSearchTag";
@@ -39,6 +41,21 @@ import BottomButton from "./BottomButton";
 import PhotoArea from "./PhotoArea";
 import StoppedTooltip from "./StoppedTooltip";
 dayjs.extend(utc);
+
+const GENRE_OPTIONS = [
+  "무협",
+  "판타지",
+  "현대판타지",
+  "퓨전",
+  "게임",
+  "스포츠",
+  "대체역사",
+  "전쟁/밀리터리",
+  "SF",
+  "추리",
+  "공포/미스테리",
+  "드라마",
+] as const;
 
 export interface IMakeProductForm {
   ongoingState: "ongoing" | "end" | "stop" | "rest";
@@ -67,11 +84,13 @@ export interface IMakeProductForm {
   agree: boolean;
   baseTag?: { value: string; label: string }[];
   directTag?: { value: string; label: string }[];
+  productType: "normal" | "";
 }
 
 interface IOriginProduct extends IMakeProductForm {
   coverImagePath: string;
   priceType: "free" | "paid";
+  paidApprovedYn?: "Y" | "N";
   publishRegularYn: "Y" | "N";
   paidEpisodeNo?: number | null;
   paidSettingDate?: Date | null;
@@ -84,7 +103,7 @@ interface Props {
 const FormArea = ({ productId }: Props) => {
   const { setModal } = useModalStore();
   const currentUser = getUser();
-  const { data: genres } = useSelectGenres();
+
   const { mutateAsync: selectEpisodeCount, data: episodeCount } =
     useSelectEpisodeCount();
   const { mutate: makeProduct } = useMakeProduct();
@@ -95,6 +114,10 @@ const FormArea = ({ productId }: Props) => {
   } = useSelectMakingProduct();
   const { mutate: updateProduct } = useUpdateProduct();
   const { data: userInfo } = useSelectUserInfo(currentUser?.userId ?? 0);
+  const { data: canCreateNormalData } = useCanCreateNormal(
+    !productId && !!currentUser
+  );
+  const canCreateNormal = canCreateNormalData?.can_create_normal ?? false;
 
   const methods = useForm<IMakeProductForm>({
     mode: "onChange",
@@ -116,7 +139,7 @@ const FormArea = ({ productId }: Props) => {
           : userInfo?.data?.userNickname || "",
         illustratorNickname: productId ? originData.illustratorNickname : "",
         updateFrequency: productId ? originData.updateFrequency : ["mon"],
-        primaryGenre: productId ? originData.primaryGenre || "" : "현대판타지",
+        primaryGenre: productId ? originData.primaryGenre || "" : "무협",
         subGenre: productId ? originData.subGenre : "",
         synopsis: productId ? originData.synopsis : "",
         ageGrade: productId ? originData.ageGrade : "all",
@@ -124,20 +147,16 @@ const FormArea = ({ productId }: Props) => {
         monopoly: productId ? originData.monopoly : "Y",
         contract: productId ? originData.contract : "N",
         paidStartChapterDate:
-          productId && defaultData?.data.priceType === "paid"
-            ? originData.paidStartChapterDate ||
-              dayjs()
-                .add(1, "day")
-                .hour(12)
-                .minute(0)
-                .second(0)
-                .millisecond(0)
-                .toDate()
+          productId &&
+          (defaultData?.data.priceType === "paid" ||
+            defaultData?.data.paidApprovedYn === "Y")
+            ? originData.paidStartChapterDate ?? null
             : null,
         paidStartChapter: productId ? originData.paidStartChapter || 1 : 1,
         agree: false,
         baseTag: productId ? originData.baseTag : [],
         directTag: productId ? originData.directTag : [],
+        productType: productId ? (originData.productType || "") : "",
       };
     },
   });
@@ -149,6 +168,16 @@ const FormArea = ({ productId }: Props) => {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(false);
+  const [usePaidStartDate, setUsePaidStartDate] = useState(true);
+  const isPaidProduct = Boolean(productId && data?.data.priceType === "paid");
+  const isPaidSettingEnabled = Boolean(
+    productId &&
+      (data?.data.priceType === "paid" || data?.data.paidApprovedYn === "Y")
+  );
+  const isPaidConversionLocked =
+    isPaidProduct &&
+    (!data?.data.paidSettingDate ||
+      !dayjs(data.data.paidSettingDate).isAfter(dayjs()));
 
   // Set authorNickname from userInfo when it loads (for new product only)
   useEffect(() => {
@@ -162,6 +191,22 @@ const FormArea = ({ productId }: Props) => {
       }
     }
   }, [userInfo, productId, setValue, watch]);
+
+  // Set productType default to "normal" when qualification data loads (new product only)
+  useEffect(() => {
+    if (!productId && canCreateNormal) {
+      setValue("productType", "normal", {
+        shouldDirty: false,
+        shouldTouch: false,
+      });
+    }
+  }, [canCreateNormal, productId, setValue]);
+
+  useEffect(() => {
+    if (productId && data?.data) {
+      setUsePaidStartDate(Boolean(data.data.paidSettingDate));
+    }
+  }, [productId, data?.data?.paidSettingDate]);
 
   // Warn user before leaving page with unsaved changes
   useEffect(() => {
@@ -263,7 +308,9 @@ const FormArea = ({ productId }: Props) => {
         })) || [],
       coverImagePath: data?.data.coverImagePath || "",
       priceType: data?.data.priceType || "free",
+      paidApprovedYn: data?.data.paidApprovedYn || "N",
       publishRegularYn: data?.data.publishRegularYn || "Y",
+      productType: data?.data.productType === "normal" ? "normal" : "",
     };
     return defaultValues;
   };
@@ -392,23 +439,28 @@ const FormArea = ({ productId }: Props) => {
       open_yn: formData.open,
       monopoly_yn: formData.monopoly,
       cp_contract_yn: formData.contract,
+      product_type: formData.productType === "normal" ? "normal" : null,
     };
 
     if (productId) {
-      const paidDate = formData.paidStartChapterDate
-        ? formData.paidStartChapterDate
-        : dayjs()
-            .add(1, "day")
-            .hour(12)
-            .minute(0)
-            .second(0)
-            .millisecond(0)
-            .toDate();
-      (requestData as IUpdateProductRequest).paid_setting_date = new Date(
-        dayjs.utc(paidDate).format()
-      );
-      (requestData as IUpdateProductRequest).paid_episode_no =
-        formData.paidStartChapter || 1;
+      if (isPaidConversionLocked) {
+        (requestData as IUpdateProductRequest).paid_setting_date =
+          data?.data?.paidSettingDate
+            ? new Date(dayjs.utc(data.data.paidSettingDate).format())
+            : null;
+        (requestData as IUpdateProductRequest).paid_episode_no =
+          data?.data?.paidEpisodeNo || 0;
+      } else {
+        const effectivePaidSettingDate = usePaidStartDate
+          ? formData.paidStartChapterDate
+            ? new Date(dayjs.utc(formData.paidStartChapterDate).format())
+            : null
+          : new Date(dayjs.utc().format());
+        (requestData as IUpdateProductRequest).paid_setting_date =
+          effectivePaidSettingDate;
+        (requestData as IUpdateProductRequest).paid_episode_no =
+          formData.paidStartChapter || 1;
+      }
     }
     return requestData;
   };
@@ -489,6 +541,26 @@ const FormArea = ({ productId }: Props) => {
                     />
                   )}
                 />
+                {(canCreateNormal || productId) && (
+                  <Controller
+                    name="productType"
+                    control={control}
+                    render={({ field }) => (
+                      <SelectBox
+                        label="연재 유형"
+                        labelClassName={labelClassName}
+                        options={[
+                          { label: "자유연재", value: "" },
+                          { label: "일반연재", value: "normal" },
+                        ]}
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        ref={field.ref}
+                        disabled={!!productId}
+                      />
+                    )}
+                  />
+                )}
                 <Input
                   label="제목"
                   labelStyle={requiredLabelClassName}
@@ -529,7 +601,8 @@ const FormArea = ({ productId }: Props) => {
                   name="updateFrequency"
                   control={control}
                   rules={{
-                    required: "연재요일을 최소 1개 이상 선택해주세요.",
+                    required:
+                      "목표연재주기(권장 주5회)를 최소 1개 이상 선택해주세요.",
                   }}
                   render={({ field }) => (
                     <CheckboxGroup
@@ -540,7 +613,7 @@ const FormArea = ({ productId }: Props) => {
                               "text-13pxr md:text-16pxr text-dark-gray-500 after:content-['*'] after:text-red-100 font-semibold"
                             }
                           >
-                            연재 요일
+                            목표연재주기(권장 주5회)
                           </span>
                           <span className={"text-13pxr text-dark-gray-300"}>
                             {field.value?.includes("irregular")
@@ -632,18 +705,22 @@ const FormArea = ({ productId }: Props) => {
                         }
                         options={[
                           {
-                            label: "선택 안함",
+                            label: "1차 장르 선택",
                             value: "",
+                            disabled: true,
                           },
-                          ...(genres?.data.map(
-                            (genre: { genreId: number; genre: string }) => ({
-                              label: genre.genre,
-                              value: genre.genre,
-                            })
-                          ) || []),
+                          ...GENRE_OPTIONS.map((g) => ({
+                            label: g,
+                            value: g,
+                          })),
                         ]}
                         value={field.value || ""}
-                        onChange={field.onChange}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          if (watch("subGenre") === e.target.value) {
+                            setValue("subGenre", "");
+                          }
+                        }}
                         ref={field.ref}
                       />
                     )}
@@ -661,12 +738,12 @@ const FormArea = ({ productId }: Props) => {
                             label: "선택 안함",
                             value: "",
                           },
-                          ...(genres?.data.map(
-                            (genre: { genreId: number; genre: string }) => ({
-                              label: genre.genre,
-                              value: genre.genre,
-                            })
-                          ) || []),
+                          ...GENRE_OPTIONS.filter(
+                            (g) => g !== watch("primaryGenre")
+                          ).map((g) => ({
+                            label: g,
+                            value: g,
+                          })),
                         ]}
                         value={field.value || ""}
                         onChange={field.onChange}
@@ -838,7 +915,7 @@ const FormArea = ({ productId }: Props) => {
                     />
                   )}
                 />
-                {productId && data?.data.priceType === "paid" && (
+                {isPaidSettingEnabled && (
                   <>
                     <Controller
                       name="paidStartChapterDate"
@@ -846,16 +923,45 @@ const FormArea = ({ productId }: Props) => {
                       render={({ field }) => (
                         <div className="md:w-[555px]">
                           <DatePicker
-                            label="유료회차 시작일"
+                            label={
+                              <div className="w-full flex items-center justify-between">
+                                <span>유료회차 시작일</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-12pxr text-dark-gray-300">
+                                    예약일 사용
+                                  </span>
+                                  <Toggle
+                                    checked={usePaidStartDate}
+                                    disabled={isPaidConversionLocked}
+                                    onChange={(e) => {
+                                      const checked = e.target.checked;
+                                      setUsePaidStartDate(checked);
+                                      if (!checked) {
+                                        setValue("paidStartChapterDate", null);
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            }
                             showTimeSelect
                             labelStyle={requiredLabelClassName}
                             inputStyle={inputTextClassName}
-                            onChange={(date) => setValue(field.name, date)}
+                            onChange={(date) =>
+                              !isPaidConversionLocked &&
+                              usePaidStartDate &&
+                              setValue(field.name, date)
+                            }
                             value={
                               field.value ? new Date(field.value) : undefined
                             }
+                            disabled={isPaidConversionLocked || !usePaidStartDate}
                             placeholder="시작일을 선택하세요"
                           />
+                          <p className="mt-8pxr text-12pxr text-dark-gray-300">
+                            예약일이 지나도, 아직 유료시작회차에 도달하지 않으면
+                            무료작품으로 분류됩니다.
+                          </p>
                         </div>
                       )}
                     />
@@ -885,6 +991,7 @@ const FormArea = ({ productId }: Props) => {
                           value={String(field.value || "1")}
                           onChange={field.onChange}
                           ref={field.ref}
+                          disabled={isPaidConversionLocked}
                         />
                       )}
                     />

@@ -52,9 +52,6 @@ const DirectPromotion = ({
     readerOfPrevPromotion?.id || 0
   );
 
-  console.log("Reader of prev promotion:", readerOfPrevPromotion);
-  console.log("Issuance status:", issuanceStatus);
-
   // Fetch product details to get public episode count
   const { data: productDetail } = useSelectProductDetail(productId || 0);
 
@@ -213,13 +210,21 @@ const DirectPromotion = ({
     saveDirectPromotionMutation.mutate(
       { id: productId, data },
       {
-        onSuccess: () => {
+        onSuccess: (res: any) => {
+          const issuedCount = res?.data?.issued_count;
+          const message =
+            issuedCount && issuedCount > 0
+              ? `${issuedCount}명에게 선작독자 대여권이 발급되었습니다.`
+              : "프로모션 설정이 저장되었습니다.";
           setToast({
-            message: "프로모션 설정이 저장되었습니다.",
+            message,
             type: "success",
           });
           queryClient.invalidateQueries({
             queryKey: ["selectUserProductsWithPromotions"],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["selectUserPromotionIssuanceStatus"],
           });
           closeModal();
         },
@@ -305,22 +310,47 @@ const DirectPromotion = ({
               )}
             </div>
             <div className="flex flex-col items-end">
-              <SettingLevel
-                count={
-                  promotionCounts[
-                    promotion.id ? promotion.id + "" : promotion.type
-                  ] ??
-                  promotion.num_of_ticket_per_person ??
-                  3
-                }
-                setCount={(newCount) =>
-                  updatePromotionCount(
-                    promotion.id ? promotion.id + "" : promotion.type,
-                    newCount
-                  )
-                }
-                maximum={publicEpisodeCount}
-              />
+              {promotion.type === "reader-of-prev" &&
+              issuanceStatus?.issued_this_week ? (
+                <div className="flex flex-col items-end gap-2">
+                  <SettingLevel
+                    count={
+                      promotionCounts[
+                        promotion.id ? promotion.id + "" : promotion.type
+                      ] ??
+                      promotion.num_of_ticket_per_person ??
+                      3
+                    }
+                    setCount={() => {}}
+                    maximum={publicEpisodeCount}
+                    disabled
+                  />
+                  <span className="text-12pxr text-dark-gray-300 text-right">
+                    {(() => {
+                      if (!issuanceStatus?.this_week_issued_date) return "발급 완료";
+                      const d = new Date(issuanceStatus.this_week_issued_date);
+                      return `${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours()}시에 ${issuanceStatus.this_week_issued_count || 0}명에게 발급됨`;
+                    })()}
+                  </span>
+                </div>
+              ) : (
+                <SettingLevel
+                  count={
+                    promotionCounts[
+                      promotion.id ? promotion.id + "" : promotion.type
+                    ] ??
+                    promotion.num_of_ticket_per_person ??
+                    3
+                  }
+                  setCount={(newCount) =>
+                    updatePromotionCount(
+                      promotion.id ? promotion.id + "" : promotion.type,
+                      newCount
+                    )
+                  }
+                  maximum={publicEpisodeCount}
+                />
+              )}
               {/* {promotion.type === "free-for-first" && (
                 <Button
                   size="sm"
@@ -337,7 +367,7 @@ const DirectPromotion = ({
                   발급
                 </Button>
               )} */}
-              {promotion.type === "free-for-first" && (
+              {promotion.id && promotion.type === "free-for-first" && (
                 <>
                   {(() => {
                     const status = promotion.status || "stop";
@@ -382,37 +412,6 @@ const DirectPromotion = ({
                       );
                     }
                   })()}
-                </>
-              )}
-              {promotion.type === "reader-of-prev" && (
-                <>
-                  {issuanceStatus &&
-                  issuanceStatus?.issued_this_week === false &&
-                  promotion.status !== "end" ? (
-                    <Button
-                      size="sm"
-                      className="w-70pxr box-border !bg-blue-500 px-[4px] text-[11px] md:w-[100px] md:h-[38px] md:text-14pxr mt-[9px]"
-                      onClick={() => handlePromotionAction(promotion, "issue")}
-                      disabled={
-                        startDirectPromotionMutation.isPending ||
-                        endDirectPromotionMutation.isPending ||
-                        saveDirectPromotionMutation.isPending ||
-                        stopDirectPromotionMutation.isPending ||
-                        issueDirectPromotionMutation.isPending
-                      }
-                    >
-                      발급
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      className="w-70pxr !bg-gray-300 box-border px-[4px] text-[11px] md:w-[100px] md:h-[38px] md:text-14pxr mt-[9px]"
-                      variant="black"
-                      disabled
-                    >
-                      발급 완료
-                    </Button>
-                  )}
                 </>
               )}
             </div>
@@ -460,7 +459,7 @@ const DirectPromotion = ({
           }
           onClick={handleSave}
         >
-          {directPromotions.length > 0 ? "수정" : "적용"}
+          저장
         </Button>
       </div>
     </div>

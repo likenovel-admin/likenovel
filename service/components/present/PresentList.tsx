@@ -7,6 +7,7 @@ import {
 import { IGiftBookItem } from "@/app/api/query/giftbook/dto";
 import Spinner from "@/components/common/Spinner";
 import useToastStore from "@/store/toastStore";
+import { getGiftTicketLabel } from "@/utils/giftTicketLabel";
 import { getFormattingDate } from "@/utils/getFormattingDate";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
@@ -34,6 +35,10 @@ interface IPresentItem {
   expiration_date: string;
   hasProduct: boolean;
   productType: string;
+  promotionType: string;
+  acquisitionType: string;
+  ticketType: string;
+  promotionItemType: string;
 }
 
 const PresentList = () => {
@@ -65,6 +70,10 @@ const PresentList = () => {
       amount: gift.amount,
       expiration_date: gift.expiration_date || "",
       hasProduct: gift.product !== null, // Flag to check if product exists
+      promotionType: gift.promotion_type || "",
+      acquisitionType: gift.acquisition_type || "",
+      ticketType: gift.ticket_type || "",
+      promotionItemType: gift.promotion?.type || "",
     })) || [];
 
   return (
@@ -229,7 +238,13 @@ const PresentItem = (props: IPresentItem) => {
               alt="대여권"
             />
             <span className="text-13pxr">
-              대여권 {props.amount}장
+              {getGiftTicketLabel({
+                promotionType: props.promotionType,
+                acquisitionType: props.acquisitionType,
+                ticketType: props.ticketType,
+                promotionItemType: props.promotionItemType,
+              })}{" "}
+              {props.amount}장
               {props.expiration_date ? (
                 <span className="ml-2 text-primary-100 hidden md:inline-block">
                   유효기간{" "}

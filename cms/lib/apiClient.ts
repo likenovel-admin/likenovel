@@ -1,6 +1,4 @@
 import { clearLocalStorage } from "@/lib/utils";
-import { useAuthStore } from "@/store/useAuthenticate";
-import { Mutex } from "async-mutex";
 import queryString from "query-string";
 
 export interface IRequest {
@@ -20,23 +18,20 @@ export interface IRequest {
 const API_URL = '/api';
 
 class ApiClient {
-  private mutex = new Mutex();
+  private getStoredToken() {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("token");
+  }
 
-  private token = localStorage.getItem("token");
-  private refreshToken = localStorage.getItem("refreshToken");
-
-  private async getToken(refreshToken: string) {
-    const res = await fetch(`${API_URL}/getToken`, {
-      method: "POST",
-      body: JSON.stringify({ refreshToken }),
-      referrerPolicy: "unsafe-url",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    });
-
-    return res.json();
+  private async getErrorCode(response: Response): Promise<string> {
+    try {
+      const rawText = await response.clone().text();
+      if (!rawText) return "";
+      const parsed = JSON.parse(rawText);
+      return parsed?.code ?? "";
+    } catch {
+      return "";
+    }
   }
 
   private async fetchWithAuth(
@@ -44,11 +39,12 @@ class ApiClient {
     options: RequestInit,
     notAuth = false
   ) {
+    const token = this.getStoredToken();
     const authOptions = {
       ...options,
       headers: {
         ...(options.headers || {}),
-        Authorization: notAuth ? "" : `Bearer ${this.token}`,
+        ...(notAuth ? {} : token ? { Authorization: `Bearer ${token}` } : {}),
       },
     };
 
@@ -104,40 +100,17 @@ class ApiClient {
     }
 
     let response = await this.fetchWithAuth(url, options, notAuth);
+    const errorCode = await this.getErrorCode(response);
+    const shouldHandleAuthError = errorCode === "E4010" || errorCode === "E4011";
 
     if (
       (response.status === 401 || response.status === 403) &&
-      !url.includes("/login")
+      !url.includes("/login") &&
+      shouldHandleAuthError
     ) {
-      // const { setIsAuthenticated } = useAuthStore();
-      this.token = null;
-      clearLocalStorage();
-      // setIsAuthenticated(false);
-      // window.location.href = "/login";
-      //   useAuthStore.getState().setIsAuthenticated(false);
-      //   window.location.href = "/login";
-      //   // await this.mutex.waitForUnlock();
-      //   // if (!this.mutex.isLocked()) {
-      //   //   const release = await this.mutex.acquire();
-      //   //   try {
-      //   //     const refreshToken = localStorage.getItem("refreshToken");
-      //   //     if (!refreshToken) return response as T;
-      //   //     const { data } = await this.getToken(refreshToken);
-      //   //     if (data) {
-      //   //       localStorage.setItem("token", data);
-      //   //       response = await this.fetchWithAuth(url, options);
-      //   //     } else {
-      //   //       sessionStorage.removeItem("userProfile");
-      //   //       localStorage.removeItem("token");
-      //   //       localStorage.removeItem("refreshToken");
-      //   //     }
-      //   //   } finally {
-      //   //     release();
-      //   //   }
-      //   // } else {
-      //   //   await this.mutex.waitForUnlock();
-      //   //   response = await this.fetchWithAuth(url, options);
-      //   // }
+      if (errorCode === "E4011") {
+        clearLocalStorage();
+      }
     }
 
     let json: any;
@@ -157,7 +130,16 @@ class ApiClient {
     } else if (responseType === "none") {
       json = null;
     } else {
-      json = await response.json();
+      const rawText = await response.text();
+      if (!rawText) {
+        json = {};
+      } else {
+        try {
+          json = JSON.parse(rawText);
+        } catch {
+          json = { message: rawText };
+        }
+      }
     }
 
     // const json = await response.json();
@@ -170,7 +152,6 @@ class ApiClient {
 
       if (accessToken) {
         localStorage.setItem("token", accessToken);
-        this.token = accessToken;
       }
 
       if (refreshToken) {
@@ -188,7 +169,13 @@ class ApiClient {
     //     error: json?.error ?? "",
     //   } as any;
     // }
-    const error = new Error(json?.detail || json?.message || "Request failed");
+    const message =
+      json?.detail ||
+      json?.message ||
+      json?.error ||
+      (typeof json === "string" ? json : "") ||
+      "Request failed";
+    const error = new Error(message);
     (error as any).statusCode = response.status;
     (error as any).code = json?.code ?? "";
     (error as any).error = json?.error ?? "";

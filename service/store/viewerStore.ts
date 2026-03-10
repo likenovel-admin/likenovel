@@ -8,6 +8,7 @@ interface IWorkSettings {
   letterSpacing: number;
   lineHeight: number;
   marginSize: number;
+  useParagraphIndent: boolean;
   hideImageCover: boolean;
 }
 
@@ -32,6 +33,7 @@ const useViewStore = create<IWork>()(
         letterSpacing: 1,
         lineHeight: 2,
         marginSize: 2,
+        useParagraphIndent: true,
         hideImageCover: false,
       },
       setSettings: (newSettings) =>
@@ -47,12 +49,24 @@ const useViewStore = create<IWork>()(
             letterSpacing: 1,
             lineHeight: 2,
             marginSize: 2,
+            useParagraphIndent: true,
             hideImageCover: false,
           },
         })),
     }),
     {
       name: "work-settings",
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<IWork> | undefined;
+        return {
+          ...currentState,
+          ...persisted,
+          settings: {
+            ...currentState.settings,
+            ...(persisted?.settings ?? {}),
+          },
+        };
+      },
     }
   )
 );

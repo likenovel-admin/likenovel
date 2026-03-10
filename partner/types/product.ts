@@ -1,6 +1,7 @@
 export interface IProduct {
   product_id: number;
   title: string;
+  synopsis?: string;
   author_nickname: string;
   count_episode: number;
   contract_type: string | null;
@@ -17,10 +18,18 @@ export interface IProduct {
   primary_genre_id: number | null;
   sub_genre_id: number | null;
   single_regular_price: number;
+  single_rental_price: number;
   series_regular_price: number;
   price_type: string;
   monopoly_yn: "Y" | "N";
   blind_yn: "Y" | "N";
   cp_author_profit: number;
   cp_contract_price: number;
+  free_episode_start_no?: number | null;
+  free_episode_end_no?: number | null;
+  paid_episode_no?: number | null;
+  cover_image_path?: string | null;
+  coverImagePath?: string | null;
+  thumbnail_file_path?: string | null;
+  thumbnailFilePath?: string | null;
 }

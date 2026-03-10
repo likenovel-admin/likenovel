@@ -26,3 +26,11 @@ export interface ILoginInResponse {
 }
 
 export type IAdminDetailResponse = IUserAdmin[];
+
+export interface IPartnerRelayConsumeRequest {
+  relay_key: string;
+}
+
+export interface IPartnerRelayConsumeResponse {
+  data: IAuth;
+}

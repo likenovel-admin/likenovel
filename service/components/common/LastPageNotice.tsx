@@ -18,12 +18,12 @@ const LastPageNotice = () => {
     <>
       {notice.length > 0 ? (
         <div
-          className="w-full cursor-pointer flex items-center justify-center min-h-[60px] md:min-h-[60px] border-t border-light-gray-300"
+          className="w-full cursor-pointer flex items-center justify-start md:justify-center min-h-[60px] md:min-h-[60px] border-t border-light-gray-300"
           onClick={() => {
             router.push(`/product/customer-service/notice/${notice?.[0]?.id}`);
           }}
         >
-          <div className="w-full flex-1 flex items-center justify-center md:justify-around lg:justify-center px-8pxr sm:px-16pxr lg:max-w-[1080px]">
+          <div className="w-full flex-1 flex items-center justify-start md:justify-around lg:justify-center px-8pxr sm:px-16pxr lg:max-w-[1080px]">
             <Image
               src={"/images/notice.svg"}
               width={20}

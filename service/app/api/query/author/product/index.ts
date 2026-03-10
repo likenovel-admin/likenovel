@@ -54,6 +54,17 @@ export const useSelectEpisodeCount = () => {
   });
 };
 
+export const useCanCreateNormal = (enabled: boolean) => {
+  return useQuery<{ can_create_normal: boolean }>({
+    queryKey: ["canCreateNormal"],
+    queryFn: async () => {
+      const response = await instance.get("/v1/query/products/can-create-normal");
+      return response.data;
+    },
+    enabled,
+  });
+};
+
 export const useMakeProduct = () => {
   return useMutation<unknown, Error, IMakeProductRequest>({
     mutationFn: async (data: IMakeProductRequest) => {

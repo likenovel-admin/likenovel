@@ -15,6 +15,7 @@ export interface IGetProductDiscoveryStatisticsParams {
   count_per_page?: number;
   search_target?: string;
   search_word?: string;
+  scope?: "contracted";
 }
 
 export type IGetProductDiscoveryStatisticsDetailResponse =

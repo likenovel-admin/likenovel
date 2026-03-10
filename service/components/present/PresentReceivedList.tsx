@@ -3,8 +3,10 @@
 import { useSelectUserGiftBookHistory } from "@/app/api/query/giftbook";
 import { IUserGiftBookHistoryItem } from "@/app/api/query/giftbook/dto";
 import { DEFAULT_PRODUCT_IMAGE } from "@/constants/common";
+import { getGiftTicketLabel } from "@/utils/giftTicketLabel";
 import { getFormattingDate } from "@/utils/getFormattingDate";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Spinner from "../common/Spinner";
 import Tab from "../common/Tab";
@@ -26,6 +28,10 @@ interface IPresentReceivedItem {
   rentalRemaining?: number | null;
   waitForFreeYn?: "Y" | "N";
   hasProduct: boolean;
+  promotionType: string;
+  acquisitionType: string;
+  ticketType: string;
+  promotionItemType: string;
 }
 
 const formatRemainingTime = (
@@ -80,6 +86,7 @@ const formatRemainingTime = (
 };
 
 const PresentReceived = () => {
+  const router = useRouter();
   const [selectedTab, setSelectedTab] = useState<"received" | "used">(
     "received"
   );
@@ -105,6 +112,10 @@ const PresentReceived = () => {
       rentalRemaining: item.rental_remaining,
       waitForFreeYn: item.product?.badge?.waitForFreeYn || "N",
       hasProduct: item.product !== null,
+      promotionType: item.promotion_type || "",
+      acquisitionType: item.acquisition_type || "",
+      ticketType: item.ticket_type || "",
+      promotionItemType: item.promotion?.type || "",
     })) || [];
 
   // Filter based on selectedCheck (only apply for "received" tab)
@@ -119,8 +130,19 @@ const PresentReceived = () => {
         })
       : allPresents;
   return (
-    <div className="w-full h-full flex flex-col px-20pxr">
-      <header className="flex justify-between py-16pxr">
+    <div className="w-full h-full flex flex-col px-20pxr md:px-0 max-w-[1120px] mx-auto">
+      <header className="flex items-center gap-8pxr py-16pxr">
+        <button
+          onClick={() => router.push("/product/present")}
+          className="p-8pxr"
+        >
+          <Image
+            src="/images/arrow-left.svg"
+            width={8}
+            height={14}
+            alt="뒤로가기"
+          />
+        </button>
         <h1 className="text-18pxr md:text-24pxr font-bold">받은 선물함</h1>
       </header>
       <div className="pb-4 pt-2">
@@ -237,7 +259,15 @@ const PresentReceivedItem = (
                 height={16}
                 alt="대여권"
               />
-              <span className="text-13pxr">대여권 {props.amount}장</span>
+              <span className="text-13pxr">
+                {getGiftTicketLabel({
+                  promotionType: props.promotionType,
+                  acquisitionType: props.acquisitionType,
+                  ticketType: props.ticketType,
+                  promotionItemType: props.promotionItemType,
+                })}{" "}
+                {props.amount}장
+              </span>
             </div>
           )}
         </div>
@@ -269,7 +299,15 @@ const PresentReceivedItem = (
                   height={16}
                   alt="대여권"
                 />
-                <span className="text-13pxr">대여권 {props.amount}장</span>
+                <span className="text-13pxr">
+                  {getGiftTicketLabel({
+                    promotionType: props.promotionType,
+                    acquisitionType: props.acquisitionType,
+                    ticketType: props.ticketType,
+                    promotionItemType: props.promotionItemType,
+                  })}{" "}
+                  {props.amount}장
+                </span>
               </div>
               {!!formatRemainingTime(
                 props.rentalRemaining,

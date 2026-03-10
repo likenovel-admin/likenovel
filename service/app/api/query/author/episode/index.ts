@@ -1,6 +1,7 @@
 import { instance } from "@/app/api/axios";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
+  ICreateAuthorEpisodePredictionRequest,
   IGetProductNoticeDetailResponse,
   IMakeEpisodeRequest,
   IMakeNoticeRequest,
@@ -61,7 +62,7 @@ export const useMakeEpisode = () => {
       if (episodeId) {
         queryString = new URLSearchParams({
           save: isSave,
-          episodeId: episodeId.toString(),
+          episode_id: episodeId.toString(),
         }).toString();
       } else {
         queryString = new URLSearchParams({
@@ -212,6 +213,18 @@ export const useOpenNotice = () => {
       return await instance.put(
         `/v1/command/products/notices/${noticeId}/open`
       );
+    },
+  });
+};
+
+export const useCreateAuthorEpisodePrediction = () => {
+  return useMutation<
+    unknown,
+    Error,
+    ICreateAuthorEpisodePredictionRequest
+  >({
+    mutationFn: async (data: ICreateAuthorEpisodePredictionRequest) => {
+      return await instance.post("/v1/command/predictions/author-episode", data);
     },
   });
 };

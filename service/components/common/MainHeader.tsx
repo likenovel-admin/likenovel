@@ -1,8 +1,9 @@
 import TimeSpeechBubble from "../common/TimeSpeechBubble";
 import ArrowRightSmall from "/public/images/arrow-right-small.svg";
 import QuestionMark from "/public/images/question-mark.svg";
+import type { ReactNode } from "react";
 interface Props {
-  headerText: string;
+  headerText: ReactNode;
   textStyle?: string;
   hasTimeSpeechBubble?: boolean;
   hasMoreButton?: boolean;

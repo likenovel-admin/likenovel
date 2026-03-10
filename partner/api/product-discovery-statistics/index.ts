@@ -37,15 +37,21 @@ export const getDownloadProductDiscoveryStatisticss = async (
   return res;
 };
 
-export const useGetProductDiscoveryStatisticsDetail = (id: string) => {
+export const useGetProductDiscoveryStatisticsDetail = (
+  id: string,
+  scope?: "contracted"
+) => {
   return useQuery<IGetProductDiscoveryStatisticsDetailResponse>({
-    queryKey: ["GetProductDiscoveryStatisticsDetail", id],
+    queryKey: ["GetProductDiscoveryStatisticsDetail", id, scope],
 
     queryFn: async () => {
       const res =
         await apiClient.request<IGetProductDiscoveryStatisticsDetailResponse>({
           url: "/v1/query/partners/product-discovery-statistics/" + id,
           method: "GET",
+          queryParams: {
+            scope,
+          },
         });
       return res;
     },

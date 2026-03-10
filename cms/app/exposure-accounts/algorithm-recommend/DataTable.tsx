@@ -1,9 +1,13 @@
 "use client";
 
-import { useUpdateAlgorithmSection } from "@/api/algorithm";
+import {
+  useUpdateAlgorithmSection,
+  useUpdateAlgorithmSetTopic,
+} from "@/api/algorithm";
 import CommonTable, { Column } from "@/components/common/CommonTable";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -19,6 +23,7 @@ import {
   IAlgorithmSimilar,
   IAlgorithmUser,
 } from "@/types/algorithm";
+import { useEffect, useState } from "react";
 
 interface AlgorithmUserTableProps {
   data: IAlgorithmUser[];
@@ -106,12 +111,26 @@ export default function AlgorithmUserTable({
 interface AlgorithmSetTopicTableProps {
   data: IAlgorithmSetTopic[];
   loading?: boolean;
+  refetch: () => void;
 }
 
 export function AlgorithmSetTopicTable({
   data,
   loading,
+  refetch,
 }: AlgorithmSetTopicTableProps) {
+  const updateAlgorithmSetTopic = useUpdateAlgorithmSetTopic();
+  const [draftTitles, setDraftTitles] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    setDraftTitles(
+      data.reduce<Record<number, string>>((acc, row) => {
+        acc[row.id] = row.title;
+        return acc;
+      }, {})
+    );
+  }, [data]);
+
   const columns: Column[] = [
     {
       header: "feature",
@@ -124,6 +143,45 @@ export function AlgorithmSetTopicTable({
     {
       header: "title",
       key: "title",
+      render: (_, row: IAlgorithmSetTopic) => (
+        <div className="flex items-center gap-2 min-w-[320px]">
+          <Input
+            value={draftTitles[row.id] ?? ""}
+            onChange={(event) => {
+              setDraftTitles((prev) => ({
+                ...prev,
+                [row.id]: event.target.value,
+              }));
+            }}
+          />
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (updateAlgorithmSetTopic.isPending) {
+                return;
+              }
+              updateAlgorithmSetTopic.mutate(
+                {
+                  id: String(row.id),
+                  body: {
+                    title: draftTitles[row.id] ?? "",
+                  },
+                },
+                {
+                  onSuccess: () => {
+                    refetch();
+                  },
+                  onError: (err: any) => {
+                    showAlert("오류", catchErrorMessage(err), "확인");
+                  },
+                }
+              );
+            }}
+          >
+            저장
+          </Button>
+        </div>
+      ),
     },
     {
       header: "novel_list",
@@ -134,6 +192,7 @@ export function AlgorithmSetTopicTable({
   return (
     <>
       <CommonTable columns={columns} data={data} loading={loading} />
+      <FullPageLoader isLoading={updateAlgorithmSetTopic.isPending} />
     </>
   );
 }

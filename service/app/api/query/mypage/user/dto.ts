@@ -65,8 +65,8 @@ export interface ISelectUserContractOfferResponse {
 type YN = "Y" | "N";
 type PriceType = "free" | "paid";
 type ProductType = "free" | "paid";
-type PromotionType = "free-for-first"; // extend if others exist
-type PromotionStatus = "ing" | "stop"; // extend if others exist
+type PromotionType = "free-for-first" | "reader-of-prev";
+type PromotionStatus = "pending" | "ing" | "stop" | "end";
 type OngoingState = "ongoing" | "paused" | "ended";
 type ConvertToPaidState =
   | "not_applied"

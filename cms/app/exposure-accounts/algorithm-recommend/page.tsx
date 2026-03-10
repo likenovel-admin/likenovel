@@ -359,6 +359,7 @@ function Page() {
             <AlgorithmSetTopicTable
               data={dataSetTopic?.results ?? []}
               loading={isLoadingSetTopic || isFetchingSetTopic}
+              refetch={refetchSetTopic}
             />
             <PaginationControls
               page={filters.page || 1}

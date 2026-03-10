@@ -6,6 +6,7 @@ import Carousel from "@/components/main/Carousel";
 import CPPromotion from "@/components/main/CPPromotion";
 import End from "@/components/paid/End";
 import Ongoing from "@/components/paid/Ongoing";
+import Standalone from "@/components/paid/Standalone";
 import { useState } from "react";
 
 export default function Paid() {
@@ -27,19 +28,29 @@ export default function Paid() {
             </div>
           </div>
           <div className="w-full max-w-[1120px] mx-auto flex flex-col mt-70pxr md:mt-[100px]">
-            <CPPromotion data={cpPromotionProducts} />
+            <CPPromotion
+              data={cpPromotionProducts}
+              title={data?.publisherPromotionTitle}
+            />
             <div className="pl-16pxr md:pl-0 mt-50pxr">
               <Tab
                 tabs={[
                   { label: "연재중", value: "ongoing" },
-                  { label: "완결", value: "end" },
+                  { label: "단행본", value: "standalone" },
+                  { label: "연재완결", value: "end" },
                 ]}
                 style="black"
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
               />
             </div>
-            {activeTab === "ongoing" ? <Ongoing /> : <End />}
+            {activeTab === "ongoing" ? (
+              <Ongoing />
+            ) : activeTab === "standalone" ? (
+              <Standalone />
+            ) : (
+              <End />
+            )}
           </div>
         </div>
       ) : (

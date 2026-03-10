@@ -1,5 +1,9 @@
 "use client";
 import { useStorageRelay } from "@/app/api/query/storage-relay";
+import {
+  ONBOARDING_FIRST_LOGIN_SESSION_KEY,
+  SOCIAL_SIGNUP_PENDING_SESSION_KEY,
+} from "@/constants/onboarding";
 import useAuthStore from "@/store/authStore";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
@@ -39,6 +43,18 @@ const StorageRelayPage = () => {
               },
               keepSignIn || "Y" // Default to "Y" if not provided
             );
+            if (typeof window !== "undefined") {
+              const isSocialSignup =
+                sessionStorage.getItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY) ===
+                "Y";
+              if (isSocialSignup) {
+                sessionStorage.setItem(
+                  ONBOARDING_FIRST_LOGIN_SESSION_KEY,
+                  "Y"
+                );
+                sessionStorage.removeItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY);
+              }
+            }
           }
           // 저장된 세션 정보를 가져와서 세션 스토리지 및 로컬 스토리지에 세팅한 후, 메인페이지로 이동
           router.push("/");

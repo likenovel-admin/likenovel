@@ -60,7 +60,7 @@ html {
 @layer slick {
   .slider-container {
     width: 100%;
-    max-width: 1280px;
+    max-width: 1120px;
     margin: auto;
   }
 
@@ -72,7 +72,12 @@ html {
   .slick-slide {
     height: 400px !important;
     border-radius: 30px;
-    padding-right: 5px;
+  }
+
+  @media (max-width: 1024px) {
+    .slick-slide {
+      padding-right: 5px;
+    }
   }
 
   .slick-center {
@@ -98,11 +103,30 @@ html {
     outline: none !important;
   }
   .ProseMirror p.is-editor-empty:first-child::before {
-    content: attr(data-placeholder);
+    content: "본문을 입력해 주세요.\A \A [안내사항]\A 1. 본문은 최대 20,000자까지 입력 가능합니다.\A 2. 이미지는 상단 툴바에서 업로드할 수 있습니다.\A 3. 메모장 등에서 붙여넣기 시 서식 없이 텍스트만 반영됩니다.\A 4. 임시저장 버튼을 활용하여 작성 중인 내용을 보관할 수 있습니다.";
+    white-space: pre-line;
     float: left;
     color: #adb5bd;
     pointer-events: none;
     height: 0;
+    width: 100%;
+  }
+
+  /*
+    메모장(plain text) 붙여넣기 시 "개행/공백이 그대로" 보이도록 하는 핵심 스타일.
+    - HTML 기본 렌더링의 공백 축약을 막고, 줄바꿈을 시각적으로 유지합니다.
+    - TipTap(ProseMirror) 편집 영역에만 적용됩니다.
+  */
+  .ProseMirror {
+    white-space: pre-wrap;
+    word-break: break-word;
+    tab-size: 4;
+  }
+
+  /* prose 클래스의 <p> 마진 제거 — textarea와 동일한 줄 간격 유지 */
+  .ProseMirror p {
+    margin-top: 0;
+    margin-bottom: 0;
   }
 
   /* Image styles for TipTap editor */

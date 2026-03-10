@@ -43,6 +43,12 @@ export interface IPasswordResetRequest {
   gender?: string;
 }
 
+export interface IPublicPasswordResetRequest {
+  email: string;
+  token: string;
+  password: string;
+}
+
 export interface ISelectUserResponse {
   data: {
     userId: number;

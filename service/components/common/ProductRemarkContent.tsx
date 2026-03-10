@@ -109,13 +109,13 @@ const ProductRemarkContent = ({ data, remarkContent, isFree }: Props) => {
             <div className="flex justify-between">
               <span className="text-11pxr text-dark-gray-300">CP조회수</span>
               <span className="text-11pxr text-dark-gray-500">
-                {data?.trendindex.cpHitCount}
+                {data?.trendindex.cpHitCount || '-'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-11pxr text-dark-gray-300">연독률</span>
               <span className="text-11pxr text-dark-gray-500">
-                {data?.trendindex.readThroughRate}%
+                {data?.trendindex.readThroughRate ? `${Number(data.trendindex.readThroughRate).toFixed(1)}%` : '-'}
               </span>
             </div>
             <div className="flex justify-between">
@@ -123,7 +123,7 @@ const ProductRemarkContent = ({ data, remarkContent, isFree }: Props) => {
                 주평균 연재횟수
               </span>
               <span className="text-11pxr text-dark-gray-500">
-                {data?.properties.averageWeeklyEpisodes}
+                {data?.properties.averageWeeklyEpisodes ? Number(data.properties.averageWeeklyEpisodes).toFixed(1) : '-'}
               </span>
             </div>
             <div className="flex justify-between">
@@ -158,13 +158,13 @@ const ProductRemarkContent = ({ data, remarkContent, isFree }: Props) => {
             <div className="flex justify-between">
               <span className="text-11pxr text-dark-gray-300">CP조회수</span>
               <span className="text-11pxr text-dark-gray-500">
-                {data?.trendindex.cpHitCount}
+                {data?.trendindex.cpHitCount || '-'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-11pxr text-dark-gray-300">연독률</span>
               <span className="text-11pxr text-dark-gray-500">
-                {data?.trendindex.readThroughRate}%
+                {data?.trendindex.readThroughRate ? `${Number(data.trendindex.readThroughRate).toFixed(1)}%` : '-'}
               </span>
             </div>
             <div className="flex justify-between">
@@ -172,7 +172,7 @@ const ProductRemarkContent = ({ data, remarkContent, isFree }: Props) => {
                 주평균 연재횟수
               </span>
               <span className="text-11pxr text-dark-gray-500">
-                {data?.properties.averageWeeklyEpisodes}
+                {data?.properties.averageWeeklyEpisodes ? Number(data.properties.averageWeeklyEpisodes).toFixed(1) : '-'}
               </span>
             </div>
             <div className="flex justify-between">

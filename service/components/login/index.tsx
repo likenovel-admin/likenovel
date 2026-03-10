@@ -2,6 +2,7 @@ import { useEmailSignIn } from "@/app/api/auth";
 import { ISignInRequest } from "@/app/api/auth/dto";
 import useAuthStore from "@/store/authStore";
 import useToastStore from "@/store/toastStore";
+import { SOCIAL_SIGNUP_PENDING_SESSION_KEY } from "@/constants/onboarding";
 import { ISocialLoginProvider } from "@/types";
 import { getStateAndReDirectUri } from "@/utils/getStateAndRedirectUri";
 import {
@@ -180,6 +181,10 @@ const Login = ({ pageType, setIsOpen }: Props) => {
   // };
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY);
+    }
+
     const storedLoginType = localStorage.getItem("recent_sign_in_type");
     if (storedLoginType) {
       setRecentLoginType(storedLoginType as ISocialLoginProvider);
@@ -333,18 +338,33 @@ const Login = ({ pageType, setIsOpen }: Props) => {
             provider={"naver"}
             isRecentSingIn={recentLoginType === "naver"}
             isKeepSignIn={watch("isKeepSignIn")}
+            onBeforeRedirect={() => {
+              if (typeof window !== "undefined") {
+                sessionStorage.removeItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY);
+              }
+            }}
           />
 
           <SocialLoginButton
             provider={"kakao"}
             isRecentSingIn={recentLoginType === "kakao"}
             isKeepSignIn={watch("isKeepSignIn")}
+            onBeforeRedirect={() => {
+              if (typeof window !== "undefined") {
+                sessionStorage.removeItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY);
+              }
+            }}
           />
 
           <SocialLoginButton
             provider={"google"}
             isRecentSingIn={recentLoginType === "google"}
             isKeepSignIn={watch("isKeepSignIn")}
+            onBeforeRedirect={() => {
+              if (typeof window !== "undefined") {
+                sessionStorage.removeItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY);
+              }
+            }}
             onGoogleClick={() => {
               onGoogleLogin();
             }}

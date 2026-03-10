@@ -100,14 +100,23 @@ export const showAlert = (
     confirmButtonText: confirm,
     buttonsStyling: false,
     customClass: {
-      popup: "styled-swal-popup form-height",
+      popup: popupClass,
+      htmlContainer: "swal-html-container",
       confirmButton: "swal-confirm-btn",
     },
     didOpen: () => {
       const style = document.createElement("style");
       style.textContent = `
-        .form-height{
-          height: 205px;
+        .styled-swal-popup{
+          width: min(560px, calc(100vw - 32px));
+          padding: 2rem 1.5rem 1.25rem;
+        }
+        .swal-html-container{
+          margin: 1rem 0 1.25rem 0;
+          max-height: min(50vh, 320px);
+          overflow: auto;
+          line-height: 1.5;
+          word-break: keep-all;
         }
         .swal-confirm-btn {
           background: #2563eb;

@@ -17,6 +17,7 @@ const BottomProducts = ({ suggestionData, productType = "suggest" }: Props) => {
   const device = useMediaDevice();
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 7;
+  const isDesktop = device !== "mobile" && device !== "tablet";
 
   if (!suggestionData || !suggestionData.products.length) {
     return <ErrorArea />;
@@ -32,17 +33,17 @@ const BottomProducts = ({ suggestionData, productType = "suggest" }: Props) => {
   //       );
 
   // New logic: Index-based scrolling (move one item at a time)
-  const currentProducts =
-    device === "mobile" || device === "tablet"
-      ? suggestionData.products
-      : suggestionData.products.slice(
-          // currentPage * itemsPerPage,
-          // (currentPage + 1) * itemsPerPage
-          currentPage,
-          currentPage + itemsPerPage
-        );
+  const currentProducts = isDesktop
+    ? suggestionData.products.slice(
+        // currentPage * itemsPerPage,
+        // (currentPage + 1) * itemsPerPage
+        currentPage,
+        currentPage + itemsPerPage
+      )
+    : suggestionData.products;
 
   const totalItems = suggestionData.products.length;
+  const showArrows = isDesktop && totalItems > itemsPerPage;
 
   // Old logic: Calculate total pages
   // const lastPage = Math.ceil(totalItems / itemsPerPage) - 1;
@@ -51,21 +52,14 @@ const BottomProducts = ({ suggestionData, productType = "suggest" }: Props) => {
   const lastPage = Math.max(0, totalItems - itemsPerPage);
 
   const handleNextPage = () => {
-    // Old logic: Move to next page
-    // if ((currentPage + 1) * itemsPerPage < suggestionData.products.length) {
-    //   setCurrentPage(currentPage + 1);
-    // }
-
-    // New logic: Move one item forward
     if (currentPage < lastPage) {
-      setCurrentPage(currentPage + 1);
+      setCurrentPage((prev) => Math.min(lastPage, prev + 1));
     }
   };
 
   const handlePrevPage = () => {
-    // New logic remains same as old
     if (currentPage > 0) {
-      setCurrentPage(currentPage - 1);
+      setCurrentPage((prev) => Math.max(0, prev - 1));
     }
   };
   return (
@@ -89,20 +83,24 @@ const BottomProducts = ({ suggestionData, productType = "suggest" }: Props) => {
           />
         ))}
       </div>
-      <div className="absolute top-[43%] left-[-20px] z-5 hidden lg:block">
-        <CircleArrow
-          direction="left"
-          onClick={handlePrevPage}
-          isDisabled={currentPage === 0}
-        />
-      </div>
-      <div className="absolute top-[43%] right-[-20px] z-5 hidden lg:block">
-        <CircleArrow
-          direction="right"
-          onClick={handleNextPage}
-          isDisabled={currentPage === lastPage}
-        />
-      </div>
+      {showArrows && (
+        <>
+          <div className="absolute top-[43%] left-[-20px] z-5 hidden lg:block">
+            <CircleArrow
+              direction="left"
+              onClick={handlePrevPage}
+              isDisabled={currentPage === 0}
+            />
+          </div>
+          <div className="absolute top-[43%] right-[-20px] z-5 hidden lg:block">
+            <CircleArrow
+              direction="right"
+              onClick={handleNextPage}
+              isDisabled={currentPage >= lastPage}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };

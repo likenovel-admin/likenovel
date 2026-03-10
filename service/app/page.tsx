@@ -12,8 +12,10 @@ import PaidTop from "@/components/main/PaidTop";
 import RecentlyView from "@/components/main/RecentlyView";
 import Footer from "@/components/menu/Footer";
 import GlobalNav from "@/components/menu/GlobalNav";
+import TasteSection from "@/components/recommendation/TasteSection";
+import OnboardingModal from "@/components/recommendation/OnboardingModal";
 import { IProduct } from "@/types";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useGetDirectRecommend,
   useSelectInterestDropSoonUpdateProducts,
@@ -21,11 +23,21 @@ import {
   useSelectMainSuggestProducts,
   useSelectProducts,
 } from "./api/query/product";
+import { ISectionData } from "./api/query/product/dto";
+import { useGetTasteRecommendations } from "./api/query/recommendation";
+import { IRecommendSection } from "./api/query/recommendation/dto";
+import {
+  ONBOARDING_FIRST_LOGIN_SESSION_KEY,
+  ONBOARDING_STATUS_CHANGED_EVENT,
+} from "@/constants/onboarding";
 import useAuthStore from "@/store/authStore";
 
 export default function Home() {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated, accessToken } = useAuthStore();
   const adultYn = user?.isOnAdult ? "Y" : "N";
+  const canUseTasteRecommend = Boolean(isAuthenticated || accessToken || user?.userId);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [hasFirstLoginOnboarding, setHasFirstLoginOnboarding] = useState(false);
 
   const { data, isSuccess } = useSelectProducts(adultYn);
   const { data: suggestProductsData } = useSelectMainSuggestProducts(adultYn);
@@ -33,10 +45,68 @@ export default function Home() {
   const { data: interestDropSoonData } =
     useSelectInterestDropSoonUpdateProducts(adultYn);
   const { data: directRecommendData } = useGetDirectRecommend(adultYn);
+  const { data: tasteRecommendationsData } = useGetTasteRecommendations(
+    adultYn,
+    canUseTasteRecommend
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const pendingOnboarding =
+      sessionStorage.getItem(ONBOARDING_FIRST_LOGIN_SESSION_KEY) === "Y";
+    setHasFirstLoginOnboarding(pendingOnboarding);
+  }, [canUseTasteRecommend]);
+
+  useEffect(() => {
+    if (!canUseTasteRecommend || !hasFirstLoginOnboarding) return;
+    setShowOnboarding(true);
+  }, [canUseTasteRecommend, hasFirstLoginOnboarding]);
+
+  const handleCloseOnboarding = () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(ONBOARDING_FIRST_LOGIN_SESSION_KEY);
+      window.dispatchEvent(new Event(ONBOARDING_STATUS_CHANGED_EVENT));
+    }
+    setHasFirstLoginOnboarding(false);
+    setShowOnboarding(false);
+  };
 
   const suggestProducts = useMemo(() => {
     return suggestProductsData?.data ?? [];
   }, [suggestProductsData]);
+  const featureSections = useMemo<ISectionData[]>(() => {
+    const directSections =
+      directRecommendData?.data?.map((directProduct, index) => ({
+        products: directProduct?.productList || [],
+        suggestId: index + 1,
+        suggestName: directProduct?.title || "",
+        suggestTarget: "",
+        suggestTitle: directProduct?.title || "",
+      })) ?? [];
+    const suggestSections = suggestProducts.map((suggestProduct) => suggestProduct.sectionData);
+    return [...directSections, ...suggestSections];
+  }, [directRecommendData, suggestProducts]);
+  const tasteSections = useMemo<IRecommendSection[]>(
+    () => tasteRecommendationsData?.data?.sections ?? [],
+    [tasteRecommendationsData]
+  );
+  const mixedSections = useMemo<
+    Array<{ type: "feature"; section: ISectionData } | { type: "ai"; section: IRecommendSection }>
+  >(() => {
+    const mixed: Array<
+      { type: "feature"; section: ISectionData } | { type: "ai"; section: IRecommendSection }
+    > = [];
+    const maxLength = Math.max(featureSections.length, tasteSections.length);
+    for (let index = 0; index < maxLength; index += 1) {
+      if (featureSections[index]) {
+        mixed.push({ type: "feature", section: featureSections[index] });
+      }
+      if (tasteSections[index]) {
+        mixed.push({ type: "ai", section: tasteSections[index] });
+      }
+    }
+    return mixed;
+  }, [featureSections, tasteSections]);
 
   const freeTopProducts: IProduct[] = [];
   const paidTopProducts: IProduct[] = [];
@@ -79,25 +149,23 @@ export default function Home() {
               />
             </div>
             <div className="w-full max-w-[1120px] mx-auto flex flex-col mt-30pxr md:mt-70pxr gap-30pxr md:gap-68pxr">
-              <CPPromotion data={cpPromotionProducts} />
-              {(directRecommendData?.data || []).map((directProduct, index) => (
-                <BottomProducts
-                  suggestionData={{
-                    products: directProduct?.productList || [],
-                    suggestId: 0,
-                    suggestName: directProduct?.title || "",
-                    suggestTarget: "",
-                    suggestTitle: directProduct?.title || "",
-                  }}
-                  key="suggest"
-                />
-              ))}
-              {suggestProducts.map((suggestProduct) => (
-                <BottomProducts
-                  key={suggestProduct.sectionNo}
-                  suggestionData={suggestProduct.sectionData}
-                />
-              ))}
+              <CPPromotion
+                data={cpPromotionProducts}
+                title={data?.publisherPromotionTitle}
+              />
+              {mixedSections.map((item, index) =>
+                item.type === "feature" ? (
+                  <BottomProducts
+                    key={`feature-${index}-${item.section.suggestTitle || item.section.suggestId}`}
+                    suggestionData={item.section}
+                  />
+                ) : (
+                  <TasteSection
+                    key={`ai-${index}-${item.section.dimension || item.section.title || index}`}
+                    section={item.section}
+                  />
+                )
+              )}
               {/* TODO: 관심 끊기기 임박 작품 api 연결 */}
               <BottomProducts
                 suggestionData={{
@@ -130,6 +198,11 @@ export default function Home() {
           </div>
         )}
       </div>
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={handleCloseOnboarding}
+        dismissOnClose
+      />
       <FloatingDock footerOffset={110} />
       <Footer />
     </>

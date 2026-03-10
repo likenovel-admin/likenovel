@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   PAID_TOP_VIEW_TYPE: "paid_top_view_type",
   PREVIOUS_PAGE: "previous_page",
   POPUP_CLOSED_UNTIL: "popup_closed_until",
+  AI_RECOMMEND_OPEN_AFTER_LOGIN: "ai_recommend_open_after_login",
 } as const;
 
 /**

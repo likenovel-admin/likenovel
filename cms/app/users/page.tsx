@@ -1,5 +1,15 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -9,11 +19,10 @@ import { IGetUserParams } from "@/api/user/dto";
 import { item_per_page } from "@/constants/common";
 import { calculatePageCount, catchErrorMessage, showAlert } from "@/lib/utils";
 import { downloadExcel } from "@/lib/excelDownload";
-import { getUserDownload, useGetUser } from "@/api/user";
+import { getUserDownload, useCreateAccount, useGetUser } from "@/api/user";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import PaginationControls from "@/components/common/PaginationControls";
 import UsersTable from "@/app/users/UsersTable";
-import { IUser } from "@/types/user";
 
 function Page() {
   // const isMobile = useIsMobile()
@@ -21,6 +30,10 @@ function Page() {
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab") ?? "all";
   const [isLoading, setIsLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const createAccount = useCreateAccount();
   const [filters, setFilers] = useState<IGetUserParams>({
     page: 1,
     count_per_page: item_per_page,
@@ -143,6 +156,30 @@ function Page() {
     });
   };
 
+  const handleCreateAccount = async () => {
+    if (!newEmail.trim()) {
+      showAlert("오류", "이메일을 입력해주세요.", "확인");
+      return;
+    }
+    if (!newPassword.trim()) {
+      showAlert("오류", "비밀번호를 입력해주세요.", "확인");
+      return;
+    }
+    try {
+      await createAccount.mutateAsync({
+        email: newEmail,
+        password: newPassword,
+      });
+      showAlert("완료", "계정이 생성되었습니다.", "확인");
+      setShowCreateModal(false);
+      setNewEmail("");
+      setNewPassword("");
+      refetch();
+    } catch (error) {
+      showAlert("오류", catchErrorMessage(error), "확인");
+    }
+  };
+
   return (
     <>
       {/*{isMobile && <SidebarTrigger />}*/}
@@ -178,9 +215,14 @@ function Page() {
               onSearch={handleOnSearch}
               onReset={handleOnReset}
             />
-            <Button variant="outline" onClick={handleDownloadExcel}>
-              엑셀 다운로드
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setShowCreateModal(true)}>
+                임의계정 발급
+              </Button>
+              <Button variant="outline" onClick={handleDownloadExcel}>
+                엑셀 다운로드
+              </Button>
+            </div>
           </div>
           <UsersTable
             data={data?.results ?? []}
@@ -199,6 +241,62 @@ function Page() {
           />
         </div>
       </SidebarInset>
+
+      <Dialog
+        open={showCreateModal}
+        onOpenChange={(open) => {
+          setShowCreateModal(open);
+          if (!open) {
+            setNewEmail("");
+            setNewPassword("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>임의계정 발급</DialogTitle>
+            <DialogDescription>
+              이메일과 비밀번호를 입력하여 새 계정을 생성합니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="create-email">이메일</Label>
+              <Input
+                id="create-email"
+                type="email"
+                placeholder="이메일 주소를 입력하세요"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="create-password">비밀번호</Label>
+              <Input
+                id="create-password"
+                type="password"
+                placeholder="8자 이상, 영문+숫자+특수문자"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateModal(false)}
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleCreateAccount}
+              disabled={createAccount.isPending}
+            >
+              {createAccount.isPending ? "생성 중..." : "확인"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

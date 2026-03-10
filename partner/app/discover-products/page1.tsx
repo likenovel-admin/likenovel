@@ -230,7 +230,7 @@ const DiscoverProductsPage = () => {
                             <div className={`min-w-10 text-center ${notDisplayMoblie}`}>{product?.trendindex?.recommendCount || "0"}</div>
                             <div className={`min-w-16 text-center ${notDisplayMoblie}`}>{product?.trendindex?.evaluatedCount || "-"} {/*평가자수*/}</div>
                             <div className={`min-w-16 text-center ${notDisplayMoblie}`}>{product?.trendindex?.cpHitCount || "0"}</div>
-                            <div className={`min-w-10 text-center ${notDisplayMoblie}`}>{product?.trendindex?.readThroughRate || "0"}</div>
+                            <div className={`min-w-10 text-center ${notDisplayMoblie}`}>{product?.trendindex?.readThroughRate ? `${product.trendindex.readThroughRate}%` : '-'}</div>
                             <div className={`min-w-14 text-center ${notDisplayMoblie}`}>{product?.trendindex?.averageWritedCountByWeek || "-"} {/*주평균 연재횟수*/}</div>
                             <div className={`min-w-14 text-center ${notDisplayMoblie}`}>{product?.trendindex?.interestSustainCount || "0"}</div>
                             <div className={`min-w-14 text-center ${notDisplayMoblie}`}>{product?.trendindex?.interestLossCount || "0"}</div>

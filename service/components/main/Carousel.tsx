@@ -242,8 +242,7 @@ const Carousel = ({ primaryPanels }: Props) => {
                 <div
                   className="absolute top-0 left-0 rounded-[30px] w-full h-full z-40"
                   style={{
-                    // background: "rgba(0, 0, 0, 0.5)",
-                    background: "transparent",
+                    background: isTablet || currentSlide === index ? "transparent" : "rgba(0, 0, 0, 0.5)",
                   }}
                 />
               )}
@@ -251,6 +250,19 @@ const Carousel = ({ primaryPanels }: Props) => {
           </div>
         ))}
       </SliderComponent>
+      {/* Dash indicator — PC only */}
+      <div className="hidden lg:flex absolute bottom-[16px] left-1/2 -translate-x-1/2 z-50 gap-[6px] items-center">
+        {primaryPanels.map((_, index) => (
+          <div
+            key={index}
+            className={`h-[3px] rounded-full transition-all ${
+              currentSlide === index
+                ? "w-[24px] bg-white"
+                : "w-[8px] bg-white/40"
+            }`}
+          />
+        ))}
+      </div>
     </div>
   );
 };

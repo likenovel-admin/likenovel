@@ -100,8 +100,7 @@ const TargetReaderAnalysisChart = ({
               {chartConfig.firstTarget.label}
             </div>
             <div className="text-lg text-[#4D51C0] font-semibold">
-              {/* {data?.[0]?.percent || 0}대 남성({data?.[0]?.percent || 0}%) */}
-              {primary_reader_group1}성({data?.[0]?.percent || 0}%)
+              {primary_reader_group1 ? `${primary_reader_group1}성` : (data?.[0]?.user_type || "-")}({data?.[0]?.percent ?? 0}%)
             </div>
           </div>
           <Separator orientation="vertical" className="mx-1 h-9" />
@@ -110,8 +109,7 @@ const TargetReaderAnalysisChart = ({
               {chartConfig.secondTarget.label}
             </div>
             <div className="text-lg text-[#F8A70B] font-semibold">
-              {/* {data?.[1]?.percent || 0}대 여성({data?.[1]?.percent || 0}%) */}
-              {primary_reader_group2}성({data?.[1]?.percent || 0}%)
+              {primary_reader_group2 ? `${primary_reader_group2}성` : (data?.[1]?.user_type || "-")}({data?.[1]?.percent ?? 0}%)
             </div>
           </div>
         </div>

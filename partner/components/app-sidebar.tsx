@@ -27,9 +27,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthenticate";
 import { clearLocalStorage, confirm } from "@/lib/utils";
+import { useProfile } from "@/hooks/useProfile";
 
 /*import DashboardMenuIcon from "@/public/dashboard-menu-icon.svg"*/
 
@@ -39,13 +40,7 @@ const data = {
     email: "m@example.com",
     /*avatar: "/avatars/shadcn.jpg",*/
   },
-  navMain: (pathname: string) => [
-    // {
-    //   title: "Dashboard",
-    //   url: "/dashboard",
-    //   icon: SquareTerminal,
-    //   /*isActive: true,*/
-    // },
+  navMainBase: (pathname: string) => [
     {
       title: "작품 관리",
       url: "/products",
@@ -55,6 +50,10 @@ const data = {
         {
           title: "작품 리스트",
           url: "/products",
+        },
+        {
+          title: "작품 업로드",
+          url: "/products/upload",
         },
       ],
     },
@@ -166,12 +165,6 @@ const data = {
     //     },
     //   ],
     // },
-    {
-      title: "발굴 통계",
-      url: "/discover-products",
-      icon: SquareTerminal,
-      isActive: pathname == "/discover-products",
-    },
   ],
   navSecondary: [
     {
@@ -206,7 +199,66 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { setIsAuthenticated } = useAuthStore();
+  const { roleType } = useProfile();
+  const isSummaryMode =
+    pathname.startsWith("/discover-products") &&
+    searchParams.get("mode") === "summary";
+
+  const navMain = React.useMemo(() => {
+    const baseItems = data.navMainBase(pathname);
+
+    if (roleType === "user") {
+      const authorItems = baseItems.map((item) =>
+        item.url === "/products"
+          ? {
+              ...item,
+              items: (item.items || []).filter(
+                (subItem) => subItem.url !== "/products/upload"
+              ),
+            }
+          : item
+      );
+
+      return [
+        {
+          title: "작품요약",
+          url: "/discover-products",
+          icon: SquareTerminal,
+          isActive: pathname.startsWith("/discover-products"),
+        },
+        ...authorItems,
+      ];
+    }
+
+    if (roleType === "admin" || roleType === "cp") {
+      const items =
+        roleType === "cp"
+          ? [
+              {
+                title: "작품요약",
+                url: "/discover-products?mode=summary",
+                icon: SquareTerminal,
+                isActive: isSummaryMode,
+              },
+              ...baseItems,
+            ]
+          : baseItems;
+
+      return [
+        ...items,
+        {
+          title: "발굴 통계",
+          url: "/discover-products",
+          icon: SquareTerminal,
+          isActive: pathname.startsWith("/discover-products") && !isSummaryMode,
+        },
+      ];
+    }
+
+    return baseItems;
+  }, [isSummaryMode, pathname, roleType, searchParams]);
 
   const handleLogout = async () => {
     const result = await confirm({
@@ -295,7 +347,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="mt-7">
-        <NavMain items={data.navMain(pathname)} />
+        <NavMain items={navMain} />
         {/*<NavProjects projects={data.projects}/>
           <NavSecondary items={data.navSecondary} className="mt-auto"/>*/}
       </SidebarContent>

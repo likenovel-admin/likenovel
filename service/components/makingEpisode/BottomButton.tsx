@@ -30,7 +30,7 @@ const BottomButton = ({
               onClick={onSave}
               disabled={isSubmitting}
             >
-              저장
+              임시저장
             </Button>
             <Button
               className="flex-1 rounded-[14px]"
@@ -77,7 +77,7 @@ const BottomButton = ({
               onClick={onSave}
               disabled={isSubmitting}
             >
-              저장
+              임시저장
             </Button>
             <Button
               className="flex-[60]"

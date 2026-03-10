@@ -19,6 +19,7 @@ interface PageHeaderProps {
 
 // Mapping parent name to first menu URL
 const parentUrlMap: Record<string, string> = {
+  "작품요약": "/discover-products",
   "작품 관리": "/products",
   "통계 분석": "/statistics",
   "매출 및 정산": "/sales/products",

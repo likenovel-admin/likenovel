@@ -124,7 +124,7 @@ const ProductCoverCard = ({ data, hasInterestBadge = false }: Props) => {
           }
         }}
       >
-        <span className="w-[108px] md:w-[137px] text-14pxr md:text-15pxr font-medium leading-[19px] line-clamp-2">
+        <span className="w-[108px] md:w-[137px] text-14pxr md:text-15pxr font-medium leading-[19px] line-clamp-1">
           {data.title}
         </span>
         <div className="relative flex items-center">

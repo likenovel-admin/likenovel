@@ -11,6 +11,7 @@ interface EpisodeTabAreaProps {
   notices: INotice[];
   productId: number;
   comments?: IComment[];
+  updateFrequency?: string;
 }
 
 const EpisodeTabArea = ({
@@ -18,6 +19,7 @@ const EpisodeTabArea = ({
   notices,
   productId,
   comments,
+  updateFrequency,
 }: EpisodeTabAreaProps) => {
   const [activeTab, setActiveTab] = useState("episode");
   return (
@@ -51,7 +53,12 @@ const EpisodeTabArea = ({
         onTabChange={(value) => setActiveTab(value)}
       />
       <div className="mt-4 px-5 md:px-0">
-        {activeTab === "episode" && <EpisodeRoundTab episodes={episodes} />}
+        {activeTab === "episode" && (
+          <EpisodeRoundTab
+            episodes={episodes}
+            updateFrequency={updateFrequency}
+          />
+        )}
         {activeTab === "notice" && <NoticeTab notices={notices} />}
         {activeTab === "reply" && (
           <CommentTab productId={productId} comments={comments} />

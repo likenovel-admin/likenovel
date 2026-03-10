@@ -3,9 +3,10 @@
 import { instance } from "@/app/api/axios";
 import notificationDefault from "@/public/images/notification-default.png";
 import useAlarmStore from "@/store/alarmStore";
-import { getUser } from "@/utils/getUser";
+import useAuthStore from "@/store/authStore";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 interface INotification {
   id: number;
@@ -18,8 +19,14 @@ interface INotification {
 }
 
 const NotificationList = () => {
+  const router = useRouter();
   const [showAll, setShowAll] = useState(false);
-  const user = getUser();
+  const { accessToken, user, isAuthenticated } = useAuthStore((state) => ({
+    accessToken: state.accessToken,
+    user: state.user,
+    isAuthenticated: state.isAuthenticated,
+  }));
+  const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
   const { setHasNew } = useAlarmStore();
   const { data: notifications } = useQuery<INotification[]>({
     queryKey: ["notifications", user?.userId],
@@ -27,11 +34,15 @@ const NotificationList = () => {
       const response = await instance.get("/v1/query/user/alarms");
       return response.data.data;
     },
+    enabled: canUseUserScope,
   });
 
+  const sortedNotifications = notifications?.slice().sort((a, b) => {
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
   const displayedNotifications = showAll
-    ? notifications
-    : notifications?.slice(0, 4);
+    ? sortedNotifications
+    : sortedNotifications?.slice(0, 4);
 
   const unreadNotifications = notifications?.filter(
     (item) => item.readYn === "N"
@@ -40,6 +51,10 @@ const NotificationList = () => {
 
   // Update hasNew when notifications data changes
   useEffect(() => {
+    if (!canUseUserScope) {
+      setHasNew(false);
+      return;
+    }
     if (notifications) {
       const unreadCount = notifications.filter(
         (item) => item.readYn === "N"
@@ -47,7 +62,7 @@ const NotificationList = () => {
       console.log("unreadCount list from useEffect", unreadCount);
       setHasNew(unreadCount > 0);
     }
-  }, [notifications, setHasNew]);
+  }, [canUseUserScope, notifications, setHasNew]);
 
   return (
     <div className="w-full min-h-[120px] flex flex-col">
@@ -59,7 +74,13 @@ const NotificationList = () => {
       <div className="flex flex-col">
         {displayedNotifications?.length ? (
           displayedNotifications.map((notification, index) => (
-            <NotificationItem key={index} {...notification} />
+            <div
+              key={index}
+              className="cursor-pointer hover:bg-gray-50"
+              onClick={() => router.push("/product/notification")}
+            >
+              <NotificationItem {...notification} />
+            </div>
           ))
         ) : (
           <div className="flex justify-center items-center py-40pxr text-dark-gray-400">
@@ -69,7 +90,7 @@ const NotificationList = () => {
         {!showAll && notifications?.length! > 3 && (
           <div className="px-20pxr py-10pxr">
             <button
-              onClick={() => setShowAll(true)}
+              onClick={() => router.push("/product/notification")}
               className="w-full text-15pxr text-primary-100"
             >
               알림 더보기

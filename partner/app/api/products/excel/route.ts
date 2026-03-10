@@ -26,7 +26,7 @@ export async function GET(request: Request) {
         '추천수': product.trendindex?.recommendCount || 0,
         '평가자수': product.trendindex?.evaluatedCount || 0,
         'CP조회수': product.trendindex?.cpHitCount || 0,
-        '연독률': product.trendindex?.readThroughRate || 0,
+        '연독률': product.trendindex?.readThroughRate || '-',
         '주평균연재': product.trendindex?.averageWritedCountByWeek || 0,
     })));
 

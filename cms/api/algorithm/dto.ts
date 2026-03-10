@@ -52,3 +52,7 @@ export interface IUpdateAlgorithmSectionResponse {
     message: string;
   };
 }
+
+export interface IUpdateAlgorithmSetTopicRequest {
+  title: string;
+}

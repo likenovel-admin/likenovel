@@ -74,13 +74,15 @@ export default function ProductDetail() {
     "asc"
   );
 
-  const { episodeId, latestEpisodeNo, firstEpisodeId, episodeCount } =
+  const { episodeId, latestEpisodeNo, latestEpisodeTitle, firstEpisodeId, firstEpisodeTitle, episodeCount } =
     useMemo(() => {
       return {
         episodeId: episodes?.pages[0].data.latestEpisodeId ?? 0,
         latestEpisodeNo: episodes?.pages[0].data.latestEpisodeNo ?? 0,
+        latestEpisodeTitle: episodes?.pages[0].data.latestEpisodeTitle ?? "",
         episodeCount: episodes?.pages[0].data.pagination.totalCount ?? 0,
         firstEpisodeId: episodes?.pages[0].data.episodes[0]?.episodeId ?? 0,
+        firstEpisodeTitle: episodes?.pages[0].data.episodes[0]?.episodeTitle ?? "",
       };
     }, [episodes]);
 
@@ -93,7 +95,10 @@ export default function ProductDetail() {
   } = useMemo(() => {
     const episodeTypePaidCount =
       data?.data.episodes.filter(
-        (ep) => ep.priceType === "paid" && ep.ownType !== "own"
+        (ep) =>
+          ep.priceType === "paid" &&
+          ep.ownType !== "own" &&
+          ep.ownType !== "rental"
       ).length || 0;
     return {
       productData: data?.data.product as IProduct,
@@ -360,7 +365,13 @@ export default function ProductDetail() {
       authorId={productData?.authorId}
       authorName={productData?.authorNickname}
       isPaidProduct={productData?.priceType === "paid"}
+      isVolumeProduct={
+        (productData?.singleRegularPrice ?? 0) > 0 &&
+        (productData?.seriesRegularPrice ?? 0) <= 0
+      }
       episodeTypePaidCount={episodeTypePaidCount}
+      ownPrice={productData?.singleRegularPrice ?? 0}
+      rentalPrice={productData?.singleRentalPrice ?? 0}
       interestStatus={productData?.interestStatus}
       interestEndDate={productData?.badge?.interestEndDate}
       productName={productData?.title}
@@ -375,8 +386,10 @@ export default function ProductDetail() {
             evaluations={mergeKeysEvaluation(evaluationData as IEvaluation)}
             episodeId={episodeId}
             latestEpisodeNo={latestEpisodeNo}
+            latestEpisodeTitle={latestEpisodeTitle}
             episodeCount={episodeCount}
             firstEpisodeId={firstEpisodeId}
+            firstEpisodeTitle={firstEpisodeTitle}
           />
         </div>
         <div className="flex w-full max-w-[800px] mt-30pxr md:mt-10pxr">
@@ -426,6 +439,7 @@ export default function ProductDetail() {
               notices={noticeData || []}
               priceType={productData?.priceType}
               episodeCount={episodeCount}
+              waitForFreeYn={productData?.badge?.waitForFreeYn || productData?.badge?.waitingForFreeYn}
             />
             <div
               ref={commentRef}

@@ -1,11 +1,11 @@
-import { useSelectFreeAllProducts } from "@/app/api/query/product";
+import { useSelectFreeAllProductsInfinite } from "@/app/api/query/product";
 import { useGenre } from "@/contexts/GenreContext";
 import useAuthStore from "@/store/authStore";
 import useBottomSheetStore from "@/store/bottomSheetStore";
 import useModalStore from "@/store/modalStore";
 import { IProduct } from "@/types";
 import { getLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BottomSheet from "../common/BottomSheet";
 import BoxProductList from "../common/BoxProductList";
 import Button from "../common/Button";
@@ -27,18 +27,28 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
   const { user } = useAuthStore();
 
   const adultYn = user?.isOnAdult ? "Y" : "N";
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const ITEMS_PER_PAGE = 27;
 
   const {
-    data: selectedAllProducts,
     isLoading,
+    error,
     refetch,
-  } = useSelectFreeAllProducts(
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    data,
+  } = useSelectFreeAllProductsInfinite(
     pageType,
     selectedGenres.includes("전체") ? [] : selectedGenres,
-    1,
-    27,
+    ITEMS_PER_PAGE,
     adultYn
   );
+
+  const allProducts = useMemo(() => {
+    if (!data) return [];
+    return data.pages.flatMap((page) => page.data ?? []);
+  }, [data]);
 
   const [listType, setListType] = useState<"list" | "box">(() => {
     return (getLocalStorage<"list" | "box">(STORAGE_KEYS.FREE_TOP_VIEW_TYPE) ||
@@ -49,6 +59,33 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
   useEffect(() => {
     refetch();
   }, [user?.isOnAdult]);
+
+  // Intersection Observer for infinite scroll
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [target] = entries;
+      if (target.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    [fetchNextPage, hasNextPage, isFetchingNextPage]
+  );
+
+  useEffect(() => {
+    const element = observerTarget.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(handleObserver, {
+      threshold: 0.1,
+    });
+
+    observer.observe(element);
+
+    return () => {
+      observer.unobserve(element);
+    };
+  }, [handleObserver]);
+
   const handleOpenModal = (e: React.MouseEvent) => {
     e.stopPropagation();
     setModal(<GenreSelectModal />);
@@ -62,7 +99,7 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
     <div className="flex flex-col mt-30pxr">
       <div className="flex justify-between">
         <MainHeader
-          headerText={pageType === "normal" ? "일반 무료작품" : "자유 무료작품"}
+          headerText={pageType === "normal" ? "일반연재" : "자유연재"}
         />
         <div className="flex gap-10pxr">
           <button
@@ -134,14 +171,26 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
             <div>
               <SimpleSpinner />
             </div>
-          ) : selectedAllProducts?.data?.length ? (
-            selectedAllProducts.data.map((product) => (
-              <ProductListCard
-                key={product.productId}
-                data={product as unknown as IProduct}
-                hasInterestBadge
-              />
-            ))
+          ) : error ? (
+            <div className="flex justify-center items-center h-[200px] text-dark-gray-500">
+              작품 목록을 불러오지 못했습니다
+            </div>
+          ) : allProducts.length ? (
+            <>
+              {allProducts.map((product) => (
+                <ProductListCard
+                  key={product.productId}
+                  data={product as unknown as IProduct}
+                  hasInterestBadge
+                />
+              ))}
+              <div ref={observerTarget} className="h-4" />
+              {isFetchingNextPage && (
+                <div className="py-4 flex justify-center items-center">
+                  <SimpleSpinner />
+                </div>
+              )}
+            </>
           ) : (
             <div className="flex justify-center items-center h-[200px] text-dark-gray-500">
               검색된 작품이 없습니다
@@ -149,14 +198,22 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
           )}
         </div>
       ) : (
-        <BoxProductList
-          data={
-            isLoading
-              ? []
-              : (selectedAllProducts?.data as unknown as IProduct[])
-          }
-          pageType={"free"}
-        />
+        <>
+          <BoxProductList
+            data={isLoading ? [] : (allProducts as unknown as IProduct[])}
+            pageType={"free"}
+          />
+          {allProducts.length > 0 && (
+            <>
+              <div ref={observerTarget} className="h-4" />
+              {isFetchingNextPage && (
+                <div className="py-4 flex justify-center items-center">
+                  <SimpleSpinner />
+                </div>
+              )}
+            </>
+          )}
+        </>
       )}
       <Modal size="sm" />
       <BottomSheet />

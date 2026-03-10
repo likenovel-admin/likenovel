@@ -262,6 +262,11 @@ const CacheStatusContents = ({
 
   return (
     <div className="h-fit flex flex-col items-center md:w-[358px]">
+      {typeModalData?.episodeTitle && (
+        <p className="w-full px-10 text-14pxr text-dark-gray-400 truncate">
+          {typeModalData.episodeTitle}
+        </p>
+      )}
       <div className="w-full px-10">
         <ul className="text-16pxr list-disc py-4">
           <li>
@@ -309,6 +314,19 @@ const CacheStatusContents = ({
               소장하기
               <span className="text-13pxr font-normal text-blue-200">
                 {episodePrice}캐시로 구매
+              </span>
+            </div>
+          </Button>
+        )}
+        {!rentalTicketCount && !hasEnoughCash && (
+          <Button
+            className="w-full h-auto bg-primary-100"
+            onClick={handleMoveToRecharge}
+          >
+            <div className="text-16pxr text-white my-2 font-medium flex flex-col">
+              캐시 충전하기
+              <span className="text-13pxr font-normal text-blue-200">
+                잔여 캐시가 부족합니다
               </span>
             </div>
           </Button>

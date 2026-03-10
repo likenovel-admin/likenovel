@@ -99,7 +99,6 @@ export default function LoginPage() {
           pageType="modal"
           setIsOpen={() => {
             setIsOpen(false);
-            router.push("/sign-up");
           }}
         />
       </div>

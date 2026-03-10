@@ -50,6 +50,9 @@ const CacheUseContents = ({
   data?: {
     productId?: number;
     price?: number;
+    ownPrice?: number;
+    rentalPrice?: number;
+    purchaseMode?: "serial" | "volume";
     episodeCount?: number;
   };
 }) => {
@@ -68,9 +71,12 @@ const CacheUseContents = ({
 
   const productId = data?.productId;
   const price = data?.price || 0;
+  const ownPrice = data?.ownPrice || 0;
+  const rentalPrice = data?.rentalPrice || 0;
+  const purchaseMode = data?.purchaseMode || "serial";
   const episodeCount = data?.episodeCount || 0;
 
-  const handlePurchase = async () => {
+  const handlePurchase = async (purchaseType: "own" | "rental" = "own") => {
     if (purchaseMutation.isPending) return;
     if (!productId) {
       setToast({
@@ -89,7 +95,14 @@ const CacheUseContents = ({
     }
 
     // Check if user has enough cash
-    if (userCash < price) {
+    const targetPrice =
+      purchaseType === "rental" && purchaseMode === "volume"
+        ? rentalPrice
+        : purchaseType === "own" && purchaseMode === "volume"
+          ? ownPrice
+          : price;
+
+    if (userCash < targetPrice) {
       setToast({
         message: "캐시가 부족합니다. 충전 후 이용해주세요.",
         type: "warning",
@@ -103,6 +116,7 @@ const CacheUseContents = ({
           product_id: productId,
           body: {
             profile_id: userInfo.data.profileId,
+            purchase_type: purchaseType,
           },
         },
         {
@@ -113,7 +127,10 @@ const CacheUseContents = ({
             queryClient.invalidateQueries({ queryKey: ["selectEpisode"] });
 
             setToast({
-              message: "모든 회차 구매가 완료되었습니다!",
+              message:
+                purchaseType === "rental"
+                  ? "단행본 대여가 완료되었습니다."
+                  : "모든 회차 구매가 완료되었습니다!",
               type: "success",
             });
 
@@ -144,7 +161,11 @@ const CacheUseContents = ({
       <div className="px-6 w-full">
         <div className="flex flex-col w-full text-18pxr font-semibold">
           <div>캐시를 사용하여</div>
-          <div>모든 회차를 구매합니다.</div>
+          <div>
+            {purchaseMode === "volume"
+              ? "단행본을 소장하거나 대여합니다."
+              : "모든 회차를 구매합니다."}
+          </div>
         </div>
         <div className="flex gap-2 py-2 items-center">
           <Image
@@ -165,9 +186,20 @@ const CacheUseContents = ({
         </div>
         <div className="flex flex-col gap-1.5 my-6">
           <Button onClick={handleChargeClick}>캐시 충전하기</Button>
-          <Button variant="black" onClick={handlePurchase}>
-            구매하기({price.toLocaleString()}캐시)
-          </Button>
+          {purchaseMode === "volume" && rentalPrice > 0 ? (
+            <>
+              <Button onClick={() => handlePurchase("rental")}>
+                대여하기({rentalPrice.toLocaleString()}캐시)
+              </Button>
+              <Button variant="black" onClick={() => handlePurchase("own")}>
+                소장하기({ownPrice.toLocaleString()}캐시)
+              </Button>
+            </>
+          ) : (
+            <Button variant="black" onClick={() => handlePurchase("own")}>
+              구매하기({price.toLocaleString()}캐시)
+            </Button>
+          )}
         </div>
       </div>
       <div className="w-full sticky bottom-0 bg-white mt-6 md:mt-0">

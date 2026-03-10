@@ -1,16 +1,17 @@
 import { useSelectEpisodes } from "@/app/api/query/episode";
 import { ISelectEpisodeObject } from "@/app/api/query/episode/dto";
+import { useGetAvailableTickets } from "@/app/api/query/product";
+import { useQueryClient } from "@tanstack/react-query";
 import { TYPE_MODAL } from "@/constants/common";
-import { useAuthWrapper } from "@/hooks/useAuthWrapper";
+import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
 import { INotice } from "@/types";
 import { formatKoreanNumber } from "@/utils/formatKoreanNumber";
 import { getEpisodeBadge } from "@/utils/getEpisodeBadge";
 import { getFormattingDate } from "@/utils/getFormattingDate";
-import { getUser } from "@/utils/getUser";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Button from "../common/Button";
 import MoreReadButton from "../common/MoreReadButton";
 import SquareBadge from "../common/SquareBadge";
@@ -29,6 +30,7 @@ interface Props {
   productId: number;
   productTitle?: string;
   notices: INotice[];
+  waitForFreeYn?: "Y" | "N";
 }
 
 const ProductEpisodes = ({
@@ -37,17 +39,64 @@ const ProductEpisodes = ({
   productId,
   productTitle,
   notices,
+  waitForFreeYn,
 }: Props) => {
   const router = useRouter();
-  const user = getUser();
-  const { withLoginRequired } = useAuthWrapper();
+  const { user, accessToken, isAuthenticated } = useAuthStore((state) => ({
+    user: state.user,
+    accessToken: state.accessToken,
+    isAuthenticated: state.isAuthenticated,
+  }));
+  const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
   const { setTypeModal } = useModalStore();
   const [isDescSort, setIsDescSort] = useState(false);
   const [visibleCount, setVisibleCount] = useState(10);
 
+  // 기다무 대여권 수 조회 (React Query가 ButtonBottom 호출과 중복 제거)
+  const { data: ticketsData } = useGetAvailableTickets({
+    product_id: waitForFreeYn === "Y" && canUseUserScope ? productId : undefined,
+  });
+  const wffTicketCount = ticketsData?.count_by_type?.waiting_for_free || 0;
+  const wffNextChargeAt = ticketsData?.wff_next_charge_at ?? null;
+
+  // 기다무 충전 카운트다운 타이머 (게이지)
+  const queryClient = useQueryClient();
+  const [wffTimeRemaining, setWffTimeRemaining] = useState<string | null>(null);
+  const [wffProgress, setWffProgress] = useState(0);
+  useEffect(() => {
+    if (!wffNextChargeAt || wffTicketCount > 0) {
+      setWffTimeRemaining(null);
+      setWffProgress(0);
+      return;
+    }
+
+    const targetTime = new Date(wffNextChargeAt).getTime();
+    const totalMs = 24 * 60 * 60 * 1000;
+
+    const updateTimer = () => {
+      const diff = targetTime - Date.now();
+      if (diff <= 0) {
+        setWffTimeRemaining(null);
+        setWffProgress(100);
+        clearInterval(interval);
+        queryClient.invalidateQueries({ queryKey: ["getEpisodeList"] });
+        return;
+      }
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setWffTimeRemaining(`${hours}시간 ${String(minutes).padStart(2, '0')}분 ${String(seconds).padStart(2, '0')}초`);
+      setWffProgress(Math.min(((totalMs - diff) / totalMs) * 100, 100));
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [wffNextChargeAt, wffTicketCount, queryClient]);
+
   const { data: episodes, fetchNextPage } = useSelectEpisodes(
     productId,
-    user?.userId || null,
+    canUseUserScope ? user?.userId || null : null,
     1,
     PAGE_SIZE,
     "episodeNo",
@@ -82,20 +131,13 @@ const ProductEpisodes = ({
           episode.rentalRemaining?.hours === 0)) &&
       episode.ownType !== "own"
     ) {
-      // Mock rental ticket count - replace with actual API data when available
-      // const rentalTicketCount = 0; // TODO: Get from episode.rentalTickets or separate API
-
-      // if (rentalTicketCount === 0) {
-      // No rental tickets - open purchase modal
       setTypeModal(TYPE_MODAL.RENT_OWN, {
         title: `${productTitle} ${episode.episodeNo}화`,
         episodeId: episode.episodeId,
         productId: productId,
+        episodeTitle: episode.episodeTitle,
       });
       return;
-      // }
-      // If has rental tickets, will add modal with both options later
-      // For now, just proceed to viewer
     }
 
     // Free episode or has rental tickets - go to viewer
@@ -118,6 +160,34 @@ const ProductEpisodes = ({
           </span>
         </Button>
       </div>
+      {waitForFreeYn === "Y" && canUseUserScope && (
+        <div className="border border-[#52CFF8] rounded-[10px] px-16pxr py-10pxr mb-12pxr">
+          <div className="flex items-center justify-between mb-6pxr">
+            <div className="flex items-center gap-8pxr">
+              <Clock className="w-[16px] h-[16px] md:w-[18px] md:h-[18px] text-[#52CFF8]" />
+              <span className="text-13pxr md:text-14pxr font-medium text-dark-gray-500 tracking-[-2%]">
+                기다무 대여권{" "}
+                <span className="text-[#52CFF8] font-bold">
+                  {wffTicketCount}장
+                </span>
+              </span>
+            </div>
+            {wffTimeRemaining && (
+              <span className="text-12pxr md:text-13pxr font-medium text-dark-gray-400 tracking-[-2%]">
+                {wffTimeRemaining} 남음
+              </span>
+            )}
+          </div>
+          {wffTimeRemaining && (
+            <div className="w-full h-[6px] bg-light-gray-300 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#52CFF8] rounded-full transition-all duration-500"
+                style={{ width: `${wffProgress}%` }}
+              />
+            </div>
+          )}
+        </div>
+      )}
       <ProductNotice
         notices={notices}
         productTitle={productTitle}
@@ -137,13 +207,7 @@ const ProductEpisodes = ({
                 key={episode.episodeId}
                 className="relative flex items-center border border-light-gray-400 rounded-[10px] cursor-pointer hover:shadow-md"
                 onClick={() => {
-                  // if (priceType === "paid") {
-                  withLoginRequired(() => {
-                    handleClickEpisode(episode);
-                  })();
-                  // } else {
-                  //   handleClickEpisode(episode.episodeId);
-                  // }
+                  handleClickEpisode(episode);
                 }}
               >
                 {episode.usage ? (
@@ -172,6 +236,13 @@ const ProductEpisodes = ({
                         }
                         size="small"
                       />
+                      {waitForFreeYn === "Y" &&
+                        getEpisodeBadge(episode) === "paid" && (
+                          <SquareBadge
+                            type={["waitForFree"]}
+                            size="small"
+                          />
+                        )}
                       <span className="max-w-[240px] md:max-w-[400px] 2md:max-w-[450px] lg:max-w-[500px] text-14pxr md:text-18pxr font-semibold line-clamp-2">
                         {/* {episode.episodeNo}화.&nbsp;&nbsp;{episode.episodeTitle} */}
                         {episode.episodeTitle}

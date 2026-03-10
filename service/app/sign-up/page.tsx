@@ -3,6 +3,7 @@ import Button from "@/components/common/Button";
 import ModalContainer from "@/components/common/ModalContainer";
 import SocialLoginButton from "@/components/login/SocialLoginButton";
 import LogoButton from "@/components/signUp/LogoButton";
+import { SOCIAL_SIGNUP_PENDING_SESSION_KEY } from "@/constants/onboarding";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useConfirmStore from "@/store/confirmStore";
 import useToastStore from "@/store/toastStore";
@@ -240,6 +241,11 @@ const SignUp = () => {
               provider={"naver"}
               isSignIn={false}
               isAgreeToAD={watch("agree.agreeToAD")}
+              onBeforeRedirect={() => {
+                if (typeof window !== "undefined") {
+                  sessionStorage.setItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY, "Y");
+                }
+              }}
               disabled={isSubmitDisabled}
             />
           </div>
@@ -248,6 +254,11 @@ const SignUp = () => {
               provider={"kakao"}
               isSignIn={false}
               isAgreeToAD={watch("agree.agreeToAD")}
+              onBeforeRedirect={() => {
+                if (typeof window !== "undefined") {
+                  sessionStorage.setItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY, "Y");
+                }
+              }}
               disabled={isSubmitDisabled}
             />
             <div className="h-[12px] border border-l-light-gray-500 border-t-0 border-b-0 border-r-0" />

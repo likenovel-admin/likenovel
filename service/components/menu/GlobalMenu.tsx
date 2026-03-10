@@ -17,6 +17,7 @@ import UserNickname from "../common/UserNickname";
 import AdultToggle from "./AdultToggle";
 import AlarmMenu from "./AlarmMenu";
 import MenuIcon from "./MenuIcon";
+import { moveToPartnerSettlementWithRelay } from "@/utils/partnerRelay";
 import ArrowRight from "/public/images/arrow-right-small.svg";
 import Close from "/public/images/close.svg";
 import Gift from "/public/images/gift.svg";
@@ -331,7 +332,7 @@ const GlobalMenuModal = ({ isOpen, setIsOpen, onClose }: CommonModalProps) => {
             <button
               className="p-4 bg-white rounded-lg flex justify-between items-center"
               onClick={() => {
-                window.location.href = `https://partner.likenovel.net/discover-products`; // TODO 해당 링크 접속 불가 상태
+                void moveToPartnerSettlementWithRelay();
               }}
             >
               <div className="flex gap-3">

@@ -26,6 +26,7 @@ const InterestDropCards = () => {
   }>({});
   const itemsPerPage = 4;
   const data: any = interestDropProducts ? interestDropProducts.data : [];
+  const isDesktop = device !== "mobile" && device !== "tablet";
 
   // Old logic: Pagination-based (move entire page)
   // const currentProducts =
@@ -37,17 +38,17 @@ const InterestDropCards = () => {
   //       );
 
   // New logic: Index-based scrolling (move one item at a time)
-  const currentProducts =
-    device === "mobile" || device === "tablet"
-      ? data
-      : data?.slice(
-          // currentPage * itemsPerPage,
-          // (currentPage + 1) * itemsPerPage
-          currentPage,
-          currentPage + itemsPerPage
-        );
+  const currentProducts = isDesktop
+    ? data?.slice(
+        // currentPage * itemsPerPage,
+        // (currentPage + 1) * itemsPerPage
+        currentPage,
+        currentPage + itemsPerPage
+      )
+    : data;
 
   const totalItems = data.length;
+  const showArrows = isDesktop && totalItems > itemsPerPage;
 
   // Old logic: Calculate total pages
   // const lastPage = Math.ceil(totalItems / itemsPerPage) - 1;
@@ -189,22 +190,26 @@ const InterestDropCards = () => {
               </div>
             </div>
           ))}
-          <div className="absolute top-[50%] left-[-20px] z-5 hidden lg:block">
-            <CircleArrow
-              direction="left"
-              onClick={handlePrevPage}
-              isDisabled={currentPage === 0}
-              color="black"
-            />
-          </div>
-          <div className="absolute top-[50%] right-[-20px] z-5 hidden lg:block">
-            <CircleArrow
-              direction="right"
-              onClick={handleNextPage}
-              isDisabled={currentPage === lastPage}
-              color="black"
-            />
-          </div>
+          {showArrows && (
+            <>
+              <div className="absolute top-[50%] left-[-20px] z-5 hidden lg:block">
+                <CircleArrow
+                  direction="left"
+                  onClick={handlePrevPage}
+                  isDisabled={currentPage === 0}
+                  color="black"
+                />
+              </div>
+              <div className="absolute top-[50%] right-[-20px] z-5 hidden lg:block">
+                <CircleArrow
+                  direction="right"
+                  onClick={handleNextPage}
+                  isDisabled={currentPage === lastPage}
+                  color="black"
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

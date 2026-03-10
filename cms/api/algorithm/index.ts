@@ -7,6 +7,7 @@ import {
   IGetAlgorithmUserResponse,
   IUpdateAlgorithmSectionRequest,
   IUpdateAlgorithmSectionResponse,
+  IUpdateAlgorithmSetTopicRequest,
 } from "@/api/algorithm/dto";
 import apiClient from "@/lib/apiClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -118,6 +119,25 @@ export const useUpdateAlgorithmSection = () => {
     }) => {
       return await apiClient.request<IUpdateAlgorithmSectionResponse>({
         url: `/v1/command/admins/algorithm-recommend/sections/${data.id}`,
+        method: "PUT",
+        body: data.body,
+      });
+    },
+  });
+};
+
+export const useUpdateAlgorithmSetTopic = () => {
+  return useMutation<
+    IUpdateAlgorithmSectionResponse,
+    Error,
+    { id: string; body: IUpdateAlgorithmSetTopicRequest }
+  >({
+    mutationFn: async (data: {
+      id: string;
+      body: IUpdateAlgorithmSetTopicRequest;
+    }) => {
+      return await apiClient.request<IUpdateAlgorithmSectionResponse>({
+        url: `/v1/command/admins/algorithm-recommend/set-topic/${data.id}`,
         method: "PUT",
         body: data.body,
       });

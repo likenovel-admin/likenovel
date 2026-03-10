@@ -4,10 +4,10 @@ import { instance } from "@/app/api/axios";
 import { useUserAlarmsMarkAsRead } from "@/app/api/query/mypage/user";
 import notificationDefault from "@/public/images/notification-default.png";
 import useAlarmStore from "@/store/alarmStore";
+import useAuthStore from "@/store/authStore";
 import useConfirmStore from "@/store/confirmStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
-import { getUser } from "@/utils/getUser";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -24,7 +24,12 @@ interface INotification {
 
 const NotificationCenter = () => {
   const [showAll, setShowAll] = useState(false);
-  const user = getUser();
+  const { accessToken, user, isAuthenticated } = useAuthStore((state) => ({
+    accessToken: state.accessToken,
+    user: state.user,
+    isAuthenticated: state.isAuthenticated,
+  }));
+  const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
   const { setToast } = useToastStore();
   const { setConfirm } = useConfirmStore();
   const { setModal } = useModalStore();
@@ -37,7 +42,7 @@ const NotificationCenter = () => {
       const response = await instance.get("/v1/query/user/alarms");
       return response.data.data;
     },
-    enabled: !!user,
+    enabled: canUseUserScope,
   });
 
   const displayedNotifications = notifications?.slice().sort((a, b) => {
@@ -50,13 +55,17 @@ const NotificationCenter = () => {
 
   // Update hasNew when notifications data changes
   useEffect(() => {
+    if (!canUseUserScope) {
+      setHasNew(false);
+      return;
+    }
     if (notifications) {
       const unreadCount = notifications.filter(
         (item) => item.readYn === "N"
       ).length;
       setHasNew(unreadCount > 0);
     }
-  }, [notifications, setHasNew]);
+  }, [canUseUserScope, notifications, setHasNew]);
 
   const handleAllReadConfirm = (e: React.MouseEvent) => {
     e.stopPropagation();

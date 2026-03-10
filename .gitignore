@@ -49,4 +49,23 @@ likenovel-user/
 likenovel-partner/
 likenovel-cms/
 
+# --- Claude / AI tools ---
+.claude/
+MEMORY.md
+AGENTS.md
+CURSOR_CHAT_MEMENTO_RECOVERY.md
 
+# --- Project docs (local only) ---
+architecture.md
+backend-api.md
+cms-app.md
+partner-app.md
+service-app.md
+docs/
+
+# --- Dev tools / scripts (local only) ---
+codex-share/
+scripts/
+test_password_reset.py
+*_bad_strings.txt
+docker-compose.yml

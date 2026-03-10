@@ -2,9 +2,10 @@ import { IUseSelectQuestResponse } from "@/app/api/query/quest/dto";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { instance } from "../../axios";
 
-export const useSelectQuest = () => {
+export const useSelectQuest = (enabled: boolean = true) => {
   return useQuery<IUseSelectQuestResponse, unknown>({
     queryKey: ["selectQuest"],
+    enabled,
     queryFn: async () => {
       const response = await instance.get(`/v1/query/quests`);
 

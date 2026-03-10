@@ -2,9 +2,11 @@
 import {
   IGetDirectPromotionParams,
   IGetDirectPromotionResponse,
+  IPostDirectPromotionGiftRequest,
+  IPostDirectPromotionGiftResponse,
 } from "@/api/directPromotion/dto";
 import apiClient from "@/lib/apiClient";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 export const useGetDirectPromotions = (params: IGetDirectPromotionParams) => {
   return useQuery<IGetDirectPromotionResponse>({
@@ -17,6 +19,22 @@ export const useGetDirectPromotions = (params: IGetDirectPromotionParams) => {
         queryParams: params,
       });
       return res;
+    },
+  });
+};
+
+export const usePostDirectPromotionGift = () => {
+  return useMutation<
+    IPostDirectPromotionGiftResponse,
+    Error,
+    IPostDirectPromotionGiftRequest
+  >({
+    mutationFn: async (body: IPostDirectPromotionGiftRequest) => {
+      return await apiClient.request<IPostDirectPromotionGiftResponse>({
+        url: "/v1/command/admins/direct-promotion/gift",
+        method: "POST",
+        body: body,
+      });
     },
   });
 };

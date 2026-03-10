@@ -23,6 +23,12 @@ export interface IStatisticPayment {
 
 export interface IStatisticPaymentByUser {
   date: string;
+  order_datetime?: string;
+  orderDatetime?: string;
+  order_no?: string | number;
+  orderNo?: string | number;
+  user_id?: number;
+  userId?: number;
   email: string;
   nickname: string;
   pay_count: number;
@@ -33,4 +39,8 @@ export interface IStatisticPaymentByUser {
   donation_count: number;
   donation_coin: number;
   ad_revenue: number;
+  cash_order_id?: number | null;
+  cashOrderId?: number | null;
+  cash_order_count?: number;
+  cashOrderCount?: number;
 }

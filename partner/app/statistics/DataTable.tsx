@@ -86,6 +86,7 @@ export default function StatisticsTable({ data, loading }: Props) {
     {
       header: "연독률(%)",
       key: "reading_rate",
+      render: (value: number) => value ? `${value}` : '-',
     },
   ];
 

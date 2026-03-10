@@ -17,8 +17,8 @@ const ProductArea = () => {
 
     if (activeTab === "update") {
       return [...products].sort((a, b) => {
-        const dateA = new Date(a.properties?.latestEpisodeDate || 0).getTime();
-        const dateB = new Date(b.properties?.latestEpisodeDate || 0).getTime();
+        const dateA = new Date(a.properties?.latestEpisodeDate || a.createdDate || 0).getTime();
+        const dateB = new Date(b.properties?.latestEpisodeDate || b.createdDate || 0).getTime();
         return dateB - dateA;
       });
     } else if (activeTab === "alphabetical") {

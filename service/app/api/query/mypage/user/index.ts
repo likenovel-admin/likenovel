@@ -454,6 +454,7 @@ export const usePurchaseAllEpisode = () => {
       product_id: number;
       body: {
         profile_id: number;
+        purchase_type?: "own" | "rental";
       };
     }) => {
       return await instance.post(

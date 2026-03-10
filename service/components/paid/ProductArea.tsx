@@ -1,12 +1,15 @@
-import { useSelectPaidAllProducts } from "@/app/api/query/product";
+import { useSelectPaidAllProductsInfinite } from "@/app/api/query/product";
 import { useGenre } from "@/contexts/GenreContext";
 import useAuthStore from "@/store/authStore";
 import useBottomSheetStore from "@/store/bottomSheetStore";
 import useModalStore from "@/store/modalStore";
 import { IProduct } from "@/types";
-import { useEffect } from "react";
+import { getLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BottomSheet from "../common/BottomSheet";
+import BoxProductList from "../common/BoxProductList";
 import Button from "../common/Button";
+import ListTypeTab from "../common/ListTypeTab";
 import Modal from "../common/Modal";
 import ProductListCard from "../common/ProductListCard";
 import SimpleSpinner from "../common/SimpleSpinner";
@@ -14,7 +17,7 @@ import GenreSelectModal from "../modal/GenreSelectModal";
 import Close from "/public/images/close.svg";
 import Filter from "/public/images/filter.svg";
 interface Props {
-  stateType: "ongoing" | "end";
+  stateType: "ongoing" | "end" | "standalone";
 }
 const ProductArea = ({ stateType }: Props) => {
   const { setModal } = useModalStore();
@@ -23,18 +26,63 @@ const ProductArea = ({ stateType }: Props) => {
   const { user } = useAuthStore();
 
   const adultYn = user?.isOnAdult ? "Y" : "N";
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const ITEMS_PER_PAGE = 27;
 
   const {
-    data: selectedAllProducts,
     isLoading,
     refetch,
-  } = useSelectPaidAllProducts(
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    error,
+    data,
+  } = useSelectPaidAllProductsInfinite(
     stateType,
     selectedGenres.includes("전체") ? [] : selectedGenres,
-    1,
-    undefined,
+    ITEMS_PER_PAGE,
     adultYn
-  ); //무한스크롤 추가 필요
+  );
+
+  const allProducts = useMemo(() => {
+    if (!data) return [];
+    return data.pages.flatMap((page) => page.data ?? []);
+  }, [data]);
+
+  const [listType, setListType] = useState<"list" | "box">(() => {
+    return (getLocalStorage<"list" | "box">(STORAGE_KEYS.PAID_TOP_VIEW_TYPE) ||
+      "list") as "list" | "box";
+  });
+
+  /**
+   * 유료 리스트 무한스크롤:
+   * 화면 하단 센티넬(div)이 보이면 다음 페이지를 호출(fetchNextPage)합니다.
+   * 기존 UI/레이아웃은 그대로 유지합니다.
+   */
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [target] = entries;
+      if (target.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    [fetchNextPage, hasNextPage, isFetchingNextPage]
+  );
+
+  useEffect(() => {
+    const element = observerTarget.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(handleObserver, {
+      threshold: 0.1,
+    });
+
+    observer.observe(element);
+
+    return () => {
+      observer.unobserve(element);
+    };
+  }, [handleObserver]);
 
   const handleOpenModal = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -98,45 +146,91 @@ const ProductArea = ({ stateType }: Props) => {
               ))}
           </div>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          className="hidden md:flex w-[105px]"
-          onClick={handleOpenModal}
-        >
-          <Filter />
-          <span className="ml-5pxr text-14pxr text-dark-gray-500">
-            장르 필터
-          </span>
-        </Button>
-        <button
-          className="flex justify-center items-center md:hidden border border-light-gray-600 rounded-full min-w-[30px] h-[30px] mr-16pxr md:mr-0"
-          onClick={handleOpenBottomSheet}
-        >
-          <Filter />
-        </button>
+        <div className="flex items-center gap-10pxr">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="hidden md:flex w-[105px]"
+            onClick={handleOpenModal}
+          >
+            <Filter />
+            <span className="ml-5pxr text-14pxr text-dark-gray-500">
+              장르 필터
+            </span>
+          </Button>
+          <button
+            className="flex justify-center items-center md:hidden border border-light-gray-600 rounded-full min-w-[30px] h-[30px]"
+            onClick={handleOpenBottomSheet}
+          >
+            <Filter />
+          </button>
+          <ListTypeTab listType={listType} setListType={setListType} />
+        </div>
       </div>
       <div className="md:hidden w-[93%] ml-[16px] mt-10pxr border border-t-light-gray-400 border-b-0 border-l-0 border-r-0" />
-      <div className="flex flex-col md:gap-14pxr md:mt-15pxr">
-        {isLoading ? (
-          <div>
-            <SimpleSpinner />
-          </div>
-        ) : selectedAllProducts?.data?.length ? (
-          selectedAllProducts?.data.map((product) => (
-            <ProductListCard
-              key={product.productId}
-              data={product as unknown as IProduct}
-              hasInterestBadge
-              hasPromotionBadge
-            />
-          ))
-        ) : (
-          <div className="flex justify-center items-center h-[200px] text-dark-gray-500">
-            검색된 작품이 없습니다
-          </div>
-        )}
-      </div>
+      {listType === "list" ? (
+        <div className="flex flex-col md:gap-14pxr md:mt-15pxr">
+          {isLoading ? (
+            <div>
+              <SimpleSpinner />
+            </div>
+          ) : error ? (
+            <div className="flex justify-center items-center h-[200px] text-dark-gray-500">
+              작품 목록을 불러오지 못했습니다
+            </div>
+          ) : allProducts?.length ? (
+            <>
+              {allProducts.map((product) => (
+                <ProductListCard
+                  key={product.productId}
+                  data={product as unknown as IProduct}
+                  hasInterestBadge
+                  hasPromotionBadge
+                />
+              ))}
+              <div ref={observerTarget} className="h-4" />
+              {isFetchingNextPage && (
+                <div className="py-4 flex justify-center items-center">
+                  <SimpleSpinner />
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex justify-center items-center h-[200px] text-dark-gray-500">
+              검색된 작품이 없습니다
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          {isLoading ? (
+            <div>
+              <SimpleSpinner />
+            </div>
+          ) : error ? (
+            <div className="flex justify-center items-center h-[200px] text-dark-gray-500">
+              작품 목록을 불러오지 못했습니다
+            </div>
+          ) : allProducts?.length ? (
+            <>
+              <BoxProductList
+                data={allProducts as unknown as IProduct[]}
+                pageType="paid"
+              />
+              <div ref={observerTarget} className="h-4" />
+              {isFetchingNextPage && (
+                <div className="py-4 flex justify-center items-center">
+                  <SimpleSpinner />
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex justify-center items-center h-[200px] text-dark-gray-500">
+              검색된 작품이 없습니다
+            </div>
+          )}
+        </>
+      )}
       <Modal size="sm" />
       <BottomSheet />
     </div>

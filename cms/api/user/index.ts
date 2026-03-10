@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ICreateAccountRequest,
   IDeleteProfileResponse,
   IEditAdminRightRequest,
   IEditAdminRightResponse,
@@ -103,6 +104,18 @@ export const useDeleteProfile = () => {
       return await apiClient.request<IDeleteProfileResponse>({
         url: "/v1/command/user/profiles/" + id,
         method: "DELETE",
+      });
+    },
+  });
+};
+
+export const useCreateAccount = () => {
+  return useMutation<void, Error, ICreateAccountRequest>({
+    mutationFn: async (data: ICreateAccountRequest) => {
+      await apiClient.request({
+        url: "/v1/command/admins/users/create-account",
+        method: "POST",
+        body: data,
       });
     },
   });

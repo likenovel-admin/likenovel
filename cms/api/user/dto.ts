@@ -56,3 +56,8 @@ export interface IDeleteProfileResponse {
     message: string;
   };
 }
+
+export interface ICreateAccountRequest {
+  email: string;
+  password: string;
+}

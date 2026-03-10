@@ -11,6 +11,9 @@ import { getNiceServerConfig } from "@/lib/nice-config";
  * @returns
  */
 export async function POST() {
+  const LOG_PREFIX = "[API /api/auth/find-password]";
+  const USER_ERROR_MESSAGE =
+    "본인인증 요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.";
   /**
    * NOTE:
    * - GitHub 업로드/운영 안정성을 위해 NICE 시크릿은 반드시 환경변수로 주입해야 합니다.
@@ -19,53 +22,59 @@ export async function POST() {
   try {
     niceConfig = getNiceServerConfig();
   } catch (error: any) {
-    console.error(
-      "[API /api/auth/find-password] ❌ NICE config error:",
-      error?.message
-    );
+    console.error(`${LOG_PREFIX} ❌ NICE config error:`, error?.message);
     return NextResponse.json(
       {
-        message: "NICE 설정이 올바르지 않습니다. 서버 환경변수를 확인해주세요.",
+        message: USER_ERROR_MESSAGE,
         data: null,
       },
       { status: 500 }
     );
   }
 
-  /**
-   * NICE 액세스 토큰 호출
-   */
-  const authForAccessToken = niceConfig.basicAuthHeader;
+  try {
+    /**
+     * NICE 액세스 토큰 호출
+     */
+    const authForAccessToken = niceConfig.basicAuthHeader;
 
-  const accessTokenResponse = await axios({
-    method: "POST",
-    url: "https://svc.niceapi.co.kr:22001/digital/niceid/oauth/oauth/token",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `${authForAccessToken}`,
-    },
-    data: {
-      grant_type: "client_credentials",
-      scope: "default",
-    },
-  });
+    const accessTokenResponse = await axios({
+      method: "POST",
+      url: "https://svc.niceapi.co.kr:22001/digital/niceid/oauth/oauth/token",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `${authForAccessToken}`,
+      },
+      data: {
+        grant_type: "client_credentials",
+        scope: "default",
+      },
+    });
 
-  /**
-   * NICE 암호화 토큰 호출
-   */
-  if (accessTokenResponse.data.dataHeader.GW_RSLT_CD == "1200") {
+    const accessTokenGwCode =
+      accessTokenResponse.data?.dataHeader?.GW_RSLT_CD || "";
+    if (accessTokenGwCode !== "1200") {
+      console.error(`${LOG_PREFIX} ❌ NICE access token failed`, {
+        gwCode: accessTokenGwCode,
+        gwMsg: accessTokenResponse.data?.dataHeader?.GW_RSLT_MSG,
+      });
+      return NextResponse.json(
+        {
+          message: USER_ERROR_MESSAGE,
+          data: null,
+        },
+        { status: 502 }
+      );
+    }
+
+    /**
+     * NICE 암호화 토큰 호출
+     */
     const accessToken = accessTokenResponse.data?.dataBody?.access_token || "";
     const currentDate = new Date();
     const currentTimestamp = Math.floor(currentDate.getTime() / 1000);
 
     const productId = niceConfig.productId; // 본인확인(통합형)
-    const authorization = Buffer.from(
-      accessToken +
-        ":" +
-        currentTimestamp +
-        ":" +
-        niceConfig.clientId
-    ).toString("base64");
 
     const authForSecureToken =
       "bearer " +
@@ -110,14 +119,24 @@ export async function POST() {
       },
     });
 
-    // P000 성공, 이외 모두 오류
-    if (
-      authForSecureTokenResponse.data.dataHeader.GW_RSLT_CD !== "1200" &&
-      authForSecureTokenResponse.data.dataBody.rsp_cd !== "P000"
-    ) {
-      throw new Error(
-        "Failed to request crypto token",
-        authForSecureTokenResponse.data.dataBody.rsp_cd
+    const secureTokenGwCode =
+      authForSecureTokenResponse.data?.dataHeader?.GW_RSLT_CD || "";
+    const secureTokenRspCode =
+      authForSecureTokenResponse.data?.dataBody?.rsp_cd || "";
+    // P000 + 1200 성공, 이외 모두 오류
+    if (secureTokenGwCode !== "1200" || secureTokenRspCode !== "P000") {
+      console.error(`${LOG_PREFIX} ❌ NICE crypto token failed`, {
+        gwCode: secureTokenGwCode,
+        gwMsg: authForSecureTokenResponse.data?.dataHeader?.GW_RSLT_MSG,
+        rspCode: secureTokenRspCode,
+        rspMsg: authForSecureTokenResponse.data?.dataBody?.rsp_msg,
+      });
+      return NextResponse.json(
+        {
+          message: USER_ERROR_MESSAGE,
+          data: null,
+        },
+        { status: 502 }
       );
     }
 
@@ -184,7 +203,19 @@ export async function POST() {
         integrityValue: integrityValue,
       },
     });
+  } catch (error: any) {
+    console.error(`${LOG_PREFIX} ❌ unhandled error:`, {
+      message: error?.message,
+      code: error?.code,
+      status: error?.response?.status,
+      data: error?.response?.data,
+    });
+    return NextResponse.json(
+      {
+        message: USER_ERROR_MESSAGE,
+        data: null,
+      },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({ message: "", data: "" });
 }

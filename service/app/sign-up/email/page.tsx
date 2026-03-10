@@ -6,6 +6,7 @@ import Spinner from "@/components/common/Spinner";
 import BirthdateSelector from "@/components/signUp/BirthdateSelector";
 import BottomButton from "@/components/signUp/BottomButton";
 import LogoButton from "@/components/signUp/LogoButton";
+import { ONBOARDING_FIRST_LOGIN_SESSION_KEY } from "@/constants/onboarding";
 import useAuthStore from "@/store/authStore";
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
@@ -71,6 +72,9 @@ const Email = () => {
             },
             "Y" // Default to keep sign in for new sign-ups
           );
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem(ONBOARDING_FIRST_LOGIN_SESSION_KEY, "Y");
+          }
           router.push("/");
           return;
         }

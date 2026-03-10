@@ -9,7 +9,10 @@ interface ProductDetailWrapperProps {
   children: ReactNode;
   productId?: number;
   isPaidProduct?: boolean;
+  isVolumeProduct?: boolean;
   episodeTypePaidCount?: number;
+  ownPrice?: number;
+  rentalPrice?: number;
   interestStatus: ProductInterestStatus;
   interestEndDate?: string;
   authorId: number;
@@ -21,7 +24,10 @@ export default function ProductDetailWrapper({
   children,
   productId,
   isPaidProduct,
+  isVolumeProduct,
   episodeTypePaidCount,
+  ownPrice,
+  rentalPrice,
   interestStatus,
   interestEndDate,
   authorId,
@@ -42,7 +48,10 @@ export default function ProductDetailWrapper({
           <ButtonBottom
             productId={productId}
             isPaidProduct={isPaidProduct}
+            isVolumeProduct={isVolumeProduct}
             episodeTypePaidCount={episodeTypePaidCount}
+            ownPrice={ownPrice}
+            rentalPrice={rentalPrice}
             interestStatus={interestStatus}
             interestEndDate={interestEndDate}
             authorId={authorId}

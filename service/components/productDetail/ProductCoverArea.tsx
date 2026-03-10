@@ -42,8 +42,10 @@ interface Props {
   evaluations: Partial<IEvaluation>;
   episodeId?: number;
   latestEpisodeNo?: number;
+  latestEpisodeTitle?: string;
   episodeCount?: number;
   firstEpisodeId?: number;
+  firstEpisodeTitle?: string;
 }
 
 const ProductCoverArea = ({
@@ -53,8 +55,10 @@ const ProductCoverArea = ({
   evaluations,
   episodeId,
   latestEpisodeNo,
+  latestEpisodeTitle,
   episodeCount,
   firstEpisodeId,
+  firstEpisodeTitle,
 }: Props) => {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -198,6 +202,7 @@ const ProductCoverArea = ({
       router.push(`/viewer/${targetEpisodeId}?fromProduct=${data.productId}`);
     }
   };
+
 
   useEffect(() => {
     if (data?.synopsis) {
@@ -430,7 +435,7 @@ const ProductCoverArea = ({
                                 CP조회수
                               </span>
                               <span className="text-13pxr md:text-14pxr text-dark-gray-500">
-                                &nbsp;{data.trendindex?.cpHitCount}
+                                &nbsp;{data.trendindex?.cpHitCount || '-'}
                               </span>
                             </div>
                             <div className="w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
@@ -440,10 +445,7 @@ const ProductCoverArea = ({
                               </span>
                               <span className="text-13pxr md:text-14pxr text-dark-gray-500">
                                 &nbsp;
-                                {Math.round(
-                                  Number(data.trendindex?.readThroughRate || 0)
-                                )}
-                                %
+                                {data.trendindex?.readThroughRate ? `${Number(data.trendindex.readThroughRate).toFixed(1)}%` : '-'}
                               </span>
                             </div>
                             <div className="w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
@@ -452,7 +454,7 @@ const ProductCoverArea = ({
                                 주평균 연재횟수
                               </span>
                               <span className="text-13pxr md:text-14pxr text-dark-gray-500">
-                                &nbsp;{data.properties?.averageWeeklyEpisodes}
+                                &nbsp;{data.properties?.averageWeeklyEpisodes != null ? Number(data.properties.averageWeeklyEpisodes).toFixed(1) : '-'}
                               </span>
                             </div>
                             <div className="hidden md:block w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
@@ -595,18 +597,21 @@ const ProductCoverArea = ({
                   <Button
                     variant="primary"
                     size="xl"
-                    className="hidden md:block w-[200px]"
+                    className="hidden md:flex w-[200px] h-auto py-10pxr"
                     onClick={() => {
-                      // if (data.priceType === "paid") {
-                      withLoginRequired(handleClickFirstOrContinueRead)();
-                      // } else {
-                      //   handleClickFirstOrContinueRead();
-                      // }
+                      handleClickFirstOrContinueRead();
                     }}
                   >
-                    {latestEpisodeNo !== 0
-                      ? `${latestEpisodeNo}회 보기`
-                      : "첫회 보기"}
+                    <div className="flex flex-col items-center w-full">
+                      <span className="text-16pxr font-bold tracking-[-2%]">
+                        {latestEpisodeNo !== 0 ? "이어보기" : "첫회 보기"}
+                      </span>
+                      <span className="text-12pxr font-normal opacity-80 truncate max-w-[170px]">
+                        {latestEpisodeNo !== 0
+                          ? (latestEpisodeTitle || "")
+                          : (firstEpisodeTitle || "")}
+                      </span>
+                    </div>
                   </Button>
                   {isShowButtonProposal && (
                     <Button
@@ -624,18 +629,21 @@ const ProductCoverArea = ({
                 <Button
                   variant="primary"
                   size="md"
-                  className={`${isShowButtonProposal ? "w-[70%]" : "w-full"} `}
+                  className={`${isShowButtonProposal ? "w-[70%]" : "w-full"} h-auto py-8pxr`}
                   onClick={() => {
-                    // if (data.priceType === "paid") {
-                    withLoginRequired(handleClickFirstOrContinueRead)();
-                    // } else {
-                    // handleClickFirstOrContinueRead();
-                    // }
+                    handleClickFirstOrContinueRead();
                   }}
                 >
-                  {latestEpisodeNo !== 0
-                    ? `${latestEpisodeNo}회 보기`
-                    : "첫회 보기"}
+                  <div className="flex flex-col items-center w-full">
+                    <span className="text-14pxr font-bold tracking-[-2%]">
+                      {latestEpisodeNo !== 0 ? "이어보기" : "첫회 보기"}
+                    </span>
+                    <span className="text-11pxr font-normal opacity-80 truncate max-w-full">
+                      {latestEpisodeNo !== 0
+                        ? (latestEpisodeTitle || "")
+                        : (firstEpisodeTitle || "")}
+                    </span>
+                  </div>
                 </Button>
                 {isShowButtonProposal && (
                   <Button

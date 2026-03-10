@@ -3,6 +3,7 @@
 import MyProductManageArea from "@/components/authorHome/MyProductManageArea";
 import MyProductManageAreaMobile from "@/components/authorHome/MyProductManageAreaMobile";
 import Tab from "@/components/common/Tab";
+import { moveToPartnerSettlementWithRelay } from "@/utils/partnerRelay";
 import { useRouter } from "next/navigation";
 import { ReactNode } from "react";
 
@@ -20,7 +21,7 @@ export default function TabLayout({
       router.push(`/product/author`);
       // TODO: 정산/통계 페이지로 이동
     } else if (tabName === "settlement") {
-      window.location.href = `${process.env.NEXT_PUBLIC_PARTNER_SITE_URL}`;
+      void moveToPartnerSettlementWithRelay();
     } else {
       router.push(`/product/author/${tabName}`);
     }
