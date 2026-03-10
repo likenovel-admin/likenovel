@@ -66,6 +66,7 @@ docs/
 # --- Dev tools / scripts (local only) ---
 codex-share/
 scripts/
+!cms/scripts/
 test_password_reset.py
 *_bad_strings.txt
 docker-compose.yml
