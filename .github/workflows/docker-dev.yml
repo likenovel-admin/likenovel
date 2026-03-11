@@ -103,12 +103,13 @@ jobs:
       # ECR login → pull new images → recreate containers
       # ---------------------------------------------------------------------
       - name: Deploy to dev server (ln-web)
+        env:
+          DEPLOY_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ec2-3-34-11-39.ap-northeast-2.compute.amazonaws.com >> ~/.ssh/known_hosts 2>/dev/null
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ln-admin@ec2-3-34-11-39.ap-northeast-2.compute.amazonaws.com << 'ENDSSH'
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -T ln-admin@ec2-3-34-11-39.ap-northeast-2.compute.amazonaws.com << 'ENDSSH'
             aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 992382709044.dkr.ecr.ap-northeast-2.amazonaws.com
             cd /home/ln-admin/likenovel/service-dev/docker && docker compose pull && docker compose up -d --force-recreate
             cd /home/ln-admin/likenovel/partner-dev/docker && docker compose pull && docker compose up -d --force-recreate
