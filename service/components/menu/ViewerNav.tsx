@@ -88,7 +88,7 @@ const ViewerNav = ({
           <div className="flex gap-10pxr">
             <button
               onClick={() => {
-                router.push(`/product/${productId}`);
+                router.replace(`/product/${productId}`);
               }}
               className="p-2"
             >

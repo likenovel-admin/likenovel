@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import Pagination from "../common/Pagination";
 import RoundBadge from "../common/RoundBadge";
-import SimpleSpinner from "../common/SimpleSpinner";
+import Spinner from "../common/Spinner";
 import Arrow from "/public/images/arrow-right-medium.svg";
 
 const NoticeList = () => {
@@ -39,7 +39,7 @@ const NoticeList = () => {
       <ul>
         {isLoading ? (
           <li className="flex justify-center items-center py-10">
-            <SimpleSpinner />
+            <Spinner size={20} />
           </li>
         ) : (
           <>

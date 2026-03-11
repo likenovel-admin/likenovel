@@ -1,4 +1,5 @@
 import {
+  useCancelReserveEpisode,
   useCreateAuthorEpisodePrediction,
   useOpenEpisode,
 } from "@/app/api/query/author/episode";
@@ -295,6 +296,7 @@ const EpisodeRoundItem = ({ episode }: IEpisodeRoundItemProps) => {
   const { setToast } = useToastStore();
   const queryClient = useQueryClient();
   const openEpisodeMutation = useOpenEpisode();
+  const cancelReserveMutation = useCancelReserveEpisode();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -352,6 +354,31 @@ const EpisodeRoundItem = ({ episode }: IEpisodeRoundItemProps) => {
     }
   };
 
+  const handleCancelReserve = async () => {
+    if (cancelReserveMutation.isPending) return;
+    try {
+      await cancelReserveMutation.mutateAsync(
+        { episode_ids: [episode.episodeId] },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({
+              queryKey: ["selectProductDetail", episode.productId],
+            });
+            setToast({ message: "예약공개가 취소되었습니다.", type: "success" });
+          },
+          onError: (error: any) => {
+            setToast({
+              message: error?.response?.data?.message || "예약취소에 실패했습니다.",
+              type: "error",
+            });
+          },
+        }
+      );
+    } catch {
+      setToast({ message: "예약취소에 실패했습니다.", type: "error" });
+    }
+  };
+
   const handleOpenEditEpisode = (targetEpisode: IEpisode) => {
     router.push(
       `/making-episode/${targetEpisode.productId}/${targetEpisode.episodeId}/episode`
@@ -402,6 +429,12 @@ const EpisodeRoundItem = ({ episode }: IEpisodeRoundItemProps) => {
                     title: episode.episodeOpenYn === "Y" ? "비공개" : "공개",
                     onClick: handleToggleVisibility,
                   },
+                  ...(isScheduledRelease
+                    ? [{
+                        title: "예약취소",
+                        onClick: handleCancelReserve,
+                      }]
+                    : []),
                 ]}
               />
             </div>

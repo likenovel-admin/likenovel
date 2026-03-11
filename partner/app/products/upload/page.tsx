@@ -16,6 +16,7 @@ import {
 } from "@/api/product/dto";
 import {
   useCancelEpisodeReview,
+  useCancelReserveEpisodeSale,
   useDeleteEpisodes,
   useRequestEpisodeReview,
   useReserveEpisodeSale,
@@ -90,7 +91,7 @@ const INITIAL_FORM: FormState = {
   publicationType: "serial",
   launchType: "normal",
   rating: "all",
-  statusCode: "ongoing",
+  statusCode: "end",
   primaryGenreId: "",
   subGenreId: "",
   uci: "",
@@ -161,6 +162,7 @@ export default function ProductUploadPage() {
   const deleteEpisodes = useDeleteEpisodes();
   const startEpisodeSale = useStartEpisodeSale();
   const reserveEpisodeSale = useReserveEpisodeSale();
+  const cancelReserveEpisodeSale = useCancelReserveEpisodeSale();
   const { data: genres } = useGetProductGenre();
   const { data: cpCompanies } = useGetProductCpCompany();
   const {
@@ -205,6 +207,9 @@ export default function ProductUploadPage() {
     return effectiveOpenYn === "Y" && effectiveUseYn === "Y";
   }).length;
 
+  const isFreeProduct = isDetailMode && productDetail?.price_type === "free";
+  const productType = productDetail?.product_type ?? productDetail?.productType ?? null;
+
   const canManage =
     userProfile?.role_type === "admin" || userProfile?.role_type === "partner";
   const isSubmitting = createProduct.isPending || updateProduct.isPending;
@@ -213,12 +218,14 @@ export default function ProductUploadPage() {
   const isDeletingEpisodes = deleteEpisodes.isPending;
   const isStartingSale = startEpisodeSale.isPending;
   const isReservingSale = reserveEpisodeSale.isPending;
+  const isCancellingReserve = cancelReserveEpisodeSale.isPending;
   const isActionPending =
     isApplyingReview ||
     isCancellingReview ||
     isDeletingEpisodes ||
     isStartingSale ||
-    isReservingSale;
+    isReservingSale ||
+    isCancellingReserve;
   const allEpisodeSelected =
     episodes.length > 0 &&
     episodes.every((episode) => selectedEpisodeIds.includes(episode.episodeId));
@@ -228,6 +235,7 @@ export default function ProductUploadPage() {
       ...prev,
       publicationType: value,
       serialPrice: value === "serial" ? "100" : prev.serialPrice || "100",
+      statusCode: value === "serial" ? "end" : prev.statusCode,
     }));
   };
 
@@ -281,11 +289,13 @@ export default function ProductUploadPage() {
           : productDetail.ratings_code === "15"
             ? "15"
             : "all",
-      statusCode: (["ongoing", "rest", "end", "stop"] as OngoingType[]).includes(
-        productDetail.status_code as OngoingType
-      )
-        ? (productDetail.status_code as OngoingType)
-        : "ongoing",
+      statusCode: isVolumeType
+        ? (["ongoing", "rest", "end", "stop"] as OngoingType[]).includes(
+            productDetail.status_code as OngoingType
+          )
+          ? (productDetail.status_code as OngoingType)
+          : "ongoing"
+        : "end",
       primaryGenreId: productDetail.primary_genre_id
         ? String(productDetail.primary_genre_id)
         : "",
@@ -430,7 +440,7 @@ export default function ProductUploadPage() {
       illustrator_nickname: null,
       ongoing_state: form.statusCode,
       update_frequency: [],
-      publish_regular_yn: "N",
+      publish_regular_yn: form.publicationType === "serial" ? "Y" : "N",
       primary_genre: getGenreName(form.primaryGenreId),
       sub_genre: getGenreName(form.subGenreId) || null,
       keywords: [],
@@ -646,6 +656,19 @@ export default function ProductUploadPage() {
     [selectedEpisodes]
   );
 
+  const reserveCancelEligibleEpisodeIds = useMemo(
+    () =>
+      selectedEpisodes
+        .filter(
+          (episode) =>
+            (episode.openYn ?? episode.episodeOpenYn ?? "N") !== "Y" &&
+            episode.publishReserveDate &&
+            new Date(episode.publishReserveDate).getTime() > Date.now()
+        )
+        .map((episode) => episode.episodeId),
+    [selectedEpisodes]
+  );
+
   const deleteEligibleEpisodeIds = useMemo(
     () =>
       selectedEpisodes
@@ -786,6 +809,34 @@ export default function ProductUploadPage() {
       await showAlert("완료", "선택 회차가 판매예약 처리되었습니다.", "확인");
     } catch (error) {
       showAlert("판매예약 실패", catchErrorMessage(error), "확인");
+    }
+  };
+
+  const handleCancelReserveSale = async () => {
+    if (!selectedEpisodeIds.length) {
+      showAlert("안내", "예약취소할 회차를 먼저 선택해주세요.", "확인");
+      return;
+    }
+    if (!reserveCancelEligibleEpisodeIds.length) {
+      showAlert("안내", "선택한 회차 중 예약취소 가능한 회차가 없습니다.", "확인");
+      return;
+    }
+
+    const confirmResult = await confirm({
+      title: "판매예약 취소",
+      text: `선택한 회차 ${reserveCancelEligibleEpisodeIds.length}건의 판매예약을 취소하시겠습니까?`,
+    });
+    if (!confirmResult) return;
+
+    try {
+      await cancelReserveEpisodeSale.mutateAsync({
+        episode_ids: reserveCancelEligibleEpisodeIds,
+      });
+      await invalidateEpisodeQueries();
+      setSelectedEpisodeIds([]);
+      await showAlert("완료", "선택 회차의 판매예약이 취소되었습니다.", "확인");
+    } catch (error) {
+      showAlert("예약취소 실패", catchErrorMessage(error), "확인");
     }
   };
 
@@ -971,9 +1022,19 @@ export default function ProductUploadPage() {
                 />
               </div>
 
+              {isFreeProduct ? (
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">연재 유형</label>
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="default" disabled>
+                    {productType === "normal" ? "일반연재" : "자유연재"}
+                  </Button>
+                </div>
+              </div>
+              ) : (
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm font-semibold text-[#1F2124]">
-                  연재/단행본{REQUIRED_MARK}
+                  웹소설/단행본{REQUIRED_MARK}
                 </label>
                 <div className="flex items-center gap-2">
                   <Button
@@ -981,7 +1042,7 @@ export default function ProductUploadPage() {
                     variant={form.publicationType === "serial" ? "default" : "outline"}
                     onClick={() => handlePublicationTypeChange("serial")}
                   >
-                    연재
+                    웹소설
                   </Button>
                   <Button
                     type="button"
@@ -992,6 +1053,7 @@ export default function ProductUploadPage() {
                   </Button>
                 </div>
               </div>
+              )}
 
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm font-semibold text-[#1F2124]">작가명{REQUIRED_MARK}</label>
@@ -1022,6 +1084,7 @@ export default function ProductUploadPage() {
                 </div>
               </div>
 
+              {!isFreeProduct && (
               <div>
                 <label className="mb-1 block text-sm font-semibold text-[#1F2124]">작품종류{REQUIRED_MARK}</label>
                 <div className="flex items-center gap-2">
@@ -1041,6 +1104,7 @@ export default function ProductUploadPage() {
                   </Button>
                 </div>
               </div>
+              )}
 
               <div>
                 <label className="mb-1 block text-sm font-semibold text-[#1F2124]">1차 장르{REQUIRED_MARK}</label>
@@ -1081,6 +1145,7 @@ export default function ProductUploadPage() {
                 </Select>
               </div>
 
+              {form.publicationType === "volume" && (
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm font-semibold text-[#1F2124]">연재 상태{REQUIRED_MARK}</label>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1096,7 +1161,30 @@ export default function ProductUploadPage() {
                   ))}
                 </div>
               </div>
+              )}
 
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">독점 여부</label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant={form.monopolyYn ? "default" : "outline"}
+                    onClick={() => setField("monopolyYn", true)}
+                  >
+                    독점
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={!form.monopolyYn ? "default" : "outline"}
+                    onClick={() => setField("monopolyYn", false)}
+                  >
+                    비독점
+                  </Button>
+                </div>
+              </div>
+
+              {!isFreeProduct && (
+              <>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-[#1F2124]">UCI</label>
                 <Input
@@ -1151,8 +1239,10 @@ export default function ProductUploadPage() {
                   </div>
                 </div>
               )}
+              </>
+              )}
 
-              {isEditMode && (
+              {isDetailMode && !isFreeProduct && (
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-[#1F2124]">무료회차 지정</label>
                   <div className="flex items-center gap-2">
@@ -1161,6 +1251,8 @@ export default function ProductUploadPage() {
                       placeholder="시작"
                       maxLength={3}
                       className="w-[92px]"
+                      readOnly={isReadOnlyMode}
+                      disabled={isReadOnlyMode}
                       onChange={(e) => {
                         const value = e.target.value;
                         if (value === "" || /^\d{1,3}$/.test(value)) {
@@ -1174,6 +1266,8 @@ export default function ProductUploadPage() {
                       placeholder="종료"
                       maxLength={3}
                       className="w-[92px]"
+                      readOnly={isReadOnlyMode}
+                      disabled={isReadOnlyMode}
                       onChange={(e) => {
                         const value = e.target.value;
                         if (value === "" || /^\d{1,3}$/.test(value)) {
@@ -1185,6 +1279,7 @@ export default function ProductUploadPage() {
                 </div>
               )}
 
+              {!isFreeProduct && (
               <div>
                 <label className="mb-1 block text-sm font-semibold text-[#1F2124]">CP명</label>
                 <Select
@@ -1204,27 +1299,31 @@ export default function ProductUploadPage() {
                   </SelectContent>
                 </Select>
               </div>
+              )}
 
+              {isEditMode && sellingEpisodeCount > 0 && (
               <div className="md:col-span-2 flex flex-wrap items-center gap-6 pt-2">
                 <label className="inline-flex items-center gap-2 text-sm font-medium text-[#1F2124]">
                   <input
                     type="checkbox"
-                    checked={form.monopolyYn}
-                    onChange={(e) => setField("monopolyYn", e.target.checked)}
+                    checked={form.blindYn}
+                    onChange={(e) => setField("blindYn", e.target.checked)}
                   />
-                  독점여부
+                  작품 블라인드
                 </label>
-                {isEditMode && sellingEpisodeCount > 0 && (
-                  <label className="inline-flex items-center gap-2 text-sm font-medium text-[#1F2124]">
-                    <input
-                      type="checkbox"
-                      checked={form.blindYn}
-                      onChange={(e) => setField("blindYn", e.target.checked)}
-                    />
-                    작품 블라인드
-                  </label>
-                )}
               </div>
+              )}
+
+              {isFreeProduct && (
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">(예정)유료전환 시작 회차</label>
+                <Input
+                  value={productDetail?.paid_episode_no ? String(productDetail.paid_episode_no) : "-"}
+                  readOnly
+                  disabled
+                />
+              </div>
+              )}
 
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm font-semibold text-[#1F2124]">작품 소개{REQUIRED_MARK}</label>
@@ -1424,6 +1523,13 @@ export default function ProductUploadPage() {
                     disabled={!selectedEpisodeIds.length || isActionPending}
                   >
                     {isReservingSale ? "처리 중..." : "판매예약"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelReserveSale}
+                    disabled={!selectedEpisodeIds.length || isActionPending}
+                  >
+                    {isCancellingReserve ? "처리 중..." : "예약취소"}
                   </Button>
                 </div>
               </div>

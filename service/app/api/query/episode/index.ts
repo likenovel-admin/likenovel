@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
-import { instance, publicInstance } from "../../axios";
+import { instance } from "../../axios";
 import {
   ISelectMyEvaluationResponse,
   ISelectViewerPathResponse,
@@ -50,18 +50,21 @@ export const useSelectViewerPath = (episodeId: number) => {
       return response.data;
     },
     enabled: !!episodeId,
+    throwOnError: false,
+    retry: 1,
   });
 };
 
-// Public query for next episode info without authentication (doesn't mark as read)
+// Next episode info (doesn't mark as read — /info endpoint)
 export const useSelectNextEpisodeInfo = (episodeId: number) => {
   return useQuery<ISelectEpisodeResponse>({
     queryKey: ["selectNextEpisodeInfo", episodeId],
     queryFn: async () => {
-      const response = await publicInstance.get(`/v1/query/episodes/${episodeId}/info`);
+      const response = await instance.get(`/v1/query/episodes/${episodeId}/info`);
       return response.data;
     },
     enabled: !!episodeId,
+    throwOnError: false,
   });
 };
 

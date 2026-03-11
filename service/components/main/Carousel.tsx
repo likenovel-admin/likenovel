@@ -1,8 +1,6 @@
 import { normalizeUrl } from "@/utils/common";
-import { useEffect, useState } from "react";
-import Slider, { CustomArrowProps, LazyLoadTypes } from "react-slick";
-import ArrowLeftSmall from "/public/images/arrow-left-small.svg";
-import ArrowRightSmall from "/public/images/arrow-right-small.svg";
+import { useEffect, useRef, useState } from "react";
+import Slider from "react-slick";
 export interface PrimaryPanel {
   pcImgPath: string;
   mobileImgPath: string;
@@ -30,18 +28,18 @@ const Carousel = ({ primaryPanels }: Props) => {
   const [showBanner, setShowBanner] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const sliderRef = useRef<any>(null);
 
   const settings = {
     className: "center",
     centerMode: true,
     infinite: true,
-    lazyLoad: "anticipated" as LazyLoadTypes,
-    centerPadding: "17%",
+    centerPadding: "0",
     slidesToShow: 1,
     speed: 400,
     autoplay: true,
     autoplaySpeed: 5000,
-    arrows: true,
+    arrows: false,
     beforeChange: (current: number, next: number) => {
       setAnimation(false);
       setShowBanner(false);
@@ -66,19 +64,15 @@ const Carousel = ({ primaryPanels }: Props) => {
         breakpoint: 768,
         settings: {
           centerPadding: "5%",
-          arrows: false,
         },
       },
       {
         breakpoint: 1025,
         settings: {
           centerPadding: "15%",
-          arrows: false,
         },
       },
     ],
-    nextArrow: <NextArrow />,
-    prevArrow: <PrevArrow />,
   };
 
   useEffect(() => {
@@ -105,8 +99,9 @@ const Carousel = ({ primaryPanels }: Props) => {
   const SliderComponent = Slider as any;
 
   return (
+    <div className="overflow-hidden">
     <div className="slider-container relative h-[360px] md:h-[400px]">
-      <SliderComponent {...settings}>
+      <SliderComponent ref={sliderRef} {...settings}>
         {primaryPanels.map((panel, index) => (
           <div
             key={index}
@@ -250,45 +245,31 @@ const Carousel = ({ primaryPanels }: Props) => {
           </div>
         ))}
       </SliderComponent>
-      {/* Dash indicator — PC only */}
-      <div className="hidden lg:flex absolute bottom-[16px] left-1/2 -translate-x-1/2 z-50 gap-[6px] items-center">
+    </div>
+    {/* 인디케이터 — 배너 아래 */}
+    {primaryPanels.length > 0 && (
+      <div className="flex justify-center gap-[8px] items-center py-[10px]">
         {primaryPanels.map((_, index) => (
-          <div
+          <button
             key={index}
-            className={`h-[3px] rounded-full transition-all ${
-              currentSlide === index
-                ? "w-[24px] bg-white"
-                : "w-[8px] bg-white/40"
-            }`}
-          />
+            type="button"
+            onClick={() => sliderRef.current?.slickGoTo(index)}
+            className="flex items-center cursor-pointer p-[4px]"
+          >
+            <span
+              className={`block h-[6px] rounded-full transition-all ${
+                currentSlide === index
+                  ? "w-[28px] bg-[#0255d9]"
+                  : "w-[10px] bg-gray-300"
+              }`}
+            />
+          </button>
         ))}
       </div>
+    )}
     </div>
   );
 };
 
 export default Carousel;
 
-const NextArrow = (props: CustomArrowProps) => {
-  const { onClick } = props;
-  return (
-    <button
-      className="absolute left-[82.5%] top-[50%] transform -translate-y-1/2 bg-black-100 rounded-full w-12 h-12 opacity-90 flex justify-center items-center hover:opacity-100"
-      onClick={onClick}
-    >
-      <ArrowRightSmall className="text-white" />
-    </button>
-  );
-};
-
-const PrevArrow = (props: CustomArrowProps) => {
-  const { onClick } = props;
-  return (
-    <button
-      className="z-10 absolute left-[14%] top-[50%] transform -translate-y-1/2 bg-black-100 rounded-full w-12 h-12 opacity-90 flex justify-center items-center hover:opacity-100"
-      onClick={onClick}
-    >
-      <ArrowLeftSmall className="text-white" />
-    </button>
-  );
-};

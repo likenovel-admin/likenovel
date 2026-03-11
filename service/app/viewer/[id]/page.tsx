@@ -36,7 +36,7 @@ const Viewer = () => {
   const [isScroll, setIsScroll] = useState(() => {
     // Load initial value from localStorage
     const saved = getLocalStorage<boolean>(STORAGE_KEYS.IS_SCROLL);
-    return saved ?? false; // Default to false if not found
+    return saved ?? true; // Default to true (세로보기)
   });
   const [showNav, setShowNav] = useState(true);
   const [commentState, setCommentState] = useState(false);

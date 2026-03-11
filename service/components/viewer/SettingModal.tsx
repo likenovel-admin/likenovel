@@ -145,6 +145,22 @@ const SettingModal = () => {
             setCount={(size) => setSettings({ marginSize: size })}
           />
         </div>
+        <div className="border border-b border-light-gray-200 w-[348px] my-[12px]" />
+        <div className="flex justify-between items-center">
+          <span className="font-semibold">들여쓰기</span>
+          <button
+            onClick={() => setSettings({ useParagraphIndent: !settings.useParagraphIndent })}
+            className={`w-[44px] h-[24px] rounded-full transition-colors duration-200 ${
+              settings.useParagraphIndent ? "bg-[#4C63FF]" : "bg-[#D1D5DB]"
+            } relative`}
+          >
+            <span
+              className={`block w-[20px] h-[20px] rounded-full bg-white shadow transition-transform duration-200 ${
+                settings.useParagraphIndent ? "translate-x-[22px]" : "translate-x-[2px]"
+              }`}
+            />
+          </button>
+        </div>
       </div>
       <div className="border border-b border-light-gray-200 w-[402px] my-[12px]" />
       <div className="flex justify-center items-center gap-6pxr mb-24pxr">

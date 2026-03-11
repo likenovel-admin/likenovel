@@ -58,7 +58,7 @@ export default function Page() {
         "작품명",
         "작가명",
         "회차수",
-        "계약 유형",
+        "유형",
         "해당CP",
         "작품 등록일",
         "유료 전환일",
@@ -76,7 +76,7 @@ export default function Page() {
         "title",
         "author_nickname",
         "count_episode",
-        "contract_type",
+        (row: IProduct) => (row.price_type === "paid" ? "유료" : "무료"),
         "cp_company_name",
         (row: IProduct) =>
           row.created_date ? format(new Date(row.created_date), "yyyy.MM.dd") : "-",

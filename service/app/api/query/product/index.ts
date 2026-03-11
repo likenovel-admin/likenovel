@@ -185,6 +185,17 @@ export const useGetProducts69Pass = (enabled: boolean) => {
   });
 };
 
+export const useGetProductsAdminGift = (enabled: boolean) => {
+  return useQuery<IUseSelectWaitForFreeProductsResponse, unknown>({
+    queryKey: ["getProductsAdminGift"],
+    queryFn: async () => {
+      const response = await instance.get("/v1/query/products/admin-gift");
+      return response.data;
+    },
+    enabled,
+  });
+};
+
 export const useSelectLatestUpdateProducts = (adult_yn?: string) => {
   const adultYnParam = adult_yn || "N";
   return useQuery<IUseSelectProductsResponse, unknown>({

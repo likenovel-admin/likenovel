@@ -11,6 +11,7 @@ import {
   IEpisodeReviewCancelResponse,
   IEpisodeReviewRequest,
   IEpisodeReviewResponse,
+  IEpisodeSaleReserveCancelRequest,
   IEpisodeSaleReserveRequest,
   IEpisodeSaleResponse,
   IEpisodeSaleStartRequest,
@@ -109,6 +110,17 @@ export const useReserveEpisodeSale = () => {
     mutationFn: async (body: IEpisodeSaleReserveRequest) =>
       apiClient.request<IEpisodeSaleResponse>({
         url: "/v1/command/episodes/sale-reserve",
+        method: "POST",
+        body,
+      }),
+  });
+};
+
+export const useCancelReserveEpisodeSale = () => {
+  return useMutation<IEpisodeSaleResponse, Error, IEpisodeSaleReserveCancelRequest>({
+    mutationFn: async (body: IEpisodeSaleReserveCancelRequest) =>
+      apiClient.request<IEpisodeSaleResponse>({
+        url: "/v1/command/episodes/sale-reserve-cancel",
         method: "POST",
         body,
       }),

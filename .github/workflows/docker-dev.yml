@@ -98,4 +98,18 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_CMS }}:dev-latest
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_CMS }}:dev-${{ github.sha }}
 
-
+      # ---------------------------------------------------------------------
+      # Deploy to ln-web (dev containers)
+      # ECR login → pull new images → recreate containers
+      # ---------------------------------------------------------------------
+      - name: Deploy to dev server (ln-web)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ec2-3-34-11-39.ap-northeast-2.compute.amazonaws.com
+          username: ln-admin
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 992382709044.dkr.ecr.ap-northeast-2.amazonaws.com
+            cd /home/ln-admin/likenovel/service-dev/docker && docker compose pull && docker compose up -d --force-recreate
+            cd /home/ln-admin/likenovel/partner-dev/docker && docker compose pull && docker compose up -d --force-recreate
+            cd /home/ln-admin/likenovel/cms-dev/docker && docker compose pull && docker compose up -d --force-recreate
