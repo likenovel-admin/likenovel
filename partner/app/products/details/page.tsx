@@ -151,7 +151,7 @@ function AdminPage({ product }: PropsType) {
         "작품명",
         "작가명",
         "회차수",
-        "계약 유형",
+        "유형",
         "담당CP",
         "작품 등록일",
         "유료 전환일",
@@ -169,7 +169,7 @@ function AdminPage({ product }: PropsType) {
         "title",
         "author_nickname",
         "count_episode",
-        "contract_type",
+        (row: IProduct) => (row.price_type === "paid" ? "유료" : "무료"),
         "cp_company_name",
         (row: IProduct) =>
           row.created_date

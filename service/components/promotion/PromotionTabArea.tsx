@@ -56,24 +56,42 @@ const PromotionTabArea = () => {
           style="halfSquare"
         />
       </div>
-      <div className="flex gap-4 py-5 pb-7 ">
+      <div className="flex gap-4 py-5 pb-7">
         <Image
           src={"/images/icon_promotion_tab.png"}
-          alt="waitForFree"
+          alt="promotion"
           width={38}
           height={38}
           className="hidden md:block h-[38px] w-[38px]"
         />
-        <ul className="list-inside list-disc text-11pxr md:text-14pxr text-gray-600 border-b">
-          <li>3시간 간격으로 기다리면 무료로 감상할 수 있는 서비스입니다.</li>
-          <li>
-            기다리면 무료 이용권을 사용 후, 3시간을 기다리면 이용권 1장을
-            드립니다.
-          </li>
-          <li>해당 이용권을 사용한 회차는 3일동안 볼 수 있습니다.</li>
-          <li>최신 10편(무료편 포함)은 해당 이용권으로 볼 수 없습니다.</li>
-          <li>매주 월요일에 신규 기다리면 무료 작품이 갱신됩니다</li>
-        </ul>
+        {type === "waitForFree" && (
+          <ul className="list-inside list-disc text-11pxr md:text-14pxr text-gray-600 border-b">
+            <li>24시간 간격으로 기다리면 무료로 감상할 수 있는 서비스입니다.</li>
+            <li>
+              기다리면 무료 이용권을 사용 후, 24시간을 기다리면 이용권 1장을
+              드립니다.
+            </li>
+            <li>해당 이용권을 사용한 회차는 3일동안 볼 수 있습니다.</li>
+            <li>매주 월요일에 신규 기다리면 무료 작품이 갱신됩니다.</li>
+          </ul>
+        )}
+        {type === "69" && (
+          <ul className="list-inside list-disc text-11pxr md:text-14pxr text-gray-600 border-b">
+            <li>매일 오전 6~9시, 오후 6~9시에 대여권이 자동 충전됩니다.</li>
+            <li>하루 최대 2장(아침 1장, 저녁 1장)이 충전됩니다.</li>
+            <li>대여권은 충전 후 1일 이내에 사용해야 합니다.</li>
+            <li>해당 이용권을 사용한 회차는 3일동안 볼 수 있습니다.</li>
+            <li>작품 상세 페이지 진입 시 자동으로 대여권이 지급됩니다.</li>
+          </ul>
+        )}
+        {type === "gift" && (
+          <ul className="list-inside list-disc text-11pxr md:text-14pxr text-gray-600 border-b">
+            <li>관리자가 지급한 대여권이 포함된 작품 목록입니다.</li>
+            <li>작품 상세 페이지 진입 시 자동으로 대여권이 지급됩니다.</li>
+            <li>지급된 대여권은 7일 이내에 사용해야 합니다.</li>
+            <li>해당 이용권을 사용한 회차는 3일동안 볼 수 있습니다.</li>
+          </ul>
+        )}
       </div>
       <PromotionListArea type={type} />
     </div>

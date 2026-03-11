@@ -13,7 +13,7 @@ import ListTypeTab from "../common/ListTypeTab";
 import MainHeader from "../common/MainHeader";
 import Modal from "../common/Modal";
 import ProductListCard from "../common/ProductListCard";
-import SimpleSpinner from "../common/SimpleSpinner";
+import Spinner from "../common/Spinner";
 import GenreSelectModal from "../modal/GenreSelectModal";
 import Close from "/public/images/close.svg";
 import Filter from "/public/images/filter.svg";
@@ -169,7 +169,7 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
         <div className="flex flex-col md:gap-14pxr">
           {isLoading ? (
             <div>
-              <SimpleSpinner />
+              <Spinner size={20} />
             </div>
           ) : error ? (
             <div className="flex justify-center items-center h-[200px] text-dark-gray-500">
@@ -187,7 +187,7 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
               <div ref={observerTarget} className="h-4" />
               {isFetchingNextPage && (
                 <div className="py-4 flex justify-center items-center">
-                  <SimpleSpinner />
+                  <Spinner size={20} />
                 </div>
               )}
             </>
@@ -208,7 +208,7 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
               <div ref={observerTarget} className="h-4" />
               {isFetchingNextPage && (
                 <div className="py-4 flex justify-center items-center">
-                  <SimpleSpinner />
+                  <Spinner size={20} />
                 </div>
               )}
             </>

@@ -106,8 +106,9 @@ export default function WorksTable({ data, loading }: Props) {
       key: "count_episode",
     },
     {
-      header: "계약 유형",
-      key: "contract_type",
+      header: "유형",
+      key: "price_type",
+      render: (_, row: IProduct) => (row.price_type === "paid" ? "유료" : "무료"),
     },
     {
       header: "해당CP",

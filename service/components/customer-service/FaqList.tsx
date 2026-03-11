@@ -1,7 +1,7 @@
 import { useGetFaq } from "@/app/api/query/faq";
 import { useMemo, useState } from "react";
 import Pagination from "../common/Pagination";
-import SimpleSpinner from "../common/SimpleSpinner";
+import Spinner from "../common/Spinner";
 import Tab from "../common/Tab";
 import ArrowDown from "/public/images/arrow-down.svg";
 
@@ -91,7 +91,7 @@ const FaqList = () => {
       <ul>
         {isLoading ? (
           <li className="flex justify-center items-center py-10">
-            <SimpleSpinner />
+            <Spinner size={20} />
           </li>
         ) : filteredData?.length === 0 ? (
           <li className="flex justify-center items-center py-10 text-gray-400">

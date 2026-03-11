@@ -28,6 +28,8 @@ export interface IProduct {
   free_episode_start_no?: number | null;
   free_episode_end_no?: number | null;
   paid_episode_no?: number | null;
+  product_type?: string | null;
+  productType?: string | null;
   cover_image_path?: string | null;
   coverImagePath?: string | null;
   thumbnail_file_path?: string | null;

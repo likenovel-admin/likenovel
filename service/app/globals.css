@@ -65,23 +65,33 @@ html {
   }
 
   .slick-list {
-    border-radius: 30px;
+    overflow: visible !important;
     height: 400px !important;
   }
 
   .slick-slide {
     height: 400px !important;
-    border-radius: 30px;
   }
 
-  @media (max-width: 1024px) {
+  @media (min-width: 1025px) {
     .slick-slide {
-      padding-right: 5px;
+      padding: 0 8px;
     }
   }
 
   .slick-center {
     min-width: 300px;
+  }
+
+  @media (max-width: 1024px) {
+    .slick-list {
+      overflow: hidden !important;
+      border-radius: 30px;
+    }
+
+    .slick-slide {
+      padding-right: 5px;
+    }
   }
 }
 

@@ -169,6 +169,7 @@ export const useGetProductNoticeDetail = (
       return response.data;
     },
     enabled: !!enabled,
+    throwOnError: false,
   });
 };
 
@@ -203,6 +204,14 @@ export const useOpenEpisode = () => {
   return useMutation<unknown, Error, { episodeId: number }>({
     mutationFn: async ({ episodeId }) => {
       return await instance.put(`/v1/command/episodes/${episodeId}/open`);
+    },
+  });
+};
+
+export const useCancelReserveEpisode = () => {
+  return useMutation<unknown, Error, { episode_ids: number[] }>({
+    mutationFn: async (body) => {
+      return await instance.post(`/v1/command/episodes/sale-reserve-cancel`, body);
     },
   });
 };

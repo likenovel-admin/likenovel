@@ -283,15 +283,17 @@ const CacheStatusContents = ({
           </li>
         </ul>
       </div>
-      <div className="w-full flex justify-center">
-        <button
-          className="text-primary-100 flex items-center gap-1"
-          onClick={handleMoveToRecharge}
-        >
-          캐쉬충전하기
-          <ArrowRight className="w-3 h-3" />
-        </button>
-      </div>
+      {(!!rentalTicketCount || hasEnoughCash) && (
+        <div className="w-full flex justify-center">
+          <button
+            className="text-primary-100 flex items-center gap-1"
+            onClick={handleMoveToRecharge}
+          >
+            캐쉬충전하기
+            <ArrowRight className="w-3 h-3" />
+          </button>
+        </div>
+      )}
       <div className="w-full p-6 pt-4 flex flex-col gap-3">
         {!!rentalTicketCount && (
           <Button

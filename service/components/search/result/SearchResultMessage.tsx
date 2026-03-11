@@ -1,4 +1,4 @@
-import SimpleSpinner from "@/components/common/SimpleSpinner";
+import Spinner from "@/components/common/Spinner";
 
 interface Props {
   keyword: string;
@@ -11,7 +11,7 @@ const SearchResultMessage = ({ keyword, isSuccess, resultCount }: Props) => {
     <div className="flex mt-20pxr px-20pxr">
         {!isSuccess ? (
             <div className="flex items-center gap-2">
-                <SimpleSpinner />
+                <Spinner size={20} />
             </div>
         ) : (
             <div className="whitespace-wrap md:flex md:whitespace-nowrap">

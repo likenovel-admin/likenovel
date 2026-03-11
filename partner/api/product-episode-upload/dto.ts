@@ -75,6 +75,10 @@ export interface IEpisodeSaleReserveRequest {
   publish_reserve_date: string;
 }
 
+export interface IEpisodeSaleReserveCancelRequest {
+  episode_ids: number[];
+}
+
 export interface IEpisodeSaleResponse {
   data: {
     count: number;

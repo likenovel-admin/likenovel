@@ -5,7 +5,7 @@ import BoxProductList from "../common/BoxProductList";
 import ListTypeTab from "../common/ListTypeTab";
 import MainHeader from "../common/MainHeader";
 import ProductListCard from "../common/ProductListCard";
-import SimpleSpinner from "../common/SimpleSpinner";
+import Spinner from "../common/Spinner";
 
 interface Props {
   data: IProduct[] | null;
@@ -81,7 +81,7 @@ const ProductArea = ({ data, pageType = "free" }: Props) => {
             <>
               <div ref={observerTarget} className="h-4" />
               <div className="py-4 flex justify-center items-center">
-                <SimpleSpinner />
+                <Spinner size={20} />
               </div>
             </>
           )}
@@ -93,7 +93,7 @@ const ProductArea = ({ data, pageType = "free" }: Props) => {
             <>
               <div ref={observerTarget} className="h-4" />
               <div className="py-4 flex justify-center items-center">
-                <SimpleSpinner />
+                <Spinner size={20} />
               </div>
             </>
           )}

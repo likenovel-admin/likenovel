@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import Button from "../common/Button";
-import SimpleSpinner from "../common/SimpleSpinner";
+import Spinner from "../common/Spinner";
 
 const NoticeDetail = ({ noticeId }: { noticeId: string }) => {
   const router = useRouter();
@@ -47,7 +47,7 @@ const NoticeDetail = ({ noticeId }: { noticeId: string }) => {
     <>
       {isLoading ? (
         <div className="flex justify-center items-center py-10">
-          <SimpleSpinner />
+          <Spinner size={20} />
         </div>
       ) : (
         <>
