@@ -136,10 +136,10 @@ export default function WorksTable({ data, loading }: Props) {
       },
     },
     {
-      header: "연령등급",
-      key: "ratings_code",
+      header: "공개여부",
+      key: "blind_yn",
       render: (_, row: IProduct) => {
-        return row.ratings_code ? productRatingsCode[row.ratings_code] : "";
+        return row.blind_yn === "Y" ? "비공개" : "공개";
       },
     },
     {

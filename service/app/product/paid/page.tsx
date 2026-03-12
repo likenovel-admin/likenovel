@@ -22,11 +22,7 @@ export default function Paid() {
     <>
       {isSuccess ? (
         <div className="w-full flex flex-col">
-          <div className="h-[320px] md:h-[360px] bg-black-100 mt-[-20px]">
-            <div className="mt-[20px]">
-              <Carousel primaryPanels={data?.banners || []} />
-            </div>
-          </div>
+          <Carousel primaryPanels={data?.banners || []} />
           <div className="w-full max-w-[1120px] mx-auto flex flex-col mt-70pxr md:mt-[100px]">
             <CPPromotion
               data={cpPromotionProducts}
