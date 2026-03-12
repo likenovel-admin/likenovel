@@ -110,8 +110,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -T ln-admin@ec2-3-34-11-39.ap-northeast-2.compute.amazonaws.com << 'ENDSSH'
             set -e
             aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 992382709044.dkr.ecr.ap-northeast-2.amazonaws.com
-            docker rm -f likenovel-user-dev likenovel-partner-dev likenovel-admin-dev 2>/dev/null || true
-            cd /home/ln-admin/likenovel/service-dev/docker && docker compose pull && docker compose up -d
-            cd /home/ln-admin/likenovel/partner-dev/docker && docker compose pull && docker compose up -d
-            cd /home/ln-admin/likenovel/cms-dev/docker && docker compose pull && docker compose up -d
+            cd /home/ln-admin/likenovel/service-dev/docker && docker compose down && docker compose pull && docker compose up -d
+            cd /home/ln-admin/likenovel/partner-dev/docker && docker compose down && docker compose pull && docker compose up -d
+            cd /home/ln-admin/likenovel/cms-dev/docker && docker compose down && docker compose pull && docker compose up -d
           ENDSSH
