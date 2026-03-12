@@ -180,17 +180,23 @@ NICE 본인인증 콜백만 환경별 분리: 로컬 `localhost:3010`, dev `www.
 ### 프론트엔드 (Docker → ECR)
 
 ```
-dev/prod push → GitHub Actions
+dev push → GitHub Actions (docker-dev.yml) — 완전 자동
   1. Checkout
   2. AWS credentials (Secrets)
   3. ECR Login
   4. Secrets → .env.production 생성
   5. Docker build (ENV_FILE=.env.production)
-  6. ECR push ({env}-latest, {env}-{SHA})
+  6. ECR push (dev-latest, dev-{SHA})
+  7. SSH로 ln-web 접속 (SSH_PRIVATE_KEY_B64)
+  8. ECR login → docker compose down/pull/up (service-dev, partner-dev, cms-dev)
+
+prod push → GitHub Actions (docker-prod.yml) — ECR push만
+  1~6. 동일 (prod-latest, prod-{SHA})
+  서버 반영은 수동 (prod 시크릿 미등록 상태)
 ```
 
 워크플로우 파일:
-- `.github/workflows/docker-dev.yml` (dev)
+- `.github/workflows/docker-dev.yml` (dev) — SSH 자동 배포 포함
 - `.github/workflows/docker-prod.yml` (prod)
 
 paths 필터: `service/**`, `partner/**`, `cms/**` 변경 시에만 실행.
@@ -217,7 +223,7 @@ prod만 자동 `poetry version patch` + commit + push.
 
 ## 8. 배포 절차
 
-### 프론트 → 스테이징
+### 프론트 → 스테이징 (완전 자동)
 
 ```bash
 # 1. main 커밋/푸시
@@ -226,12 +232,12 @@ git add <files>
 git commit -m "feat: ..."
 git push origin main
 
-# 2. dev 머지/푸시 → CI 트리거
+# 2. dev 머지/푸시 → CI 자동 트리거 → 서버 자동 반영
 git checkout dev
 git merge main
 git push origin dev
+# → docker-dev.yml: build → ECR push → SSH → compose down/pull/up (자동)
 
-# 3. ln-web SSH → docker pull + 재시작
 git checkout main  # 작업 브랜치 복귀
 ```
 
