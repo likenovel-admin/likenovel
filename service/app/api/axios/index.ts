@@ -153,87 +153,47 @@ instance.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const { accessToken, refreshToken, setAccessToken, signOut } =
+      const { accessToken, refreshToken, setAccessToken, signOut, isAuthenticated } =
         useAuthStore.getState();
 
-      // 액세스 토큰 재발급 요청
+      const clearStaleAuth = () => {
+        try {
+          delete (instance.defaults.headers.common as any).Authorization;
+          delete (originalRequest.headers as any)?.Authorization;
+          delete (originalRequest.headers as any)?.authorization;
+        } catch (_) {}
+        signOut();
+      };
+
+      // refresh token이 있으면 재발급 시도
       if (refreshToken) {
-        const transformDataToRequestData = (): IRefreshTokenRequest => {
-          return {
+        try {
+          const res = await axios.put("/api/v1/command/auth/token/reissue", {
             access_token: accessToken || "",
             refresh_token: refreshToken,
-          };
-        };
-        const requestData = transformDataToRequestData();
+          }, { withCredentials: true });
 
-        try {
-          /**
-           * 토큰 재발급 요청
-           * - 기존 코드는 `axios.put("v1/...")` 형태라 현재 라우트에 상대경로로 붙어 404가 날 수 있습니다.
-           * - 반드시 절대경로(`/api/v1/...`)로 호출하여 어떤 페이지에서도 동일하게 동작하도록 합니다.
-           */
-          const res = await axios.put("/api/v1/command/auth/token/reissue", requestData, {
-            withCredentials: true,
-          });
-          /**
-           * 토큰 재발급 응답 파싱
-           * - 백엔드/문서 버전에 따라 응답 구조가 달라질 수 있어 방어적으로 처리합니다.
-           *   - (current) { data: { token: { accessToken } } }
-           *   - (legacy)  { token: { access_token } } 등
-           */
           const newAccessToken =
             res?.data?.data?.token?.accessToken ||
             res?.data?.data?.auth?.accessToken ||
             res?.data?.token?.access_token ||
             res?.data?.token?.accessToken;
+
           if (newAccessToken) {
             setAccessToken(newAccessToken);
-            instance.defaults.headers.common[
-              "Authorization"
-            ] = `Bearer ${newAccessToken}`;
-            originalRequest.headers[
-              "Authorization"
-            ] = `Bearer ${newAccessToken}`;
+            instance.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
+            originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
             return instance(originalRequest);
-          } else {
-            console.error("[auth] ❌ Token reissue response missing access token.");
-            // Clear any stale Authorization to avoid 401 loop
-            try {
-              delete (instance.defaults.headers.common as any).Authorization;
-              delete (originalRequest.headers as any)?.Authorization;
-              delete (originalRequest.headers as any)?.authorization;
-            } catch (e) {
-              console.error("[auth] Failed to clear Authorization after reissue miss:", e);
-            }
-            const currentUrl = encodeURIComponent(window.location.pathname);
-            window.location.href = `/login?redirect=${currentUrl}`;
-            signOut();
           }
-        } catch (error: any) {
-          // Clear any stale Authorization to avoid 401 loop
-          try {
-            delete (instance.defaults.headers.common as any).Authorization;
-            delete (originalRequest.headers as any)?.Authorization;
-            delete (originalRequest.headers as any)?.authorization;
-          } catch (e) {
-            console.error("[auth] Failed to clear Authorization after reissue error:", e);
-          }
-          const currentUrl = encodeURIComponent(window.location.pathname);
-          window.location.href = `/login?redirect=${currentUrl}`;
-          signOut();
-        }
-      } else {
-        // Clear any stale Authorization to avoid 401 loop
-        try {
-          delete (instance.defaults.headers.common as any).Authorization;
-          delete (originalRequest.headers as any)?.Authorization;
-          delete (originalRequest.headers as any)?.authorization;
-        } catch (e) {
-          console.error("[auth] Failed to clear Authorization (no refresh token):", e);
-        }
+        } catch (_) {}
+
+        // 재발급 실패 → 로그인 리다이렉트
+        clearStaleAuth();
         const currentUrl = encodeURIComponent(window.location.pathname);
         window.location.href = `/login?redirect=${currentUrl}`;
-        signOut();
+      } else {
+        // refresh token 없음 → stale 토큰 정리만 하고 리다이렉트 안 함
+        clearStaleAuth();
       }
     }
     return Promise.reject(error);

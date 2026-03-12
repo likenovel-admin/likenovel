@@ -47,6 +47,9 @@ export interface ICreateProductRequest {
   open_yn: "Y" | "N";
   monopoly_yn: "Y" | "N";
   cp_contract_yn: "Y" | "N";
+  series_regular_price?: number;
+  single_regular_price?: number;
+  single_rental_price?: number;
 }
 
 export interface ICreateProductResponse {

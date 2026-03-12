@@ -88,13 +88,11 @@ const GlobalMenuModal = ({ isOpen, setIsOpen, onClose }: CommonModalProps) => {
   const handleSignOut = async () => {
     try {
       await mutateAsync(refreshToken as string);
+    } catch (error) {
+      // 백엔드 signout 실패해도 로컬 토큰은 반드시 정리
+    } finally {
       signOut();
       window.location.href = "/login";
-    } catch (error) {
-      setToast({
-        type: "error",
-        message: "로그아웃에 실패했습니다.",
-      });
     }
   };
 

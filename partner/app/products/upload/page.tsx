@@ -433,6 +433,8 @@ export default function ProductUploadPage() {
   };
 
   const buildCreatePayload = (): ICreateProductRequest => {
+    const activePrice =
+      form.publicationType === "serial" ? 100 : Number(form.volumePrice);
     return {
       cover_image_file_id: coverImageFileId ?? undefined,
       title: form.title.trim(),
@@ -450,6 +452,10 @@ export default function ProductUploadPage() {
       open_yn: "N",
       monopoly_yn: form.monopolyYn ? "Y" : "N",
       cp_contract_yn: form.cpCompanyName ? "Y" : "N",
+      series_regular_price: form.publicationType === "serial" ? activePrice : 0,
+      single_regular_price: form.publicationType === "volume" ? activePrice : 0,
+      single_rental_price:
+        form.publicationType === "volume" ? Number(form.volumeRentalPrice) : 0,
     };
   };
 
