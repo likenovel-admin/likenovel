@@ -31,9 +31,12 @@ const GlobalMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuthStore((state) => ({ user: state.user }));
   const { isAuthenticated } = useAuthStore();
+  const { data: userInfo } = useSelectUserInfo(user?.userId ?? 0);
   useEffect(() => {
     setIsOpen(false);
   }, [device]);
+
+  const profileImagePath = userInfo?.data?.userProfileImagePath;
 
   return (
     <div className="relative flex justify-center items-center">
@@ -60,7 +63,15 @@ const GlobalMenu = () => {
         }}
       >
         <div className="hidden md:contents">
-          <MenuIcon menu={<Person />} dotColor="red" />
+          {user?.userRole && profileImagePath ? (
+            <img
+              src={profileImagePath}
+              alt="프로필"
+              className="w-[24px] h-[24px] rounded-full object-cover"
+            />
+          ) : (
+            <MenuIcon menu={<Person />} dotColor="red" />
+          )}
         </div>
         <div className="md:hidden contents">
           <MenuIcon menu={<List />} dotColor="red" isDotActive />
