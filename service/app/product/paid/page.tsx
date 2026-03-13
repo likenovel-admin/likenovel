@@ -21,9 +21,10 @@ export default function Paid() {
   return (
     <>
       {isSuccess ? (
-        <div className="w-full flex flex-col">
-          <Carousel primaryPanels={data?.banners || []} />
-          <div className="w-full max-w-[1120px] mx-auto flex flex-col mt-70pxr md:mt-[100px]">
+        <div className="relative w-full flex flex-col max-w-[1120px] mx-auto">
+          <div className="bg-black-100 h-[385px] w-[100vw] absolute top-[-20px] left-1/2 -translate-x-1/2"></div>
+          <Carousel primaryPanels={data?.banners || []} contained />
+          <div className="w-full flex flex-col mt-70pxr md:mt-[100px]">
             <CPPromotion
               data={cpPromotionProducts}
               title={data?.publisherPromotionTitle}

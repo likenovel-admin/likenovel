@@ -83,6 +83,11 @@ html {
     min-width: 300px;
   }
 
+  .slider-contained .slick-list {
+    overflow: hidden !important;
+    border-radius: 30px;
+  }
+
   @media (max-width: 1024px) {
     .slick-list {
       overflow: hidden !important;

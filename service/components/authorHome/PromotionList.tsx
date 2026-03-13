@@ -116,7 +116,7 @@ const PromotionItem = ({
       {cpContractYn && (
         <div className="absolute top-[-10px] left-[0px] ">
           <MessageBubble className="!bg-[url('/images/message-bubble-purple.svg')]">
-            CP계약
+            계약
           </MessageBubble>
         </div>
       )}

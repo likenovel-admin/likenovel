@@ -78,7 +78,7 @@ const ReviewCommentInput = ({
           등록
         </Button>
       }
-      label={`작품 댓글 ${commentLength || 0}`}
+      label={`리뷰 댓글 ${commentLength || 0}`}
       labelStyle="mb-3 text-18pxr md:text-22pxr font-bold"
     />
   );

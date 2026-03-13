@@ -19,9 +19,10 @@ export interface PrimaryPanel {
 }
 interface Props {
   primaryPanels: PrimaryPanel[];
+  contained?: boolean;
 }
 
-const Carousel = ({ primaryPanels }: Props) => {
+const Carousel = ({ primaryPanels, contained }: Props) => {
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [animation, setAnimation] = useState(true);
@@ -30,14 +31,15 @@ const Carousel = ({ primaryPanels }: Props) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const sliderRef = useRef<any>(null);
 
+  const isSingle = primaryPanels.length <= 1;
   const settings = {
     className: "center",
-    centerMode: true,
-    infinite: true,
+    centerMode: !isSingle,
+    infinite: !isSingle,
     centerPadding: "0",
     slidesToShow: 1,
     speed: 400,
-    autoplay: true,
+    autoplay: !isSingle,
     autoplaySpeed: 5000,
     arrows: false,
     beforeChange: (current: number, next: number) => {
@@ -100,7 +102,7 @@ const Carousel = ({ primaryPanels }: Props) => {
 
   return (
     <div className="overflow-hidden">
-    <div className="slider-container relative h-[360px] md:h-[400px]">
+    <div className={`slider-container relative h-[360px] md:h-[400px]${contained ? " slider-contained" : ""}`}>
       <SliderComponent ref={sliderRef} {...settings}>
         {primaryPanels.map((panel, index) => (
           <div
@@ -247,8 +249,8 @@ const Carousel = ({ primaryPanels }: Props) => {
       </SliderComponent>
     </div>
     {/* 인디케이터 — 배너 아래 */}
-    {primaryPanels.length > 0 && (
-      <div className="flex justify-center gap-[8px] items-center py-[10px]">
+    {primaryPanels.length > 1 && (
+      <div className="relative z-50 flex justify-center gap-[8px] items-center py-[10px]">
         {primaryPanels.map((_, index) => (
           <button
             key={index}

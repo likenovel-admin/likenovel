@@ -238,31 +238,6 @@ const ReviewReplyItem = ({
             />
             <div className="text-13pxr text-dark-gray-400">{reviewReplyAt}</div>
           </div>
-          <div className="gap-3 flex items-center absolute right-4 bottom-0">
-            <div className="flex gap-1 items-center">
-              <Image
-                src={"/images/like.svg"}
-                alt="좋아요"
-                width={26}
-                height={22}
-              />
-              <span className="text-12pxr md:text-14pxr text-gray-500">
-                {likeAmount}
-              </span>
-            </div>
-            <div className="flex gap-1 items-center">
-              <Image
-                src={"/images/message-gray.svg"}
-                alt="좋아요"
-                width={26}
-                height={22}
-                className="text-gray-500"
-              />
-              <span className="text-12pxr md:text-14pxr text-gray-500">
-                {messageAmount}
-              </span>
-            </div>
-          </div>
         </div>
       </div>
       <div className="px-3 py-3 bg-light-gray-100 rounded-b-xl md:rounded-none flex gap-2.5">

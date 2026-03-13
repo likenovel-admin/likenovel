@@ -263,6 +263,7 @@ function AdminPage({ product }: PropsType) {
       cp_company_name: cpId || undefined,
       monopoly_yn: monopolyYn === true ? "Y" : "N",
       open_yn: isBlind ? "N" : "Y",
+      blind_yn: isBlind ? "Y" : "N",
       cp_offered_price: Number(cpContractPrice || 0) || undefined,
       cp_settlement_rate: Number(cpAuthorProfit || 0) || undefined,
       // cp_author_profit: cpAuthorProfit,
@@ -657,7 +658,6 @@ function AuthorPage({ product }: PropsType) {
       isbn,
       series_regular_price: Number(seriesPrice || 0),
       single_regular_price: Number(singlePrice || 0),
-      open_yn: isBlind ? "N" : "Y",
       ratings_code: ratingsCode,
       // cp_id: cpId,
       // monopoly_yn: monopolyYn,
@@ -906,12 +906,13 @@ function AuthorPage({ product }: PropsType) {
               <TableRow>
                 <TableHead className="require">작품 블라인드</TableHead>
                 <TableCell>
-                  <Input
-                    type="checkbox"
-                    className="w-[36px]"
-                    checked={isBlind}
-                    readOnly
-                  />
+                  {isBlind ? (
+                    <span className="text-sm text-[#E54949]">
+                      관리자 블라인드된 작품입니다. 사용자에게 노출되지 않습니다.
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">-</span>
+                  )}
                 </TableCell>
               </TableRow>
             </TableBody>

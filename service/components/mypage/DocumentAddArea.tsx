@@ -66,12 +66,7 @@ const DocumentAddArea = () => {
   };
 
   const getRequirementText = () => {
-    if (watchedRequestType === "editor") {
-      return "편집자는 성함과 회사명이 보이도록 명함을 첨부해주세요";
-    } else if (watchedRequestType === "CP") {
-      return "CP사는 사업자 번호가 있는 사업자 등록증을 첨부해주세요";
-    }
-    return "편집자는 성함과 회사명이 보이도록 명함을 첨부해주세요";
+    return "CP사는 사업자 번호가 있는 사업자 등록증을 첨부해주세요";
   };
 
   return (

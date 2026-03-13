@@ -148,7 +148,7 @@ export default function UploadEpisodesPage() {
   const uploadBatchEpisode = useUploadBatchEpisodeEpub();
 
   const canManage =
-    userProfile?.role_type === "admin" || userProfile?.role_type === "partner";
+    userProfile?.role_type === "admin" || userProfile?.role_type === "CP";
 
   const [batchCommonOption, setBatchCommonOption] =
     useState<EpisodeUploadOption>(DEFAULT_EPISODE_OPTION);

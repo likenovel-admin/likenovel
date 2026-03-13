@@ -11,12 +11,11 @@ const Page = () => {
 
   return (
     <GenreProvider>
-      <div className="w-full flex flex-col">
-        <Carousel primaryPanels={data?.data ?? []} />
-        <div className="bg-white h-full max-w-[1120px] mx-auto w-full flex flex-col items-center">
-          <ReviewList />
-          <ReviewReplyList />
-        </div>
+      <div className="relative bg-white h-full max-w-[1120px] mx-auto flex flex-col items-center">
+        <div className="bg-black-100 h-[385px] w-[100vw] absolute top-[-20px]"></div>
+        <Carousel primaryPanels={data?.data ?? []} contained />
+        <ReviewList />
+        <ReviewReplyList />
       </div>
     </GenreProvider>
   );
