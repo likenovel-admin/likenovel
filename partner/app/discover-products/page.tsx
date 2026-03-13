@@ -199,9 +199,9 @@ const DiscoverProductsPage = () => {
             <div className="m-4 flex flex-col gap-4">
               <div className="h-8 font-semibold">
                 {isAuthorView
-                  ? "내 작품의 발굴 통계를 조회합니다."
+                  ? "내 작품의 요약통계를 볼 수 있습니다."
                   : isPartnerSummaryView
-                    ? "계약 작품의 발굴 통계를 조회합니다."
+                    ? "계약 작품의 요약통계를 볼 수 있습니다."
                   : "15회차 이상의 무료 연재작을 조회합니다."}
               </div>
               <div className="flex items-center gap-2 px-4 justify-between">
