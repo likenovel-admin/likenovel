@@ -11,15 +11,14 @@ interface Props {
 const InterestBadge = ({ product, width, height, style }: Props) => {
   //관심 만료일(interestEndDate) 유무로 불꽃 표시 여부 판단
   const isInterestFireImage = product?.badge?.interestFireActiveImagePath;
-  //관심 만료일(interestEndDate)과 현재시간과 시간차이
-  const diffInHours = dayjs().diff(
-    dayjs(product?.badge?.interestEndDate || dayjs()),
-    "hours"
-  );
+  //관심 만료일(interestEndDate)까지 남은 시간(양수 = 아직 유효)
+  const diffInHours = dayjs(
+    product?.badge?.interestEndDate || dayjs()
+  ).diff(dayjs(), "hours");
 
-  //불꽃 표시가 있고 72시간 이내라면 활성화된 불꽃, 아니라면 사그라진 불꽃으로 표시
+  //만료일이 아직 미래(diffInHours > 0)이면 활성 불꽃, 아니라면 사그라진 불꽃
   const interestFireImagePath =
-    isInterestFireImage && 0 < diffInHours && diffInHours <= 72
+    isInterestFireImage && diffInHours > 0
       ? product?.badge?.interestFireActiveImagePath
       : product?.badge?.interestFireFadeImagePath;
 

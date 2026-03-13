@@ -102,7 +102,7 @@ const ApplyPaidModal = ({ data, onConfirm }: Props) => {
             <li className="flex items-center">
               <div className="w-3pxr h-3pxr bg-[#B2B5C3] rounded-full ml-1pxr mr-7pxr" />
               <span className="text-12pxr font-normal text-[#4D5159] leading-[18px] tracking-[-2%]">
-                CP계약 없이 진행하는 나홀로 유료화입니다.
+                계약 없이 진행하는 나홀로 유료화입니다.
               </span>
             </li>
             <li className="flex items-center">

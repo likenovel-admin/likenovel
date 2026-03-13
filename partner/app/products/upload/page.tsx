@@ -211,7 +211,8 @@ export default function ProductUploadPage() {
   const productType = productDetail?.product_type ?? productDetail?.productType ?? null;
 
   const canManage =
-    userProfile?.role_type === "admin" || userProfile?.role_type === "partner";
+    userProfile?.role_type === "admin" || userProfile?.role_type === "CP";
+  const isAdmin = userProfile?.role_type === "admin";
   const isSubmitting = createProduct.isPending || updateProduct.isPending;
   const isApplyingReview = requestEpisodeReview.isPending;
   const isCancellingReview = cancelEpisodeReview.isPending;
@@ -320,11 +321,11 @@ export default function ProductUploadPage() {
     }));
 
     const existingCoverPath = detailWithOptional.cover_image_path || detailWithOptional.coverImagePath;
-    if (existingCoverPath) setCoverPreview(existingCoverPath);
+    if (existingCoverPath) setCoverPreview((prev) => prev ?? existingCoverPath);
 
     const existingCoverId =
       detailWithOptional.cover_image_file_id || detailWithOptional.thumbnail_file_id;
-    if (existingCoverId) setCoverImageFileId(existingCoverId);
+    if (existingCoverId) setCoverImageFileId((prev) => prev ?? existingCoverId);
   }, [isDetailMode, productDetail]);
 
   const requestCoverUploadUrl = async (fileName: string) => {
@@ -498,8 +499,8 @@ export default function ProductUploadPage() {
           ? null
           : undefined,
       ...(isEditMode && sellingEpisodeCount > 0
-        ? { open_yn: form.blindYn ? "N" : "Y" }
-        : { open_yn: "N" }),
+        ? { open_yn: form.blindYn ? "N" : "Y", blind_yn: form.blindYn ? "Y" : "N" }
+        : { open_yn: "N", blind_yn: form.blindYn ? "Y" : "N" }),
     };
   };
 
@@ -1307,7 +1308,7 @@ export default function ProductUploadPage() {
               </div>
               )}
 
-              {isEditMode && sellingEpisodeCount > 0 && (
+              {isEditMode && sellingEpisodeCount > 0 && isAdmin && (
               <div className="md:col-span-2 flex flex-wrap items-center gap-6 pt-2">
                 <label className="inline-flex items-center gap-2 text-sm font-medium text-[#1F2124]">
                   <input
@@ -1317,6 +1318,12 @@ export default function ProductUploadPage() {
                   />
                   작품 블라인드
                 </label>
+              </div>
+              )}
+
+              {isEditMode && sellingEpisodeCount > 0 && !isAdmin && form.blindYn && (
+              <div className="md:col-span-2 rounded-md border border-[#F3C4C4] bg-[#FFF6F6] px-4 py-3 text-sm text-[#B42318]">
+                관리자 블라인드된 작품입니다. 사용자에게 노출되지 않으며 해제는 관리자만 가능합니다.
               </div>
               )}
 
@@ -1550,7 +1557,6 @@ export default function ProductUploadPage() {
     </SidebarInset>
   );
 }
-
 
 
 

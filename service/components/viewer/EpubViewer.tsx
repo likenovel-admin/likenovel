@@ -543,6 +543,27 @@ const EpubViewer = ({
     };
   }, [isScroll]);
 
+  // ========================= TAB VISIBILITY: 비활성 복귀 시 스크롤 복구 ==========
+  useEffect(() => {
+    if (!isScroll) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      requestAnimationFrame(() => {
+        const container = getScrollContainer();
+        if (!container) return;
+        container.style.overflowY = "auto";
+        const pos = container.scrollTop;
+        container.scrollTop = pos + 1;
+        container.scrollTop = pos;
+      });
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [isScroll]);
+
   useEffect(() => {
     if (isScroll && renditionRef.current && wrapperRef.current) {
       const width = wrapperRef.current.offsetWidth;
@@ -574,9 +595,12 @@ const EpubViewer = ({
     // Use native touch events to control the EPUB scroll container
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
+      // Re-fetch container each time to avoid stale closure
+      const c = getScrollContainer();
+      if (!c) return;
       isDragging = true;
       startY = e.touches[0].clientY;
-      startScrollTop = container.scrollTop;
+      startScrollTop = c.scrollTop;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
@@ -584,11 +608,16 @@ const EpubViewer = ({
       const currentY = e.touches[0].clientY;
       const deltaY = startY - currentY;
 
-      // Manually scroll the main EPUB scroll container
-      container.scrollTop = startScrollTop + deltaY;
+      if (deltaY < 0) {
+        // 위로 스크롤: preventDefault 호출하지 않아 iOS 네이티브 관성 스크롤 허용
+        isDragging = false;
+        return;
+      }
 
-      // Prevent default so the touch is not eaten by other handlers
-
+      // 아래로 스크롤(마지막 페이지 내부): 직접 컨테이너 스크롤
+      const c = getScrollContainer();
+      if (!c) return;
+      c.scrollTop = startScrollTop + deltaY;
       e.preventDefault();
       e.stopPropagation();
     };

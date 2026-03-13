@@ -223,7 +223,7 @@ const HeaderContent = () => {
               variant="black"
               onClick={handleOpenModal}
             >
-              CP/편집자 신청
+              CP사 입점 신청
             </Button>
             <Button
               size="sm"
@@ -231,7 +231,7 @@ const HeaderContent = () => {
               variant="black"
               onClick={handleOpenModal}
             >
-              CP/편집자 신청
+              CP사 입점 신청
             </Button>
           </>
         )}

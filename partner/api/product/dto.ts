@@ -45,6 +45,7 @@ export interface ICreateProductRequest {
   synopsis: string;
   adult_yn: "Y" | "N";
   open_yn: "Y" | "N";
+  blind_yn?: "Y" | "N";
   monopoly_yn: "Y" | "N";
   cp_contract_yn: "Y" | "N";
   series_regular_price?: number;
@@ -76,6 +77,7 @@ export interface IUpdateProductRequest {
   cp_id?: number;
   monopoly_yn?: "Y" | "N";
   open_yn?: "Y" | "N";
+  blind_yn?: "Y" | "N";
   cp_offered_price?: number;
   cp_settlement_rate?: number;
   cp_author_profit?: number;

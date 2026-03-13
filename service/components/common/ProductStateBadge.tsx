@@ -44,11 +44,10 @@ const ProductStateBadge = ({
     badges.push(<SquareBadge key="new" type="new" />);
 
   if (
-    (hasUpBadge && product.properties?.latestEpisodeDate) ||
-    (product.latestEpisodeDate &&
-      getIsNewEpisode(
-        product.properties?.latestEpisodeDate || product.latestEpisodeDate
-      ))
+    hasUpBadge &&
+    getIsNewEpisode(
+      product.properties?.latestEpisodeDate || product.latestEpisodeDate || ""
+    )
   ) {
     badges.push(<SquareBadge key="up" type="up" />);
   }

@@ -209,7 +209,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navMain = React.useMemo(() => {
     const baseItems = data.navMainBase(pathname);
 
-    if (roleType === "user") {
+    if (roleType === "author") {
       const authorItems = baseItems.map((item) =>
         item.url === "/products"
           ? {
@@ -232,9 +232,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ];
     }
 
-    if (roleType === "admin" || roleType === "cp") {
+    if (roleType === "admin" || roleType === "CP") {
       const items =
-        roleType === "cp"
+        roleType === "CP"
           ? [
               {
                 title: "작품요약",

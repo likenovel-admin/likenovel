@@ -194,7 +194,7 @@ const ButtonBottom = ({
             <Button
               onClick={handleReviveInterestClick}
               disabled={isRevivingInterest}
-              className="flex gap-3pxr md:gap-7pxr items-center justify-center flex-1 md:flex-none md:w-[176px] md:h-[52px] h-[48px] bg-white border border-[#E4E6ED] rounded-10px md:rounded-14px text-12pxr md:text-14pxr !text-dark-gray-500 hover:!bg-white hover:opacity-70 px-8pxr md:px-16pxr disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex gap-3pxr md:gap-7pxr items-center justify-center flex-1 md:flex-none md:w-[176px] md:h-[52px] h-[48px] bg-white border border-[#E4E6ED] rounded-10px md:rounded-14px text-12pxr md:text-14pxr !text-dark-gray-500 hover:!bg-white hover:opacity-70 px-8pxr md:px-16pxr disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               <Image
                 src="/images/fire-off.png"
@@ -207,7 +207,7 @@ const ButtonBottom = ({
             </Button>
           ) : interestStatus === "interest_active" ||
             interestStatus === "interest_ending_soon" ? (
-            <Button className="flex gap-3pxr md:gap-7pxr items-center justify-center flex-1 md:flex-none md:w-[176px] md:h-[52px] h-[48px] !bg-[#F7F7F8] border-none rounded-10px md:rounded-14px text-12pxr md:text-14pxr !text-dark-gray-500 hover:!bg-white hover:opacity-70 px-8pxr md:px-16pxr">
+            <Button className="flex gap-3pxr md:gap-7pxr items-center justify-center flex-1 md:flex-none md:w-[176px] md:h-[52px] h-[48px] !bg-[#F7F7F8] border-none rounded-10px md:rounded-14px text-12pxr md:text-14pxr !text-dark-gray-500 hover:!bg-white hover:opacity-70 px-8pxr md:px-16pxr whitespace-nowrap">
               <Image
                 src="/images/test/fire.svg"
                 alt="관심 끊김"
@@ -220,7 +220,7 @@ const ButtonBottom = ({
           ) : null}
           <Button
             onClick={handleDonateClick}
-            className="flex gap-3pxr md:gap-9pxr items-center justify-center flex-1 md:flex-none md:w-[176px] md:h-[52px] h-[48px] bg-white border border-primary-200 rounded-10px md:rounded-14px text-12pxr md:text-14pxr !text-black-200 hover:!bg-white hover:opacity-70 px-8pxr md:px-16pxr"
+            className="flex gap-3pxr md:gap-9pxr items-center justify-center flex-1 md:flex-none md:w-[176px] md:h-[52px] h-[48px] bg-white border border-primary-200 rounded-10px md:rounded-14px text-12pxr md:text-14pxr !text-black-200 hover:!bg-white hover:opacity-70 px-8pxr md:px-16pxr whitespace-nowrap"
           >
             <Image
               src="/images/coin-outline.svg"

@@ -493,6 +493,7 @@ export default function ProductUploadPage() {
       synopsis: form.synopsis.trim(),
       adult_yn: form.rating === "19" ? "Y" : "N",
       open_yn: form.blindYn ? "N" : "Y",
+      blind_yn: form.blindYn ? "Y" : "N",
       monopoly_yn: form.monopolyYn ? "Y" : "N",
       cp_contract_yn: form.cpCompanyName ? "Y" : "N",
     };
@@ -524,6 +525,7 @@ export default function ProductUploadPage() {
       cp_company_name: form.cpCompanyName || undefined,
       monopoly_yn: form.monopolyYn ? "Y" : "N",
       open_yn: form.blindYn ? "N" : "Y",
+      blind_yn: form.blindYn ? "Y" : "N",
       free_episode_start_no: hasFreeEpisodeRange
         ? Number(freeEpisodeStartNoInput)
         : clearFreeEpisodeRange

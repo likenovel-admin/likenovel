@@ -436,7 +436,8 @@ const FormArea = ({ productId }: Props) => {
       custom_keywords: customKeywords.length > 0 ? customKeywords : null,
       synopsis: formData.synopsis,
       adult_yn: formData.ageGrade === "all" ? "N" : "Y",
-      open_yn: formData.open,
+      open_yn:
+        data?.data.blindYn === "Y" ? (data?.data.openYn ?? "N") : formData.open,
       monopoly_yn: formData.monopoly,
       cp_contract_yn: formData.contract,
       product_type: formData.productType === "normal" ? "normal" : null,
@@ -806,33 +807,40 @@ const FormArea = ({ productId }: Props) => {
                     />
                   )}
                 />
-                <Controller
-                  name={"open"}
-                  control={control}
-                  rules={{
-                    required: "공개 설정을 선택해주세요.",
-                  }}
-                  render={({ field }) => (
-                    <Input
-                      label={"공개 설정"}
-                      labelStyle={requiredLabelClassName}
-                      optionsStyle="peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md cursor-pointer"
-                      activeOptionStyle="border-primary-100"
-                      options={[
-                        {
-                          label: "공개",
-                          value: "Y",
-                        },
-                        {
-                          label: "비공개",
-                          value: "N",
-                        },
-                      ]}
-                      {...field}
-                      checkedValue={field.value}
-                    />
-                  )}
-                />
+                {data?.data.blindYn === "Y" ? (
+                  <div>
+                    <p className={`${requiredLabelClassName} mb-2`}>공개 설정</p>
+                    <p className="text-sm text-[#E54949]">관리자 블라인드된 작품입니다. 사용자에게 노출되지 않습니다.</p>
+                  </div>
+                ) : (
+                  <Controller
+                    name={"open"}
+                    control={control}
+                    rules={{
+                      required: "공개 설정을 선택해주세요.",
+                    }}
+                    render={({ field }) => (
+                      <Input
+                        label={"공개 설정"}
+                        labelStyle={requiredLabelClassName}
+                        optionsStyle="peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md cursor-pointer"
+                        activeOptionStyle="border-primary-100"
+                        options={[
+                          {
+                            label: "공개",
+                            value: "Y",
+                          },
+                          {
+                            label: "비공개",
+                            value: "N",
+                          },
+                        ]}
+                        {...field}
+                        checkedValue={field.value}
+                      />
+                    )}
+                  />
+                )}
                 <Controller
                   name={"monopoly"}
                   control={control}

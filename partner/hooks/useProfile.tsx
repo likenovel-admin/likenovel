@@ -38,8 +38,8 @@ export function useProfile() {
     userProfile,
     roleType: isInitialized ? userProfile?.role_type : undefined,
     isAdmin: isInitialized ? userProfile?.role_type === "admin" : undefined,
-    isPartner: isInitialized ? userProfile?.role_type === "cp" : undefined,
-    isAuthor: isInitialized ? userProfile?.role_type === "user" : undefined,
+    isPartner: isInitialized ? userProfile?.role_type === "CP" : undefined,
+    isAuthor: isInitialized ? userProfile?.role_type === "author" : undefined,
     isLoading,
     isInitialized,
   };

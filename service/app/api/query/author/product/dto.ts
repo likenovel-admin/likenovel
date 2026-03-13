@@ -59,6 +59,7 @@ export interface IMakingProductObject {
   synopsis: string;
   adultYn: "Y" | "N";
   openYn: "Y" | "N";
+  blindYn?: "Y" | "N";
   monopolyYn: "Y" | "N";
   cpContractYn: "Y" | "N";
   paidSettingDate: Date | null;

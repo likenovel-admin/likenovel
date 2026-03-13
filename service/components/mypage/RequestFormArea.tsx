@@ -12,7 +12,16 @@ import Input from "../form/input";
 import DocumentAddArea from "./DocumentAddArea";
 
 const RequestFormArea = () => {
-  const methods = useForm();
+  const methods = useForm({
+    defaultValues: {
+      requestType: "cp",
+      companyName: "",
+      email: "",
+      files: [] as File[],
+      attachment_file_1st: undefined as File | undefined,
+      attachment_file_2nd: undefined as File | undefined,
+    },
+  });
   const {
     handleSubmit,
     register,
@@ -152,30 +161,7 @@ const RequestFormArea = () => {
       <form onSubmit={(e) => e.preventDefault()}>
         <div className="md:flex md:bg-white">
           <section className="flex flex-col bg-white mt-8pxr pt-22pxr md:pt-32pxr pb-17pxr px-16pxr md:px-36pxr gap-33pxr md:flex-1">
-            <Controller
-              name={"requestType"}
-              control={control}
-              rules={{ required: "신청구분을 선택해주세요." }}
-              render={({ field }) => (
-                <Input
-                  label={"신청구분"}
-                  labelStyle={requiredLabelClassName}
-                  optionsStyle="peer-checked:border-primary-100 w-auto h-[46px] flex items-center justify-center cursor-pointer"
-                  options={[
-                    {
-                      label: "편집자 신청",
-                      value: "editor",
-                    },
-                    {
-                      label: "CP사 입점",
-                      value: "cp",
-                    },
-                  ]}
-                  {...field}
-                  checkedValue={field.value}
-                />
-              )}
-            />
+            <input type="hidden" {...register("requestType")} />
             <Input
               label="회사명"
               labelStyle={requiredLabelClassName}

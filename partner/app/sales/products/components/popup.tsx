@@ -16,7 +16,6 @@ interface SalesPopupProps {
 
 const SalesPopup = (props: SalesPopupProps) => {
   const { data } = useGetMonthlySaleByProductDetail(props.productId || "");
-  const update = useUpdateMonthlySaleByProduct();
 
   const [sumSettlementPriceWeb, setSumSettlementPriceWeb] = useState<number>();
   const [sumSettlementCompedTicketPrice, setSumSettlementCompedTicketPrice] =
@@ -34,28 +33,8 @@ const SalesPopup = (props: SalesPopupProps) => {
     }
   }, [data]);
 
-  const handleSubmit = async () => {
-    if (update.isPending) return;
-
-    update.mutate(
-      {
-        id: (props.productId || "") + "",
-        body: {
-          sum_settlement_price_web: sumSettlementPriceWeb || 0,
-          sum_settlement_comped_ticket_price:
-            sumSettlementCompedTicketPrice || 0,
-          tax_price: taxPrice || 0,
-          // settlement_rate: totalPrice || 0,
-          // fee: totalPrice || 0,
-        },
-      },
-      {
-        onSuccess: () => props.close(),
-        onError: (err: any) => {
-          showAlert("오류", catchErrorMessage(err), "확인");
-        },
-      }
-    );
+  const handleSubmit = () => {
+    props.close();
   };
 
   return (
@@ -252,7 +231,6 @@ const SalesPopup = (props: SalesPopupProps) => {
           </div>
         </div>
       </div>
-      <FullPageLoader isLoading={update.isPending} />
     </div>
   );
 };

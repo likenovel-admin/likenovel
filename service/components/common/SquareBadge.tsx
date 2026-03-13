@@ -201,8 +201,8 @@ const SquareBadge = ({
 
       case type === "CPContract":
         return (
-          <div className="flex justify-center items-center w-[38px] h-[18px] bg-[#05A1D3] rounded-[5px]">
-            <span className="text-10pxr text-white font-medium">CP계약</span>
+          <div className="flex justify-center items-center w-[27px] h-[18px] bg-[#05A1D3] rounded-[5px]">
+            <span className="text-10pxr text-white font-medium">계약</span>
           </div>
         );
 
