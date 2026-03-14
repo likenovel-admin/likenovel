@@ -202,13 +202,14 @@ const DiscoverProductsPage = () => {
                   ? "내 작품의 요약통계를 볼 수 있습니다."
                   : isPartnerSummaryView
                     ? "계약 작품의 요약통계를 볼 수 있습니다."
-                  : "15회차 이상의 무료 연재작을 조회합니다."}
+                  : "현재 연재중인 공개 연재작품을 조회합니다."}
               </div>
               <div className="flex items-center gap-2 px-4 justify-between">
                 <SearchText
                   options={[
-                    { value: "story", label: "스토리 검색" },
-                    { value: "keyword-genre", label: "키워드 장르" },
+                    { value: "title", label: "작품명" },
+                    { value: "author", label: "작가명" },
+                    { value: "genre", label: "장르" },
                   ]}
                   onSearch={handleOnSearch}
                   onReset={handleOnReset}

@@ -43,7 +43,7 @@ export function NavMain({
           // Check if any subItem is active
           const hasActiveChild = item.items?.some(subItem => subItem.url === pathname);
           return (
-            <Collapsible key={item.title} asChild defaultOpen={item.isActive || hasActiveChild}>
+            <Collapsible key={item.title} asChild defaultOpen>
               <SidebarMenuItem className={hasActiveChild ? "menu-parent-active" : undefined}>
                 <SidebarMenuButton asChild tooltip={item.title} isActive={item.isActive || hasActiveChild} className={hasActiveChild ? "parent-active" : undefined}>
                   <a href={item.url}>

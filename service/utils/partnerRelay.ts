@@ -31,7 +31,7 @@ export const moveToPartnerSettlementWithRelay = async (
     sessionStorage.getItem("refreshToken");
 
   if (!refreshToken) {
-    window.location.href = `${partnerBase}/login`;
+    window.open(`${partnerBase}/login`, "_blank");
     return;
   }
 
@@ -44,8 +44,8 @@ export const moveToPartnerSettlementWithRelay = async (
       throw new Error("Missing relay key");
     }
 
-    window.location.href = `${partnerBase}/auth/relay?relay_key=${encodeURIComponent(relayKey)}`;
+    window.open(`${partnerBase}/auth/relay?relay_key=${encodeURIComponent(relayKey)}`, "_blank");
   } catch (error) {
-    window.location.href = `${partnerBase}/login`;
+    window.open(`${partnerBase}/login`, "_blank");
   }
 };

@@ -58,7 +58,7 @@ export default function CommonTable({
           </TableRow>
         ) : (
           data.map((row, rowIndex) => (
-            <TableRow key={rowIndex} onClick={() => rowClick && rowClick(row.id)}>
+            <TableRow key={rowIndex} className={rowClick ? "cursor-pointer" : ""} onClick={() => rowClick && rowClick(row.id)}>
               {columns.map((col) => (
                 <TableCell key={col.key}>
                   {col.render
