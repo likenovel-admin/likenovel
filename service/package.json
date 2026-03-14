@@ -41,6 +41,7 @@
     "react-dom": "^18",
     "react-error-boundary": "^4.0.13",
     "react-hook-form": "^7.53.0",
+    "react-image-crop": "^11.0.10",
     "react-reader": "^2.0.11",
     "react-slick": "^0.30.2",
     "sharp": "^0.33.5",
