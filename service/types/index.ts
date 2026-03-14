@@ -214,6 +214,7 @@ export interface IProduct {
   createdDate?: string;
   updatedDate?: string;
   authorId: number;
+  privateYn?: "Y" | "N";
   remainingNotificationCount: number;
   interestStatus: ProductInterestStatus;
   bookmarkCreatedDate?: string;
