@@ -58,7 +58,7 @@ interface TextBlock {
 interface CoverDesignModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onComplete: (file: File) => void;
+  onComplete: (file: File) => Promise<void> | void;
 }
 
 let nextBlockId = 1;
@@ -222,6 +222,7 @@ const CoverDesignModal = ({
   onComplete,
 }: CoverDesignModalProps) => {
   // Shared
+  const [isSaving, setIsSaving] = useState(false);
   const [tab, setTab] = useState<TabType>("basic");
 
   // Tab 1: basic
@@ -307,25 +308,33 @@ const CoverDesignModal = ({
   // --- Save handlers ---
 
   const saveImageFromSrc = useCallback(
-    (src: string) => {
-      const img = new window.Image();
-      img.crossOrigin = "anonymous";
-      img.src = src;
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = CANVAS_WIDTH;
-        canvas.height = CANVAS_HEIGHT;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-        ctx.drawImage(img, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-        canvas.toBlob((blob) => {
-          if (!blob) return;
-          onComplete(
-            new File([blob], "cover-basic.png", { type: "image/png" })
-          );
+    async (src: string) => {
+      setIsSaving(true);
+      try {
+        const file = await new Promise<File | null>((resolve) => {
+          const img = new window.Image();
+          img.crossOrigin = "anonymous";
+          img.src = src;
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = CANVAS_WIDTH;
+            canvas.height = CANVAS_HEIGHT;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) { resolve(null); return; }
+            ctx.drawImage(img, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            canvas.toBlob((blob) => {
+              resolve(blob ? new File([blob], "cover-basic.png", { type: "image/png" }) : null);
+            }, "image/png");
+          };
+          img.onerror = () => resolve(null);
+        });
+        if (file) {
+          await onComplete(file);
           onClose();
-        }, "image/png");
-      };
+        }
+      } finally {
+        setIsSaving(false);
+      }
     },
     [onComplete, onClose]
   );
@@ -334,22 +343,36 @@ const CoverDesignModal = ({
     saveImageFromSrc(BASIC_COVERS[selectedBasic].src);
   };
 
-  const handleSaveMake = () => {
+  const handleSaveMake = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      onComplete(new File([blob], "cover-design.png", { type: "image/png" }));
-      onClose();
-    }, "image/png");
+    setIsSaving(true);
+    try {
+      const file = await new Promise<File | null>((resolve) => {
+        canvas.toBlob((blob) => {
+          resolve(blob ? new File([blob], "cover-design.png", { type: "image/png" }) : null);
+        }, "image/png");
+      });
+      if (file) {
+        await onComplete(file);
+        onClose();
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSaveCrop = async () => {
     if (!cropImgRef.current || !crop) return;
-    const file = await cropImageToFile(cropImgRef.current, crop);
-    if (file) {
-      onComplete(file);
-      onClose();
+    setIsSaving(true);
+    try {
+      const file = await cropImageToFile(cropImgRef.current, crop);
+      if (file) {
+        await onComplete(file);
+        onClose();
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -445,8 +468,8 @@ const CoverDesignModal = ({
             <button onClick={onClose} className="px-8 py-3 rounded-md border border-gray-300 text-14pxr text-dark-gray-500">
               취소
             </button>
-            <button onClick={handleSaveBasic} className="px-8 py-3 rounded-md bg-[#333] text-white text-14pxr font-semibold">
-              저장
+            <button onClick={handleSaveBasic} disabled={isSaving} className="px-8 py-3 rounded-md bg-[#333] text-white text-14pxr font-semibold disabled:opacity-50">
+              {isSaving ? "저장 중..." : "저장"}
             </button>
           </div>
         </div>
@@ -590,8 +613,8 @@ const CoverDesignModal = ({
             <button onClick={onClose} className="px-8 py-3 rounded-md border border-gray-300 text-14pxr text-dark-gray-500 ">
               취소
             </button>
-            <button onClick={handleSaveMake} className="px-8 py-3 rounded-md bg-[#333] text-white text-14pxr font-semibold ">
-              저장
+            <button onClick={handleSaveMake} disabled={isSaving} className="px-8 py-3 rounded-md bg-[#333] text-white text-14pxr font-semibold disabled:opacity-50">
+              {isSaving ? "저장 중..." : "저장"}
             </button>
           </div>
         </div>
@@ -676,10 +699,10 @@ const CoverDesignModal = ({
             </button>
             <button
               onClick={handleSaveCrop}
-              disabled={!uploadSrc || !crop}
+              disabled={!uploadSrc || !crop || isSaving}
               className="px-8 py-3 rounded-md bg-[#333] text-white text-14pxr font-semibold  disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              저장
+              {isSaving ? "저장 중..." : "저장"}
             </button>
           </div>
         </div>
