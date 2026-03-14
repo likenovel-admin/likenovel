@@ -4,11 +4,23 @@ import Button from "../common/Button";
 
 interface Props {
   isDirty?: boolean;
+  isSubmitting?: boolean;
+  isCoverUploading?: boolean;
 }
 
-const BottomButton = ({ isDirty }: Props) => {
+const BottomButton = ({
+  isDirty,
+  isSubmitting = false,
+  isCoverUploading = false,
+}: Props) => {
   const router = useRouter();
   const { setConfirm } = useConfirmStore();
+  const isSubmitDisabled = isSubmitting || isCoverUploading;
+  const submitLabel = isCoverUploading
+    ? "표지 업로드 중..."
+    : isSubmitting
+      ? "등록 중..."
+      : "등록";
 
   const handleCancel = () => {
     if (isDirty) {
@@ -41,8 +53,13 @@ const BottomButton = ({ isDirty }: Props) => {
         >
           취소
         </Button>
-        <Button className="flex-[65] rounded-[14px]" size={"xl"}>
-          등록
+        <Button
+          className="flex-[65] rounded-[14px]"
+          size={"xl"}
+          disabled={isSubmitDisabled}
+          isLoading={isSubmitting}
+        >
+          {submitLabel}
         </Button>
       </div>
       <div className="flex md:hidden gap-1 w-full">
@@ -55,8 +72,13 @@ const BottomButton = ({ isDirty }: Props) => {
         >
           취소
         </Button>
-        <Button className="flex-[85]" size={"md"}>
-          등록
+        <Button
+          className="flex-[85]"
+          size={"md"}
+          disabled={isSubmitDisabled}
+          isLoading={isSubmitting}
+        >
+          {submitLabel}
         </Button>
       </div>
     </div>

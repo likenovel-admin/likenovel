@@ -317,6 +317,7 @@ const FormArea = ({ productId }: Props) => {
 
   // 이미지 파일 아이디
   const [fileId, setFileId] = useState<number | null>(null);
+  const [isCoverUploading, setIsCoverUploading] = useState(false);
 
   const handleFileId = (newFileId: number) => {
     setFileId(newFileId);
@@ -324,6 +325,13 @@ const FormArea = ({ productId }: Props) => {
 
   const onSubmit = async (data: IMakeProductForm) => {
     if (!data.agree) {
+      return;
+    }
+    if (isCoverUploading) {
+      setToast({
+        message: "표지 업로드가 끝난 뒤 등록해주세요.",
+        type: "error",
+      });
       return;
     }
     setIsSubmitting(true);
@@ -489,6 +497,7 @@ const FormArea = ({ productId }: Props) => {
               <PhotoArea
                 onFileId={handleFileId}
                 imagePath={data?.data.coverImagePath}
+                onUploadingChange={setIsCoverUploading}
               />
               <div className="hidden md:block w-[1px] border border-l-light-gray-200 border-r-0 border-t-0 border-b-0 mr-[30px] mt-[40px]" />
               <section className="flex flex-col bg-white mt-8pxr pt-32pxr pb-17pxr px-16pxr gap-33pxr md:flex-1 md:pl-0">
@@ -1036,7 +1045,11 @@ const FormArea = ({ productId }: Props) => {
             </>
           )}
         </div>
-        <BottomButton isDirty={formState.isDirty} />
+        <BottomButton
+          isDirty={formState.isDirty}
+          isSubmitting={isSubmitting}
+          isCoverUploading={isCoverUploading}
+        />
       </form>
       <Modal size="md" />
     </FormProvider>

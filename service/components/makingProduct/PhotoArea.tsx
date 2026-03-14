@@ -11,9 +11,10 @@ import CoverDesignModal from "./CoverDesignModal";
 interface Props {
   onFileId: (fileId: number) => void;
   imagePath?: string;
+  onUploadingChange?: (isUploading: boolean) => void;
 }
 
-const PhotoArea = ({ onFileId, imagePath }: Props) => {
+const PhotoArea = ({ onFileId, imagePath, onUploadingChange }: Props) => {
   const { mutateAsync } = useSelectPresignedFilePath();
   const { setToast } = useToastStore();
 
@@ -36,22 +37,29 @@ const PhotoArea = ({ onFileId, imagePath }: Props) => {
     return undefined;
   }, [selectedFile]);
 
-  const processAndUploadFile = async (file: File) => {
+  const setUploadingState = (nextIsUploading: boolean) => {
+    setIsUploading(nextIsUploading);
+    onUploadingChange?.(nextIsUploading);
+  };
+
+  const processAndUploadFile = async (file: File): Promise<boolean> => {
+    setUploadingState(true);
     try {
-      setIsUploading(true);
       const { uploadFile, uploadFileName } = await prepareWebpUpload(file);
       const response = await mutateAsync(uploadFileName);
-      await handleUpload(
+      return await handleUpload(
         response.data.coverImageUploadPath,
         uploadFile,
         response.data.coverImageFileId
       );
     } catch (error) {
-      setIsUploading(false);
       setToast({
         message: "파일을 불러오는데 실패했습니다.",
         type: "error",
       });
+      return false;
+    } finally {
+      setUploadingState(false);
     }
   };
 
@@ -70,7 +78,11 @@ const PhotoArea = ({ onFileId, imagePath }: Props) => {
     await processAndUploadFile(file);
   };
 
-  const handleUpload = async (filePath: string, file: File, fileId: number) => {
+  const handleUpload = async (
+    filePath: string,
+    file: File,
+    fileId: number
+  ): Promise<boolean> => {
     try {
       await axios.put(filePath, file, {
         headers: {
@@ -84,14 +96,14 @@ const PhotoArea = ({ onFileId, imagePath }: Props) => {
         message: "\uc774\ubbf8\uc9c0 \uc5c5\ub85c\ub4dc\uc5d0 \uc131\uacf5\ud588\uc2b5\ub2c8\ub2e4.",
         type: "success",
       });
+      return true;
     } catch (error) {
       setSelectedFile(null);
       setToast({
         message: "\uc774\ubbf8\uc9c0 \uc5c5\ub85c\ub4dc\uc5d0 \uc2e4\ud328\ud588\uc2b5\ub2c8\ub2e4.",
         type: "error",
       });
-    } finally {
-      setIsUploading(false);
+      return false;
     }
   };
 

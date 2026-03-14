@@ -58,7 +58,7 @@ interface TextBlock {
 interface CoverDesignModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onComplete: (file: File) => Promise<void> | void;
+  onComplete: (file: File) => Promise<boolean> | boolean;
 }
 
 let nextBlockId = 1;
@@ -329,8 +329,10 @@ const CoverDesignModal = ({
           img.onerror = () => resolve(null);
         });
         if (file) {
-          await onComplete(file);
-          onClose();
+          const success = await onComplete(file);
+          if (success) {
+            onClose();
+          }
         }
       } finally {
         setIsSaving(false);
@@ -354,8 +356,10 @@ const CoverDesignModal = ({
         }, "image/png");
       });
       if (file) {
-        await onComplete(file);
-        onClose();
+        const success = await onComplete(file);
+        if (success) {
+          onClose();
+        }
       }
     } finally {
       setIsSaving(false);
@@ -368,8 +372,10 @@ const CoverDesignModal = ({
     try {
       const file = await cropImageToFile(cropImgRef.current, crop);
       if (file) {
-        await onComplete(file);
-        onClose();
+        const success = await onComplete(file);
+        if (success) {
+          onClose();
+        }
       }
     } finally {
       setIsSaving(false);
