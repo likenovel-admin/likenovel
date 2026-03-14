@@ -1,7 +1,9 @@
+import { usePostAiSignalEvent, useGetProductAiMetadata } from "@/app/api/query/recommendation";
 import Spinner from "@/components/common/Spinner";
 import LastPage from "@/components/viewer/LastPage";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useViewStore from "@/store/viewerStore";
+import { pickAiSignalFactor } from "@/utils/aiSignalFactor";
 import type { Contents, Rendition } from "epubjs";
 import type React from "react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -67,6 +69,8 @@ interface Props {
   setShowNav: React.Dispatch<React.SetStateAction<boolean>>;
   handleCommentState: () => void;
   currentEpisodeId?: number;
+  productId?: number;
+  nextEpisodeId?: number;
 }
 
 const EpubViewer = ({
@@ -77,6 +81,8 @@ const EpubViewer = ({
   showNav,
   setShowNav,
   currentEpisodeId,
+  productId,
+  nextEpisodeId,
   handleCommentState,
 }: Props) => {
   const { settings, setSettings } = useViewStore((state) => ({
@@ -108,6 +114,135 @@ const EpubViewer = ({
   // Track when the LastPage host DOM node has been created
   // This is used to re-run the touch binding effect when the host actually exists.
   const [lastPageHostReady, setLastPageHostReady] = useState(false);
+
+  // ========================= AI SIGNAL EVENTS =========================
+
+  const { mutate: postSignalEvent } = usePostAiSignalEvent();
+  const { data: aiMetadataData } = useGetProductAiMetadata(productId || 0, !!productId);
+
+  const sessionIdRef = useRef(
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
+  const activeSecondsRef = useRef(0);
+  const progressRef = useRef(0);
+  const aiMetadataRef = useRef(aiMetadataData?.data ?? null);
+  const episodeViewFiredRef = useRef(false);
+  const episodeEndFiredRef = useRef(false);
+  const latestReachedFiredRef = useRef(false);
+  const lastExitTimeRef = useRef(0);
+
+  useEffect(() => { progressRef.current = progress; }, [progress]);
+  useEffect(() => { aiMetadataRef.current = aiMetadataData?.data ?? null; }, [aiMetadataData?.data]);
+
+  // Active reading time — only counts while epub is ready and tab is visible
+  useEffect(() => {
+    if (!epubReady) return;
+
+    let timer: NodeJS.Timeout | null = setInterval(() => { activeSecondsRef.current += 1; }, 1000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        if (timer) { clearInterval(timer); timer = null; }
+      } else {
+        if (!timer) { timer = setInterval(() => { activeSecondsRef.current += 1; }, 1000); }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      if (timer) clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [epubReady]);
+
+  const buildSignalBody = useCallback(
+    (eventType: string, extraPayload?: Record<string, unknown>) => {
+      const factor = pickAiSignalFactor(eventType, aiMetadataRef.current, currentEpisodeId || 0);
+      const hasNext = nextEpisodeId !== undefined && nextEpisodeId > 0;
+      return {
+        product_id: productId!,
+        episode_id: currentEpisodeId,
+        event_type: eventType,
+        session_id: sessionIdRef.current,
+        active_seconds: activeSecondsRef.current,
+        progress_ratio: Math.min(progressRef.current / 100, 1),
+        next_available_yn: (hasNext ? "Y" : "N") as "Y" | "N",
+        latest_episode_reached_yn: (!hasNext ? "Y" : "N") as "Y" | "N",
+        ...factor,
+        ...(extraPayload ? { event_payload: extraPayload } : {}),
+      };
+    },
+    [productId, currentEpisodeId, nextEpisodeId]
+  );
+
+  // 1) episode_view — fire once when epub loads
+  useEffect(() => {
+    if (epubReady && productId && !episodeViewFiredRef.current) {
+      episodeViewFiredRef.current = true;
+      postSignalEvent(buildSignalBody("episode_view"));
+    }
+  }, [epubReady, productId, buildSignalBody, postSignalEvent]);
+
+  // 2) episode_end — fire once when progress >= 95%
+  useEffect(() => {
+    if (progress >= 95 && productId && !episodeEndFiredRef.current) {
+      episodeEndFiredRef.current = true;
+      postSignalEvent(buildSignalBody("episode_end"));
+    }
+  }, [progress, productId, buildSignalBody, postSignalEvent]);
+
+  // 3) latest_episode_reached — 최신화 열람 도달 신호 (완독 의미 아님, 최신화를 열었다는 사실)
+  useEffect(() => {
+    if (epubReady && productId && nextEpisodeId === 0 && !latestReachedFiredRef.current) {
+      latestReachedFiredRef.current = true;
+      postSignalEvent(buildSignalBody("latest_episode_reached"));
+    }
+  }, [epubReady, productId, nextEpisodeId, buildSignalBody, postSignalEvent]);
+
+  // 4) Exit progress — capture progress_ratio on page leave
+  useEffect(() => {
+    if (!productId) return;
+
+    const sendExitEvent = () => {
+      const now = Date.now();
+      if (now - lastExitTimeRef.current < 2000) return;
+      lastExitTimeRef.current = now;
+      if (activeSecondsRef.current < 3) return;
+      const body = buildSignalBody("episode_view", { trigger: "exit" });
+      const token =
+        localStorage.getItem("access_token") ||
+        sessionStorage.getItem("access_token");
+      try {
+        fetch("/api/v1/command/ai/signal-events", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(body),
+          keepalive: true,
+        });
+      } catch {
+        // best-effort — page is closing
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") sendExitEvent();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", sendExitEvent);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", sendExitEvent);
+      // SPA navigation (router.push) triggers unmount without visibilitychange/beforeunload
+      sendExitEvent();
+    };
+  }, [productId, buildSignalBody]);
 
   // ========================= RESIZE (SCROLLED) =========================
 

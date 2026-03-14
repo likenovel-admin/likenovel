@@ -1,6 +1,7 @@
 "use client";
 import { useGetProductNoticeDetail } from "@/app/api/query/author/episode";
 import { useSelectViewerPath } from "@/app/api/query/episode";
+import { usePostAiSignalEvent } from "@/app/api/query/recommendation";
 import Modal from "@/components/common/Modal";
 import ViewerBottomNav from "@/components/menu/ViewerBottomNav";
 import ViewerNav from "@/components/menu/ViewerNav";
@@ -46,6 +47,7 @@ const Viewer = () => {
   >(null);
   const [epubUrl, setEpubUrl] = useState<string | null>(null);
 
+  const { mutate: postSignalEvent } = usePostAiSignalEvent();
   const { data } = useSelectViewerPath(episodeId);
   const { data: noticeDetailData } = useGetProductNoticeDetail(
     viewerType === "notice" ? episodeId : "",
@@ -125,6 +127,15 @@ const Viewer = () => {
       return;
     }
     if (data && data?.data?.nextEpisodeId) {
+      if (data.data.product_id) {
+        postSignalEvent({
+          product_id: data.data.product_id,
+          episode_id: episodeId,
+          event_type: "next_episode_click",
+          next_available_yn: "Y",
+          event_payload: { redirect_to_episode_id: data.data.nextEpisodeId },
+        });
+      }
       router.push(`/viewer/${data?.data?.nextEpisodeId}`);
     }
   };
@@ -237,6 +248,8 @@ const Viewer = () => {
                 showNav={showNav}
                 setShowNav={setShowNav}
                 currentEpisodeId={episodeId}
+                productId={data?.data?.product_id}
+                nextEpisodeId={data?.data?.nextEpisodeId}
                 handleCommentState={handleCommentState}
               />
             )}

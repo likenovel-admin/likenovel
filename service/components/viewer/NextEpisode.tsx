@@ -1,4 +1,5 @@
 import { useSelectViewerPath, useSelectNextEpisodeInfo } from "@/app/api/query/episode";
+import { usePostAiSignalEvent } from "@/app/api/query/recommendation";
 import { useRouter } from "next/navigation";
 import ArrowRight from "/public/images/arrow-right-medium.svg";
 import useModalStore from "@/store/modalStore";
@@ -12,6 +13,7 @@ interface NextEpisodeProps {
 export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
   const router = useRouter();
   const { setTypeModal } = useModalStore();
+  const { mutate: postSignalEvent } = usePostAiSignalEvent();
 
   const { data } = useSelectViewerPath(currentEpisodeId);
   const { data: nextEpisodeData } = useSelectNextEpisodeInfo(data?.data?.nextEpisodeId || 0);
@@ -45,6 +47,17 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
         productId: episode.product_id,
       });
       return;
+    }
+
+    // Fire next_episode_click signal event
+    if (data.data.product_id) {
+      postSignalEvent({
+        product_id: data.data.product_id,
+        episode_id: currentEpisodeId,
+        event_type: "next_episode_click",
+        next_available_yn: "Y",
+        event_payload: { redirect_to_episode_id: data.data.nextEpisodeId },
+      });
     }
 
     // Navigate to next episode if owned or rental is valid
