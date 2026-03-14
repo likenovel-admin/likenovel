@@ -23,11 +23,12 @@ import { IEvaluation, IProduct } from "@/types";
 import { mergeKeysEvaluation } from "@/utils/common";
 import { getUser } from "@/utils/getUser";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function ProductDetail() {
   const user = getUser();
+  const router = useRouter();
   const pathname = usePathname();
   const pathSegments = pathname.split("/");
   const productId = Number(pathSegments[pathSegments.length - 1]);
@@ -358,6 +359,23 @@ export default function ProductDetail() {
     queryClient,
     productId,
   ]);
+
+  // 비공개 작품 접근 차단
+  if (isSuccess && productData?.privateYn === "Y" && !productData?.title) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-16pxr">
+        <span className="text-18pxr md:text-22pxr font-semibold text-dark-gray-400">
+          비공개 작품이거나 존재하지 않는 작품입니다.
+        </span>
+        <button
+          className="text-primary-100 text-14pxr md:text-16pxr"
+          onClick={() => router.push("/")}
+        >
+          메인으로 돌아가기
+        </button>
+      </div>
+    );
+  }
 
   return (
     <ProductDetailWrapper
