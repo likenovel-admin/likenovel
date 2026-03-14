@@ -77,9 +77,13 @@ const TasteSection = ({ section }: Props) => {
                     }
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-dark-gray-300 text-12pxr">
-                    표지 없음
-                  </div>
+                  <Image
+                    src="/images/default_cover.png"
+                    alt={product.title}
+                    width={142}
+                    height={217}
+                    className="object-cover w-full h-full rounded-[10px]"
+                  />
                 )}
               </div>
               <div className="mt-8pxr">

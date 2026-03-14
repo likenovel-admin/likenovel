@@ -1,6 +1,7 @@
 "use client";
 
 import CommonTable, { Column } from "@/components/common/CommonTable";
+import { Button } from "@/components/ui/button";
 import { IProductDiscoveryStatistics } from "@/types/product-discovery-statistics";
 import { format } from "date-fns";
 import Image from "next/image";
@@ -12,6 +13,8 @@ interface Props {
   hideEvaluationColumn?: boolean;
   summaryMode?: boolean;
 }
+
+const userSiteUrl = process.env.NEXT_PUBLIC_USER_SITE_URL || "";
 
 export default function DiscoverProductsTable({
   data,
@@ -53,6 +56,18 @@ export default function DiscoverProductsTable({
       key: "primary_genre",
     },
     {
+      header: "회차수",
+      key: "count_episode",
+    },
+    {
+      header: "조회수",
+      key: "count_hit",
+    },
+    {
+      header: "선호작수",
+      key: "count_bookmark",
+    },
+    {
       header: "연독률",
       key: "reading_rate",
       render: (_, row: IProductDiscoveryStatistics) => row.reading_rate ? `${row.reading_rate}%` : '-',
@@ -81,10 +96,26 @@ export default function DiscoverProductsTable({
           ? format(new Date(row.updated_date), "yyyy.MM.dd")
           : "-",
     },
+    {
+      header: "",
+      key: "product_link",
+      render: (_, row: IProductDiscoveryStatistics) => (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            window.open(`${userSiteUrl}/product/${row.product_id}`, "_blank");
+          }}
+        >
+          바로가기
+        </Button>
+      ),
+    },
   ];
 
   if (!hideEvaluationColumn) {
-    columns.splice(4, 0, {
+    columns.splice(7, 0, {
       header: "작품평가",
       key: "score1",
       render: (_, row: IProductDiscoveryStatistics) => row.score1.toString(),

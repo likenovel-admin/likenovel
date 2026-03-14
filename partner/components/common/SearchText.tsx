@@ -25,7 +25,7 @@ export function SearchText({
 }: FilterControlsProps) {
   const searchParams = useSearchParams();
   const [filters, setFilters] = useState({
-    search_target: "",
+    search_target: options[0]?.value ?? "",
     search_word: "",
   });
 
@@ -39,19 +39,18 @@ export function SearchText({
 
   const handleReset = useCallback(() => {
     const resetFilters = {
-      search_target: "",
+      search_target: options[0]?.value ?? "",
       search_word: "",
     };
     setFilters(resetFilters);
     onReset?.();
-  }, [onReset]);
+  }, [onReset, options]);
 
   useEffect(() => {
-    const resetFilters = {
-      search_target: "",
+    setFilters({
+      search_target: options[0]?.value ?? "",
       search_word: "",
-    };
-    setFilters(resetFilters);
+    });
   }, [searchParams.toString()]);
 
   return (
@@ -80,6 +79,7 @@ export function SearchText({
         placeholder="검색어 입력"
         value={filters.search_word}
         onChange={(e) => handleChange("search_word", e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
         className="w-[200px]"
       />
 
