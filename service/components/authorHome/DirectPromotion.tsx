@@ -175,32 +175,34 @@ const DirectPromotion = ({
     });
   };
 
+  // 항상 2종(free-for-first, reader-of-prev)을 표시. 기존 데이터가 있으면 그 값, 없으면 기본값.
+  const defaultPromotionTypes = [
+    { type: "free-for-first", label: "첫 방문자 무료 대여권" },
+    { type: "reader-of-prev", label: "선작 독자 무료 대여권" },
+  ];
+
+  const promotionsToDisplay = defaultPromotionTypes.map((def) => {
+    const existing = directPromotions.find((p) => p.type === def.type);
+    return existing ?? { type: def.type, status: "stop" as const, num_of_ticket_per_person: 1 };
+  });
+
   const handleSave = () => {
     if (!productId || saveDirectPromotionMutation.isPending) return;
 
-    // Build request body based on promotion types
+    // promotionsToDisplay(항상 2종)에서 현재 모달에 보이는 값을 그대로 전송
     const data: {
       num_of_ticket_per_person_for_free_for_first?: number;
       num_of_ticket_per_person_for_reader_of_prev?: number;
-    } = {
-      num_of_ticket_per_person_for_free_for_first:
-        promotionCounts["free-for-first"] ?? 1,
-      num_of_ticket_per_person_for_reader_of_prev:
-        promotionCounts["reader-of-prev"] ?? 1,
-    };
+    } = {};
 
-    // If there are existing promotions, use their values
-    if (directPromotions.length > 0) {
-      directPromotions.forEach((promotion) => {
-        const currentCount = getPromotionCount(promotion);
-
-        if (promotion.type === "free-for-first") {
-          data.num_of_ticket_per_person_for_free_for_first = currentCount;
-        } else if (promotion.type === "reader-of-prev") {
-          data.num_of_ticket_per_person_for_reader_of_prev = currentCount;
-        }
-      });
-    }
+    promotionsToDisplay.forEach((promotion) => {
+      const currentCount = getPromotionCount(promotion);
+      if (promotion.type === "free-for-first") {
+        data.num_of_ticket_per_person_for_free_for_first = currentCount;
+      } else if (promotion.type === "reader-of-prev") {
+        data.num_of_ticket_per_person_for_reader_of_prev = currentCount;
+      }
+    });
 
     // Call the save API
     saveDirectPromotionMutation.mutate(
@@ -235,22 +237,6 @@ const DirectPromotion = ({
       }
     );
   };
-
-  // Define default promotion types if no existing promotions
-  const defaultPromotionTypes = [
-    { type: "free-for-first", label: "첫 방문자 무료 대여권" },
-    { type: "reader-of-prev", label: "선작 독자 무료 대여권" },
-  ];
-
-  // Create a list of promotions to display - either existing or default
-  const promotionsToDisplay =
-    directPromotions.length > 0
-      ? directPromotions
-      : defaultPromotionTypes.map((promo) => ({
-          type: promo.type,
-          status: "stop" as const,
-          num_of_ticket_per_person: 1,
-        }));
 
   return (
     <div className="w-[100vw] md:w-[527px]">
