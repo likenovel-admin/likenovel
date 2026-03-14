@@ -183,8 +183,10 @@ const DirectPromotion = ({
       num_of_ticket_per_person_for_free_for_first?: number;
       num_of_ticket_per_person_for_reader_of_prev?: number;
     } = {
-      num_of_ticket_per_person_for_free_for_first: 0,
-      num_of_ticket_per_person_for_reader_of_prev: 0,
+      num_of_ticket_per_person_for_free_for_first:
+        promotionCounts["free-for-first"] ?? 1,
+      num_of_ticket_per_person_for_reader_of_prev:
+        promotionCounts["reader-of-prev"] ?? 1,
     };
 
     // If there are existing promotions, use their values
@@ -198,12 +200,6 @@ const DirectPromotion = ({
           data.num_of_ticket_per_person_for_reader_of_prev = currentCount;
         }
       });
-    } else {
-      // If no existing promotions, use the custom counts or default to 3
-      data.num_of_ticket_per_person_for_free_for_first =
-        promotionCounts["free-for-first"] ?? 1;
-      data.num_of_ticket_per_person_for_reader_of_prev =
-        promotionCounts["reader-of-prev"] ?? 1;
     }
 
     // Call the save API
