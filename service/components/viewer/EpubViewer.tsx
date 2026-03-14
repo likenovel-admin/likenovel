@@ -2,6 +2,7 @@ import { usePostAiSignalEvent, useGetProductAiMetadata } from "@/app/api/query/r
 import Spinner from "@/components/common/Spinner";
 import LastPage from "@/components/viewer/LastPage";
 import useMediaDevice from "@/hooks/useMediaDevice";
+import useAuthStore from "@/store/authStore";
 import useViewStore from "@/store/viewerStore";
 import { pickAiSignalFactor } from "@/utils/aiSignalFactor";
 import type { Contents, Rendition } from "epubjs";
@@ -110,6 +111,7 @@ const EpubViewer = ({
   const epubReadyDoneRef = useRef(false);
 
   const device = useMediaDevice();
+  const { isAuthenticated } = useAuthStore((s) => ({ isAuthenticated: s.isAuthenticated }));
 
   // Track when the LastPage host DOM node has been created
   // This is used to re-run the touch binding effect when the host actually exists.
@@ -118,7 +120,10 @@ const EpubViewer = ({
   // ========================= AI SIGNAL EVENTS =========================
 
   const { mutate: postSignalEvent } = usePostAiSignalEvent();
-  const { data: aiMetadataData } = useGetProductAiMetadata(productId || 0, !!productId);
+  const { data: aiMetadataData } = useGetProductAiMetadata(
+    productId || 0,
+    !!productId && isAuthenticated
+  );
 
   const sessionIdRef = useRef(
     typeof crypto !== "undefined" && crypto.randomUUID
@@ -179,31 +184,31 @@ const EpubViewer = ({
 
   // 1) episode_view — fire once when epub loads
   useEffect(() => {
-    if (epubReady && productId && !episodeViewFiredRef.current) {
+    if (epubReady && productId && isAuthenticated && !episodeViewFiredRef.current) {
       episodeViewFiredRef.current = true;
       postSignalEvent(buildSignalBody("episode_view"));
     }
-  }, [epubReady, productId, buildSignalBody, postSignalEvent]);
+  }, [epubReady, productId, isAuthenticated, buildSignalBody, postSignalEvent]);
 
   // 2) episode_end — fire once when progress >= 95%
   useEffect(() => {
-    if (progress >= 95 && productId && !episodeEndFiredRef.current) {
+    if (progress >= 95 && productId && isAuthenticated && !episodeEndFiredRef.current) {
       episodeEndFiredRef.current = true;
       postSignalEvent(buildSignalBody("episode_end"));
     }
-  }, [progress, productId, buildSignalBody, postSignalEvent]);
+  }, [progress, productId, isAuthenticated, buildSignalBody, postSignalEvent]);
 
   // 3) latest_episode_reached — 최신화 열람 도달 신호 (완독 의미 아님, 최신화를 열었다는 사실)
   useEffect(() => {
-    if (epubReady && productId && nextEpisodeId === 0 && !latestReachedFiredRef.current) {
+    if (epubReady && productId && isAuthenticated && nextEpisodeId === 0 && !latestReachedFiredRef.current) {
       latestReachedFiredRef.current = true;
       postSignalEvent(buildSignalBody("latest_episode_reached"));
     }
-  }, [epubReady, productId, nextEpisodeId, buildSignalBody, postSignalEvent]);
+  }, [epubReady, productId, isAuthenticated, nextEpisodeId, buildSignalBody, postSignalEvent]);
 
   // 4) Exit progress — capture progress_ratio on page leave
   useEffect(() => {
-    if (!productId) return;
+    if (!productId || !isAuthenticated) return;
 
     const sendExitEvent = () => {
       const now = Date.now();
