@@ -106,7 +106,14 @@ const DirectPromotion = ({
 
   const promotionsToDisplay = defaultPromotionTypes.map((def) => {
     const existing = directPromotions.find((p) => p.type === def.type);
-    return existing ?? { type: def.type, status: "stop" as const, num_of_ticket_per_person: 1 };
+    return (
+      existing ??
+      {
+        type: def.type,
+        status: "stop" as const,
+        num_of_ticket_per_person: def.type === "free-for-first" ? 1 : 0,
+      }
+    );
   });
 
   const isFreeForFirstEnabled = (promotion: any) => {
@@ -135,6 +142,29 @@ const DirectPromotion = ({
   const isFreeForFirstEnded = (promotion: any) =>
     promotion.type === "free-for-first" && promotion.status === "end";
 
+  const isReaderOfPrevEnabled = (promotion: any) => {
+    const promotionId = getPromotionKey(promotion);
+    if (promotionCounts[promotionId] !== undefined) {
+      return promotionCounts[promotionId] > 0;
+    }
+    return (
+      promotion.type === "reader-of-prev" &&
+      ["ing", "pending"].includes(promotion.status) &&
+      (promotion.num_of_ticket_per_person ?? 0) > 0
+    );
+  };
+
+  const handleReaderOfPrevToggle = (promotion: any, enabled: boolean) => {
+    if (publicEpisodeCount < 1 || issuanceStatus?.issued_this_week) {
+      updatePromotionCount(getPromotionKey(promotion), 0);
+      return;
+    }
+    updatePromotionCount(getPromotionKey(promotion), enabled ? 1 : 0);
+  };
+
+  const getReaderOfPrevDisplayCount = (promotion: any) =>
+    isReaderOfPrevEnabled(promotion) ? Math.max(getPromotionCount(promotion), 1) : 0;
+
   const handleSave = () => {
     if (!productId || saveDirectPromotionMutation.isPending) return;
 
@@ -150,7 +180,8 @@ const DirectPromotion = ({
         data.num_of_ticket_per_person_for_free_for_first =
           publicEpisodeCount < 1 ? 0 : getFreeForFirstDisplayCount(promotion);
       } else if (promotion.type === "reader-of-prev") {
-        data.num_of_ticket_per_person_for_reader_of_prev = currentCount;
+        data.num_of_ticket_per_person_for_reader_of_prev =
+          publicEpisodeCount < 1 ? 0 : getReaderOfPrevDisplayCount(promotion);
       }
     });
 
@@ -163,7 +194,7 @@ const DirectPromotion = ({
           const message =
             issuedCount && issuedCount > 0
               ? `${issuedCount}명에게 선작독자 대여권이 발급되었습니다.`
-              : "프로모션 설정이 저장되었습니다.";
+              : "프로모션이 적용되었습니다.";
           setToast({
             message,
             type: "success",
@@ -250,18 +281,18 @@ const DirectPromotion = ({
               {promotion.type === "reader-of-prev" &&
               issuanceStatus?.issued_this_week ? (
                 <div className="flex flex-col items-end gap-2">
+                  <Toggle checked={isReaderOfPrevEnabled(promotion)} disabled />
                   <SettingLevel
-                    count={getPromotionCount(promotion)}
+                    count={getReaderOfPrevDisplayCount(promotion)}
                     setCount={() => {}}
                     maximum={publicEpisodeCount}
+                    minimum={1}
                     disabled
                   />
                   <span className="text-12pxr text-dark-gray-300 text-right">
-                    {(() => {
-                      if (!issuanceStatus?.this_week_issued_date) return "발급 완료";
-                      const d = new Date(issuanceStatus.this_week_issued_date);
-                      return `${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours()}시에 ${issuanceStatus.this_week_issued_count || 0}명에게 발급됨`;
-                    })()}
+                    이번 주 발급 완료.
+                    <br />
+                    다음주 월요일에 다시 신청해주세요.
                   </span>
                 </div>
               ) : promotion.type === "free-for-first" ? (
@@ -293,13 +324,32 @@ const DirectPromotion = ({
                   />
                 </div>
               ) : (
-                <SettingLevel
-                  count={getPromotionCount(promotion)}
-                  setCount={(newCount) =>
-                    updatePromotionCount(getPromotionKey(promotion), newCount)
-                  }
+                <div className="flex flex-col items-end gap-2">
+                  <Toggle
+                    checked={
+                      publicEpisodeCount > 0 && isReaderOfPrevEnabled(promotion)
+                    }
+                    disabled={publicEpisodeCount < 1}
+                    onChange={(event) =>
+                      handleReaderOfPrevToggle(
+                        promotion,
+                        event.target.checked
+                      )
+                    }
+                  />
+                  <SettingLevel
+                    count={getReaderOfPrevDisplayCount(promotion)}
+                    setCount={(newCount) =>
+                      updatePromotionCount(getPromotionKey(promotion), newCount)
+                    }
                     maximum={publicEpisodeCount}
-                />
+                    minimum={1}
+                    disabled={
+                      publicEpisodeCount < 1 ||
+                      !isReaderOfPrevEnabled(promotion)
+                    }
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -338,7 +388,7 @@ const DirectPromotion = ({
           }
           onClick={handleSave}
         >
-          저장
+          적용
         </Button>
       </div>
     </div>
