@@ -96,10 +96,12 @@ const DirectPromotion = ({
     }));
   };
 
+  const getPromotionKey = (promotion: any) =>
+    promotion.id ? String(promotion.id) : promotion.type;
+
   // Function to get current count for a promotion
   const getPromotionCount = (promotion: any) => {
-    const promotionId =
-      promotion.id || `${promotion.type}_${promotion.product_id}`;
+    const promotionId = getPromotionKey(promotion);
     return (
       promotionCounts[promotionId] ?? promotion.num_of_ticket_per_person ?? 3
     );
@@ -296,13 +298,7 @@ const DirectPromotion = ({
               issuanceStatus?.issued_this_week ? (
                 <div className="flex flex-col items-end gap-2">
                   <SettingLevel
-                    count={
-                      promotionCounts[
-                        promotion.id ? promotion.id + "" : promotion.type
-                      ] ??
-                      promotion.num_of_ticket_per_person ??
-                      3
-                    }
+                    count={getPromotionCount(promotion)}
                     setCount={() => {}}
                     maximum={publicEpisodeCount}
                     disabled
@@ -317,18 +313,9 @@ const DirectPromotion = ({
                 </div>
               ) : (
                 <SettingLevel
-                  count={
-                    promotionCounts[
-                      promotion.id ? promotion.id + "" : promotion.type
-                    ] ??
-                    promotion.num_of_ticket_per_person ??
-                    3
-                  }
+                  count={getPromotionCount(promotion)}
                   setCount={(newCount) =>
-                    updatePromotionCount(
-                      promotion.id ? promotion.id + "" : promotion.type,
-                      newCount
-                    )
+                    updatePromotionCount(getPromotionKey(promotion), newCount)
                   }
                   maximum={publicEpisodeCount}
                 />

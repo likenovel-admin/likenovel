@@ -53,6 +53,11 @@ interface TextBlock {
   font: string;
   color: string;
   align: TextAlign;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fontSize: number;
 }
 
 interface CoverDesignModalProps {
@@ -62,6 +67,15 @@ interface CoverDesignModalProps {
 }
 
 let nextBlockId = 1;
+const TEXT_BLOCK_HANDLE_HEIGHT = 24;
+const TEXT_BLOCK_PADDING = 12;
+const DEFAULT_TEXT_BLOCK = {
+  width: 280,
+  height: 110,
+  x: 60,
+  y: 180,
+  fontSize: 36,
+};
 
 // --- Canvas text helpers ---
 
@@ -107,57 +121,73 @@ const renderCanvas = (
 
   if (textBlocks.length === 0) return;
 
-  const padding = 30;
-  const maxWidth = CANVAS_WIDTH - padding * 2;
-  const fontSize = 36;
-  const lineHeight = fontSize * 1.4;
-  const blockGap = 20;
-
-  const blockLines: string[][] = [];
   for (const block of textBlocks) {
+    if (!block.text.trim()) continue;
+
+    const maxWidth = Math.max(block.width - TEXT_BLOCK_PADDING * 2, 40);
+    const fontSize = block.fontSize;
+    const lineHeight = fontSize * 1.35;
     ctx.font = `bold ${fontSize}px "${block.font}"`;
-    blockLines.push(
-      block.text.trim() ? wrapText(ctx, block.text, maxWidth) : []
-    );
-  }
+    const lines = wrapText(ctx, block.text, maxWidth);
 
-  const totalLines = blockLines.reduce((sum, l) => sum + l.length, 0);
-  const totalHeight =
-    totalLines * lineHeight + (textBlocks.length - 1) * blockGap;
-  let cursorY = (CANVAS_HEIGHT - totalHeight) / 2 + lineHeight / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(block.x, block.y, block.width, block.height);
+    ctx.clip();
 
-  for (let i = 0; i < textBlocks.length; i++) {
-    const block = textBlocks[i];
-    const lines = blockLines[i];
-    if (lines.length === 0) continue;
-
-    ctx.font = `bold ${fontSize}px "${block.font}"`;
     ctx.fillStyle = block.color;
-    ctx.textBaseline = "middle";
+    ctx.textBaseline = "top";
     ctx.shadowColor = "rgba(0,0,0,0.5)";
     ctx.shadowBlur = 4;
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
-
-    const x =
+    ctx.textAlign =
       block.align === "left"
-        ? padding
+        ? "left"
         : block.align === "right"
-          ? CANVAS_WIDTH - padding
-          : CANVAS_WIDTH / 2;
-    ctx.textAlign = block.align === "left" ? "left" : block.align === "right" ? "right" : "center";
+          ? "right"
+          : "center";
+
+    const textX =
+      block.align === "left"
+        ? block.x + TEXT_BLOCK_PADDING
+        : block.align === "right"
+          ? block.x + block.width - TEXT_BLOCK_PADDING
+          : block.x + block.width / 2;
+    let cursorY = block.y + TEXT_BLOCK_HANDLE_HEIGHT + TEXT_BLOCK_PADDING;
+    const maxY = block.y + block.height - TEXT_BLOCK_PADDING;
 
     for (const line of lines) {
-      ctx.fillText(line, x, cursorY);
+      if (cursorY + lineHeight > maxY) break;
+      ctx.fillText(line, textX, cursorY);
       cursorY += lineHeight;
     }
-    cursorY += blockGap;
+
+    ctx.restore();
   }
 
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 0;
+};
+
+const getRenderableLines = (block: TextBlock) => {
+  if (typeof document === "undefined") return [];
+
+  const measureCanvas = document.createElement("canvas");
+  const measureCtx = measureCanvas.getContext("2d");
+  if (!measureCtx) return [];
+
+  const maxWidth = Math.max(block.width - TEXT_BLOCK_PADDING * 2, 40);
+  const fontSize = block.fontSize;
+  const lineHeight = fontSize * 1.35;
+  const availableHeight =
+    block.height - TEXT_BLOCK_HANDLE_HEIGHT - TEXT_BLOCK_PADDING * 2;
+  const maxLineCount = Math.max(Math.floor(availableHeight / lineHeight), 0);
+
+  measureCtx.font = `bold ${fontSize}px "${block.font}"`;
+  return wrapText(measureCtx, block.text, maxWidth).slice(0, maxLineCount);
 };
 
 // --- Align icon ---
@@ -236,6 +266,22 @@ const CoverDesignModal = ({
   const [bgLoaded, setBgLoaded] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bgImageRef = useRef<HTMLImageElement | null>(null);
+  const previewRef = useRef<HTMLDivElement | null>(null);
+  const textAreaRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
+  const pointerStateRef = useRef<{
+    mode: "drag" | "resize";
+    blockId: number;
+    pointerId: number;
+    captureTarget: HTMLElement | null;
+    startClientX: number;
+    startClientY: number;
+    initialX: number;
+    initialY: number;
+    initialWidth: number;
+    initialHeight: number;
+    initialFontSize: number;
+  } | null>(null);
+  const [previewSize, setPreviewSize] = useState({ width: 300, height: 450 });
 
   // Tab 3: upload
   const [uploadSrc, setUploadSrc] = useState<string | null>(null);
@@ -245,6 +291,8 @@ const CoverDesignModal = ({
 
   const selectedBlock =
     textBlocks.find((b) => b.id === selectedBlockId) ?? null;
+  const previewScale =
+    previewSize.width > 0 ? previewSize.width / CANVAS_WIDTH : 1;
 
   // Reset on close
   useEffect(() => {
@@ -257,8 +305,24 @@ const CoverDesignModal = ({
       setFontDropdownOpen(false);
       setUploadSrc(null);
       setCrop(undefined);
+      pointerStateRef.current = null;
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!previewRef.current) return;
+    const updatePreviewSize = () => {
+      if (!previewRef.current) return;
+      setPreviewSize({
+        width: previewRef.current.clientWidth,
+        height: previewRef.current.clientHeight,
+      });
+    };
+    updatePreviewSize();
+    const observer = new ResizeObserver(updatePreviewSize);
+    observer.observe(previewRef.current);
+    return () => observer.disconnect();
+  }, [tab]);
 
   // Load background image for Tab 2
   useEffect(() => {
@@ -287,23 +351,144 @@ const CoverDesignModal = ({
     const id = nextBlockId++;
     setTextBlocks((prev) => [
       ...prev,
-      { id, text: "텍스트를 입력하세요", font: FONTS[0].value, color: "#FFFFFF", align: "center" },
+      {
+        id,
+        text: "텍스트를 입력하세요",
+        font: FONTS[0].value,
+        color: "#FFFFFF",
+        align: "center",
+        ...DEFAULT_TEXT_BLOCK,
+      },
     ]);
     setSelectedBlockId(id);
   };
 
-  const updateBlock = (field: keyof TextBlock, value: string) => {
+  const updateBlock = (
+    field: keyof TextBlock,
+    value: string | number
+  ) => {
     if (!selectedBlockId) return;
     setTextBlocks((prev) =>
       prev.map((b) => (b.id === selectedBlockId ? { ...b, [field]: value } : b))
     );
   };
 
+  useEffect(() => {
+    if (!selectedBlockId) return;
+    const target = textAreaRefs.current[selectedBlockId];
+    if (target) {
+      requestAnimationFrame(() => {
+        target.focus();
+        target.select();
+      });
+    }
+  }, [selectedBlockId, textBlocks.length]);
+
   const handleDeleteBlock = () => {
     if (!selectedBlockId) return;
     setTextBlocks((prev) => prev.filter((b) => b.id !== selectedBlockId));
     setSelectedBlockId(null);
   };
+
+  const updateBlockById = useCallback(
+    (blockId: number, updater: (block: TextBlock) => TextBlock) => {
+      setTextBlocks((prev) =>
+        prev.map((block) => (block.id === blockId ? updater(block) : block))
+      );
+    },
+    []
+  );
+
+  const handlePointerMove = useCallback(
+    (event: PointerEvent) => {
+      const state = pointerStateRef.current;
+      if (!state || event.pointerId !== state.pointerId) return;
+      const deltaX = (event.clientX - state.startClientX) / previewScale;
+      const deltaY = (event.clientY - state.startClientY) / previewScale;
+
+      updateBlockById(state.blockId, (block) => {
+        if (state.mode === "drag") {
+          const nextX = Math.min(
+            Math.max(state.initialX + deltaX, 0),
+            CANVAS_WIDTH - block.width
+          );
+          const nextY = Math.min(
+            Math.max(state.initialY + deltaY, 0),
+            CANVAS_HEIGHT - block.height
+          );
+          return { ...block, x: nextX, y: nextY };
+        }
+
+        const nextWidth = Math.min(
+          Math.max(state.initialWidth + deltaX, 120),
+          CANVAS_WIDTH - block.x
+        );
+        const nextHeight = Math.min(
+          Math.max(state.initialHeight + deltaY, 70),
+          CANVAS_HEIGHT - block.y
+        );
+        const nextFontSize = Math.min(
+          Math.max(state.initialFontSize + deltaX * 0.12, 18),
+          72
+        );
+
+        return {
+          ...block,
+          width: nextWidth,
+          height: nextHeight,
+          fontSize: nextFontSize,
+        };
+      });
+    },
+    [previewScale, updateBlockById]
+  );
+
+  const stopPointerInteraction = useCallback(() => {
+    const state = pointerStateRef.current;
+    if (state?.captureTarget?.hasPointerCapture?.(state.pointerId)) {
+      state.captureTarget.releasePointerCapture(state.pointerId);
+    }
+    pointerStateRef.current = null;
+    window.removeEventListener("pointermove", handlePointerMove);
+    window.removeEventListener("pointerup", stopPointerInteraction);
+    window.removeEventListener("pointercancel", stopPointerInteraction);
+  }, [handlePointerMove]);
+
+  const startPointerInteraction = (
+    mode: "drag" | "resize",
+    block: TextBlock,
+    event: React.PointerEvent
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setSelectedBlockId(block.id);
+    const captureTarget = event.currentTarget as HTMLElement;
+    captureTarget.setPointerCapture?.(event.pointerId);
+    pointerStateRef.current = {
+      mode,
+      blockId: block.id,
+      pointerId: event.pointerId,
+      captureTarget,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      initialX: block.x,
+      initialY: block.y,
+      initialWidth: block.width,
+      initialHeight: block.height,
+      initialFontSize: block.fontSize,
+    };
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", stopPointerInteraction);
+    window.addEventListener("pointercancel", stopPointerInteraction);
+  };
+
+  useEffect(() => {
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", stopPointerInteraction);
+      window.removeEventListener("pointercancel", stopPointerInteraction);
+    };
+  }, [handlePointerMove, stopPointerInteraction]);
 
   // --- Save handlers ---
 
@@ -530,6 +715,37 @@ const CoverDesignModal = ({
               onChange={(e) => updateBlock("color", e.target.value)}
               className="w-8 h-8 border border-gray-300 rounded cursor-pointer p-0"
             />
+            <div className="flex items-center border border-gray-300 rounded overflow-hidden">
+              <button
+                type="button"
+                onClick={() =>
+                  updateBlock(
+                    "fontSize",
+                    Math.max((selectedBlock?.fontSize || DEFAULT_TEXT_BLOCK.fontSize) - 2, 18)
+                  )
+                }
+                className="px-2 py-1.5 text-13pxr text-dark-gray-500 disabled:opacity-40"
+                disabled={!selectedBlock}
+              >
+                A-
+              </button>
+              <div className="px-2 py-1.5 text-12pxr text-dark-gray-400 border-x border-gray-300 min-w-[44px] text-center">
+                {selectedBlock?.fontSize || DEFAULT_TEXT_BLOCK.fontSize}
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  updateBlock(
+                    "fontSize",
+                    Math.min((selectedBlock?.fontSize || DEFAULT_TEXT_BLOCK.fontSize) + 2, 72)
+                  )
+                }
+                className="px-2 py-1.5 text-13pxr text-dark-gray-500 disabled:opacity-40"
+                disabled={!selectedBlock}
+              >
+                A+
+              </button>
+            </div>
             {/* Alignment */}
             {(["left", "center", "right"] as TextAlign[]).map((a) => (
               <button
@@ -580,42 +796,132 @@ const CoverDesignModal = ({
             </div>
 
             {/* Right: canvas + text inputs */}
-            <div className="flex-1 flex flex-col items-center p-4 gap-4 overflow-y-auto">
-              <canvas
-                ref={canvasRef}
-                width={CANVAS_WIDTH}
-                height={CANVAS_HEIGHT}
-                className="w-[240px] h-[360px] md:w-[300px] md:h-[450px] rounded border border-gray-200"
-              />
-              {textBlocks.length > 0 && (
-                <div className="w-full max-w-[400px] flex flex-col gap-2">
-                  {textBlocks.map((block) => (
-                    <textarea
+            <div className="flex-1 flex flex-col items-center p-4 gap-4 overflow-y-auto min-h-0">
+              <div
+                ref={previewRef}
+                className="relative w-[240px] h-[360px] md:w-[300px] md:h-[450px]"
+              >
+                <canvas
+                  ref={canvasRef}
+                  width={CANVAS_WIDTH}
+                  height={CANVAS_HEIGHT}
+                  className="w-full h-full rounded border border-gray-200"
+                />
+                {textBlocks.map((block) => {
+                  const isSelected = selectedBlockId === block.id;
+                  const scaledHandleHeight =
+                    TEXT_BLOCK_HANDLE_HEIGHT * previewScale;
+                  const scaledPadding = TEXT_BLOCK_PADDING * previewScale;
+                  return (
+                    <div
                       key={block.id}
-                      value={block.text}
-                      onFocus={() => setSelectedBlockId(block.id)}
-                      onChange={(e) => {
-                        setSelectedBlockId(block.id);
-                        setTextBlocks((prev) =>
-                          prev.map((b) =>
-                            b.id === block.id ? { ...b, text: e.target.value } : b
-                          )
-                        );
-                      }}
-                      className={`w-full border rounded p-2 text-13pxr resize-none h-[60px] focus:outline-none transition-colors ${
-                        selectedBlockId === block.id ? "border-blue-500" : "border-gray-300"
+                      className={`absolute border-2 rounded-md shadow-sm overflow-hidden ${
+                        isSelected
+                          ? "border-blue-500"
+                          : "border-white/70"
                       }`}
-                      style={{ fontFamily: block.font }}
-                      placeholder="텍스트를 입력하세요"
-                    />
-                  ))}
-                </div>
-              )}
+                      style={{
+                        left: block.x * previewScale,
+                        top: block.y * previewScale,
+                        width: block.width * previewScale,
+                        height: block.height * previewScale,
+                        backgroundColor: isSelected
+                          ? "rgba(17, 24, 39, 0.25)"
+                          : "rgba(17, 24, 39, 0.18)",
+                      }}
+                      onMouseDown={() => setSelectedBlockId(block.id)}
+                    >
+                      <button
+                        type="button"
+                        onPointerDown={(event) =>
+                          startPointerInteraction("drag", block, event)
+                        }
+                        className="w-full px-2 text-left text-white/90 bg-black/30 cursor-move select-none"
+                        style={{
+                          height: `${scaledHandleHeight}px`,
+                          fontSize: `${Math.max(10, 11 * previewScale)}px`,
+                          touchAction: "none",
+                        }}
+                      >
+                        이동
+                      </button>
+                      <textarea
+                        ref={(node) => {
+                          textAreaRefs.current[block.id] = node;
+                        }}
+                        value={block.text}
+                        onFocus={() => setSelectedBlockId(block.id)}
+                        onChange={(e) =>
+                          updateBlockById(block.id, (current) => ({
+                            ...current,
+                            text: e.target.value,
+                          }))
+                        }
+                        className="absolute left-0 top-0 w-full bg-transparent placeholder:text-transparent resize-none border-0 outline-none"
+                        style={{
+                          top: `${scaledHandleHeight}px`,
+                          height: `calc(100% - ${scaledHandleHeight}px)`,
+                          padding: `${scaledPadding}px`,
+                          fontFamily: block.font,
+                          fontSize: `${block.fontSize * previewScale}px`,
+                          fontWeight: 700,
+                          lineHeight: 1.35,
+                          textAlign: block.align,
+                          color: "transparent",
+                          caretColor: block.color,
+                          overflow: "hidden",
+                          touchAction: "manipulation",
+                        }}
+                        placeholder="텍스트를 입력하세요"
+                      />
+                      <div
+                        className="absolute left-0 right-0 pointer-events-none select-none"
+                        style={{
+                          top: `${scaledHandleHeight}px`,
+                          bottom: 0,
+                          padding: `${scaledPadding}px`,
+                          fontFamily: block.font,
+                          fontSize: `${block.fontSize * previewScale}px`,
+                          fontWeight: 700,
+                          lineHeight: 1.35,
+                          textAlign: block.align,
+                          color: block.color,
+                          textShadow: "1px 1px 4px rgba(0,0,0,0.5)",
+                          overflow: "hidden",
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {getRenderableLines(block).map((line, index) => (
+                          <div key={`${block.id}-${index}`}>{line || "\u00A0"}</div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onPointerDown={(event) =>
+                          startPointerInteraction("resize", block, event)
+                        }
+                        className="absolute cursor-se-resize bg-white/80 rounded-sm border border-gray-400"
+                        style={{
+                          bottom: `${Math.max(4, previewScale * 4)}px`,
+                          right: `${Math.max(4, previewScale * 4)}px`,
+                          width: `${Math.max(14, previewScale * 16)}px`,
+                          height: `${Math.max(14, previewScale * 16)}px`,
+                          touchAction: "none",
+                        }}
+                        aria-label="텍스트 박스 크기 조절"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-12pxr text-dark-gray-400 text-center">
+                글자 박스 안에서 바로 입력할 수 있으며, 상단 막대로 이동하고 우하단 핸들로 크기를 조절할 수 있습니다.
+              </p>
             </div>
           </div>
 
           {/* Bottom buttons */}
-          <div className="flex gap-3 justify-center py-4 border-t">
+          <div className="sticky bottom-0 z-10 flex gap-3 justify-center py-4 border-t bg-white shrink-0">
             <button onClick={onClose} className="px-8 py-3 rounded-md border border-gray-300 text-14pxr text-dark-gray-500 ">
               취소
             </button>
@@ -628,7 +934,8 @@ const CoverDesignModal = ({
 
       {/* ===== Tab 3: 표지 업로드 ===== */}
       {tab === "upload" && (
-        <div className="p-4 md:p-6 flex-1 overflow-y-auto flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="p-4 md:p-6 flex-1 overflow-y-auto flex flex-col min-h-0">
           {!uploadSrc ? (
             /* Drop zone */
             <div
@@ -699,7 +1006,8 @@ const CoverDesignModal = ({
               </button>
             </div>
           )}
-          <div className="flex gap-3 justify-center mt-auto pt-6">
+          </div>
+          <div className="sticky bottom-0 z-10 flex gap-3 justify-center py-4 border-t bg-white shrink-0">
             <button onClick={onClose} className="px-8 py-3 rounded-md border border-gray-300 text-14pxr text-dark-gray-500">
               취소
             </button>
