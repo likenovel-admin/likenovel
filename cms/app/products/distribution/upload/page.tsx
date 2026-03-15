@@ -53,7 +53,6 @@ import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 type PublicationType = "serial" | "volume";
-type LaunchType = "promotion" | "normal";
 type RatingType = "all" | "15" | "19";
 type OngoingType = "ongoing" | "rest" | "end" | "stop";
 
@@ -61,7 +60,6 @@ type FormState = {
   title: string;
   authorName: string;
   publicationType: PublicationType;
-  launchType: LaunchType;
   rating: RatingType;
   statusCode: OngoingType;
   primaryGenreId: string;
@@ -70,6 +68,7 @@ type FormState = {
   isbn: string;
   serialPrice: string;
   volumePrice: string;
+  volumeRentalPrice: string;
   cpCompanyName: string;
   monopolyYn: boolean;
   blindYn: boolean;
@@ -82,15 +81,15 @@ const INITIAL_FORM: FormState = {
   title: "",
   authorName: "",
   publicationType: "serial",
-  launchType: "normal",
   rating: "all",
   statusCode: "ongoing",
   primaryGenreId: "",
   subGenreId: "",
   uci: "",
   isbn: "",
-  serialPrice: "",
+  serialPrice: "100",
   volumePrice: "",
+  volumeRentalPrice: "",
   cpCompanyName: "",
   monopolyYn: false,
   blindYn: false,
@@ -280,6 +279,9 @@ export default function ProductUploadPage() {
     const effectiveUseYn = episode.useYn ?? "Y";
     return effectiveOpenYn === "Y" && effectiveUseYn === "Y";
   }).length;
+  const isFreeProduct = isDetailMode && productDetail?.price_type === "free";
+  const productType =
+    productDetail?.product_type ?? productDetail?.productType ?? null;
 
   const isSubmitting = createProduct.isPending || updateProduct.isPending;
   const isProcessingApply = acceptEpisodeApply.isPending || denyEpisodeApply.isPending;
@@ -291,6 +293,15 @@ export default function ProductUploadPage() {
     visibleEpisodes.every((episode) =>
       selectedEpisodeIds.includes(episode.episodeId)
     );
+
+  const handlePublicationTypeChange = (value: PublicationType) => {
+    setForm((prev) => ({
+      ...prev,
+      publicationType: value,
+      serialPrice: value === "serial" ? "100" : prev.serialPrice || "100",
+      statusCode: value === "serial" ? "end" : prev.statusCode,
+    }));
+  };
 
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -337,20 +348,28 @@ export default function ProductUploadPage() {
       title: productDetail.title ?? "",
       authorName: productDetail.author_nickname ?? "",
       publicationType: isVolumeType ? "volume" : "serial",
-      rating: productDetail.ratings_code === "adult" ? "19" : "all",
-      statusCode: (["ongoing", "rest", "end", "stop"] as OngoingType[]).includes(
-        productDetail.status_code as OngoingType
-      )
-        ? (productDetail.status_code as OngoingType)
-        : "ongoing",
+      rating:
+        productDetail.ratings_code === "adult"
+          ? "19"
+          : productDetail.ratings_code === "15"
+            ? "15"
+            : "all",
+      statusCode: isFreeProduct || isVolumeType
+        ? (["ongoing", "rest", "end", "stop"] as OngoingType[]).includes(
+            productDetail.status_code as OngoingType
+          )
+          ? (productDetail.status_code as OngoingType)
+          : "ongoing"
+        : "end",
       primaryGenreId: productDetail.primary_genre_id
         ? String(productDetail.primary_genre_id)
         : "",
       subGenreId: productDetail.sub_genre_id ? String(productDetail.sub_genre_id) : "",
       uci: productDetail.uci ?? "",
       isbn: productDetail.isbn ?? "",
-      serialPrice: String(productDetail.series_regular_price ?? 0),
+      serialPrice: isVolumeType ? String(productDetail.series_regular_price ?? 0) : "100",
       volumePrice: String(productDetail.single_regular_price ?? 0),
+      volumeRentalPrice: String(productDetail.single_rental_price ?? 0),
       cpCompanyName: productDetail.cp_company_name ?? "",
       monopolyYn: productDetail.monopoly_yn === "Y",
       blindYn: productDetail.blind_yn === "Y",
@@ -421,6 +440,8 @@ export default function ProductUploadPage() {
   };
 
   const validateForm = () => {
+    const requiresBibliographicId = !isFreeProduct;
+
     if (!form.title.trim()) return "작품명을 입력해주세요.";
     if (!form.authorName.trim()) return "작가명을 입력해주세요.";
     if (!form.primaryGenreId) return "1차 장르를 선택해주세요.";
@@ -428,14 +449,24 @@ export default function ProductUploadPage() {
       return "1차 장르와 2차 장르를 서로 다르게 선택해주세요.";
     }
     if (!isEditMode && !form.synopsis.trim()) return "작품 소개를 입력해주세요.";
-    if (!form.uci.trim() && !form.isbn.trim()) return "UCI와 ISBN 중 하나 이상 입력해주세요.";
+    if (requiresBibliographicId && !form.uci.trim() && !form.isbn.trim()) {
+      return "UCI와 ISBN 중 하나 이상 입력해주세요.";
+    }
 
-    if (!isEditMode && form.publicationType === "serial") {
-      if (!form.serialPrice || Number(form.serialPrice) <= 0) {
-        return "연재 가격을 입력해주세요.";
+    if (form.publicationType === "serial") {
+      if (Number(form.serialPrice) !== 100) {
+        return "연재 가격은 100원으로 고정됩니다.";
       }
-    } else if (!isEditMode && (!form.volumePrice || Number(form.volumePrice) <= 0)) {
-      return "발행권 가격을 입력해주세요.";
+      if (!form.serialPrice || Number(form.serialPrice) <= 0) {
+        return "연재 가격을 확인해주세요.";
+      }
+    } else {
+      if (!form.volumePrice || Number(form.volumePrice) <= 0) {
+        return "소장가격을 입력해주세요.";
+      }
+      if (!form.volumeRentalPrice || Number(form.volumeRentalPrice) <= 0) {
+        return "대여가격을 입력해주세요.";
+      }
     }
 
     const hasFreeEpisodeRangeInput =
@@ -457,14 +488,7 @@ export default function ProductUploadPage() {
         return "무료회차 범위는 1~999 숫자만 입력 가능합니다.";
       }
       if (freeStartNo > freeEndNo) {
-        return "Free episode start number cannot be greater than end number.";
-      }
-      const maxEpisodeNo = episodes.reduce(
-        (max, episode) => Math.max(max, episode.episodeNo ?? 0),
-        0
-      );
-      if (maxEpisodeNo > 0 && freeEndNo > maxEpisodeNo) {
-        return `Free episode end cannot exceed current max episode (${maxEpisodeNo}).`;
+        return "무료회차 시작 번호가 종료 번호보다 클 수 없습니다.";
       }
     }
 
@@ -478,6 +502,8 @@ export default function ProductUploadPage() {
   };
 
   const buildCreatePayload = (): ICreateProductRequest => {
+    const activePrice =
+      form.publicationType === "serial" ? 100 : Number(form.volumePrice);
     return {
       cover_image_file_id: coverImageFileId ?? undefined,
       title: form.title.trim(),
@@ -485,23 +511,40 @@ export default function ProductUploadPage() {
       illustrator_nickname: null,
       ongoing_state: form.statusCode,
       update_frequency: [],
-      publish_regular_yn: "N",
+      publish_regular_yn: form.publicationType === "serial" ? "Y" : "N",
       primary_genre: getGenreName(form.primaryGenreId),
       sub_genre: getGenreName(form.subGenreId) || null,
       keywords: [],
       custom_keywords: [],
       synopsis: form.synopsis.trim(),
       adult_yn: form.rating === "19" ? "Y" : "N",
-      open_yn: form.blindYn ? "N" : "Y",
+      open_yn: "N",
       blind_yn: form.blindYn ? "Y" : "N",
       monopoly_yn: form.monopolyYn ? "Y" : "N",
       cp_contract_yn: form.cpCompanyName ? "Y" : "N",
+      series_regular_price: form.publicationType === "serial" ? activePrice : 0,
+      single_regular_price: form.publicationType === "volume" ? activePrice : 0,
+      single_rental_price:
+        form.publicationType === "volume" ? Number(form.volumeRentalPrice) : 0,
     };
   };
 
   const buildUpdatePayload = (): IUpdateProductRequest => {
-    const activePrice =
-      form.publicationType === "serial" ? Number(form.serialPrice) : Number(form.volumePrice);
+    const nextSeriesRegularPrice = isFreeProduct
+      ? 0
+      : form.publicationType === "serial"
+        ? 100
+        : 0;
+    const nextSingleRegularPrice = isFreeProduct
+      ? 0
+      : form.publicationType === "volume"
+        ? Number(form.volumePrice)
+        : 0;
+    const nextSingleRentalPrice = isFreeProduct
+      ? 0
+      : form.publicationType === "volume"
+        ? Number(form.volumeRentalPrice)
+        : 0;
     const freeEpisodeStartNoInput = form.freeEpisodeStartNo.trim();
     const freeEpisodeEndNoInput = form.freeEpisodeEndNo.trim();
     const hasFreeEpisodeRange =
@@ -514,18 +557,18 @@ export default function ProductUploadPage() {
       cover_image_file_id: coverImageFileId ?? undefined,
       title: form.title.trim(),
       synopsis: form.synopsis.trim(),
-      ratings_code: form.rating === "19" ? "adult" : "all",
+      ratings_code:
+        form.rating === "19" ? "adult" : form.rating === "15" ? "15" : "all",
       primary_genre_id: Number(form.primaryGenreId),
       sub_genre_id: form.subGenreId ? Number(form.subGenreId) : undefined,
       status_code: form.statusCode,
       uci: form.uci.trim() || undefined,
       isbn: form.isbn.trim() || undefined,
-      series_regular_price: form.publicationType === "serial" ? activePrice : 0,
-      single_regular_price: form.publicationType === "volume" ? activePrice : 0,
+      series_regular_price: nextSeriesRegularPrice,
+      single_regular_price: nextSingleRegularPrice,
+      single_rental_price: nextSingleRentalPrice,
       cp_company_name: form.cpCompanyName || undefined,
       monopoly_yn: form.monopolyYn ? "Y" : "N",
-      open_yn: form.blindYn ? "N" : "Y",
-      blind_yn: form.blindYn ? "Y" : "N",
       free_episode_start_no: hasFreeEpisodeRange
         ? Number(freeEpisodeStartNoInput)
         : clearFreeEpisodeRange
@@ -536,6 +579,9 @@ export default function ProductUploadPage() {
         : clearFreeEpisodeRange
           ? null
           : undefined,
+      ...(isEditMode
+        ? { open_yn: form.blindYn ? "N" : "Y", blind_yn: form.blindYn ? "Y" : "N" }
+        : { open_yn: "N", blind_yn: form.blindYn ? "Y" : "N" }),
     };
   };
 
@@ -921,7 +967,7 @@ export default function ProductUploadPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
-                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">작품명</label>
+                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">작품명 *</label>
                 <Input
                   value={form.title}
                   placeholder="작품명을 입력해주세요."
@@ -929,28 +975,39 @@ export default function ProductUploadPage() {
                 />
               </div>
 
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">
-                  연재/발행권                </label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant={form.publicationType === "serial" ? "default" : "outline"}
-                    onClick={() => setField("publicationType", "serial")}
-                  >
-                    연재
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={form.publicationType === "volume" ? "default" : "outline"}
-                    onClick={() => setField("publicationType", "volume")}
-                  >
-                    발행권                  </Button>
+              {isFreeProduct ? (
+                <div className="md:col-span-2">
+                  <label className="mb-1 block text-sm font-semibold text-[#1F2124]">연재 유형</label>
+                  <div className="flex items-center gap-2">
+                    <Button type="button" variant="default" disabled>
+                      {productType === "normal" ? "일반연재" : "자유연재"}
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="md:col-span-2">
+                  <label className="mb-1 block text-sm font-semibold text-[#1F2124]">웹소설/단행본 *</label>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant={form.publicationType === "serial" ? "default" : "outline"}
+                      onClick={() => handlePublicationTypeChange("serial")}
+                    >
+                      웹소설
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={form.publicationType === "volume" ? "default" : "outline"}
+                      onClick={() => handlePublicationTypeChange("volume")}
+                    >
+                      단행본
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div className="md:col-span-2">
-                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">작가명</label>
+                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">작가명 *</label>
                 <Input
                   value={form.authorName}
                   placeholder="작가명을 입력해주세요."
@@ -959,7 +1016,7 @@ export default function ProductUploadPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">연령등급</label>
+                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">연령등급 *</label>
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
@@ -970,41 +1027,16 @@ export default function ProductUploadPage() {
                   </Button>
                   <Button
                     type="button"
-                    variant={form.rating === "15" ? "default" : "outline"}
-                    onClick={() => setField("rating", "15")}
-                  >
-                    15??                  </Button>
-                  <Button
-                    type="button"
                     variant={form.rating === "19" ? "default" : "outline"}
                     onClick={() => setField("rating", "19")}
                   >
-                    19??                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">작품종류</label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant={form.launchType === "promotion" ? "default" : "outline"}
-                    onClick={() => setField("launchType", "promotion")}
-                  >
-                    프로모션런칭
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={form.launchType === "normal" ? "default" : "outline"}
-                    onClick={() => setField("launchType", "normal")}
-                  >
-                    일반런칭
+                    19세
                   </Button>
                 </div>
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">장르 *</label>
+                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">1차 장르 *</label>
                 <Select
                   value={form.primaryGenreId}
                   onValueChange={(value) => setField("primaryGenreId", value)}
@@ -1042,11 +1074,9 @@ export default function ProductUploadPage() {
                 </Select>
               </div>
 
-              <div
-                className={`md:col-span-2 grid gap-4 ${isEditMode ? "md:grid-cols-[1fr_auto] md:items-end" : ""}`}
-              >
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-[#1F2124]">연재 상태</label>
+              {(isFreeProduct || form.publicationType === "volume") && (
+                <div className="md:col-span-2">
+                  <label className="mb-1 block text-sm font-semibold text-[#1F2124]">연재 상태 *</label>
                   <div className="flex flex-wrap items-center gap-2">
                     {ONGOING_OPTIONS.map((option) => (
                       <Button
@@ -1060,113 +1090,143 @@ export default function ProductUploadPage() {
                     ))}
                   </div>
                 </div>
-                {isEditMode ? (
+              )}
+
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">독점 여부</label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant={form.monopolyYn ? "default" : "outline"}
+                    onClick={() => setField("monopolyYn", true)}
+                  >
+                    독점
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={!form.monopolyYn ? "default" : "outline"}
+                    onClick={() => setField("monopolyYn", false)}
+                  >
+                    비독점
+                  </Button>
+                </div>
+              </div>
+
+              {!isFreeProduct && (
+                <>
                   <div>
-                    <label className="mb-1 block text-sm font-semibold text-[#1F2124]">무료회차 지정</label>
-                    <div className="flex items-center gap-2">
+                    <label className="mb-1 block text-sm font-semibold text-[#1F2124]">UCI</label>
+                    <Input
+                      value={form.uci}
+                      placeholder="UCI 입력"
+                      onChange={(e) => setField("uci", e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-[#1F2124]">ISBN</label>
+                    <Input
+                      value={form.isbn}
+                      placeholder="ISBN 입력"
+                      onChange={(e) => setField("isbn", e.target.value)}
+                    />
+                  </div>
+
+                  {form.publicationType === "serial" ? (
+                    <div>
+                      <label className="mb-1 block text-sm font-semibold text-[#1F2124]">연재 가격 *</label>
                       <Input
-                        value={form.freeEpisodeStartNo}
-                        placeholder="시작"
-                        maxLength={3}
-                        className="w-[92px]"
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === "" || /^\d{1,3}$/.test(value)) {
-                            setField("freeEpisodeStartNo", value);
-                          }
-                        }}
-                      />
-                      <span className="text-sm text-[#6C7383]">~</span>
-                      <Input
-                        value={form.freeEpisodeEndNo}
-                        placeholder="종료"
-                        maxLength={3}
-                        className="w-[92px]"
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === "" || /^\d{1,3}$/.test(value)) {
-                            setField("freeEpisodeEndNo", value);
-                          }
-                        }}
+                        value={form.serialPrice}
+                        placeholder="연재 가격"
+                        readOnly
+                        disabled
                       />
                     </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="mb-1 block text-sm font-semibold text-[#1F2124]">소장가격 *</label>
+                        <Input
+                          value={form.volumePrice}
+                          placeholder="소장가격 입력"
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (isPositiveIntegerInput(value)) setField("volumePrice", value);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-semibold text-[#1F2124]">대여가격 *</label>
+                        <Input
+                          value={form.volumeRentalPrice}
+                          placeholder="대여가격 입력"
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (isPositiveIntegerInput(value)) setField("volumeRentalPrice", value);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {isDetailMode && !isFreeProduct && (
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-[#1F2124]">무료회차 지정</label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={form.freeEpisodeStartNo}
+                      placeholder="시작"
+                      maxLength={3}
+                      className="w-[92px]"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || /^\d{1,3}$/.test(value)) {
+                          setField("freeEpisodeStartNo", value);
+                        }
+                      }}
+                    />
+                    <span className="text-sm text-[#6C7383]">~</span>
+                    <Input
+                      value={form.freeEpisodeEndNo}
+                      placeholder="종료"
+                      maxLength={3}
+                      className="w-[92px]"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || /^\d{1,3}$/.test(value)) {
+                          setField("freeEpisodeEndNo", value);
+                        }
+                      }}
+                    />
                   </div>
-                ) : null}
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">UCI</label>
-                <Input
-                  value={form.uci}
-                  placeholder="UCI 입력"
-                  onChange={(e) => setField("uci", e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">ISBN</label>
-                <Input
-                  value={form.isbn}
-                  placeholder="ISBN 입력"
-                  onChange={(e) => setField("isbn", e.target.value)}
-                />
-              </div>
-
-              {form.publicationType === "serial" ? (
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-[#1F2124]">연재 가격</label>
-                  <Input
-                    value={form.serialPrice}
-                    placeholder="연재 가격 입력"
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (isPositiveIntegerInput(value)) setField("serialPrice", value);
-                    }}
-                  />
-                </div>
-              ) : (
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-[#1F2124]">발행권 가격</label>
-                  <Input
-                    value={form.volumePrice}
-                    placeholder="발행권 가격 입력"
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (isPositiveIntegerInput(value)) setField("volumePrice", value);
-                    }}
-                  />
                 </div>
               )}
 
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">CP 지?</label>
-                <Select
-                  value={form.cpCompanyName || "none"}
-                  onValueChange={(value) => setField("cpCompanyName", value === "none" ? "" : value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="선택 안함" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">선택 안함</SelectItem>
-                    {cpCompanies?.map((cp) => (
-                      <SelectItem key={cp.company_name} value={cp.company_name}>
-                        {cp.company_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {!isFreeProduct && (
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-[#1F2124]">CP명</label>
+                  <Select
+                    value={form.cpCompanyName || "none"}
+                    onValueChange={(value) => setField("cpCompanyName", value === "none" ? "" : value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="선택 안함" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">선택 안함</SelectItem>
+                      {cpCompanies?.map((cp) => (
+                        <SelectItem key={cp.company_name} value={cp.company_name}>
+                          {cp.company_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="md:col-span-2 flex flex-wrap items-center gap-6 pt-2">
-                <label className="inline-flex items-center gap-2 text-sm font-medium text-[#1F2124]">
-                  <input
-                    type="checkbox"
-                    checked={form.monopolyYn}
-                    onChange={(e) => setField("monopolyYn", e.target.checked)}
-                  />
-                  독점여부
-                </label>
                 <label className="inline-flex items-center gap-2 text-sm font-medium text-[#1F2124]">
                   <input
                     type="checkbox"
@@ -1177,8 +1237,19 @@ export default function ProductUploadPage() {
                 </label>
               </div>
 
+              {isFreeProduct && (
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-[#1F2124]">(예정)유료전환 시작 회차</label>
+                  <Input
+                    value={productDetail?.paid_episode_no ? String(productDetail.paid_episode_no) : "-"}
+                    readOnly
+                    disabled
+                  />
+                </div>
+              )}
+
               <div className="md:col-span-2">
-                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">작품 소개</label>
+                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">작품 소개 *</label>
                 <textarea
                   value={form.synopsis}
                   onChange={(e) => setField("synopsis", e.target.value)}
@@ -1394,6 +1465,3 @@ export default function ProductUploadPage() {
     </SidebarInset>
   );
 }
-
-
-

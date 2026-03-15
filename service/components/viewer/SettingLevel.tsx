@@ -4,34 +4,48 @@ interface Props {
   count: number;
   setCount: (size: number) => void;
   maximum?: number;
+  minimum?: number;
   disabled?: boolean;
 }
-const SettingLevel = ({ count, setCount, maximum = 5, disabled }: Props) => {
+const SettingLevel = ({
+  count,
+  setCount,
+  maximum = 5,
+  minimum = 1,
+  disabled,
+}: Props) => {
+  const isDecreaseDisabled = Boolean(disabled || count <= minimum);
+  const isIncreaseDisabled = Boolean(disabled || count >= maximum);
+
   const increase = () => {
-    if (disabled) return;
-    setCount(count < maximum ? count + 1 : maximum);
+    if (isIncreaseDisabled) return;
+    setCount(count + 1);
   };
 
   const decrease = () => {
-    if (disabled) return;
-    setCount(count > 1 ? count - 1 : 1);
+    if (isDecreaseDisabled) return;
+    setCount(count - 1);
   };
   return (
     <div className={`flex items-center gap-21pxr ${disabled ? "opacity-40" : ""}`}>
       <button
         className="flex justify-center items-center w-[34px] h-[34px] rounded-full border border-light-gray-400"
         onClick={decrease}
-        disabled={disabled}
+        disabled={isDecreaseDisabled}
       >
-        <Minus color={disabled || count <= 1 ? "#BFC2C9" : "var(--foreground-rgb)"} />
+        <Minus
+          color={
+            isDecreaseDisabled ? "#BFC2C9" : "var(--foreground-rgb)"
+          }
+        />
       </button>
       <div className="w-[10px]">{count}</div>
       <button
         className="flex justify-center items-center w-[34px] h-[34px] rounded-full border border-light-gray-400"
         onClick={increase}
-        disabled={disabled}
+        disabled={isIncreaseDisabled}
       >
-        <Plus color={disabled || count >= maximum ? "#BFC2C9" : "var(--foreground-rgb)"} />
+        <Plus color={isIncreaseDisabled ? "#BFC2C9" : "var(--foreground-rgb)"} />
       </button>
     </div>
   );

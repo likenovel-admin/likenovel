@@ -1,16 +1,12 @@
 import {
   useSelectUserPromotionIssuanceStatus,
-  useUserDirectPromotionEnd,
   useUserDirectPromotionSave,
-  useUserDirectPromotionStart,
-  useUserDirectPromotionStop,
-  useUserIssueDirectPromotion,
 } from "@/app/api/query/mypage/user";
 import type { DirectPromotion as DirectPromotionType } from "@/app/api/query/mypage/user/dto";
 import { useSelectProductDetail } from "@/app/api/query/product";
 import Button from "@/components/common/Button";
+import Toggle from "@/components/form/toggle";
 import useBottomSheetStore from "@/store/bottomSheetStore";
-import useConfirmStore from "@/store/confirmStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import { useQueryClient } from "@tanstack/react-query";
@@ -33,14 +29,9 @@ const DirectPromotion = ({
   }>({});
   const { closeModal: _closeModal } = useModalStore();
   const { closeBottomSheet } = useBottomSheetStore();
-  const { setConfirm } = useConfirmStore();
   const { setToast } = useToastStore();
   const queryClient = useQueryClient();
-  const startDirectPromotionMutation = useUserDirectPromotionStart();
-  const endDirectPromotionMutation = useUserDirectPromotionEnd();
-  const stopDirectPromotionMutation = useUserDirectPromotionStop();
   const saveDirectPromotionMutation = useUserDirectPromotionSave();
-  const issueDirectPromotionMutation = useUserIssueDirectPromotion();
 
   // Get reader-of-prev promotion ID
   const readerOfPrevPromotion = directPromotions.find(
@@ -107,76 +98,6 @@ const DirectPromotion = ({
     );
   };
 
-  const handlePromotionAction = (
-    promotion: any,
-    action: "start" | "stop" | "end" | "issue"
-  ) => {
-    if (
-      startDirectPromotionMutation.isPending ||
-      endDirectPromotionMutation.isPending ||
-      saveDirectPromotionMutation.isPending ||
-      stopDirectPromotionMutation.isPending ||
-      issueDirectPromotionMutation.isPending
-    )
-      return;
-
-    const actionConfig = {
-      start: {
-        confirmText: "시작하시겠습니까?",
-        confirmButton: "시작",
-        successMessage: "프로모션이 시작되었습니다.",
-        errorMessage: "프로모션 시작에 실패했습니다.",
-        mutation: () => startDirectPromotionMutation.mutateAsync(promotion.id!),
-      },
-      stop: {
-        confirmText: "프로모션을 중지하시겠습니까?",
-        confirmButton: "중지",
-        successMessage: "프로모션이 중지되었습니다.",
-        errorMessage: "프로모션 중지에 실패했습니다.",
-        mutation: () => stopDirectPromotionMutation.mutateAsync(promotion.id!),
-      },
-      end: {
-        confirmText: "프로모션을 종료하시겠습니까?",
-        confirmButton: "종료",
-        successMessage: "프로모션이 종료되었습니다.",
-        errorMessage: "프로모션 종료에 실패했습니다.",
-        mutation: () => endDirectPromotionMutation.mutateAsync(promotion.id!),
-      },
-      issue: {
-        confirmText: "대여권을 발급하시겠습니까?",
-        confirmButton: "발급",
-        successMessage: "대여권이 발급되었습니다.",
-        errorMessage: "대여권 발급에 실패했습니다.",
-        mutation: () => issueDirectPromotionMutation.mutateAsync(promotion.id!),
-      },
-    };
-
-    const config = actionConfig[action];
-
-    setConfirm({
-      content: config.confirmText,
-      confirmText: config.confirmButton,
-      onConfirm: async () => {
-        try {
-          await config.mutation();
-          setToast({
-            message: config.successMessage,
-            type: "success",
-          });
-          queryClient.invalidateQueries({
-            queryKey: ["selectUserProductsWithPromotions"],
-          });
-          closeModal();
-        } catch (error: any) {
-          setToast({
-            message: error?.response?.data?.message || config.errorMessage,
-            type: "error",
-          });
-        }
-      },
-    });
-  };
-
   // 항상 2종(free-for-first, reader-of-prev)을 표시. 기존 데이터가 있으면 그 값, 없으면 기본값.
   const defaultPromotionTypes = [
     { type: "free-for-first", label: "첫 방문자 무료 대여권" },
@@ -187,6 +108,32 @@ const DirectPromotion = ({
     const existing = directPromotions.find((p) => p.type === def.type);
     return existing ?? { type: def.type, status: "stop" as const, num_of_ticket_per_person: 1 };
   });
+
+  const isFreeForFirstEnabled = (promotion: any) => {
+    const promotionId = getPromotionKey(promotion);
+    if (promotionCounts[promotionId] !== undefined) {
+      return promotionCounts[promotionId] > 0;
+    }
+    return (
+      promotion.type === "free-for-first" &&
+      promotion.status === "ing" &&
+      (promotion.num_of_ticket_per_person ?? 0) > 0
+    );
+  };
+
+  const handleFreeForFirstToggle = (promotion: any, enabled: boolean) => {
+    if (publicEpisodeCount < 1) {
+      updatePromotionCount(getPromotionKey(promotion), 0);
+      return;
+    }
+    updatePromotionCount(getPromotionKey(promotion), enabled ? 1 : 0);
+  };
+
+  const getFreeForFirstDisplayCount = (promotion: any) =>
+    isFreeForFirstEnabled(promotion) ? Math.max(getPromotionCount(promotion), 1) : 0;
+
+  const isFreeForFirstEnded = (promotion: any) =>
+    promotion.type === "free-for-first" && promotion.status === "end";
 
   const handleSave = () => {
     if (!productId || saveDirectPromotionMutation.isPending) return;
@@ -200,7 +147,8 @@ const DirectPromotion = ({
     promotionsToDisplay.forEach((promotion) => {
       const currentCount = getPromotionCount(promotion);
       if (promotion.type === "free-for-first") {
-        data.num_of_ticket_per_person_for_free_for_first = currentCount;
+        data.num_of_ticket_per_person_for_free_for_first =
+          publicEpisodeCount < 1 ? 0 : getFreeForFirstDisplayCount(promotion);
       } else if (promotion.type === "reader-of-prev") {
         data.num_of_ticket_per_person_for_reader_of_prev = currentCount;
       }
@@ -275,12 +223,17 @@ const DirectPromotion = ({
             key={promotion.id || `${promotion.type}_${index}`}
             className="flex justify-between bg-white rounded-xl pr-5 h-[95px] items-center relative"
           >
-            {promotion.status === "ing" &&
-              promotion.type === "free-for-first" && (
+            {promotion.type === "free-for-first" &&
+              isFreeForFirstEnabled(promotion) && (
                 <div className="absolute top-[-10px] left-[0px]">
                   <MessageBubble>진행중</MessageBubble>
                 </div>
               )}
+            {isFreeForFirstEnded(promotion) && (
+              <div className="absolute top-[-10px] left-[0px]">
+                <MessageBubble>종료됨</MessageBubble>
+              </div>
+            )}
             <div className="px-4 pt-3 pb-4 text-20pxr flex flex-col gap-2 font-medium">
               {getPromotionLabel(promotion.type)}
               <span className="text-16pxr">명당 증정 대여권</span>
@@ -311,77 +264,42 @@ const DirectPromotion = ({
                     })()}
                   </span>
                 </div>
+              ) : promotion.type === "free-for-first" ? (
+                <div className="flex flex-col items-end gap-2">
+                  <Toggle
+                    checked={
+                      publicEpisodeCount > 0 && isFreeForFirstEnabled(promotion)
+                    }
+                    disabled={publicEpisodeCount < 1 || isFreeForFirstEnded(promotion)}
+                    onChange={(event) =>
+                      handleFreeForFirstToggle(
+                        promotion,
+                        event.target.checked
+                      )
+                    }
+                  />
+                  <SettingLevel
+                    count={getFreeForFirstDisplayCount(promotion)}
+                    setCount={(newCount) =>
+                      updatePromotionCount(getPromotionKey(promotion), newCount)
+                    }
+                    maximum={publicEpisodeCount}
+                    minimum={1}
+                    disabled={
+                      publicEpisodeCount < 1 ||
+                      isFreeForFirstEnded(promotion) ||
+                      !isFreeForFirstEnabled(promotion)
+                    }
+                  />
+                </div>
               ) : (
                 <SettingLevel
                   count={getPromotionCount(promotion)}
                   setCount={(newCount) =>
                     updatePromotionCount(getPromotionKey(promotion), newCount)
                   }
-                  maximum={publicEpisodeCount}
+                    maximum={publicEpisodeCount}
                 />
-              )}
-              {/* {promotion.type === "free-for-first" && (
-                <Button
-                  size="sm"
-                  className="w-70pxr box-border bg-primary-100! px-[4px] text-[11px] md:w-[100px] md:h-[38px] md:text-14pxr mt-[9px]"
-                >
-                  시작
-                </Button>
-              )}
-              {promotion.type === "reader-of-prev" && (
-                <Button
-                  size="sm"
-                  className="w-70pxr box-border !bg-blue-500 px-[4px] text-[11px] md:w-[100px] md:h-[38px] md:text-14pxr mt-[9px]"
-                >
-                  발급
-                </Button>
-              )} */}
-              {promotion.id && promotion.type === "free-for-first" && (
-                <>
-                  {(() => {
-                    const status = promotion.status || "stop";
-                    const isLoading =
-                      startDirectPromotionMutation.isPending ||
-                      endDirectPromotionMutation.isPending ||
-                      saveDirectPromotionMutation.isPending ||
-                      stopDirectPromotionMutation.isPending ||
-                      issueDirectPromotionMutation.isPending;
-
-                    // Determine button config based on status
-                    if (status === "ing") {
-                      // Promotion is running - show End button
-                      return (
-                        <Button
-                          size="sm"
-                          className="w-70pxr box-border px-[4px] text-[11px] md:w-[100px] md:h-[38px] md:text-14pxr mt-[9px]"
-                          variant="black"
-                          onClick={() =>
-                            handlePromotionAction(promotion, "stop")
-                          }
-                          disabled={isLoading}
-                        >
-                          중지
-                        </Button>
-                      );
-                    }
-                    if (status === "pending" || status === "stop") {
-                      // Promotion is stopped - show Start button
-                      return (
-                        <Button
-                          size="sm"
-                          className="w-70pxr !bg-primary-100 box-border px-[4px] text-[11px] md:w-[100px] md:h-[38px] md:text-14pxr mt-[9px]"
-                          variant="black"
-                          onClick={() =>
-                            handlePromotionAction(promotion, "start")
-                          }
-                          disabled={isLoading}
-                        >
-                          시작
-                        </Button>
-                      );
-                    }
-                  })()}
-                </>
               )}
             </div>
           </div>
@@ -405,11 +323,7 @@ const DirectPromotion = ({
           size={"xl"}
           onClick={closeModal}
           disabled={
-            startDirectPromotionMutation.isPending ||
-            endDirectPromotionMutation.isPending ||
-            saveDirectPromotionMutation.isPending ||
-            stopDirectPromotionMutation.isPending ||
-            issueDirectPromotionMutation.isPending
+            saveDirectPromotionMutation.isPending
           }
           type="button"
         >
@@ -420,11 +334,7 @@ const DirectPromotion = ({
           size={"xl"}
           type="button"
           disabled={
-            startDirectPromotionMutation.isPending ||
-            endDirectPromotionMutation.isPending ||
-            saveDirectPromotionMutation.isPending ||
-            stopDirectPromotionMutation.isPending ||
-            issueDirectPromotionMutation.isPending
+            saveDirectPromotionMutation.isPending
           }
           onClick={handleSave}
         >

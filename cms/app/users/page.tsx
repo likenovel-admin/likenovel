@@ -206,6 +206,7 @@ function Page() {
                 tab === "signout"
                   ? [{ value: "email", label: "이메일" }]
                   : [
+                      { value: "user_id", label: "유저ID" },
                       { value: "nickname", label: "닉네임" },
                       { value: "name", label: "이름" },
                       { value: "contact", label: "연락처" },

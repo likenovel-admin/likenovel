@@ -40,6 +40,7 @@ const toProductOption = (
   primary_genre_id: null,
   sub_genre_id: null,
   single_regular_price: 0,
+  single_rental_price: 0,
   series_regular_price: 0,
   paid_episode_no: null,
   free_episode_start_no: null,

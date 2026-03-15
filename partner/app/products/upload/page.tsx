@@ -57,7 +57,6 @@ import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 type PublicationType = "serial" | "volume";
-type LaunchType = "promotion" | "normal";
 type RatingType = "all" | "15" | "19";
 type OngoingType = "ongoing" | "rest" | "end" | "stop";
 
@@ -65,7 +64,6 @@ type FormState = {
   title: string;
   authorName: string;
   publicationType: PublicationType;
-  launchType: LaunchType;
   rating: RatingType;
   statusCode: OngoingType;
   primaryGenreId: string;
@@ -89,7 +87,6 @@ const INITIAL_FORM: FormState = {
   title: "",
   authorName: "",
   publicationType: "serial",
-  launchType: "normal",
   rating: "all",
   statusCode: "end",
   primaryGenreId: "",
@@ -236,7 +233,6 @@ export default function ProductUploadPage() {
       ...prev,
       publicationType: value,
       serialPrice: value === "serial" ? "100" : prev.serialPrice || "100",
-      statusCode: value === "serial" ? "end" : prev.statusCode,
     }));
   };
 
@@ -290,13 +286,11 @@ export default function ProductUploadPage() {
           : productDetail.ratings_code === "15"
             ? "15"
             : "all",
-      statusCode: isVolumeType
-        ? (["ongoing", "rest", "end", "stop"] as OngoingType[]).includes(
-            productDetail.status_code as OngoingType
-          )
-          ? (productDetail.status_code as OngoingType)
-          : "ongoing"
-        : "end",
+      statusCode: (["ongoing", "rest", "end", "stop"] as OngoingType[]).includes(
+        productDetail.status_code as OngoingType
+      )
+        ? (productDetail.status_code as OngoingType)
+        : "ongoing",
       primaryGenreId: productDetail.primary_genre_id
         ? String(productDetail.primary_genre_id)
         : "",
@@ -1107,28 +1101,6 @@ export default function ProductUploadPage() {
                 </div>
               </div>
 
-              {!isFreeProduct && (
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">작품종류{REQUIRED_MARK}</label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant={form.launchType === "promotion" ? "default" : "outline"}
-                    onClick={() => setField("launchType", "promotion")}
-                  >
-                    프로모션런칭
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={form.launchType === "normal" ? "default" : "outline"}
-                    onClick={() => setField("launchType", "normal")}
-                  >
-                    일반런칭
-                  </Button>
-                </div>
-              </div>
-              )}
-
               <div>
                 <label className="mb-1 block text-sm font-semibold text-[#1F2124]">1차 장르{REQUIRED_MARK}</label>
                 <Select
@@ -1168,7 +1140,6 @@ export default function ProductUploadPage() {
                 </Select>
               </div>
 
-              {form.publicationType === "volume" && (
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm font-semibold text-[#1F2124]">연재 상태{REQUIRED_MARK}</label>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1184,7 +1155,6 @@ export default function ProductUploadPage() {
                   ))}
                 </div>
               </div>
-              )}
 
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm font-semibold text-[#1F2124]">독점 여부</label>
