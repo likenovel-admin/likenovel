@@ -58,6 +58,10 @@ export interface IUseSelectSuggestMainProductsResponse {
   data: SelectSuggestMainProductsResponseObject[];
 }
 
+export interface IUseSelectMainRuleSlotsResponse {
+  data: ISectionData[];
+}
+
 export interface IGetEpisodeProductParams {
   product_id: string;
   user_id?: string;

@@ -1,10 +1,9 @@
-import { usePostAiSignalEvent, useGetProductAiMetadata } from "@/app/api/query/recommendation";
+import { usePostAiSignalEvent } from "@/app/api/query/recommendation";
 import Spinner from "@/components/common/Spinner";
 import LastPage from "@/components/viewer/LastPage";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useAuthStore from "@/store/authStore";
 import useViewStore from "@/store/viewerStore";
-import { pickAiSignalFactor } from "@/utils/aiSignalFactor";
 import type { Contents, Rendition } from "epubjs";
 import type React from "react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -120,10 +119,6 @@ const EpubViewer = ({
   // ========================= AI SIGNAL EVENTS =========================
 
   const { mutate: postSignalEvent } = usePostAiSignalEvent();
-  const { data: aiMetadataData } = useGetProductAiMetadata(
-    productId || 0,
-    !!productId && isAuthenticated
-  );
 
   const sessionIdRef = useRef(
     typeof crypto !== "undefined" && crypto.randomUUID
@@ -132,14 +127,12 @@ const EpubViewer = ({
   );
   const activeSecondsRef = useRef(0);
   const progressRef = useRef(0);
-  const aiMetadataRef = useRef(aiMetadataData?.data ?? null);
   const episodeViewFiredRef = useRef(false);
   const episodeEndFiredRef = useRef(false);
   const latestReachedFiredRef = useRef(false);
   const lastExitTimeRef = useRef(0);
 
   useEffect(() => { progressRef.current = progress; }, [progress]);
-  useEffect(() => { aiMetadataRef.current = aiMetadataData?.data ?? null; }, [aiMetadataData?.data]);
 
   // Active reading time — only counts while epub is ready and tab is visible
   useEffect(() => {
@@ -163,8 +156,10 @@ const EpubViewer = ({
   }, [epubReady]);
 
   const buildSignalBody = useCallback(
-    (eventType: string, extraPayload?: Record<string, unknown>) => {
-      const factor = pickAiSignalFactor(eventType, aiMetadataRef.current, currentEpisodeId || 0);
+    (
+      eventType: string,
+      extraPayload?: Record<string, unknown>
+    ) => {
       const hasNext = nextEpisodeId !== undefined && nextEpisodeId > 0;
       return {
         product_id: productId!,
@@ -175,7 +170,6 @@ const EpubViewer = ({
         progress_ratio: Math.min(progressRef.current / 100, 1),
         next_available_yn: (hasNext ? "Y" : "N") as "Y" | "N",
         latest_episode_reached_yn: (!hasNext ? "Y" : "N") as "Y" | "N",
-        ...factor,
         ...(extraPayload ? { event_payload: extraPayload } : {}),
       };
     },

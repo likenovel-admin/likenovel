@@ -5,7 +5,6 @@ import {
   IAiChatResponse,
   IAiRecommendResponse,
   IGetChatHistoryResponse,
-  IGetProductAiMetadataResponse,
   IGetOnboardingProductsResponse,
   IPostAiSignalEventBody,
   IPostAiSignalEventResponse,
@@ -26,28 +25,14 @@ export const useGetOnboardingProducts = () => {
   });
 };
 
-/** 작품 AI 메타데이터 */
-export const useGetProductAiMetadata = (
-  productId: number,
-  enabled: boolean = true
-) => {
-  return useQuery<IGetProductAiMetadataResponse>({
-    queryKey: ["productAiMetadata", productId],
-    queryFn: async () => {
-      const res = await instance.get(`/v1/query/ai/product-metadata/${productId}`);
-      return res.data;
-    },
-    enabled: enabled && !!productId,
-  });
-};
-
 /** 취향 기반 추천 섹션 (메인 페이지용) */
 export const useGetTasteRecommendations = (
   adultYn: string,
-  enabled: boolean = true
+  enabled: boolean = true,
+  cacheIdentityKey: string | number | null = null
 ) => {
   return useQuery<IGetTasteRecommendationsResponse>({
-    queryKey: ["tasteRecommendations", adultYn],
+    queryKey: ["tasteRecommendations", adultYn, cacheIdentityKey ?? "guest"],
     queryFn: async () => {
       const res = await instance.get(
         `/v1/query/ai/taste-profile/recommendations?adult_yn=${adultYn}`

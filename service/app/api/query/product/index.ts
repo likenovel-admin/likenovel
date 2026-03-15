@@ -9,6 +9,7 @@ import {
   IGetRecentProductResponse,
   IPublisherPromotionProductsResponse,
   ISuggestByRecentViewedResponse,
+  IUseSelectMainRuleSlotsResponse,
   IUseSelect69PassProductsResponse,
   IUseSelectProductDetailResponse,
   IUseSelectProductsResponse,
@@ -203,6 +204,19 @@ export const useSelectLatestUpdateProducts = (adult_yn?: string) => {
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/products/latest-update?adult_yn=${adultYnParam}`
+      );
+      return response.data;
+    },
+  });
+};
+
+export const useSelectMainRuleSlots = (adult_yn?: string) => {
+  const adultYnParam = adult_yn || "N";
+  return useQuery<IUseSelectMainRuleSlotsResponse, unknown>({
+    queryKey: ["selectMainRuleSlots", adultYnParam],
+    queryFn: async () => {
+      const response = await instance.get(
+        `/v1/query/products/main-rule-slots?adult_yn=${adultYnParam}`
       );
       return response.data;
     },
