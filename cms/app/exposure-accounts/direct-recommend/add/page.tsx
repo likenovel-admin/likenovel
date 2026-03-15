@@ -13,6 +13,7 @@ import {
   TableHead,
   TableRow,
 } from "@/components/ui/table";
+import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
 import {
   catchErrorMessage,
@@ -88,8 +89,8 @@ export default function Page() {
       {
         name,
         order: Number(order),
-        exposure_start_date: startDate.toISOString().split("T")[0],
-        exposure_end_date: endDate.toISOString().split("T")[0],
+        exposure_start_date: format(startDate, "yyyy-MM-dd"),
+        exposure_end_date: format(endDate, "yyyy-MM-dd"),
         exposure_start_time_weekday: startTimeWeekday,
         exposure_end_time_weekday: endTimeWeekday,
         exposure_start_time_weekend: startTimeWeekend,

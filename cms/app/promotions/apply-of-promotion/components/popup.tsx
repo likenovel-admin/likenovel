@@ -8,6 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { catchErrorMessage, showAlert } from "@/lib/utils";
+import { format } from "date-fns";
 import { useState } from "react";
 import ReactDatePicker from "react-datepicker";
 import { useAcceptAppliedPromotion } from "../../../../api/appliedPromotion/index";
@@ -35,7 +36,7 @@ const AcceptPopup = (props: DocumentsPopupProps) => {
       {
         id: props.data?.id + "" || "",
         body: {
-          end_date: endDate.toISOString().split("T")[0],
+          end_date: format(endDate, "yyyy-MM-dd"),
         },
       },
       {

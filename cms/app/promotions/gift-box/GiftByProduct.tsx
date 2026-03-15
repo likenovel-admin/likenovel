@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { catchErrorMessage, showAlert } from "@/lib/utils";
 import { IProduct } from "@/types/product";
+import { format } from "date-fns";
 import { X } from "lucide-react";
 import { useState } from "react";
 import ReactDatePicker from "react-datepicker";
@@ -52,8 +53,8 @@ export default function GiftByProduct() {
       {
         product_ids: selectedProducts.map((p) => p.product_id),
         num_of_ticket_per_person: ticketCount,
-        start_date: startDate.toISOString().split("T")[0],
-        end_date: endDate.toISOString().split("T")[0],
+        start_date: format(startDate, "yyyy-MM-dd"),
+        end_date: format(endDate, "yyyy-MM-dd"),
       },
       {
         onSuccess: (data) => {

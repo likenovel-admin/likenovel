@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { catchErrorMessage, showAlert } from "@/lib/utils";
+import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ReactDatePicker from "react-datepicker";
@@ -71,8 +72,8 @@ export default function Page() {
       {
         product_id: product,
         type: type,
-        start_date: startDate.toISOString().split("T")[0],
-        end_date: endDate.toISOString().split("T")[0],
+        start_date: format(startDate, "yyyy-MM-dd"),
+        end_date: format(endDate, "yyyy-MM-dd"),
       },
       {
         onSuccess: () => {

@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { format } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import PageHeader from "@/components/ui/page-header";
@@ -115,8 +116,8 @@ export default function Page() {
         body: {
           name,
           order: Number(order),
-          exposure_start_date: startDate.toISOString().split("T")[0],
-          exposure_end_date: endDate.toISOString().split("T")[0],
+          exposure_start_date: format(startDate, "yyyy-MM-dd"),
+          exposure_end_date: format(endDate, "yyyy-MM-dd"),
           exposure_start_time_weekday: startTimeWeekday,
           exposure_end_time_weekday: endTimeWeekday,
           exposure_start_time_weekend: startTimeWeekend,
