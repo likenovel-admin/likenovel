@@ -67,7 +67,7 @@ interface CoverDesignModalProps {
 }
 
 let nextBlockId = 1;
-const TEXT_BLOCK_HANDLE_HEIGHT = 24;
+const TEXT_BLOCK_HANDLE_HEIGHT = 0;
 const TEXT_BLOCK_PADDING = 12;
 const DEFAULT_TEXT_BLOCK = {
   width: 280,
@@ -731,9 +731,7 @@ const CoverDesignModal = ({
               >
                 A-
               </button>
-              <div className="px-2 py-1.5 text-12pxr text-dark-gray-400 border-x border-gray-300 min-w-[44px] text-center">
-                {selectedBlock?.fontSize || DEFAULT_TEXT_BLOCK.fontSize}
-              </div>
+              <div className="w-px h-4 bg-gray-300" />
               <button
                 type="button"
                 onClick={() =>
@@ -773,15 +771,15 @@ const CoverDesignModal = ({
           {/* Content */}
           <div className="flex flex-1 min-h-0">
             {/* Left: background thumbnails */}
-            <div className="w-[130px] md:w-[150px] flex-shrink-0 border-r overflow-y-auto p-2">
-              <p className="text-11pxr text-dark-gray-400 mb-2 px-1">배경 이미지 선택</p>
+            <div className="w-[130px] md:w-[150px] flex-shrink-0 bg-light-gray-100 overflow-y-auto p-2">
+              <p className="text-11pxr text-dark-gray-400 mb-2 px-1">배경 이미지</p>
               <div className="grid grid-cols-2 gap-1.5">
                 {BG_TEMPLATES.map((tpl, idx) => (
                   <button
                     key={tpl.id}
                     onClick={() => setSelectedBg(idx)}
-                    className={`relative aspect-[2/3] rounded overflow-hidden border-2 transition-all ${
-                      selectedBg === idx ? "border-blue-500" : "border-transparent "
+                    className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 transition-all ${
+                      selectedBg === idx ? "border-blue-500" : "border-transparent"
                     }`}
                   >
                     <Image src={tpl.src} alt={`배경 ${idx + 1}`} fill className="object-cover" />
@@ -811,56 +809,26 @@ const CoverDesignModal = ({
                 />
                 {textBlocks.map((block) => {
                   const isSelected = selectedBlockId === block.id;
-                  const scaledHandleHeight =
-                    TEXT_BLOCK_HANDLE_HEIGHT * previewScale;
                   const scaledPadding = TEXT_BLOCK_PADDING * previewScale;
+                  const handleSize = Math.max(6, 8 * previewScale);
                   return (
                     <div
                       key={block.id}
-                      className={`absolute rounded overflow-hidden ${
-                        isSelected
-                          ? "ring-2 ring-blue-400 ring-offset-0"
-                          : ""
-                      }`}
+                      className="absolute cursor-move"
                       style={{
                         left: block.x * previewScale,
                         top: block.y * previewScale,
                         width: block.width * previewScale,
                         height: block.height * previewScale,
-                        outline: isSelected ? "none" : "1px dashed rgba(255,255,255,0.5)",
+                        border: `1px solid rgba(180,180,180,${isSelected ? 0.8 : 0.5})`,
+                        touchAction: "none",
                       }}
                       onMouseDown={() => setSelectedBlockId(block.id)}
+                      onPointerDown={(event) => {
+                        if ((event.target as HTMLElement).tagName === "TEXTAREA") return;
+                        startPointerInteraction("drag", block, event);
+                      }}
                     >
-                      {/* Drag handle — slim translucent strip with grip dots */}
-                      <button
-                        type="button"
-                        onPointerDown={(event) =>
-                          startPointerInteraction("drag", block, event)
-                        }
-                        className="w-full flex items-center justify-center cursor-move select-none"
-                        style={{
-                          height: `${scaledHandleHeight}px`,
-                          background: isSelected
-                            ? "rgba(59,130,246,0.5)"
-                            : "rgba(255,255,255,0.15)",
-                          touchAction: "none",
-                        }}
-                      >
-                        {/* 6-dot grip icon */}
-                        <svg
-                          width={Math.max(12, 16 * previewScale)}
-                          height={Math.max(8, 10 * previewScale)}
-                          viewBox="0 0 16 10"
-                          fill="none"
-                        >
-                          <circle cx="5" cy="2" r="1.2" fill="rgba(255,255,255,0.8)" />
-                          <circle cx="11" cy="2" r="1.2" fill="rgba(255,255,255,0.8)" />
-                          <circle cx="5" cy="5.5" r="1.2" fill="rgba(255,255,255,0.8)" />
-                          <circle cx="11" cy="5.5" r="1.2" fill="rgba(255,255,255,0.8)" />
-                          <circle cx="5" cy="9" r="1.2" fill="rgba(255,255,255,0.8)" />
-                          <circle cx="11" cy="9" r="1.2" fill="rgba(255,255,255,0.8)" />
-                        </svg>
-                      </button>
                       <textarea
                         ref={(node) => {
                           textAreaRefs.current[block.id] = node;
@@ -873,10 +841,8 @@ const CoverDesignModal = ({
                             text: e.target.value,
                           }))
                         }
-                        className="absolute left-0 top-0 w-full bg-transparent placeholder:text-transparent resize-none border-0 outline-none"
+                        className="absolute inset-0 w-full h-full bg-transparent placeholder:text-transparent resize-none border-0 outline-none cursor-text"
                         style={{
-                          top: `${scaledHandleHeight}px`,
-                          height: `calc(100% - ${scaledHandleHeight}px)`,
                           padding: `${scaledPadding}px`,
                           fontFamily: block.font,
                           fontSize: `${block.fontSize * previewScale}px`,
@@ -891,10 +857,8 @@ const CoverDesignModal = ({
                         placeholder="텍스트를 입력하세요"
                       />
                       <div
-                        className="absolute left-0 right-0 pointer-events-none select-none"
+                        className="absolute inset-0 pointer-events-none select-none"
                         style={{
-                          top: `${scaledHandleHeight}px`,
-                          bottom: 0,
                           padding: `${scaledPadding}px`,
                           fontFamily: block.font,
                           fontSize: `${block.fontSize * previewScale}px`,
@@ -911,41 +875,36 @@ const CoverDesignModal = ({
                           <div key={`${block.id}-${index}`}>{line || "\u00A0"}</div>
                         ))}
                       </div>
-                      {/* Resize handle — diagonal lines in corner, larger hit area */}
-                      <button
-                        type="button"
-                        onPointerDown={(event) =>
-                          startPointerInteraction("resize", block, event)
-                        }
-                        className="absolute cursor-se-resize flex items-center justify-center"
+                      {/* Corner handles */}
+                      {isSelected && (
+                        <>
+                          <span className="absolute pointer-events-none" style={{ top: -handleSize / 2, left: -handleSize / 2, width: handleSize, height: handleSize, background: "rgba(180,180,180,0.9)" }} />
+                          <span className="absolute pointer-events-none" style={{ top: -handleSize / 2, right: -handleSize / 2, width: handleSize, height: handleSize, background: "rgba(180,180,180,0.9)" }} />
+                          <span className="absolute pointer-events-none" style={{ bottom: -handleSize / 2, left: -handleSize / 2, width: handleSize, height: handleSize, background: "rgba(180,180,180,0.9)" }} />
+                        </>
+                      )}
+                      {/* Bottom-right resize handle */}
+                      <span
+                        className="absolute cursor-se-resize"
                         style={{
-                          bottom: 0,
-                          right: 0,
-                          width: `${Math.max(20, previewScale * 24)}px`,
-                          height: `${Math.max(20, previewScale * 24)}px`,
+                          bottom: -handleSize / 2,
+                          right: -handleSize / 2,
+                          width: Math.max(handleSize, 14),
+                          height: Math.max(handleSize, 14),
                           touchAction: "none",
+                        }}
+                        onPointerDown={(event) => {
+                          event.stopPropagation();
+                          startPointerInteraction("resize", block, event);
                         }}
                         aria-label="텍스트 박스 크기 조절"
                       >
-                        <svg
-                          width={Math.max(10, 12 * previewScale)}
-                          height={Math.max(10, 12 * previewScale)}
-                          viewBox="0 0 12 12"
-                          fill="none"
-                          className="pointer-events-none"
-                        >
-                          <line x1="11" y1="1" x2="1" y2="11" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
-                          <line x1="11" y1="5" x2="5" y2="11" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
-                          <line x1="11" y1="9" x2="9" y2="11" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
-                        </svg>
-                      </button>
+                        <span className="absolute pointer-events-none" style={{ top: 0, left: 0, width: handleSize, height: handleSize, background: "rgba(180,180,180,0.9)" }} />
+                      </span>
                     </div>
                   );
                 })}
               </div>
-              <p className="text-12pxr text-dark-gray-400 text-center">
-                글자 박스를 클릭하여 입력하고, 상단 점을 드래그하여 이동, 우하단 모서리를 드래그하여 크기를 조절할 수 있습니다.
-              </p>
             </div>
           </div>
 
