@@ -1,7 +1,9 @@
 "use client";
 
 import { IRecommendSection } from "@/app/api/query/recommendation/dto";
+import { usePostAiSignalEvent } from "@/app/api/query/recommendation";
 import useMediaDevice from "@/hooks/useMediaDevice";
+import useAuthStore from "@/store/authStore";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Fragment, useState } from "react";
@@ -15,12 +17,18 @@ interface Props {
 const TasteSection = ({ section }: Props) => {
   const router = useRouter();
   const device = useMediaDevice();
+  const { isAuthenticated, accessToken } = useAuthStore((state) => ({
+    isAuthenticated: state.isAuthenticated,
+    accessToken: state.accessToken,
+  }));
+  const { mutate: postSignalEvent } = usePostAiSignalEvent();
   const [currentPage, setCurrentPage] = useState(0);
   const [brokenCoverProductIds, setBrokenCoverProductIds] = useState<
     Record<number, true>
   >({});
   const itemsPerPage = 6;
   const isDesktop = device !== "mobile" && device !== "tablet";
+  const canTrackAiTasteClick = Boolean(isAuthenticated || accessToken);
 
   if (!section.products.length) return null;
 
@@ -58,7 +66,20 @@ const TasteSection = ({ section }: Props) => {
             <div
               key={product.productId}
               className="flex-shrink-0 w-[108px] md:w-[142px] cursor-pointer"
-              onClick={() => router.push(`/product/${product.productId}`)}
+              onClick={() => {
+                if (canTrackAiTasteClick) {
+                  postSignalEvent({
+                    product_id: product.productId,
+                    event_type: "taste_slot_click",
+                    event_payload: {
+                      source: "ai_taste_section",
+                      slot_title: section.title,
+                      slot_dimension: section.dimension,
+                    },
+                  });
+                }
+                router.push(`/product/${product.productId}`);
+              }}
             >
               <div className="relative w-[108px] md:w-[142px] h-[164px] md:h-[217px] bg-light-gray-100 rounded-[10px] overflow-hidden">
                 {product.coverUrl && !isCoverBroken ? (

@@ -66,6 +66,9 @@ const PromotionList = ({ data, sortType }: PromotionListProps) => {
           <li key={product.productId}>
             <PromotionItem
               {...promotionItem}
+              appliedPromotionRemainingSlots={
+                product.appliedPromotionRemainingSlots
+              }
               directPromotions={product.directPromotions}
               appliedPromotions={product.appliedPromotions}
             />
@@ -87,6 +90,7 @@ interface PromotionItemProps {
   freeCouponCount: number;
   directPromotions: any[];
   appliedPromotions: any[];
+  appliedPromotionRemainingSlots: number;
   sixNinePathYn: boolean;
   waitingForFreeYn: boolean;
   convertToPaidState: boolean;
@@ -105,6 +109,7 @@ const PromotionItem = ({
   freeCouponCount,
   directPromotions,
   appliedPromotions,
+  appliedPromotionRemainingSlots,
   sixNinePathYn,
   waitingForFreeYn,
   convertToPaidState,
@@ -196,6 +201,7 @@ const PromotionItem = ({
         productId={id}
         directPromotions={directPromotions}
         appliedPromotions={appliedPromotions}
+        appliedPromotionRemainingSlots={appliedPromotionRemainingSlots}
         priceType={priceType}
       />
     </div>
@@ -206,11 +212,13 @@ const ButtonArea = ({
   productId,
   directPromotions,
   appliedPromotions,
+  appliedPromotionRemainingSlots,
   priceType,
 }: {
   productId: number;
   directPromotions: DirectPromotionType[];
   appliedPromotions: AppliedPromotion[];
+  appliedPromotionRemainingSlots: number;
   priceType: "free" | "paid";
 }) => {
   const { setModal } = useModalStore();
@@ -233,12 +241,14 @@ const ButtonArea = ({
     setModal(
       <RequestPromotion
         appliedPromotions={appliedPromotions}
+        remainingSlots={appliedPromotionRemainingSlots}
         productId={productId}
       />
     );
     setBottomSheet(
       <RequestPromotion
         appliedPromotions={appliedPromotions}
+        remainingSlots={appliedPromotionRemainingSlots}
         productId={productId}
       />
     );

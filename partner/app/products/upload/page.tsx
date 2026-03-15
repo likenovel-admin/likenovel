@@ -1308,7 +1308,7 @@ export default function ProductUploadPage() {
               </div>
               )}
 
-              {isEditMode && sellingEpisodeCount > 0 && isAdmin && (
+              {isEditMode && isAdmin && (
               <div className="md:col-span-2 flex flex-wrap items-center gap-6 pt-2">
                 <label className="inline-flex items-center gap-2 text-sm font-medium text-[#1F2124]">
                   <input
@@ -1321,7 +1321,7 @@ export default function ProductUploadPage() {
               </div>
               )}
 
-              {isEditMode && sellingEpisodeCount > 0 && !isAdmin && form.blindYn && (
+              {isEditMode && !isAdmin && form.blindYn && (
               <div className="md:col-span-2 rounded-md border border-[#F3C4C4] bg-[#FFF6F6] px-4 py-3 text-sm text-[#B42318]">
                 관리자 블라인드된 작품입니다. 사용자에게 노출되지 않으며 해제는 관리자만 가능합니다.
               </div>
@@ -1557,6 +1557,5 @@ export default function ProductUploadPage() {
     </SidebarInset>
   );
 }
-
 
 

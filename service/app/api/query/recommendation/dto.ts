@@ -33,26 +33,6 @@ export interface IGetOnboardingProductsResponse {
   tag_tabs?: IOnboardingTagTab[];
 }
 
-export interface IProductAiMetadata {
-  product_id: number;
-  protagonist_type?: string | null;
-  protagonist_type_tags?: string[] | null;
-  protagonist_job_tags?: string[] | null;
-  protagonist_goal_primary?: string | null;
-  goal_confidence?: number | null;
-  mood?: string | null;
-  taste_tags?: string[] | null;
-  protagonist_material_tags?: string[] | null;
-  worldview_tags?: string[] | null;
-  axis_style_tags?: string[] | null;
-  axis_romance_tags?: string[] | null;
-  romance_chemistry_weight?: string | null;
-}
-
-export interface IGetProductAiMetadataResponse {
-  data: IProductAiMetadata | null;
-}
-
 export interface IPostOnboardingResponse {
   data: {
     message: string;
@@ -153,9 +133,6 @@ export interface IPostAiSignalEventBody {
   progress_ratio?: number;
   next_available_yn?: "Y" | "N";
   latest_episode_reached_yn?: "Y" | "N";
-  factor_type?: string;
-  factor_key?: string;
-  signal_score?: number;
   event_payload?: Record<string, unknown>;
 }
 

@@ -20,6 +20,7 @@ import {
   useGetDirectRecommend,
   useSelectInterestDropSoonUpdateProducts,
   useSelectLatestUpdateProducts,
+  useSelectMainRuleSlots,
   useSelectMainSuggestProducts,
   useSelectProducts,
 } from "./api/query/product";
@@ -36,18 +37,26 @@ export default function Home() {
   const { user, isAuthenticated, accessToken } = useAuthStore();
   const adultYn = user?.isOnAdult ? "Y" : "N";
   const canUseTasteRecommend = Boolean(isAuthenticated || accessToken || user?.userId);
+  const tasteRecommendCacheIdentity =
+    user?.userId != null
+      ? `user:${user.userId}`
+      : accessToken
+        ? `token:${accessToken.slice(-16)}`
+        : "guest";
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasFirstLoginOnboarding, setHasFirstLoginOnboarding] = useState(false);
 
   const { data, isSuccess } = useSelectProducts(adultYn);
   const { data: suggestProductsData } = useSelectMainSuggestProducts(adultYn);
+  const { data: mainRuleSlotsData } = useSelectMainRuleSlots(adultYn);
   const { data: latestUpdateData } = useSelectLatestUpdateProducts(adultYn);
   const { data: interestDropSoonData } =
     useSelectInterestDropSoonUpdateProducts(adultYn);
   const { data: directRecommendData } = useGetDirectRecommend(adultYn);
   const { data: tasteRecommendationsData } = useGetTasteRecommendations(
     adultYn,
-    canUseTasteRecommend
+    canUseTasteRecommend,
+    tasteRecommendCacheIdentity
   );
 
   useEffect(() => {
@@ -86,6 +95,10 @@ export default function Home() {
     const suggestSections = suggestProducts.map((suggestProduct) => suggestProduct.sectionData);
     return [...directSections, ...suggestSections];
   }, [directRecommendData, suggestProducts]);
+  const mainRuleSlotSections = useMemo<ISectionData[]>(
+    () => mainRuleSlotsData?.data ?? [],
+    [mainRuleSlotsData]
+  );
   const tasteSections = useMemo<IRecommendSection[]>(
     () => tasteRecommendationsData?.data?.sections ?? [],
     [tasteRecommendationsData]
@@ -140,6 +153,16 @@ export default function Home() {
                 <RecentlyView />
               </div>
             </div>
+            {mainRuleSlotSections.length > 0 && (
+              <div className="w-full max-w-[1120px] mx-auto flex flex-col mt-30pxr md:mt-70pxr gap-30pxr md:gap-68pxr">
+                {mainRuleSlotSections.map((section) => (
+                  <BottomProducts
+                    key={`main-rule-${section.suggestName}-${section.suggestTitle}`}
+                    suggestionData={section}
+                  />
+                ))}
+              </div>
+            )}
             <div className="w-full mt-30pxr md:mt-80pxr bg-[#212123]">
               <PaidTop data={paidTopProducts} />
             </div>

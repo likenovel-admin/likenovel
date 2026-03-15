@@ -174,6 +174,7 @@ export interface AppliedPromotion {
   updated_id: number | null;
   updated_date: string | null; // ISO string, could be Date type if parsed to Date
   can_apply_text: string;
+  can_apply?: boolean;
   remaining_slots: number;
 }
 
@@ -215,6 +216,7 @@ export interface IUserProductsWithPromotion {
   state: StateBlock;
 
   directPromotions: DirectPromotion[];
+  appliedPromotionRemainingSlots: number;
   appliedPromotions: AppliedPromotion[];
 }
 

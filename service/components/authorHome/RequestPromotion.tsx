@@ -20,11 +20,13 @@ import TriangleWarnWhite from "/public/images/triangle-warn-white.svg";
 interface RequestPromotionProps {
   appliedPromotions: AppliedPromotion[];
   productId: number;
+  remainingSlots: number;
 }
 
 const RequestPromotion = ({
   appliedPromotions,
   productId,
+  remainingSlots,
 }: RequestPromotionProps) => {
   const { setConfirm } = useConfirmStore();
   const { setToast } = useToastStore();
@@ -68,7 +70,8 @@ const RequestPromotion = ({
       updated_id: null,
       updated_date: null,
       can_apply_text: "",
-      remaining_slots: 0,
+      can_apply: true,
+      remaining_slots: remainingSlots,
     },
     {
       id: 0,
@@ -82,8 +85,10 @@ const RequestPromotion = ({
       created_date: "",
       updated_id: null,
       updated_date: null,
-      can_apply_text: "매주 토요일 신청 가능",
-      remaining_slots: 0,
+      can_apply_text:
+        remainingSlots <= 0 ? "이번 주 신청 마감" : "이번 주 신청 가능",
+      can_apply: remainingSlots > 0,
+      remaining_slots: remainingSlots,
     },
   ];
 
@@ -277,6 +282,14 @@ const RequestPromotion = ({
                 {promotion.type === "6-9-path" && (
                   <div className="flex justify-between bg-white rounded-xl pr-5 h-[95px] items-center md:px-4 md:py-6">
                     <div className="px-4 pt-3 pb-4 text-17pxr flex flex-col gap-1 font-medium">
+                      {promotion.status === "deny" && (
+                        <div className="flex items-center w-fit h-[20px] pr-2 gap-3pxr md:gap-6pxr bg-red-100 rounded-full p-0.5">
+                          <TriangleWarnWhite className="w-[15px] md:w-[18px] h-[15px] md:h-[18px] text-white" />
+                          <span className="text-12pxr md:text-14pxr text-white">
+                            심사반려
+                          </span>
+                        </div>
+                      )}
                       {promotion.type === "6-9-path" && (
                         <div className="flex gap-2 items-center">
                           <SquareBadge
@@ -327,6 +340,8 @@ const RequestPromotion = ({
                         <button
                           onClick={() => handleApplyPromotion(promotion)}
                           disabled={
+                            promotion.can_apply === false ||
+                            promotion.remaining_slots <= 0 ||
                             applyPromotionMutation.isPending ||
                             cancelPromotionMutation.isPending
                           }
