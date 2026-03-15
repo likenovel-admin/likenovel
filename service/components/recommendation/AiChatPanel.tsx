@@ -292,7 +292,7 @@ const AiChatPanel = () => {
           </span>
         )}
         <span className="text-[10px] md:text-xs font-semibold leading-tight text-center whitespace-pre-line">
-          {isOpen ? "닫기" : "AI\n추천"}
+          {isOpen ? "닫기" : "AI\n사서"}
         </span>
       </button>
 
