@@ -335,15 +335,15 @@ const CoverDesignModal = ({
     };
   }, [selectedBg]);
 
-  // Redraw canvas when dependencies change
+  // Redraw canvas background only (text is rendered by overlay)
   useEffect(() => {
     if (tab !== "make" || !canvasRef.current || !bgImageRef.current) return;
     document.fonts.ready.then(() => {
       if (canvasRef.current && bgImageRef.current) {
-        renderCanvas(canvasRef.current, bgImageRef.current, textBlocks);
+        renderCanvas(canvasRef.current, bgImageRef.current, []);
       }
     });
-  }, [tab, textBlocks, bgLoaded]);
+  }, [tab, bgLoaded]);
 
   // --- Tab 2 handlers ---
 
@@ -532,9 +532,11 @@ const CoverDesignModal = ({
 
   const handleSaveMake = async () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !bgImageRef.current) return;
     setIsSaving(true);
     try {
+      // Render full canvas (background + text) for export
+      renderCanvas(canvas, bgImageRef.current, textBlocks);
       const file = await new Promise<File | null>((resolve) => {
         canvas.toBlob((blob) => {
           resolve(blob ? new File([blob], "cover-design.png", { type: "image/png" }) : null);
