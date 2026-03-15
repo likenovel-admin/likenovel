@@ -87,6 +87,7 @@ export function SearchDateNText({
         placeholder="검색어 입력"
         value={filters.search_word}
         onChange={(e) => handleChange("search_word", e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
         className="w-[200px]"
       />
 

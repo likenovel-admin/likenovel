@@ -18,11 +18,14 @@ export interface IProduct {
   primary_genre_id: number | null;
   sub_genre_id: number | null;
   single_regular_price: number;
+  single_rental_price: number;
   series_regular_price: number;
   paid_episode_no?: number | null;
   free_episode_start_no?: number | null;
   free_episode_end_no?: number | null;
   price_type: string;
+  product_type?: string | null;
+  productType?: string | null;
   monopoly_yn: "Y" | "N";
   blind_yn: "Y" | "N";
   cp_author_profit: number;

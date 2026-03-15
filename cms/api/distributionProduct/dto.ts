@@ -48,6 +48,9 @@ export interface ICreateProductRequest {
   blind_yn?: "Y" | "N";
   monopoly_yn: "Y" | "N";
   cp_contract_yn: "Y" | "N";
+  series_regular_price?: number;
+  single_regular_price?: number;
+  single_rental_price?: number;
 }
 
 export interface ICreateProductResponse {
@@ -69,6 +72,7 @@ export interface IUpdateProductRequest {
   isbn?: string;
   series_regular_price?: number;
   single_regular_price?: number;
+  single_rental_price?: number;
   cp_company_name?: string;
   cp_id?: number;
   monopoly_yn?: "Y" | "N";

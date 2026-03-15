@@ -33,6 +33,23 @@ const ModalContainer = ({
       return;
     }
     if (modalRef.current) {
+      // 모달 내부에 자체 스크롤 가능한 요소가 있으면 그 요소의 경계를 체크
+      let el = e.target as HTMLElement | null;
+      while (el && el !== modalRef.current) {
+        if (
+          el.scrollHeight > el.clientHeight &&
+          ["auto", "scroll"].includes(getComputedStyle(el).overflowY)
+        ) {
+          const atTop = el.scrollTop === 0;
+          const atBottom =
+            el.scrollHeight - el.scrollTop <= el.clientHeight + 1;
+          if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+            e.preventDefault();
+          }
+          return;
+        }
+        el = el.parentElement;
+      }
       const isScrollAtTop = modalRef.current.scrollTop === 0;
       const isScrollAtBottom =
         modalRef.current.scrollHeight - (modalRef.current.scrollTop + 100) <=
