@@ -44,9 +44,9 @@ dayjs.extend(utc);
 
 const GENRE_OPTIONS = [
   "무협",
-  "판타지",
+  "정통판타지",
   "현대판타지",
-  "퓨전",
+  "퓨전판타지",
   "게임",
   "스포츠",
   "대체역사",
@@ -138,7 +138,7 @@ const FormArea = ({ productId }: Props) => {
           ? originData.authorNickname
           : userInfo?.data?.userNickname || "",
         illustratorNickname: productId ? originData.illustratorNickname : "",
-        updateFrequency: productId ? originData.updateFrequency : ["mon"],
+        updateFrequency: productId ? originData.updateFrequency : ["mon", "tue", "wed", "thu", "fri"],
         primaryGenre: productId ? originData.primaryGenre || "" : "무협",
         subGenre: productId ? originData.subGenre : "",
         synopsis: productId ? originData.synopsis : "",
@@ -174,10 +174,7 @@ const FormArea = ({ productId }: Props) => {
     productId &&
       (data?.data.priceType === "paid" || data?.data.paidApprovedYn === "Y")
   );
-  const isPaidConversionLocked =
-    isPaidProduct &&
-    (!data?.data.paidSettingDate ||
-      !dayjs(data.data.paidSettingDate).isAfter(dayjs()));
+  const isPaidConversionLocked = isPaidProduct;
 
   // Set authorNickname from userInfo when it loads (for new product only)
   useEffect(() => {
