@@ -817,35 +817,49 @@ const CoverDesignModal = ({
                   return (
                     <div
                       key={block.id}
-                      className={`absolute border-2 rounded-md shadow-sm overflow-hidden ${
+                      className={`absolute rounded overflow-hidden ${
                         isSelected
-                          ? "border-blue-500"
-                          : "border-white/70"
+                          ? "ring-2 ring-blue-400 ring-offset-0"
+                          : ""
                       }`}
                       style={{
                         left: block.x * previewScale,
                         top: block.y * previewScale,
                         width: block.width * previewScale,
                         height: block.height * previewScale,
-                        backgroundColor: isSelected
-                          ? "rgba(17, 24, 39, 0.25)"
-                          : "rgba(17, 24, 39, 0.18)",
+                        outline: isSelected ? "none" : "1px dashed rgba(255,255,255,0.5)",
                       }}
                       onMouseDown={() => setSelectedBlockId(block.id)}
                     >
+                      {/* Drag handle — slim translucent strip with grip dots */}
                       <button
                         type="button"
                         onPointerDown={(event) =>
                           startPointerInteraction("drag", block, event)
                         }
-                        className="w-full px-2 text-left text-white/90 bg-black/30 cursor-move select-none"
+                        className="w-full flex items-center justify-center cursor-move select-none"
                         style={{
                           height: `${scaledHandleHeight}px`,
-                          fontSize: `${Math.max(10, 11 * previewScale)}px`,
+                          background: isSelected
+                            ? "rgba(59,130,246,0.5)"
+                            : "rgba(255,255,255,0.15)",
                           touchAction: "none",
                         }}
                       >
-                        이동
+                        {/* 6-dot grip icon */}
+                        <svg
+                          width={Math.max(12, 16 * previewScale)}
+                          height={Math.max(8, 10 * previewScale)}
+                          viewBox="0 0 16 10"
+                          fill="none"
+                        >
+                          <circle cx="5" cy="2" r="1.2" fill="rgba(255,255,255,0.8)" />
+                          <circle cx="11" cy="2" r="1.2" fill="rgba(255,255,255,0.8)" />
+                          <circle cx="5" cy="5.5" r="1.2" fill="rgba(255,255,255,0.8)" />
+                          <circle cx="11" cy="5.5" r="1.2" fill="rgba(255,255,255,0.8)" />
+                          <circle cx="5" cy="9" r="1.2" fill="rgba(255,255,255,0.8)" />
+                          <circle cx="11" cy="9" r="1.2" fill="rgba(255,255,255,0.8)" />
+                        </svg>
                       </button>
                       <textarea
                         ref={(node) => {
@@ -897,27 +911,40 @@ const CoverDesignModal = ({
                           <div key={`${block.id}-${index}`}>{line || "\u00A0"}</div>
                         ))}
                       </div>
+                      {/* Resize handle — diagonal lines in corner, larger hit area */}
                       <button
                         type="button"
                         onPointerDown={(event) =>
                           startPointerInteraction("resize", block, event)
                         }
-                        className="absolute cursor-se-resize bg-white/80 rounded-sm border border-gray-400"
+                        className="absolute cursor-se-resize flex items-center justify-center"
                         style={{
-                          bottom: `${Math.max(4, previewScale * 4)}px`,
-                          right: `${Math.max(4, previewScale * 4)}px`,
-                          width: `${Math.max(14, previewScale * 16)}px`,
-                          height: `${Math.max(14, previewScale * 16)}px`,
+                          bottom: 0,
+                          right: 0,
+                          width: `${Math.max(20, previewScale * 24)}px`,
+                          height: `${Math.max(20, previewScale * 24)}px`,
                           touchAction: "none",
                         }}
                         aria-label="텍스트 박스 크기 조절"
-                      />
+                      >
+                        <svg
+                          width={Math.max(10, 12 * previewScale)}
+                          height={Math.max(10, 12 * previewScale)}
+                          viewBox="0 0 12 12"
+                          fill="none"
+                          className="pointer-events-none"
+                        >
+                          <line x1="11" y1="1" x2="1" y2="11" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
+                          <line x1="11" y1="5" x2="5" y2="11" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
+                          <line x1="11" y1="9" x2="9" y2="11" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
+                      </button>
                     </div>
                   );
                 })}
               </div>
               <p className="text-12pxr text-dark-gray-400 text-center">
-                글자 박스 안에서 바로 입력할 수 있으며, 상단 막대로 이동하고 우하단 핸들로 크기를 조절할 수 있습니다.
+                글자 박스를 클릭하여 입력하고, 상단 점을 드래그하여 이동, 우하단 모서리를 드래그하여 크기를 조절할 수 있습니다.
               </p>
             </div>
           </div>

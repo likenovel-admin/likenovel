@@ -27,6 +27,9 @@ const DirectPromotion = ({
   const [promotionCounts, setPromotionCounts] = useState<{
     [key: string]: number;
   }>({});
+  const [promotionErrors, setPromotionErrors] = useState<{
+    [key: string]: string;
+  }>({});
   const { closeModal: _closeModal } = useModalStore();
   const { closeBottomSheet } = useBottomSheetStore();
   const { setToast } = useToastStore();
@@ -43,24 +46,14 @@ const DirectPromotion = ({
     readerOfPrevPromotion?.id || 0
   );
 
-  // Fetch product details to get public episode count
+  // Fetch product details to get paid episode count
   const { data: productDetail } = useSelectProductDetail(productId || 0);
 
-  // Calculate number of public episodes
-  const publicEpisodeCount =
+  // Calculate number of paid episodes
+  const paidEpisodeCount =
     productDetail?.data?.episodes?.filter((episode) => {
-      // Check if episode is public (openYn === "Y" or episodeOpenYn === "Y")
-      const isOpen = episode.episodeOpenYn === "Y";
-
-      // Check if publishReserveDate has passed (episode is already published)
-      const now = new Date();
-      const publishDate = episode.publishReserveDate
-        ? new Date(episode.publishReserveDate)
-        : null;
-      const isPublished = !publishDate || publishDate <= now;
-
-      return isOpen || isPublished;
-    }).length || 0; // Default to 18 if no data
+      return episode.priceType === "paid";
+    }).length || 0;
 
   const closeModal = () => {
     _closeModal();
@@ -85,10 +78,23 @@ const DirectPromotion = ({
       ...prev,
       [promotionId]: newCount,
     }));
+    setPromotionErrors((prev) => {
+      if (!prev[promotionId]) return prev;
+      const next = { ...prev };
+      delete next[promotionId];
+      return next;
+    });
   };
 
   const getPromotionKey = (promotion: any) =>
     promotion.id ? String(promotion.id) : promotion.type;
+
+  const setPromotionError = (promotionId: string, message: string) => {
+    setPromotionErrors((prev) => ({
+      ...prev,
+      [promotionId]: message,
+    }));
+  };
 
   // Function to get current count for a promotion
   const getPromotionCount = (promotion: any) => {
@@ -129,7 +135,7 @@ const DirectPromotion = ({
   };
 
   const handleFreeForFirstToggle = (promotion: any, enabled: boolean) => {
-    if (publicEpisodeCount < 1) {
+    if (paidEpisodeCount < 1) {
       updatePromotionCount(getPromotionKey(promotion), 0);
       return;
     }
@@ -149,13 +155,13 @@ const DirectPromotion = ({
     }
     return (
       promotion.type === "reader-of-prev" &&
-      ["ing", "pending"].includes(promotion.status) &&
+      promotion.status === "ing" &&
       (promotion.num_of_ticket_per_person ?? 0) > 0
     );
   };
 
   const handleReaderOfPrevToggle = (promotion: any, enabled: boolean) => {
-    if (publicEpisodeCount < 1 || issuanceStatus?.issued_this_week) {
+    if (paidEpisodeCount < 1 || issuanceStatus?.issued_this_week) {
       updatePromotionCount(getPromotionKey(promotion), 0);
       return;
     }
@@ -164,6 +170,9 @@ const DirectPromotion = ({
 
   const getReaderOfPrevDisplayCount = (promotion: any) =>
     isReaderOfPrevEnabled(promotion) ? Math.max(getPromotionCount(promotion), 1) : 0;
+
+  const isReaderOfPrevInProgress = (promotion: any) =>
+    promotion.type === "reader-of-prev" && promotion.status === "ing";
 
   const handleSave = () => {
     if (!productId || saveDirectPromotionMutation.isPending) return;
@@ -178,10 +187,10 @@ const DirectPromotion = ({
       const currentCount = getPromotionCount(promotion);
       if (promotion.type === "free-for-first") {
         data.num_of_ticket_per_person_for_free_for_first =
-          publicEpisodeCount < 1 ? 0 : getFreeForFirstDisplayCount(promotion);
+          paidEpisodeCount < 1 ? 0 : getFreeForFirstDisplayCount(promotion);
       } else if (promotion.type === "reader-of-prev") {
         data.num_of_ticket_per_person_for_reader_of_prev =
-          publicEpisodeCount < 1 ? 0 : getReaderOfPrevDisplayCount(promotion);
+          paidEpisodeCount < 1 ? 0 : getReaderOfPrevDisplayCount(promotion);
       }
     });
 
@@ -260,6 +269,11 @@ const DirectPromotion = ({
                   <MessageBubble>진행중</MessageBubble>
                 </div>
               )}
+            {isReaderOfPrevInProgress(promotion) && (
+              <div className="absolute top-[-10px] left-[0px]">
+                <MessageBubble>진행중</MessageBubble>
+              </div>
+            )}
             {isFreeForFirstEnded(promotion) && (
               <div className="absolute top-[-10px] left-[0px]">
                 <MessageBubble>종료됨</MessageBubble>
@@ -285,7 +299,7 @@ const DirectPromotion = ({
                   <SettingLevel
                     count={getReaderOfPrevDisplayCount(promotion)}
                     setCount={() => {}}
-                    maximum={publicEpisodeCount}
+                    maximum={paidEpisodeCount}
                     minimum={1}
                     disabled
                   />
@@ -299,9 +313,9 @@ const DirectPromotion = ({
                 <div className="flex flex-col items-end gap-2">
                   <Toggle
                     checked={
-                      publicEpisodeCount > 0 && isFreeForFirstEnabled(promotion)
+                      paidEpisodeCount > 0 && isFreeForFirstEnabled(promotion)
                     }
-                    disabled={publicEpisodeCount < 1 || isFreeForFirstEnded(promotion)}
+                    disabled={paidEpisodeCount < 1 || isFreeForFirstEnded(promotion)}
                     onChange={(event) =>
                       handleFreeForFirstToggle(
                         promotion,
@@ -314,22 +328,33 @@ const DirectPromotion = ({
                     setCount={(newCount) =>
                       updatePromotionCount(getPromotionKey(promotion), newCount)
                     }
-                    maximum={publicEpisodeCount}
+                    maximum={paidEpisodeCount}
                     minimum={1}
+                    onIncreaseBlocked={() =>
+                      setPromotionError(
+                        getPromotionKey(promotion),
+                        "현재 유료회차보다 더 많은 장수를 발급할 수 없습니다."
+                      )
+                    }
                     disabled={
-                      publicEpisodeCount < 1 ||
+                      paidEpisodeCount < 1 ||
                       isFreeForFirstEnded(promotion) ||
                       !isFreeForFirstEnabled(promotion)
                     }
                   />
+                  {promotionErrors[getPromotionKey(promotion)] && (
+                    <span className="max-w-[190px] text-right text-12pxr leading-[16px] text-[#E54949]">
+                      {promotionErrors[getPromotionKey(promotion)]}
+                    </span>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-end gap-2">
                   <Toggle
                     checked={
-                      publicEpisodeCount > 0 && isReaderOfPrevEnabled(promotion)
+                      paidEpisodeCount > 0 && isReaderOfPrevEnabled(promotion)
                     }
-                    disabled={publicEpisodeCount < 1}
+                    disabled={paidEpisodeCount < 1}
                     onChange={(event) =>
                       handleReaderOfPrevToggle(
                         promotion,
@@ -342,13 +367,24 @@ const DirectPromotion = ({
                     setCount={(newCount) =>
                       updatePromotionCount(getPromotionKey(promotion), newCount)
                     }
-                    maximum={publicEpisodeCount}
+                    maximum={paidEpisodeCount}
                     minimum={1}
+                    onIncreaseBlocked={() =>
+                      setPromotionError(
+                        getPromotionKey(promotion),
+                        "현재 유료회차보다 더 많은 장수를 발급할 수 없습니다."
+                      )
+                    }
                     disabled={
-                      publicEpisodeCount < 1 ||
+                      paidEpisodeCount < 1 ||
                       !isReaderOfPrevEnabled(promotion)
                     }
                   />
+                  {promotionErrors[getPromotionKey(promotion)] && (
+                    <span className="max-w-[190px] text-right text-12pxr leading-[16px] text-[#E54949]">
+                      {promotionErrors[getPromotionKey(promotion)]}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
