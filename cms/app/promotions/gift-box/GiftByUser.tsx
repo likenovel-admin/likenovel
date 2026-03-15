@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { catchErrorMessage, showAlert } from "@/lib/utils";
 import { IUser } from "@/types/user";
+import { format } from "date-fns";
 import { X } from "lucide-react";
 import { useState } from "react";
 import ReactDatePicker from "react-datepicker";
@@ -59,7 +60,7 @@ export default function GiftByUser() {
         user_ids: selectedUsers.map((u) => u.user_id),
         amount: ticketCount,
         reason: reason.trim(),
-        expiration_date: expirationDate.toISOString().split("T")[0],
+        expiration_date: format(expirationDate, "yyyy-MM-dd"),
       },
       {
         onSuccess: (data) => {

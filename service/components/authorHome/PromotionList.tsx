@@ -168,15 +168,11 @@ const PromotionItem = ({
           </div> */}
 
           {sixNinePathYn && (
-            <div className="flex items-center gap-7pxr">
-              <div className="flex justify-center items-center min-w-[24px] h-[18px] bg-dark-gray-600 p-[3px]">
-                <span className="text-10pxr rounded-[5px] text-white font-medium">
-                  6-9
-                </span>
-                <span className="text-14pxr font-normal text-dark-gray-500 tracking-[-2%]">
-                  6-9무료
-                </span>
-              </div>
+            <div className="flex items-center gap-1">
+              <SquareBadge type={["timePass"]} timePassValue="6-9" />
+              <span className="text-12pxr md:text-14pxr text-dark-gray-400">
+                6-9무료
+              </span>
             </div>
           )}
 
