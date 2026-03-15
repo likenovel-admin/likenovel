@@ -12,6 +12,7 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import { item_per_page } from "@/constants/common";
 import { productRatingsCode, productStatusCode } from "@/constants/product";
 import { downloadExcel } from "@/lib/excelDownload";
+import { useProfile } from "@/hooks/useProfile";
 import { calculatePageCount, catchErrorMessage, showAlert } from "@/lib/utils";
 import { IProduct } from "@/types/product";
 import { format } from "date-fns";
@@ -20,6 +21,7 @@ import { useEffect, useState } from "react";
 
 export default function Page() {
   const route = useRouter();
+  const { isAdmin, isPartner } = useProfile();
 
   const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilers] = useState<IGetProductParams>({
@@ -57,6 +59,7 @@ export default function Page() {
         "작품ID",
         "작품명",
         "작가명",
+        "유저ID",
         "회차수",
         "유형",
         "해당CP",
@@ -75,6 +78,7 @@ export default function Page() {
         "product_id",
         "title",
         "author_nickname",
+        "author_user_id",
         "count_episode",
         (row: IProduct) => (row.price_type === "paid" ? "유료" : "무료"),
         "cp_company_name",
@@ -159,12 +163,14 @@ export default function Page() {
             onReset={handleOnReset}
           />
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => route.push("/products/upload?mode=create")}
-            >
-              신규작품생성
-            </Button>
+            {(isAdmin || isPartner) && (
+              <Button
+                variant="outline"
+                onClick={() => route.push("/products/upload?mode=create")}
+              >
+                신규작품생성
+              </Button>
+            )}
             <Button variant="outline" onClick={handleDownloadExcel}>
               엑셀 다운로드
             </Button>
