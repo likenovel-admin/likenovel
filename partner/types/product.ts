@@ -3,6 +3,7 @@ export interface IProduct {
   title: string;
   synopsis?: string;
   author_nickname: string;
+  author_user_id?: number | null;
   count_episode: number;
   contract_type: string | null;
   cp_company_name: string | null;

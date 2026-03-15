@@ -376,6 +376,8 @@ export default function ProductUploadPage() {
   };
 
   const validateForm = () => {
+    const requiresBibliographicId = !isFreeProduct;
+
     if (!form.title.trim()) return "작품명을 입력해주세요.";
     if (!form.authorName.trim()) return "작가명을 입력해주세요.";
     if (!form.primaryGenreId) return "1차 장르를 선택해주세요.";
@@ -383,7 +385,9 @@ export default function ProductUploadPage() {
       return "1차 장르와 2차 장르를 서로 다르게 선택해주세요.";
     }
     if (!isEditMode && !form.synopsis.trim()) return "작품 소개를 입력해주세요.";
-    if (!form.uci.trim() && !form.isbn.trim()) return "UCI와 ISBN 중 하나 이상 입력해주세요.";
+    if (requiresBibliographicId && !form.uci.trim() && !form.isbn.trim()) {
+      return "UCI와 ISBN 중 하나 이상 입력해주세요.";
+    }
 
     if (form.publicationType === "serial") {
       if (Number(form.serialPrice) !== 100) {
@@ -461,8 +465,21 @@ export default function ProductUploadPage() {
   };
 
   const buildUpdatePayload = (): IUpdateProductRequest => {
-    const activePrice =
-      form.publicationType === "serial" ? 100 : Number(form.volumePrice);
+    const nextSeriesRegularPrice = isFreeProduct
+      ? 0
+      : form.publicationType === "serial"
+        ? 100
+        : 0;
+    const nextSingleRegularPrice = isFreeProduct
+      ? 0
+      : form.publicationType === "volume"
+        ? Number(form.volumePrice)
+        : 0;
+    const nextSingleRentalPrice = isFreeProduct
+      ? 0
+      : form.publicationType === "volume"
+        ? Number(form.volumeRentalPrice)
+        : 0;
     const freeEpisodeStartNoInput = form.freeEpisodeStartNo.trim();
     const freeEpisodeEndNoInput = form.freeEpisodeEndNo.trim();
     const hasFreeEpisodeRange =
@@ -482,10 +499,9 @@ export default function ProductUploadPage() {
       status_code: form.statusCode,
       uci: form.uci.trim() || undefined,
       isbn: form.isbn.trim() || undefined,
-      series_regular_price: form.publicationType === "serial" ? activePrice : 0,
-      single_regular_price: form.publicationType === "volume" ? activePrice : 0,
-      single_rental_price:
-        form.publicationType === "volume" ? Number(form.volumeRentalPrice) : 0,
+      series_regular_price: nextSeriesRegularPrice,
+      single_regular_price: nextSingleRegularPrice,
+      single_rental_price: nextSingleRentalPrice,
       cp_company_name: form.cpCompanyName || undefined,
       monopoly_yn: form.monopolyYn ? "Y" : "N",
       free_episode_start_no: hasFreeEpisodeRange
@@ -1557,5 +1573,4 @@ export default function ProductUploadPage() {
     </SidebarInset>
   );
 }
-
 
