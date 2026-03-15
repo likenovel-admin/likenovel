@@ -184,7 +184,7 @@ export default function ProductUploadPage() {
       page: 1,
       count_per_page: 5000,
     },
-    isViewMode && !!editProductId
+    isDetailMode && !!editProductId
   );
 
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
@@ -1394,7 +1394,6 @@ export default function ProductUploadPage() {
     </SidebarInset>
   );
 }
-
 
 
 

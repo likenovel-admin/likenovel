@@ -514,7 +514,7 @@ export default function ProductUploadPage() {
         : clearFreeEpisodeRange
           ? null
           : undefined,
-      ...(isEditMode && sellingEpisodeCount > 0
+      ...(isEditMode
         ? { open_yn: form.blindYn ? "N" : "Y", blind_yn: form.blindYn ? "Y" : "N" }
         : { open_yn: "N", blind_yn: form.blindYn ? "Y" : "N" }),
     };
@@ -1573,4 +1573,3 @@ export default function ProductUploadPage() {
     </SidebarInset>
   );
 }
-
