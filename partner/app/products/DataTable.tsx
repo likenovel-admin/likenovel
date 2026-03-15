@@ -102,6 +102,11 @@ export default function WorksTable({ data, loading }: Props) {
       key: "author_nickname",
     },
     {
+      header: "유저ID",
+      key: "author_user_id",
+      render: (_, row: IProduct) => row.author_user_id ?? "-",
+    },
+    {
       header: "회차수",
       key: "count_episode",
     },
