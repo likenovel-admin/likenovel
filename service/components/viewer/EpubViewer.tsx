@@ -468,12 +468,14 @@ const EpubViewer = ({
 
       coverCandidates.forEach((img) => {
         const imgEl = img as HTMLElement;
+        // cross-frame: iframe 내부 요소는 메인 윈도우의 HTMLImageElement와 다른 생성자이므로
+        // instanceof 대신 tagName으로 체크
         if (
           resolvedCoverImagePath &&
-          img instanceof HTMLImageElement &&
-          img.src !== resolvedCoverImagePath
+          imgEl.tagName === 'IMG' &&
+          (imgEl as HTMLImageElement).src !== resolvedCoverImagePath
         ) {
-          img.src = resolvedCoverImagePath;
+          (imgEl as HTMLImageElement).src = resolvedCoverImagePath;
         }
 
         let toggleButton =
