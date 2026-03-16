@@ -996,6 +996,15 @@ const EpubViewer = ({
                   style.appendChild(doc.createTextNode(css));
                   doc.head.appendChild(style);
 
+                  // 깨진 XHTML cover 페이지 복구: parsererror가 있으면
+                  // body를 API coverImagePath로 교체
+                  const parserError = doc.querySelector("parsererror");
+                  if (parserError && resolvedCoverImagePath) {
+                    doc.body.innerHTML = `<div style="text-align:center"><img src="${resolvedCoverImagePath}" alt="cover" style="display:block;margin:0 auto;max-width:100%"/></div>`;
+                  } else if (parserError) {
+                    parserError.style.display = "none";
+                  }
+
                   updateTheme(_rendition);
                   updateToggleButtons();
 
