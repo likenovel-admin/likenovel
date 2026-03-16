@@ -457,31 +457,14 @@ const EpubViewer = ({
         )
       );
 
-      const sectionIndex =
-        (content as any)?.section?.index ?? (content as any)?.index ?? null;
-      const runtimeCoverImage = doc.querySelector<HTMLImageElement>(
-        ".epub-runtime-cover img"
-      );
+      // 빈 src 이미지 감지 (벌크 업로드 등으로 깨진 표지)
+      const brokenCoverImgs = Array.from(
+        doc.querySelectorAll('img')
+      ).filter((img) => !img.getAttribute('src') || img.getAttribute('src') === '');
 
-      let coverCandidates = coverImages as HTMLElement[];
-
-      if (coverCandidates.length === 0 && sectionIndex === 0 && resolvedCoverImagePath) {
-        let runtimeCover = doc.querySelector<HTMLDivElement>(".epub-runtime-cover");
-        if (!runtimeCover) {
-          runtimeCover = doc.createElement("div");
-          runtimeCover.className = "epub-runtime-cover";
-          const runtimeImage = doc.createElement("img");
-          runtimeImage.src = resolvedCoverImagePath;
-          runtimeImage.alt = "표지";
-          runtimeCover.appendChild(runtimeImage);
-          doc.body.prepend(runtimeCover);
-        } else if (runtimeCoverImage) {
-          runtimeCoverImage.src = resolvedCoverImagePath;
-        }
-        coverCandidates = Array.from(
-          doc.querySelectorAll(".epub-runtime-cover img")
-        ) as HTMLElement[];
-      }
+      let coverCandidates = coverImages.length > 0
+        ? (coverImages as HTMLElement[])
+        : (brokenCoverImgs as HTMLElement[]);
 
       coverCandidates.forEach((img) => {
         const imgEl = img as HTMLElement;
