@@ -1166,4 +1166,4 @@ const EpubViewer = ({
   );
 };
 
-export default EpubViewer;
+export default memo(EpubViewer);
