@@ -986,11 +986,17 @@ const EpubViewer = ({
                     ${isScroll ? `
                     html, body {
                       margin: 0 !important;
-                      padding: 0 !important;
+                      padding: 0 24px !important;
                       min-height: auto !important;
                       height: auto !important;
+                      box-sizing: border-box !important;
                     }
-                    ` : ""}
+                    ` : `
+                    body {
+                      padding: 0 16px !important;
+                      box-sizing: border-box !important;
+                    }
+                    `}
                   `;
                   const style = doc.createElement("style");
                   style.appendChild(doc.createTextNode(css));
