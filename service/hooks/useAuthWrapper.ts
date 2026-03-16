@@ -1,8 +1,16 @@
 import useAuthStore from "@/store/authStore";
 import useConfirmStore from "@/store/confirmStore";
-import { setLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
+import {
+  removeLocalStorage,
+  setLocalStorage,
+  STORAGE_KEYS,
+} from "@/utils/localStorage";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
+
+interface AuthRedirectOptions<T extends any[]> {
+  redirectPath?: string | ((...args: T) => string);
+}
 
 /**
  * Hook to wrap functions that require authentication
@@ -13,8 +21,30 @@ export const useAuthWrapper = () => {
   const { setConfirm } = useConfirmStore();
   const router = useRouter();
 
+  const getRedirectPath = useCallback(
+    <T extends any[]>(
+      args: T,
+      options?: AuthRedirectOptions<T>
+    ): string | null => {
+      const redirectPath = options?.redirectPath;
+      if (!redirectPath) return null;
+      return typeof redirectPath === "function"
+        ? redirectPath(...args)
+        : redirectPath;
+    },
+    []
+  );
+
+  const getLoginUrl = useCallback((redirectPath?: string | null) => {
+    if (!redirectPath) return "/login?modal=open";
+    return `/login?modal=open&redirect=${encodeURIComponent(redirectPath)}`;
+  }, []);
+
   const withAuth = useCallback(
-    <T extends any[], R>(fn: (...args: T) => R | Promise<R>) => {
+    <T extends any[], R>(
+      fn: (...args: T) => R | Promise<R>,
+      options?: AuthRedirectOptions<T>
+    ) => {
       return (...args: T): R | Promise<R> | void => {
         // Check authentication status at runtime from both store and storage
         const accessToken =
@@ -23,11 +53,15 @@ export const useAuthWrapper = () => {
         const isAuth = !!accessToken || isAuthenticated;
 
         if (!isAuth) {
-          // Save current page to localStorage before redirecting to login
+          const redirectPath = getRedirectPath(args, options);
           const currentPath = window.location.pathname + window.location.search;
-          setLocalStorage(STORAGE_KEYS.PREVIOUS_PAGE, currentPath);
+          if (redirectPath) {
+            removeLocalStorage(STORAGE_KEYS.PREVIOUS_PAGE);
+          } else {
+            setLocalStorage(STORAGE_KEYS.PREVIOUS_PAGE, currentPath);
+          }
 
-          router.push(`/login?modal=open`, {
+          router.push(getLoginUrl(redirectPath), {
             scroll: false,
           });
           return;
@@ -35,11 +69,14 @@ export const useAuthWrapper = () => {
         return fn(...args);
       };
     },
-    [isAuthenticated, router]
+    [getLoginUrl, getRedirectPath, isAuthenticated, router]
   );
 
   const withLoginRequired = useCallback(
-    <T extends any[], R>(fn: (...args: T) => R | Promise<R>) => {
+    <T extends any[], R>(
+      fn: (...args: T) => R | Promise<R>,
+      options?: AuthRedirectOptions<T>
+    ) => {
       return (...args: T): R | Promise<R> | void => {
         // Check authentication status at runtime from both store and storage
         const accessToken =
@@ -52,12 +89,16 @@ export const useAuthWrapper = () => {
             content: "이 콘텐츠를 보시려면 로그인이 필요합니다.",
             confirmText: "로그인하기",
             onConfirm: () => {
-              // Save current page to localStorage before redirecting to login
+              const redirectPath = getRedirectPath(args, options);
               const currentPath =
                 window.location.pathname + window.location.search;
-              setLocalStorage(STORAGE_KEYS.PREVIOUS_PAGE, currentPath);
+              if (redirectPath) {
+                removeLocalStorage(STORAGE_KEYS.PREVIOUS_PAGE);
+              } else {
+                setLocalStorage(STORAGE_KEYS.PREVIOUS_PAGE, currentPath);
+              }
 
-              window.location.href = `/login?modal=open`;
+              window.location.href = getLoginUrl(redirectPath);
             },
           });
           return;
@@ -65,7 +106,7 @@ export const useAuthWrapper = () => {
         return fn(...args);
       };
     },
-    [isAuthenticated, setConfirm]
+    [getLoginUrl, getRedirectPath, isAuthenticated, setConfirm]
   );
 
   return {

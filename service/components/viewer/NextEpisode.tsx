@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import ArrowRight from "/public/images/arrow-right-medium.svg";
 import useModalStore from "@/store/modalStore";
 import { TYPE_MODAL } from "@/constants/common";
+import { useAuthWrapper } from "@/hooks/useAuthWrapper";
+import useAuthStore from "@/store/authStore";
 import Image from "next/image";
 
 interface NextEpisodeProps {
@@ -12,8 +14,12 @@ interface NextEpisodeProps {
 
 export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
   const router = useRouter();
+  const { withLoginRequired } = useAuthWrapper();
   const { setTypeModal } = useModalStore();
   const { mutate: postSignalEvent } = usePostAiSignalEvent();
+  const { isAuthenticated } = useAuthStore((state) => ({
+    isAuthenticated: state.isAuthenticated,
+  }));
 
   const { data } = useSelectViewerPath(currentEpisodeId);
   const { data: nextEpisodeData } = useSelectNextEpisodeInfo(data?.data?.nextEpisodeId || 0);
@@ -31,6 +37,13 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
   const handleNextEpisode = () => {
     const episode = data?.data;
     const productTitle = data?.data?.title;
+
+    if (!isAuthenticated && (episode?.nextEpisodes || 0) > 5) {
+      withLoginRequired(() => undefined, {
+        redirectPath: `/viewer/${episode?.nextEpisodeId}`,
+      })?.();
+      return;
+    }
 
     // Check if next episode is paid and not owned/rented or rental has expired
     if (

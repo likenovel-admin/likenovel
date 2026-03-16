@@ -1,6 +1,8 @@
 import { useGetInfiniteEpisodeList } from "@/app/api/query/product";
 import { IGetEpisodeProductParams } from "@/app/api/query/product/dto";
 import Spinner from "@/components/common/Spinner";
+import { useAuthWrapper } from "@/hooks/useAuthWrapper";
+import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
 import { getEpisodeBadge } from "@/utils/getEpisodeBadge";
 import { getFormattingDate } from "@/utils/getFormattingDate";
@@ -15,7 +17,11 @@ interface EpisodeModalProps {
 
 const EpisodeModal = ({ productId }: EpisodeModalProps) => {
   const router = useRouter();
+  const { withLoginRequired } = useAuthWrapper();
   const { closeModal } = useModalStore();
+  const { isAuthenticated } = useAuthStore((state) => ({
+    isAuthenticated: state.isAuthenticated,
+  }));
   const [alignType, setAlignType] = useState<"new" | "old">("new");
   const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -131,6 +137,12 @@ const EpisodeModal = ({ productId }: EpisodeModalProps) => {
                   viewCount={episode.countHit}
                   likeCount={episode.countLike || 0}
                   onClick={() => {
+                    if (!isAuthenticated && (episode.episodeNo || 0) > 5) {
+                      withLoginRequired(() => undefined, {
+                        redirectPath: `/viewer/${episode.episodeId}`,
+                      })?.();
+                      return;
+                    }
                     router.push(`/viewer/${episode.episodeId}`);
                     closeModal();
                   }}

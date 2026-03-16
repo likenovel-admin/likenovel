@@ -11,6 +11,8 @@ import EpubViewer from "@/components/viewer/EpubViewer";
 import Rating from "@/components/viewer/Rating";
 import SettingModal from "@/components/viewer/SettingModal";
 import { TYPE_MODAL } from "@/constants/common";
+import { useAuthWrapper } from "@/hooks/useAuthWrapper";
+import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import {
@@ -33,6 +35,10 @@ const Viewer = () => {
   const router = useRouter();
   const { setModal, setTypeModal } = useModalStore();
   const { setToast } = useToastStore();
+  const { withLoginRequired } = useAuthWrapper();
+  const { isAuthenticated } = useAuthStore((state) => ({
+    isAuthenticated: state.isAuthenticated,
+  }));
   const [location, setLocation] = useState<string | number>(0);
   const [isScroll, setIsScroll] = useState(() => {
     // Load initial value from localStorage
@@ -70,8 +76,15 @@ const Viewer = () => {
   }, [isScroll]);
 
   useEffect(() => {
+    setEpubUrl(null);
+  }, [episodeId]);
+
+  useEffect(() => {
     const fetchEpubFile = async () => {
-      if (!data?.data.epubFilePath) return;
+      if (!data?.data.epubFilePath) {
+        setEpubUrl(null);
+        return;
+      }
 
       try {
         await axios.get(data.data.epubFilePath, {
@@ -111,6 +124,13 @@ const Viewer = () => {
   const handleNavigateNextChap = () => {
     const episode = data?.data;
     const productTitle = data?.data?.title;
+
+    if (!isAuthenticated && (episode?.nextEpisodes || 0) > 5) {
+      withLoginRequired(() => undefined, {
+        redirectPath: `/viewer/${episode?.nextEpisodeId}`,
+      })?.();
+      return;
+    }
 
     if (
       episode?.nextEpisodePriceType === "paid" &&
