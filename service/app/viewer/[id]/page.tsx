@@ -22,7 +22,7 @@ import {
 } from "@/utils/localStorage";
 import axios from "axios";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 const Viewer = () => {
   const pathname = usePathname();
   const pathSegments = pathname.split("/");
@@ -52,6 +52,7 @@ const Viewer = () => {
     "episode" | "setting" | "rating" | null
   >(null);
   const [epubUrl, setEpubUrl] = useState<string | null>(null);
+  const [goFirstRequest, setGoFirstRequest] = useState(0);
 
   const { mutate: postSignalEvent } = usePostAiSignalEvent();
   const { data } = useSelectViewerPath(episodeId);
@@ -76,6 +77,7 @@ const Viewer = () => {
   }, [isScroll]);
 
   useEffect(() => {
+    setLocation(0);
     setEpubUrl(null);
   }, [episodeId]);
 
@@ -118,6 +120,10 @@ const Viewer = () => {
 
   const handleGoFirst = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isScroll) {
+      setGoFirstRequest((prev) => prev + 1);
+      return;
+    }
     setLocation(0);
   };
 
@@ -125,7 +131,11 @@ const Viewer = () => {
     const episode = data?.data;
     const productTitle = data?.data?.title;
 
-    if (!isAuthenticated && (episode?.nextEpisodes || 0) > 5) {
+    if (
+      !isAuthenticated &&
+      (episode?.nextEpisodePriceType === "paid" ||
+        (episode?.nextEpisodes || 0) > 5)
+    ) {
       withLoginRequired(() => undefined, {
         redirectPath: `/viewer/${episode?.nextEpisodeId}`,
       })?.();
@@ -183,15 +193,15 @@ const Viewer = () => {
     }
   };
 
-  const handleCommentState = () => {
-    const newCommentState = !commentState;
-    setCommentState(newCommentState);
-
-    // Always show nav when entering rating/comment page
-    if (newCommentState) {
-      setShowNav(true);
-    }
-  };
+  const handleCommentState = useCallback(() => {
+    setCommentState((prev) => {
+      const next = !prev;
+      if (next) {
+        setShowNav(true);
+      }
+      return next;
+    });
+  }, []);
 
   const handleNoticeState = () => {
     setNoticeState(!noticeState);
@@ -255,14 +265,12 @@ const Viewer = () => {
         />
       ) : (
         <>
-          <div
-            className={`relative ${showNav ? "" : ""} `}
-            onClick={handleToggleNav}
-          >
+          <div className={`relative ${showNav ? "" : ""} `}>
             {epubUrl && (
               <EpubViewer
                 location={location}
                 setLocation={setLocation}
+                goFirstRequest={goFirstRequest}
                 epubUrl={epubUrl}
                 coverImagePath={data?.data?.coverImagePath || null}
                 isScroll={isScroll}

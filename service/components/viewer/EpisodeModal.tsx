@@ -137,7 +137,10 @@ const EpisodeModal = ({ productId }: EpisodeModalProps) => {
                   viewCount={episode.countHit}
                   likeCount={episode.countLike || 0}
                   onClick={() => {
-                    if (!isAuthenticated && (episode.episodeNo || 0) > 5) {
+                    if (
+                      !isAuthenticated &&
+                      (episode.priceType === "paid" || (episode.episodeNo || 0) > 5)
+                    ) {
                       withLoginRequired(() => undefined, {
                         redirectPath: `/viewer/${episode.episodeId}`,
                       })?.();
