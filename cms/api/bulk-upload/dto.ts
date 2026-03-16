@@ -15,6 +15,7 @@ export interface IBulkUploadPreviewItem {
   first_open_ep: number;
   start_date: string;
   episode_count: number;
+  has_cover: boolean;
   account_exists: boolean;
   errors: string[];
 }
