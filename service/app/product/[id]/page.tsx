@@ -17,17 +17,22 @@ import ProductDetailWrapper from "@/components/productDetail/ProductDetailWrappe
 import ProductEpisodes from "@/components/productDetail/ProductEpisodes";
 import SameAuthorProducts from "@/components/productDetail/SameAuthorProducts";
 import SuggestProducts from "@/components/productDetail/SuggestProducts";
+import useAuthStore from "@/store/authStore";
 import useGiftBoxStore from "@/store/giftboxStore";
 import useToastStore from "@/store/toastStore";
 import { IEvaluation, IProduct } from "@/types";
 import { mergeKeysEvaluation } from "@/utils/common";
-import { getUser } from "@/utils/getUser";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function ProductDetail() {
-  const user = getUser();
+  const { user, isAuthenticated, accessToken } = useAuthStore((state) => ({
+    user: state.user,
+    isAuthenticated: state.isAuthenticated,
+    accessToken: state.accessToken,
+  }));
+  const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
   const router = useRouter();
   const pathname = usePathname();
   const pathSegments = pathname.split("/");
@@ -51,7 +56,7 @@ export default function ProductDetail() {
   // Check for rental tickets when user first enters the product detail page
   const { data: rentalTicketsData } = useCheckRentalTickets(
     productId,
-    !!user && !hasCheckedTickets
+    canUseUserScope && !hasCheckedTickets
   );
 
   // Always fetch content-based suggestions (추천1 내용비슷) for all users
@@ -63,12 +68,13 @@ export default function ProductDetail() {
   // Fetch cart-based suggestions only when logged in (추천3-장바구니)
   const { data: cartSuggestProducts } = useSelectSuggestProducts(
     productId,
-    "cart"
+    "cart",
+    canUseUserScope
   );
 
   const { data: episodes } = useSelectEpisodes(
     productId,
-    user?.userId || null,
+    canUseUserScope ? user?.userId || null : null,
     1,
     25,
     "episodeNo",
@@ -110,7 +116,7 @@ export default function ProductDetail() {
     };
   }, [data]);
 
-  const adultYn = user?.isOnAdult ? "Y" : "N";
+  const adultYn = user?.isOnAdult || user?.isAdult ? "Y" : "N";
   const { data: otherProducts } = useSelectAuthorProducts(
     productData?.authorId,
     productData?.productId,
@@ -134,14 +140,14 @@ export default function ProductDetail() {
 
   // Call API to add recent product if user is logged in
   useEffect(() => {
-    if (user && user.userRole && productId) {
+    if (canUseUserScope && user?.userRole && productId) {
       addRecentProductMutation.mutate(productId);
       queryClient.invalidateQueries({
         queryKey: ["getRecentProduct"],
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.userId, productId]);
+  }, [canUseUserScope, user?.userId, user?.userRole, productId]);
 
   useEffect(() => {
     const MAX_RECENT_PRODUCTS = 50;

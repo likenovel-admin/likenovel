@@ -4,7 +4,8 @@ import { IUseSelectSuggestProductsResponse } from "./dto";
 
 export const useSelectSuggestProducts = (
   productId: number,
-  nearby: "content" | "genre" | "bookmark" | "cart"
+  nearby: "content" | "genre" | "bookmark" | "cart",
+  enabled: boolean = true
 ) => {
   return useQuery<IUseSelectSuggestProductsResponse, unknown>({
     queryKey: ["selectSuggestProducts", productId, nearby],
@@ -14,6 +15,6 @@ export const useSelectSuggestProducts = (
       );
       return response.data;
     },
-    enabled: !!productId,
+    enabled: !!productId && enabled,
   });
 };

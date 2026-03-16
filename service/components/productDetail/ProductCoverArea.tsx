@@ -80,7 +80,8 @@ const ProductCoverArea = ({
     (user?.userRole === "CP" || user?.userRole === "editor") &&
     data?.productType !== "paid" &&
     data?.priceType !== "paid";
-  const isAuthor = user?.userId === data?.authorId;
+  const isAuthor =
+    !!user?.userId && !!data?.authorId && user.userId === data.authorId;
   const isAdminCPEditor =
     user?.userRole === "CP" ||
     user?.userRole === "editor" ||
