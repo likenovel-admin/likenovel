@@ -62,6 +62,7 @@ type FormState = {
   publicationType: PublicationType;
   rating: RatingType;
   statusCode: OngoingType;
+  openYn: "Y" | "N";
   primaryGenreId: string;
   subGenreId: string;
   uci: string;
@@ -83,6 +84,7 @@ const INITIAL_FORM: FormState = {
   publicationType: "serial",
   rating: "all",
   statusCode: "ongoing",
+  openYn: "N",
   primaryGenreId: "",
   subGenreId: "",
   uci: "",
@@ -361,6 +363,7 @@ export default function ProductUploadPage() {
           ? (productDetail.status_code as OngoingType)
           : "ongoing"
         : "end",
+      openYn: productDetail.openYn === "Y" ? "Y" : "N",
       primaryGenreId: productDetail.primary_genre_id
         ? String(productDetail.primary_genre_id)
         : "",
@@ -580,8 +583,8 @@ export default function ProductUploadPage() {
           ? null
           : undefined,
       ...(isEditMode
-        ? { open_yn: form.blindYn ? "N" : "Y", blind_yn: form.blindYn ? "Y" : "N" }
-        : { open_yn: "N", blind_yn: form.blindYn ? "Y" : "N" }),
+        ? { open_yn: form.blindYn ? "N" : form.openYn, blind_yn: form.blindYn ? "Y" : "N" }
+        : { open_yn: form.openYn, blind_yn: form.blindYn ? "Y" : "N" }),
     };
   };
 
@@ -1236,6 +1239,41 @@ export default function ProductUploadPage() {
                   작품 블라인드
                 </label>
               </div>
+
+              {isEditMode && !form.blindYn && (
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">공개 설정</label>
+                <div className="flex items-center gap-3">
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="openYn"
+                      checked={form.openYn === "Y"}
+                      onChange={() => setField("openYn", "Y")}
+                      className="h-4 w-4 text-[#4C63FF]"
+                    />
+                    <span className="text-sm">공개</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="openYn"
+                      checked={form.openYn === "N"}
+                      onChange={() => setField("openYn", "N")}
+                      className="h-4 w-4 text-[#4C63FF]"
+                    />
+                    <span className="text-sm">비공개</span>
+                  </label>
+                </div>
+              </div>
+              )}
+
+              {isEditMode && form.blindYn && (
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">공개 설정</label>
+                <p className="text-sm text-[#B42318]">블라인드 상태에서는 공개 설정을 변경할 수 없습니다.</p>
+              </div>
+              )}
 
               {isFreeProduct && (
                 <div>

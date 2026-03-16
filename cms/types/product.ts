@@ -26,6 +26,7 @@ export interface IProduct {
   price_type: string;
   product_type?: string | null;
   productType?: string | null;
+  openYn?: "Y" | "N";
   monopoly_yn: "Y" | "N";
   blind_yn: "Y" | "N";
   cp_author_profit: number;

@@ -31,6 +31,7 @@ export interface IProduct {
   paid_episode_no?: number | null;
   product_type?: string | null;
   productType?: string | null;
+  openYn?: "Y" | "N";
   cover_image_path?: string | null;
   coverImagePath?: string | null;
   thumbnail_file_path?: string | null;
