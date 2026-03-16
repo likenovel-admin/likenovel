@@ -134,7 +134,15 @@ export default function BulkUploadPage() {
           >
             {previewMutation.isPending ? "파싱 중..." : "미리보기"}
           </Button>
+          <a href="/bulk-upload-template.xlsx" download>
+            <Button variant="outline" type="button">
+              엑셀 양식 다운로드
+            </Button>
+          </a>
         </div>
+        <p className="text-xs text-[#6C7383] -mt-4 px-1">
+          ZIP 구조: <code className="bg-gray-100 px-1 rounded">작품제목/cover.jpg</code> (표지) + <code className="bg-gray-100 px-1 rounded">작품제목/작품명 1화.txt</code>, <code className="bg-gray-100 px-1 rounded">작품명 2화.txt</code> ...
+        </p>
 
         {/* 상태 바 */}
         {previewData.length > 0 && (
@@ -181,6 +189,7 @@ export default function BulkUploadPage() {
                   <TableHead className="w-[150px]">작품제목</TableHead>
                   <TableHead className="w-[80px]">1차장르</TableHead>
                   <TableHead className="w-[60px]">회차수</TableHead>
+                  <TableHead className="w-[50px]">표지</TableHead>
                   <TableHead className="w-[80px]">연재주기</TableHead>
                   <TableHead className="w-[50px]">최초공개</TableHead>
                   <TableHead className="w-[90px]">예약시작일</TableHead>
@@ -212,6 +221,11 @@ export default function BulkUploadPage() {
                       <TableCell className="truncate max-w-[150px]">{row.title}</TableCell>
                       <TableCell>{row.genre1}</TableCell>
                       <TableCell>{row.episode_count || "-"}</TableCell>
+                      <TableCell>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded ${row.has_cover ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                          {row.has_cover ? "O" : "X"}
+                        </span>
+                      </TableCell>
                       <TableCell>{row.schedule_days}</TableCell>
                       <TableCell>{row.first_open_ep}화</TableCell>
                       <TableCell>{row.start_date || "-"}</TableCell>
