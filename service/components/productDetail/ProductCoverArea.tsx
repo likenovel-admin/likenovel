@@ -88,29 +88,26 @@ const ProductCoverArea = ({
     user?.userRole === "admin";
 
   const handleGoBack = () => {
-    // If user is author, redirect to author home, otherwise go back
+    if (process.env.NODE_ENV === "development") {
+      logNavigationHistory();
+    }
+
+    const previousPath = findPreviousNonMatchingPath([
+      /^\/product\/\d+$/, // Match /product/{id}
+      /^\/viewer\/\d+$/, // Match /viewer/{id}
+    ]);
+
+    if (previousPath) {
+      router.push(previousPath);
+      return;
+    }
+
     if (isAuthor) {
       router.push("/product/author");
-    } else {
-      // Check if user came from viewer to product detail
-
-      // Log navigation history for debugging
-      if (process.env.NODE_ENV === "development") {
-        logNavigationHistory();
-      }
-
-      // Find the most recent path that is not /product/* or /viewer/*
-      const previousPath = findPreviousNonMatchingPath([
-        /^\/product\/\d+$/, // Match /product/{id}
-        /^\/viewer\/\d+$/, // Match /viewer/{id}
-      ]);
-
-      if (previousPath) {
-        router.push(previousPath);
-      } else {
-        router.back();
-      }
+      return;
     }
+
+    router.back();
   };
   const copyToClipboard = () => {
     navigator.clipboard

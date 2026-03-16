@@ -3,6 +3,7 @@ import { ISelectEpisodeObject } from "@/app/api/query/episode/dto";
 import { useGetAvailableTickets } from "@/app/api/query/product";
 import { useQueryClient } from "@tanstack/react-query";
 import { TYPE_MODAL } from "@/constants/common";
+import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
 import { INotice } from "@/types";
@@ -42,6 +43,7 @@ const ProductEpisodes = ({
   waitForFreeYn,
 }: Props) => {
   const router = useRouter();
+  const { withLoginRequired } = useAuthWrapper();
   const { user, accessToken, isAuthenticated } = useAuthStore((state) => ({
     user: state.user,
     accessToken: state.accessToken,
@@ -123,6 +125,13 @@ const ProductEpisodes = ({
   };
 
   const handleClickEpisode = (episode: ISelectEpisodeObject) => {
+    if (!isAuthenticated && (episode.episodeNo || 0) > 5) {
+      withLoginRequired(() => undefined, {
+        redirectPath: `/viewer/${episode.episodeId}`,
+      })?.();
+      return;
+    }
+
     // For paid episodes, check rental tickets
     if (
       episode.priceType === "paid" &&
@@ -338,7 +347,9 @@ const ProductEpisodes = ({
                       </div>
                     )}
                     <span className="text-14pxr text-dark-gray-300">
-                      {episode.episodeTextCount}자
+                      {!isAuthenticated && (episode.episodeNo || 0) > 5
+                        ? "로그인 필요"
+                        : `${episode.episodeTextCount}자`}
                     </span>
                   </div>
                 </div>
