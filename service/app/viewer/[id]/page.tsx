@@ -244,6 +244,7 @@ const Viewer = () => {
                 location={location}
                 setLocation={setLocation}
                 epubUrl={epubUrl}
+                coverImagePath={data?.data?.coverImagePath || null}
                 isScroll={isScroll}
                 showNav={showNav}
                 setShowNav={setShowNav}
