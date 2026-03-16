@@ -7,6 +7,7 @@ import {
 import Button from "@/components/common/Button";
 import { TYPE_MODAL } from "@/constants/common";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
+import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import { ProductInterestStatus } from "@/types";
@@ -46,10 +47,17 @@ const ButtonBottom = ({
   const { withLoginRequired } = useAuthWrapper();
   const { setToast } = useToastStore();
   const queryClient = useQueryClient();
+  const { user, isAuthenticated, accessToken } = useAuthStore((state) => ({
+    user: state.user,
+    isAuthenticated: state.isAuthenticated,
+    accessToken: state.accessToken,
+  }));
+  const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
 
   // Fetch available tickets for paid products
   const { data: ticketsData } = useGetAvailableTickets({
     product_id: isPaidProduct ? productId : undefined,
+    enabled: isPaidProduct ? canUseUserScope : false,
   });
 
   // Interest product mutation

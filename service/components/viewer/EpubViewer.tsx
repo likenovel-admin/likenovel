@@ -678,6 +678,40 @@ const EpubViewer = ({
     }
   }, [isScroll]);
 
+  const restoreVisibleRendition = useCallback(() => {
+    const rendition = renditionRef.current;
+    const wrapper = wrapperRef.current;
+    if (!rendition || !wrapper) return;
+
+    const width = wrapper.offsetWidth;
+    const height = wrapper.offsetHeight;
+    if (width <= 0 || height <= 0) return;
+
+    try {
+      lastResizeDimensionsRef.current = { width: 0, height: 0 };
+      rendition.resize(width, height);
+    } catch {
+      return;
+    }
+
+    const targetLocation =
+      rendition.location?.start?.cfi ??
+      (typeof location === "string" ? location : location || 0);
+
+    requestAnimationFrame(() => {
+      try {
+        rendition.display(targetLocation);
+      } catch {
+        // keep current frame if display restore fails
+      }
+
+      if (isScroll) {
+        placeHostAtEnd();
+      }
+      updateToggleButtons();
+    });
+  }, [isScroll, location, placeHostAtEnd, updateToggleButtons]);
+
   // When switching to scrolled mode, try placing host once
   useEffect(() => {
     if (isScroll) {
@@ -701,26 +735,34 @@ const EpubViewer = ({
     };
   }, [isScroll]);
 
-  // ========================= TAB VISIBILITY: 비활성 복귀 시 스크롤 복구 ==========
+  // ========================= TAB VISIBILITY: 비활성 복귀 시 렌더 복구 ==========
   useEffect(() => {
-    if (!isScroll) return;
-
-    const handleVisibilityChange = () => {
+    const handleResume = () => {
       if (document.visibilityState !== "visible") return;
       requestAnimationFrame(() => {
-        const container = getScrollContainer();
-        if (!container) return;
-        container.style.overflowY = "auto";
-        const pos = container.scrollTop;
-        container.scrollTop = pos + 1;
-        container.scrollTop = pos;
+        restoreVisibleRendition();
+
+        if (!isScroll) return;
+        requestAnimationFrame(() => {
+          const container = getScrollContainer();
+          if (!container) return;
+          container.style.overflowY = "auto";
+          const pos = container.scrollTop;
+          container.scrollTop = pos + 1;
+          container.scrollTop = pos;
+        });
       });
     };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [isScroll]);
+    document.addEventListener("visibilitychange", handleResume);
+    window.addEventListener("focus", handleResume);
+    window.addEventListener("pageshow", handleResume);
+    return () => {
+      document.removeEventListener("visibilitychange", handleResume);
+      window.removeEventListener("focus", handleResume);
+      window.removeEventListener("pageshow", handleResume);
+    };
+  }, [isScroll, restoreVisibleRendition]);
 
   useEffect(() => {
     if (isScroll && renditionRef.current && wrapperRef.current) {

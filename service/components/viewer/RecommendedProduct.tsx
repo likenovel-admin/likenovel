@@ -1,5 +1,6 @@
 import { useSelectSuggestProducts } from "@/app/api/query/suggest";
 import useMediaDevice from "@/hooks/useMediaDevice";
+import useAuthStore from "@/store/authStore";
 import { IProduct } from "@/types";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -14,10 +15,20 @@ interface Props {
 const RecommendedProduct = ({ productId, productType = "suggest" }: Props) => {
   const router = useRouter();
   const device = useMediaDevice();
+  const { user, isAuthenticated, accessToken } = useAuthStore((state) => ({
+    user: state.user,
+    isAuthenticated: state.isAuthenticated,
+    accessToken: state.accessToken,
+  }));
+  const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 6;
 
-  const { data: suggestData } = useSelectSuggestProducts(productId, "cart");
+  const { data: suggestData } = useSelectSuggestProducts(
+    productId,
+    "cart",
+    canUseUserScope
+  );
 
   if (!suggestData?.data || !suggestData.data.length) {
     return null;

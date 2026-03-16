@@ -470,9 +470,11 @@ export const useGetInfiniteEpisodeList = (params: IGetEpisodeProductParams) => {
 export const useGetAvailableTickets = ({
   episode_id,
   product_id,
+  enabled = true,
 }: {
   episode_id?: number;
   product_id?: number;
+  enabled?: boolean;
 }) => {
   return useQuery<IGetAvailableTicketsResponse>({
     queryKey: ["getEpisodeList", episode_id, product_id],
@@ -484,7 +486,7 @@ export const useGetAvailableTickets = ({
       );
       return response.data;
     },
-    enabled: !!product_id,
+    enabled: !!product_id && enabled,
   });
 };
 
