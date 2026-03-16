@@ -10,7 +10,7 @@ export interface IBlindProduct {
   product_id: number;
   title: string;
   user_id: number;
-  author_nickname: string;
+  author_name: string;
   primary_genre: string;
   blind_yn: string;
   created_date: string;

@@ -80,7 +80,7 @@ export default function BlindDataTable({
             <TableCell>{row.product_id}</TableCell>
             <TableCell className="max-w-[240px] truncate">{row.title}</TableCell>
             <TableCell>{row.user_id}</TableCell>
-            <TableCell>{row.author_nickname || "-"}</TableCell>
+            <TableCell>{row.author_name || "-"}</TableCell>
             <TableCell>{row.primary_genre || "-"}</TableCell>
             <TableCell>{row.episode_count ?? 0}</TableCell>
             <TableCell>
