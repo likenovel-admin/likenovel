@@ -125,7 +125,7 @@ const ProductEpisodes = ({
   };
 
   const handleClickEpisode = (episode: ISelectEpisodeObject) => {
-    if (!isAuthenticated && (episode.episodeNo || 0) > 5) {
+    if (!isAuthenticated && (episode.priceType === "paid" || (episode.episodeNo || 0) > 5)) {
       withLoginRequired(() => undefined, {
         redirectPath: `/viewer/${episode.episodeId}`,
       })?.();

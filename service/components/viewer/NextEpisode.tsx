@@ -38,7 +38,11 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
     const episode = data?.data;
     const productTitle = data?.data?.title;
 
-    if (!isAuthenticated && (episode?.nextEpisodes || 0) > 5) {
+    if (
+      !isAuthenticated &&
+      (episode?.nextEpisodePriceType === "paid" ||
+        (episode?.nextEpisodes || 0) > 5)
+    ) {
       withLoginRequired(() => undefined, {
         redirectPath: `/viewer/${episode?.nextEpisodeId}`,
       })?.();

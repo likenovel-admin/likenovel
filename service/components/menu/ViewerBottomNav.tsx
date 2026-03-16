@@ -34,7 +34,7 @@ const ViewerBottomNav = ({
   }));
   return (
     <div
-      className={`flex fixed bottom-0 left-0 w-full h-[60px] justify-between px-[16px] md:px-[120px] ${
+      className={`flex fixed bottom-0 left-0 z-50 w-full h-[60px] justify-between px-[16px] md:px-[120px] ${
         showNav
           ? "bg-white"
           : settings.theme === "dark"
