@@ -29,18 +29,22 @@ git -C likenovel-service-api/likenovel-service-api status -u  # backend submodul
 
 백엔드 서브모듈에 변경이 있는 경우에만 실행:
 
+**dev 배포:**
 ```bash
 cd likenovel-service-api/likenovel-service-api
-
-# main push
 git push origin main
-
-# 대상 브랜치로 머지 & push
-git checkout $ARGUMENTS
+git checkout dev
 git merge main --no-edit
-git push origin $ARGUMENTS
+git push origin dev
+git checkout main
+```
 
-# main으로 복귀
+**prod 배포 (dev → prod):**
+```bash
+cd likenovel-service-api/likenovel-service-api
+git checkout prod
+git merge dev --no-edit    # dev에서 검증된 코드만 운영으로
+git push origin prod
 git checkout main
 ```
 
@@ -49,18 +53,22 @@ git checkout main
 
 ## 3단계: 프론트엔드 (root repo) 배포
 
+**dev 배포:**
 ```bash
 cd /home/hongsan/work/likenovel
-
-# main push
 git push origin main
-
-# 대상 브랜치로 머지 & push
-git checkout $ARGUMENTS
+git checkout dev
 git merge main --no-edit
-git push origin $ARGUMENTS
+git push origin dev
+git checkout main
+```
 
-# main으로 복귀
+**prod 배포 (dev → prod):**
+```bash
+cd /home/hongsan/work/likenovel
+git checkout prod
+git merge dev --no-edit    # dev에서 검증된 코드만 운영으로
+git push origin prod
 git checkout main
 ```
 
