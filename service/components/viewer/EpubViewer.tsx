@@ -1,5 +1,6 @@
 import { usePostAiSignalEvent } from "@/app/api/query/recommendation";
 import Spinner from "@/components/common/Spinner";
+import { DEFAULT_PRODUCT_IMAGE } from "@/constants/common";
 import LastPage from "@/components/viewer/LastPage";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useAuthStore from "@/store/authStore";
@@ -62,6 +63,7 @@ ArrowIcon.displayName = "ArrowIcon";
 
 interface Props {
   epubUrl: string;
+  coverImagePath?: string | null;
   isScroll: boolean;
   location: string | number;
   setLocation: (location: string | number) => void;
@@ -75,6 +77,7 @@ interface Props {
 
 const EpubViewer = ({
   epubUrl,
+  coverImagePath,
   isScroll,
   location,
   setLocation,
@@ -95,6 +98,7 @@ const EpubViewer = ({
   const [iconColor, setIconColor] = useState("var(--foreground-rgb)");
   const [progress, setProgress] = useState(0);
   const [epubReady, setEpubReady] = useState(false);
+  const resolvedCoverImagePath = (coverImagePath || DEFAULT_PRODUCT_IMAGE).trim();
 
   const renditionRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -447,12 +451,47 @@ const EpubViewer = ({
       const doc = content.window?.document;
       if (!doc) return;
 
-      const coverImages = doc.querySelectorAll(
+      const coverImages = Array.from(
+        doc.querySelectorAll(
         'img[src*="cover"], img[alt*="cover"], img[class*="cover"], .cover img, .cover-image, .titlepage img, .frontcover img'
+        )
       );
 
-      coverImages.forEach((img) => {
+      const sectionIndex =
+        (content as any)?.section?.index ?? (content as any)?.index ?? null;
+      const runtimeCoverImage = doc.querySelector<HTMLImageElement>(
+        ".epub-runtime-cover img"
+      );
+
+      let coverCandidates = coverImages as HTMLElement[];
+
+      if (coverCandidates.length === 0 && sectionIndex === 0 && resolvedCoverImagePath) {
+        let runtimeCover = doc.querySelector<HTMLDivElement>(".epub-runtime-cover");
+        if (!runtimeCover) {
+          runtimeCover = doc.createElement("div");
+          runtimeCover.className = "epub-runtime-cover";
+          const runtimeImage = doc.createElement("img");
+          runtimeImage.src = resolvedCoverImagePath;
+          runtimeImage.alt = "표지";
+          runtimeCover.appendChild(runtimeImage);
+          doc.body.prepend(runtimeCover);
+        } else if (runtimeCoverImage) {
+          runtimeCoverImage.src = resolvedCoverImagePath;
+        }
+        coverCandidates = Array.from(
+          doc.querySelectorAll(".epub-runtime-cover img")
+        ) as HTMLElement[];
+      }
+
+      coverCandidates.forEach((img) => {
         const imgEl = img as HTMLElement;
+        if (
+          resolvedCoverImagePath &&
+          img instanceof HTMLImageElement &&
+          img.src !== resolvedCoverImagePath
+        ) {
+          img.src = resolvedCoverImagePath;
+        }
 
         let toggleButton =
           img.parentElement?.querySelector<HTMLButtonElement>(
@@ -529,7 +568,7 @@ const EpubViewer = ({
         doc.body.setAttribute("data-cover-toggle-setup", "true");
       }
     });
-  }, [isScroll, setSettings, settings.hideImageCover]);
+  }, [isScroll, resolvedCoverImagePath, setSettings, settings.hideImageCover]);
 
   // ========================= THEME =========================
 
