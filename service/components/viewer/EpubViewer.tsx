@@ -1066,10 +1066,34 @@ const EpubViewer = ({
                   doc.head.appendChild(style);
 
                   // 깨진 XHTML cover 페이지 복구: parsererror가 있으면
-                  // body를 API coverImagePath로 교체
+                  // body를 API coverImagePath로 교체 (정상 EPUB 표지와 동일한 뷰포트 맞춤)
                   const parserError = doc.querySelector("parsererror");
                   if (parserError && resolvedCoverImagePath) {
-                    doc.body.innerHTML = `<div style="text-align:center"><img src="${resolvedCoverImagePath}" alt="cover" style="display:block;margin:0 auto;max-width:100%"/></div>`;
+                    doc.body.innerHTML = `
+                      <div style="
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        width:100%;
+                        height:100vh;
+                        margin:0;
+                        padding:0;
+                        overflow:hidden;
+                      ">
+                        <img
+                          src="${resolvedCoverImagePath}"
+                          alt="cover"
+                          style="
+                            display:block;
+                            max-width:100%;
+                            max-height:100vh;
+                            object-fit:contain;
+                          "
+                        />
+                      </div>`;
+                    doc.body.style.margin = "0";
+                    doc.body.style.padding = "0";
+                    doc.body.style.overflow = "hidden";
                   } else if (parserError) {
                     parserError.style.display = "none";
                   }
