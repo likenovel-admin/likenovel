@@ -104,6 +104,10 @@ const data = {
           url: "/products/distribution",
         },
         {
+          title: "작품 블라인드",
+          url: "/products/blind",
+        },
+        {
           title: "작품 평가",
           url: "/products/product-evaluation",
         },
