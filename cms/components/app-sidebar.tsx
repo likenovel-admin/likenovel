@@ -119,6 +119,10 @@ const data = {
           title: "AI 온보딩 작품",
           url: "/products/ai-onboarding",
         },
+        {
+          title: "일괄 작품 업로드",
+          url: "/products/bulk-upload",
+        },
       ],
     },
     {
