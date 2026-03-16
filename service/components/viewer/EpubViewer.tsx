@@ -1025,7 +1025,9 @@ const EpubViewer = ({
                       font-style:normal;
                       src:url("/fonts/PretendardVariable.woff2") format("woff2");
                     }
-                    ${isScroll ? `
+                    ${isScroll ? (
+                      device === "mobile"
+                        ? `
                     html, body {
                       margin: 0 !important;
                       padding: 0 24px !important;
@@ -1033,7 +1035,26 @@ const EpubViewer = ({
                       height: auto !important;
                       box-sizing: border-box !important;
                     }
-                    ` : `
+                    `
+                        : `
+                    html {
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      min-height: auto !important;
+                      height: auto !important;
+                      box-sizing: border-box !important;
+                    }
+                    body {
+                      margin: 0 auto !important;
+                      padding: 0 24px !important;
+                      min-height: auto !important;
+                      height: auto !important;
+                      box-sizing: border-box !important;
+                      width: 100% !important;
+                      max-width: 760px !important;
+                    }
+                    `
+                    ) : `
                     body {
                       padding: 0 16px !important;
                       box-sizing: border-box !important;
