@@ -116,6 +116,8 @@ const EpubViewer = ({
   const lastPageHostRef = useRef<HTMLElement | null>(null);
   const epubReadyTimerRef = useRef<NodeJS.Timeout | null>(null);
   const epubReadyDoneRef = useRef(false);
+  const initialRelocatedDoneRef = useRef(false);
+  const initialRenderableReadyRef = useRef(false);
   const latestLocationRef = useRef<string | number>(location);
   const prevIsScrollRef = useRef(isScroll);
   const settingsRef = useRef(settings);
@@ -308,6 +310,10 @@ const EpubViewer = ({
       return ["95%", "85%", "73%", "69%", "65%"];
     }
   }, [device]);
+  const desktopScrolledMaxWidthMap = useMemo(
+    () => ["1000px", "920px", "840px", "760px", "680px"],
+    []
+  );
 
   const epubOptions = useMemo(
     () =>
@@ -327,6 +333,8 @@ const EpubViewer = ({
     setShowLastPage(false);
     setEpubReady(false);
     epubReadyDoneRef.current = false;
+    initialRelocatedDoneRef.current = false;
+    initialRenderableReadyRef.current = false;
     showLastPageRef.current = false;
     lastResizeDimensionsRef.current = { width: 0, height: 0 };
     if (epubReadyTimerRef.current) {
@@ -566,6 +574,10 @@ const EpubViewer = ({
 
         // Only show in scrolled mode
         toggleButton.style.display = isScroll ? "block" : "none";
+        toggleButton.style.margin =
+          isScroll && settings.hideImageCover && showNav
+            ? "78px auto 10px"
+            : "10px auto";
 
         if (isScroll) {
           imgEl.style.display = settings.hideImageCover ? "none" : "block";
@@ -602,7 +614,7 @@ const EpubViewer = ({
         doc.body.setAttribute("data-cover-toggle-setup", "true");
       }
     });
-  }, [isScroll, resolvedCoverImagePath, setSettings, settings.hideImageCover]);
+  }, [isScroll, resolvedCoverImagePath, setSettings, settings.hideImageCover, showNav]);
 
   // ========================= THEME =========================
 
@@ -655,8 +667,12 @@ const EpubViewer = ({
       }
 
       const marginSize = marginSizeMap[currentSettings.marginSize - 1];
-      if (marginSize && wrapperRef.current) {
-        wrapperRef.current.style.width = marginSize;
+      if (wrapperRef.current) {
+        if (isScroll && device !== "mobile") {
+          wrapperRef.current.style.removeProperty("width");
+        } else if (marginSize) {
+          wrapperRef.current.style.width = marginSize;
+        }
       }
 
       const contents = rendition.getContents?.();
@@ -673,13 +689,24 @@ const EpubViewer = ({
         doc.body.style.backgroundColor = currentBgColor;
         doc.body.style.color = currentContentTextColor;
 
+        if (isScroll && device !== "mobile") {
+          const maxWidth =
+            desktopScrolledMaxWidthMap[currentSettings.marginSize - 1] ||
+            desktopScrolledMaxWidthMap[1];
+          doc.body.style.setProperty("max-width", maxWidth, "important");
+          doc.body.style.setProperty("margin", "0 auto", "important");
+        } else {
+          doc.body.style.removeProperty("max-width");
+          doc.body.style.removeProperty("margin");
+        }
+
         doc.querySelectorAll("p").forEach((paragraph: Element) => {
           (paragraph as HTMLElement).style.textIndent =
             currentSettings.useParagraphIndent ? "1em" : "0";
         });
       });
     },
-    [marginSizeMap]
+    [device, isScroll, marginSizeMap, desktopScrolledMaxWidthMap]
   );
 
   useEffect(() => {
@@ -758,6 +785,32 @@ const EpubViewer = ({
       container.appendChild(host);
     }
   }, [isScroll]);
+
+  const markEpubReady = useCallback(() => {
+    if (epubReadyDoneRef.current) return;
+    epubReadyDoneRef.current = true;
+    if (epubReadyTimerRef.current) {
+      clearTimeout(epubReadyTimerRef.current);
+      epubReadyTimerRef.current = null;
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setEpubReady(true);
+      });
+    });
+  }, []);
+
+  const hasRenderableText = useCallback((doc: Document) => {
+    const text = (doc.body?.textContent || "").replace(/\s+/g, "");
+    return text.length > 0;
+  }, []);
+
+  const tryMarkScrolledReady = useCallback(() => {
+    if (epubReadyDoneRef.current) return;
+    if (!initialRelocatedDoneRef.current) return;
+    if (!initialRenderableReadyRef.current) return;
+    markEpubReady();
+  }, [markEpubReady]);
 
   const restoreVisibleRendition = useCallback(() => {
     const rendition = renditionRef.current;
@@ -993,7 +1046,7 @@ const EpubViewer = ({
           style={{
             backgroundColor: showLastPage ? bgColor : "transparent",
           }}
-          className="relative h-screen"
+          className="relative h-screen w-full"
         >
           {/* MAIN EPUB AREA */}
           <div
@@ -1057,16 +1110,10 @@ const EpubViewer = ({
                     if (needsHostPlacement(container)) {
                       placeHostAtEnd();
                     }
-                    // rendered에서도 타이머 리셋 — resize/placeHost가 스크롤을 밀 수 있음
-                    if (!epubReadyDoneRef.current) {
-                      if (epubReadyTimerRef.current) {
-                        clearTimeout(epubReadyTimerRef.current);
-                      }
+                    if (!epubReadyDoneRef.current && !epubReadyTimerRef.current) {
                       epubReadyTimerRef.current = setTimeout(() => {
-                        _rendition.display(0);
-                        epubReadyDoneRef.current = true;
-                        setEpubReady(true);
-                      }, 800);
+                        markEpubReady();
+                      }, 2000);
                     }
                   }
                 });
@@ -1113,6 +1160,9 @@ const EpubViewer = ({
                   // Only used in paginated mode
                   if (!isScroll) {
                     setAtBookEnd(isLastSection && isLastPageInSection);
+                  } else if (!epubReadyDoneRef.current) {
+                    initialRelocatedDoneRef.current = true;
+                    tryMarkScrolledReady();
                   }
 
                   updateProgress();
@@ -1222,6 +1272,10 @@ const EpubViewer = ({
 
                   if (isScroll) {
                     placeHostAtEnd();
+                    if (!epubReadyDoneRef.current && hasRenderableText(doc)) {
+                      initialRenderableReadyRef.current = true;
+                      tryMarkScrolledReady();
+                    }
                   } else if (!epubReadyDoneRef.current) {
                     epubReadyDoneRef.current = true;
                     setEpubReady(true);

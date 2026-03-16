@@ -1,6 +1,6 @@
 # 브랜칭 & 배포 & 인프라 가이드
 
-Last updated: 2026-03-12
+Last updated: 2026-03-17
 
 ---
 
@@ -8,15 +8,18 @@ Last updated: 2026-03-12
 
 ```
 main (개발 기준)
- ├─► dev   push → 스테이징(*.likenovel.dev) 자동 배포
- └─► prod  push → 운영(*.likenovel.net) 자동 배포
+ └─► dev   push → 스테이징(*.likenovel.dev) 자동 배포
+      └─► prod  push → 운영(*.likenovel.net) 자동 배포
 ```
 
 | 브랜치 | 역할 | 자동 트리거 |
 |--------|------|-------------|
 | `main` | 개발 통합 브랜치. 모든 작업의 기준점. | 없음 (코드 저장소) |
 | `dev` | 스테이징 배포 트리거. main을 머지하면 CI/CD 실행. | `docker-dev.yml`, `deploy_be_actions_dev.yml` |
-| `prod` | 운영 배포 트리거. main을 머지하면 CI/CD 실행. | `docker-prod.yml`, `deploy_be_actions.yml` |
+| `prod` | 운영 배포 트리거. **dev를 머지하면** CI/CD 실행. | `docker-prod.yml`, `deploy_be_actions.yml` |
+
+> **흐름: `main` → `dev` (스테이징 검증) → `prod` (운영 배포)**
+> prod에는 dev에서 검증된 코드만 올린다. main → prod 직접 머지 금지.
 
 ---
 
@@ -245,10 +248,10 @@ git checkout main  # 작업 브랜치 복귀
 
 ```bash
 git checkout prod
-git merge main
+git merge dev --no-edit   # dev에서 검증된 코드만 운영으로
 git push origin prod
 git checkout main
-# → ln-web SSH → docker pull + 재시작
+# → docker-prod.yml: build → ECR push → ln-web SSH → compose pull/up
 ```
 
 ### 백엔드 → 스테이징
@@ -278,8 +281,8 @@ git push origin main
 ```bash
 cd likenovel-service-api/likenovel-service-api
 git checkout prod
-git merge main
-git push origin prod  # → CodeDeploy 자동 배포 (버전 bump 포함)
+git merge dev --no-edit   # dev에서 검증된 코드만 운영으로
+git push origin prod      # → CodeDeploy 자동 배포 (버전 bump 포함)
 git checkout main
 cd ../..
 ```
