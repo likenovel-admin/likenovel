@@ -187,13 +187,17 @@ instance.interceptors.response.use(
           }
         } catch (_) {}
 
-        // 재발급 실패 → 로그인 리다이렉트
+        // 재발급 실패 → 로그아웃 후 로그인 리다이렉트
         clearStaleAuth();
         const currentUrl = encodeURIComponent(window.location.pathname);
         window.location.href = `/login?redirect=${currentUrl}`;
+        // 리다이렉트 중 컴포넌트에 에러 전파 방지
+        return new Promise(() => {});
       } else {
-        // refresh token 없음 → stale 토큰 정리만 하고 리다이렉트 안 함
+        // refresh token 없음 → stale 토큰 정리 후 비로그인으로 페이지 리로드
         clearStaleAuth();
+        window.location.reload();
+        return new Promise(() => {});
       }
     }
     return Promise.reject(error);
