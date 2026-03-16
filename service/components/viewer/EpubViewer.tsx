@@ -895,9 +895,7 @@ const EpubViewer = ({
             style={{ display: showLastPage ? "none" : "block" }}
           >
             <ReactReader
-              key={`${epubUrl}-${isScroll ? "scrolled" : "paginated"}-${
-                settings.marginSize
-              }-${settings.theme}`}
+              key={`${epubUrl}-${isScroll ? "scrolled" : "paginated"}`}
               url={epubUrl}
               location={location}
               locationChanged={(loc) => {
