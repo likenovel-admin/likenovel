@@ -805,12 +805,34 @@ const EpubViewer = ({
     return text.length > 0;
   }, []);
 
+  const hasRenderableLayout = useCallback((doc: Document) => {
+    const body = doc.body;
+    if (!body) return false;
+    const rect = body.getBoundingClientRect();
+    return body.scrollHeight > 0 && rect.height > 0;
+  }, []);
+
   const tryMarkScrolledReady = useCallback(() => {
     if (epubReadyDoneRef.current) return;
     if (!initialRelocatedDoneRef.current) return;
     if (!initialRenderableReadyRef.current) return;
     markEpubReady();
   }, [markEpubReady]);
+
+  const scheduleScrolledReadyCheck = useCallback(
+    (doc: Document | null | undefined) => {
+      if (!doc || epubReadyDoneRef.current) return;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (epubReadyDoneRef.current) return;
+          if (!hasRenderableText(doc) || !hasRenderableLayout(doc)) return;
+          initialRenderableReadyRef.current = true;
+          tryMarkScrolledReady();
+        });
+      });
+    },
+    [hasRenderableLayout, hasRenderableText, tryMarkScrolledReady]
+  );
 
   const restoreVisibleRendition = useCallback(() => {
     const rendition = renditionRef.current;
@@ -1049,10 +1071,7 @@ const EpubViewer = ({
           className="relative h-screen w-full"
         >
           {/* MAIN EPUB AREA */}
-          <div
-            className="w-full h-full"
-            style={{ display: showLastPage ? "none" : "block" }}
-          >
+          <div className="w-full h-full">
             <ReactReader
               key={`${epubUrl}-${isScroll ? "scrolled" : "paginated"}`}
               url={epubUrl}
@@ -1162,6 +1181,14 @@ const EpubViewer = ({
                     setAtBookEnd(isLastSection && isLastPageInSection);
                   } else if (!epubReadyDoneRef.current) {
                     initialRelocatedDoneRef.current = true;
+                    const renderedContents = _rendition.getContents?.();
+                    if (Array.isArray(renderedContents)) {
+                      renderedContents.forEach((content: Contents) =>
+                        scheduleScrolledReadyCheck(
+                          (content as any).document || content.window?.document
+                        )
+                      );
+                    }
                     tryMarkScrolledReady();
                   }
 
@@ -1272,10 +1299,7 @@ const EpubViewer = ({
 
                   if (isScroll) {
                     placeHostAtEnd();
-                    if (!epubReadyDoneRef.current && hasRenderableText(doc)) {
-                      initialRenderableReadyRef.current = true;
-                      tryMarkScrolledReady();
-                    }
+                    scheduleScrolledReadyCheck(doc);
                   } else if (!epubReadyDoneRef.current) {
                     epubReadyDoneRef.current = true;
                     setEpubReady(true);
@@ -1287,9 +1311,11 @@ const EpubViewer = ({
 
           {/* PAGINATED LastPage AREA */}
           <div
-            className={`w-full h-full ${!isScroll ? "overflow-y-auto" : ""}`}
+            className={`absolute inset-0 z-30 w-full h-full ${
+              !isScroll ? "overflow-y-auto" : ""
+            }`}
             style={{
-              display: showLastPage ? "block" : "none",
+              display: !isScroll && showLastPage ? "block" : "none",
               backgroundColor: bgColor,
             }}
           >
@@ -1303,7 +1329,7 @@ const EpubViewer = ({
 
           {/* PAGINATED ARROWS */}
           <div
-            className="absolute inset-y-1/2 left-0 right-0 flex justify-between items-center px-4"
+            className="absolute inset-y-1/2 left-0 right-0 z-40 flex justify-between items-center px-4"
             style={{ display: isScroll ? "none" : "flex" }}
           >
             <ArrowIcon
