@@ -1,5 +1,4 @@
 import { instance } from "@/app/api/axios";
-import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import PortOne, { Entity } from "@portone/browser-sdk/v2";
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,8 +22,6 @@ const CASH_CHARGE_LOADING_MESSAGE = "결제 정보를 불러오는 중입니다.
 const CASH_CHARGE_STOP_MESSAGE = "캐시충전을 중지했습니다.";
 const CASH_CHARGE_FAILED_MESSAGE = "캐시충전 결제를 실패했습니다.";
 const CASH_CHARGE_SUCCESS_MESSAGE = "캐시를 충전했습니다.";
-const CASH_CHARGE_SUCCESS_BUT_NEED_TO_CONFIRM_MESSAGE =
-  "캐시를 충전했습니다. 충전 금액을 확인하세요.";
 
 /*
 <고객 정보>
@@ -65,7 +62,6 @@ const CashCharge = () => {
   });
 
   const { setToast } = useToastStore();
-  const { setModal } = useModalStore();
   const queryClient = useQueryClient();
   const { data: userInfo } = useSelectUserInfo();
 
@@ -122,9 +118,10 @@ const CashCharge = () => {
       },
       redirectUrl: `${process.env.NEXT_PUBLIC_WWW_SERVER_URI}/order/payment/complete`, // (모바일)결제 완료 후 이동할 페이지
       // redirectUrl: `http://localhost:3000/order/payment/complete`,   // (모바일)결제 완료 후 이동할 페이지
-      ...(payMethod === "EASY_PAY" && {
+      ...((payMethod === "KAKAOPAY" || payMethod === "TOSSPAY") && {
+        payMethod: "EASY_PAY" as Entity.PayMethod,
         easyPay: {
-          easyPayProvider: "TOSSPAY" as Entity.EasyPayProvider,
+          easyPayProvider: payMethod as Entity.EasyPayProvider,
           availablePayMethods: ["CARD"] as Entity.EasyPayPaymentMethod[],
         },
       }),
@@ -169,70 +166,28 @@ const CashCharge = () => {
       console.log("completeResponse:", completeResponse);
 
       if (completeResponse?.data?.payment?.status === "PAID") {
-        const paymentComplete = await completeResponse.data;
-
         // Invalidate queries to refresh user data after successful payment
         queryClient.invalidateQueries({ queryKey: ["selectUserInfo"] });
         queryClient.invalidateQueries({ queryKey: ["selectUserCash"] });
 
-        setPaymentStatus({
-          status:
-            paymentComplete?.payment?.status ?? "SUCCESS_BUT_NEED_TO_CONFIRM",
-        });
-      } else {
-        // console.log("paymentComplete_response_not_ok:", await completeResponse.text())
-        setPaymentStatus({
-          status: "FAILED",
-          // message: await completeResponse.text(),
-          message: "결제를 실패했습니다.",
-        });
-      }
-      handleOpenModal(e);
-    }
-  };
-
-  const isWaitingPayment = paymentStatus.status !== "IDLE";
-
-  const handleClose = () =>
-    setPaymentStatus({
-      status: "IDLE", //결제 최초 상태
-    });
-
-  const handleOpenModal = (e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    // const handleConfirm = async () => {
-    //   try {
-    if (paymentStatus.status === "FAILED") {
-      setToast({
-        message: CASH_CHARGE_FAILED_MESSAGE,
-        type: "error",
-      });
-    } else {
-      if (paymentStatus.status === "SUCCESS_BUT_NEED_TO_CONFIRM") {
-        setToast({
-          message: CASH_CHARGE_SUCCESS_BUT_NEED_TO_CONFIRM_MESSAGE,
-          type: "success",
-        });
-      } else {
+        setPaymentStatus({ status: "PAID" });
         setToast({
           message: CASH_CHARGE_SUCCESS_MESSAGE,
           type: "success",
         });
+      } else {
+        setPaymentStatus({
+          status: "FAILED",
+          message: "결제를 실패했습니다.",
+        });
+        setToast({
+          message: CASH_CHARGE_FAILED_MESSAGE,
+          type: "error",
+        });
       }
     }
-    // } catch (error) {}
-    // };
-
-    // setModal(
-    //   <WarningModal
-    //     content={
-    //       <span className="text-17pxr font-bold">결제가 완료되었습니다</span>
-    //     }
-    //     onConfirm={handleConfirm}
-    //   />
-    // );
   };
+
 
   return (
     <div className="w-full">
