@@ -4,6 +4,7 @@ import useToastStore from "@/store/toastStore";
 import PortOne, { Entity } from "@portone/browser-sdk/v2";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useSelectUserInfo } from "@/app/api/query/mypage/user";
 import CashHowToUse from "./CashHowToUse";
 import ChargeList from "./ChargeList";
 import PaymentMethod from "./PaymentMethod";
@@ -66,6 +67,7 @@ const CashCharge = () => {
   const { setToast } = useToastStore();
   const { setModal } = useModalStore();
   const queryClient = useQueryClient();
+  const { data: userInfo } = useSelectUserInfo();
 
   // useEffect(() => {
   //   async function loadItem() {
@@ -114,9 +116,9 @@ const CashCharge = () => {
         item: { id: item.id, name: item.name, price: item.price },
       },
       customer: {
-        fullName: "테스트",
-        phoneNumber: "010-0000-0000",
-        email: "test@test.com",
+        fullName: userInfo?.data?.userName || userInfo?.data?.userNickname || "이용자",
+        ...(userInfo?.data?.mobileNo && { phoneNumber: userInfo.data.mobileNo }),
+        email: userInfo?.data?.email || "",
       },
       redirectUrl: `${process.env.NEXT_PUBLIC_WWW_SERVER_URI}/order/payment/complete`, // (모바일)결제 완료 후 이동할 페이지
       // redirectUrl: `http://localhost:3000/order/payment/complete`,   // (모바일)결제 완료 후 이동할 페이지

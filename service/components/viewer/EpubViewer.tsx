@@ -124,6 +124,10 @@ const EpubViewer = ({
   const bgColorRef = useRef(themeColors[settings.theme] || "#f9f8f8");
   const contentTextColorRef = useRef(contentTextColor);
   const coverImagePathRef = useRef(resolvedCoverImagePath);
+  const parserErrorFallbackImageUrlRef = useRef<string | null>(null);
+  const parserErrorFallbackImagePromiseRef = useRef<Promise<string | null> | null>(
+    null
+  );
 
   const device = useMediaDevice();
   const { isAuthenticated } = useAuthStore((s) => ({ isAuthenticated: s.isAuthenticated }));
@@ -436,6 +440,11 @@ const EpubViewer = ({
   }, [settings, bgColor, contentTextColor, resolvedCoverImagePath]);
 
   useEffect(() => {
+    parserErrorFallbackImageUrlRef.current = null;
+    parserErrorFallbackImagePromiseRef.current = null;
+  }, [epubUrl]);
+
+  useEffect(() => {
     latestLocationRef.current = location;
   }, [location]);
 
@@ -525,15 +534,24 @@ const EpubViewer = ({
 
       coverCandidates.forEach((img) => {
         const imgEl = img as HTMLElement;
+        const isParserErrorCover = imgEl.classList.contains(
+          "ln-parsererror-cover-image"
+        );
         // cross-frame: iframe 내부 요소는 메인 윈도우의 HTMLImageElement와 다른 생성자이므로
         // instanceof 대신 tagName으로 체크
         if (
+          !isParserErrorCover &&
           resolvedCoverImagePath &&
           imgEl.tagName === 'IMG' &&
           (imgEl as HTMLImageElement).src !== resolvedCoverImagePath
         ) {
           (imgEl as HTMLImageElement).src = resolvedCoverImagePath;
         }
+
+        imgEl.style.width = "100%";
+        imgEl.style.maxWidth = "100%";
+        imgEl.style.height = "auto";
+        imgEl.style.objectFit = "";
 
         let toggleButton =
           img.parentElement?.querySelector<HTMLButtonElement>(
@@ -584,12 +602,14 @@ const EpubViewer = ({
           imgEl.style.margin = "0 auto";
           if (imgEl.parentElement) {
             imgEl.parentElement.style.textAlign = "center";
+            imgEl.parentElement.style.width = "100%";
           }
         } else {
           imgEl.style.display = "";
           imgEl.style.margin = "";
           if (imgEl.parentElement) {
             imgEl.parentElement.style.textAlign = "";
+            imgEl.parentElement.style.width = "";
           }
         }
 
@@ -615,6 +635,119 @@ const EpubViewer = ({
       }
     });
   }, [isScroll, resolvedCoverImagePath, setSettings, settings.hideImageCover, showNav]);
+
+  const getParserErrorFallbackImageUrl = useCallback(
+    async (rendition: Rendition): Promise<string | null> => {
+      if (parserErrorFallbackImageUrlRef.current) {
+        return parserErrorFallbackImageUrlRef.current;
+      }
+      if (parserErrorFallbackImagePromiseRef.current) {
+        return parserErrorFallbackImagePromiseRef.current;
+      }
+
+      const promise = (async () => {
+        const book = (rendition as any)?.book;
+        if (!book) return null;
+
+        try {
+          if (book.ready) {
+            await book.ready;
+          }
+        } catch {
+          // fall through: manifest access is best-effort
+        }
+
+        const manifest =
+          book.packaging?.manifest ||
+          (typeof book.loaded?.manifest?.then === "function"
+            ? await book.loaded.manifest.catch(() => null)
+            : null);
+
+        if (!manifest || typeof manifest !== "object") {
+          return null;
+        }
+
+        const imageItems = Object.values(manifest).filter((item: any) => {
+          return (
+            item &&
+            typeof item.href === "string" &&
+            typeof item.type === "string" &&
+            item.type.startsWith("image/")
+          );
+        }) as Array<{ href: string }>;
+
+        if (imageItems.length === 0) {
+          return null;
+        }
+
+        const coverPath = book.packaging?.coverPath;
+        const targetHref =
+          (coverPath &&
+            imageItems.find((item) => item.href === coverPath)?.href) ||
+          imageItems[0].href;
+
+        if (!targetHref) {
+          return null;
+        }
+
+        const resolvedHref =
+          typeof book.resolve === "function" ? book.resolve(targetHref) : targetHref;
+
+        if (typeof book.resources?.createUrl === "function") {
+          const createdUrl = await book.resources.createUrl(resolvedHref);
+          if (typeof createdUrl === "string" && createdUrl) {
+            return createdUrl;
+          }
+        }
+
+        if (typeof book.archive?.createUrl === "function") {
+          const createdUrl = await book.archive.createUrl(resolvedHref);
+          if (typeof createdUrl === "string" && createdUrl) {
+            return createdUrl;
+          }
+        }
+
+        return resolvedHref || null;
+      })()
+        .then((url) => {
+          parserErrorFallbackImageUrlRef.current = url;
+          return url;
+        })
+        .finally(() => {
+          parserErrorFallbackImagePromiseRef.current = null;
+        });
+
+      parserErrorFallbackImagePromiseRef.current = promise;
+      return promise;
+    },
+    []
+  );
+
+  const applyParserErrorFallbackImage = useCallback(
+    (doc: Document, imageUrl: string) => {
+      if (!doc.body) return;
+
+      const wrapper = doc.createElement("div");
+      wrapper.className = "ln-parsererror-cover";
+      wrapper.style.width = "100%";
+      wrapper.style.textAlign = "center";
+
+      const img = doc.createElement("img");
+      img.src = imageUrl;
+      img.alt = "cover";
+      img.className = "ln-parsererror-cover-image";
+      img.style.display = "block";
+      img.style.width = "100%";
+      img.style.maxWidth = "100%";
+      img.style.height = "auto";
+      img.style.margin = "0 auto";
+
+      wrapper.appendChild(img);
+      doc.body.innerHTML = "";
+      doc.body.appendChild(wrapper);
+    },
+    []
+  );
 
   // ========================= THEME =========================
 
@@ -1260,38 +1393,28 @@ const EpubViewer = ({
                   style.appendChild(doc.createTextNode(css));
                   doc.head.appendChild(style);
 
-                  // 깨진 XHTML cover 페이지 복구: parsererror가 있으면
-                  // body를 API coverImagePath로 교체 (정상 EPUB 표지와 동일한 뷰포트 맞춤)
+                  // 깨진 XHTML cover 페이지 복구:
+                  // EPUB 내부 cover.xhtml 파싱 실패 시, EPUB 내부 이미지 자산을 우선 표지로 사용한다.
                   const parserError = doc.querySelector("parsererror");
-                  const latestCoverImagePath = coverImagePathRef.current;
-                  if (parserError && latestCoverImagePath) {
-                    doc.body.innerHTML = `
-                      <div style="
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        width:100%;
-                        height:100vh;
-                        margin:0;
-                        padding:0;
-                        overflow:hidden;
-                      ">
-                        <img
-                          src="${latestCoverImagePath}"
-                          alt="cover"
-                          style="
-                            display:block;
-                            max-width:100%;
-                            max-height:100vh;
-                            object-fit:contain;
-                          "
-                        />
-                      </div>`;
-                    doc.body.style.margin = "0";
-                    doc.body.style.padding = "0";
-                    doc.body.style.overflow = "hidden";
-                  } else if (parserError) {
+                  if (parserError) {
                     parserError.style.display = "none";
+                    void getParserErrorFallbackImageUrl(_rendition).then((epubImageUrl) => {
+                      const fallbackImageUrl =
+                        epubImageUrl || coverImagePathRef.current;
+                      if (!fallbackImageUrl) return;
+
+                      applyParserErrorFallbackImage(doc, fallbackImageUrl);
+                      updateTheme(_rendition);
+                      updateToggleButtons();
+
+                      if (isScroll) {
+                        placeHostAtEnd();
+                        scheduleScrolledReadyCheck(doc);
+                      } else if (!epubReadyDoneRef.current) {
+                        epubReadyDoneRef.current = true;
+                        setEpubReady(true);
+                      }
+                    });
                   }
 
                   updateTheme(_rendition);
@@ -1318,8 +1441,12 @@ const EpubViewer = ({
               display: !isScroll && showLastPage ? "block" : "none",
               backgroundColor: bgColor,
             }}
+            onClick={handleToggleNav}
           >
-            <div className="mt-[96px] mb-[10px]">
+            <div
+              className="mt-[96px] mb-[10px]"
+              onClick={(e) => e.stopPropagation()}
+            >
               <LastPage
                 currentEpisodeId={currentEpisodeId}
                 handleCommentState={handleCommentState}

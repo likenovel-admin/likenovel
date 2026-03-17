@@ -11,6 +11,8 @@ export interface UserInfoObject {
   userRole: IRole;
   identityYn: "Y" | "N";
   email: string;
+  userName: string | null;
+  mobileNo: string | null;
   totalCash: number;
   totalTicket: number;
   totalInterestSustainCount: number;
