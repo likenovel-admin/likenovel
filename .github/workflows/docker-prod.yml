@@ -96,4 +96,17 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_CMS }}:prod-latest
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_CMS }}:prod-${{ github.sha }}
 
-
+      # ---------------------------------------------------------------------
+      # Deploy to ln-web (prod containers)
+      # ECR login → pull new images → recreate containers
+      # ---------------------------------------------------------------------
+      - name: Deploy to prod server (ln-web)
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY_B64 }}" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -T ln-admin@ec2-3-34-11-39.ap-northeast-2.compute.amazonaws.com << 'ENDSSH'
+            set -e
+            aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 992382709044.dkr.ecr.ap-northeast-2.amazonaws.com
+            cd /home/ln-admin/likenovel/docker-prod && docker compose down && docker compose pull && docker compose up -d
+          ENDSSH
