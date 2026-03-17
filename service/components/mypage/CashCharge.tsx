@@ -114,7 +114,7 @@ const CashCharge = () => {
       customer: {
         fullName: userInfo?.data?.userName || userInfo?.data?.userNickname || "이용자",
         ...(userInfo?.data?.mobileNo && { phoneNumber: userInfo.data.mobileNo }),
-        email: userInfo?.data?.email || "",
+        ...(userInfo?.data?.email && { email: userInfo.data.email }),
       },
       redirectUrl: `${process.env.NEXT_PUBLIC_WWW_SERVER_URI}/order/payment/complete`, // (모바일)결제 완료 후 이동할 페이지
       // redirectUrl: `http://localhost:3000/order/payment/complete`,   // (모바일)결제 완료 후 이동할 페이지
