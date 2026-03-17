@@ -35,12 +35,18 @@ const PaymentMethod = ({ payMethod, onSetPayMethod }: PayMethodProps) => {
           onClick={() => onSetPayMethod("MOBILE")}
           active={payMethod === "MOBILE"}
         />
-        {/* <PaymentItem
-          name="간편결제"
+        <PaymentItem
+          name="카카오페이"
+          icon="/images/kakao.png"
+          onClick={() => onSetPayMethod("KAKAOPAY")}
+          active={payMethod === "KAKAOPAY"}
+        />
+        <PaymentItem
+          name="토스페이"
           icon="/images/simple-pay.svg"
-          onClick={() => onSetPayMethod("EASY_PAY")}
-          active={payMethod === "EASY_PAY"}
-        /> */}
+          onClick={() => onSetPayMethod("TOSSPAY")}
+          active={payMethod === "TOSSPAY"}
+        />
       </div>
     </div>
   );
