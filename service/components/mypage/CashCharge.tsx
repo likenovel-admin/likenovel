@@ -113,8 +113,8 @@ const CashCharge = () => {
       },
       customer: {
         fullName: userInfo?.data?.userName || userInfo?.data?.userNickname || "이용자",
-        ...(userInfo?.data?.mobileNo && { phoneNumber: userInfo.data.mobileNo }),
-        ...(userInfo?.data?.email && { email: userInfo.data.email }),
+        phoneNumber: userInfo?.data?.mobileNo || "010-0000-0000",
+        email: userInfo?.data?.email || "user@likenovel.net",
       },
       redirectUrl: `${process.env.NEXT_PUBLIC_WWW_SERVER_URI}/order/payment/complete`, // (모바일)결제 완료 후 이동할 페이지
       // redirectUrl: `http://localhost:3000/order/payment/complete`,   // (모바일)결제 완료 후 이동할 페이지
