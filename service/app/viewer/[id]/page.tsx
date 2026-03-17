@@ -22,7 +22,7 @@ import {
 } from "@/utils/localStorage";
 import axios from "axios";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 const Viewer = () => {
   const pathname = usePathname();
   const pathSegments = pathname.split("/");
@@ -53,6 +53,7 @@ const Viewer = () => {
   >(null);
   const [epubUrl, setEpubUrl] = useState<string | null>(null);
   const [goFirstRequest, setGoFirstRequest] = useState(0);
+  const epubRequestSeqRef = useRef(0);
 
   const { mutate: postSignalEvent } = usePostAiSignalEvent();
   const { data } = useSelectViewerPath(episodeId);
@@ -88,12 +89,20 @@ const Viewer = () => {
         return;
       }
 
+      const requestSeq = ++epubRequestSeqRef.current;
+
       try {
         await axios.get(data.data.epubFilePath, {
           responseType: "blob",
         });
+        if (epubRequestSeqRef.current !== requestSeq) {
+          return;
+        }
         setEpubUrl(data.data.epubFilePath);
       } catch (error) {
+        if (epubRequestSeqRef.current !== requestSeq) {
+          return;
+        }
         setToast({
           message: "Epub 파일을 불러오는데 실패했습니다.",
           type: "error",
@@ -101,7 +110,7 @@ const Viewer = () => {
       }
     };
     fetchEpubFile();
-  }, [data?.data.epubFilePath]);
+  }, [data?.data.epubFilePath, setToast]);
 
   const handleToggleNav = () => {
     setShowNav(!showNav);
@@ -268,6 +277,7 @@ const Viewer = () => {
           <div className={`relative ${showNav ? "" : ""} `}>
             {epubUrl && (
               <EpubViewer
+                key={epubUrl}
                 location={location}
                 setLocation={setLocation}
                 goFirstRequest={goFirstRequest}

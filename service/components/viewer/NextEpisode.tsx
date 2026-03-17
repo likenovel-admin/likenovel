@@ -6,6 +6,7 @@ import useModalStore from "@/store/modalStore";
 import { TYPE_MODAL } from "@/constants/common";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useAuthStore from "@/store/authStore";
+import useViewStore from "@/store/viewerStore";
 import Image from "next/image";
 
 interface NextEpisodeProps {
@@ -16,6 +17,9 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
   const router = useRouter();
   const { withLoginRequired } = useAuthWrapper();
   const { setTypeModal } = useModalStore();
+  const { settings } = useViewStore((state) => ({
+    settings: state.settings,
+  }));
   const { mutate: postSignalEvent } = usePostAiSignalEvent();
   const { isAuthenticated } = useAuthStore((state) => ({
     isAuthenticated: state.isAuthenticated,
@@ -23,6 +27,7 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
 
   const { data } = useSelectViewerPath(currentEpisodeId);
   const { data: nextEpisodeData } = useSelectNextEpisodeInfo(data?.data?.nextEpisodeId || 0);
+  const isDarkTheme = settings.theme === "dark";
 
   if (!data?.data?.nextEpisodeId) {
     return (
@@ -83,7 +88,11 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
 
   return (
     <section
-      className="w-full rounded-[20px] border border-line bg-card/60 px-[22px] py-[21px] sm:p-5 mt-[10px] cursor-pointer hover:bg-gray-50 transition"
+      className={`w-full rounded-[20px] border border-line px-[22px] py-[21px] sm:p-5 mt-[10px] cursor-pointer transition ${
+        isDarkTheme
+          ? "bg-[#2B2F35] hover:bg-[#343942]"
+          : "bg-card/60 hover:bg-gray-50"
+      }`}
       onClick={handleNextEpisode}
     >
       <div className="flex items-center gap-4">
@@ -104,15 +113,27 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
         </div>
 
         <div className="flex-1">
-          <p className="text-base font-semibold text-[#111317] tracking-[-2%]">
+          <p
+            className={`text-base font-semibold tracking-[-2%] ${
+              isDarkTheme ? "text-white" : "text-[#111317]"
+            }`}
+          >
             다음화 보기
           </p>
-          <p className="mt-[9px] text-sm font-normal tracking-[-2%] text-[#4D5159] line-clamp-2">
+          <p
+            className={`mt-[9px] text-sm font-normal tracking-[-2%] line-clamp-2 ${
+              isDarkTheme ? "text-white/85" : "text-[#4D5159]"
+            }`}
+          >
             {nextEpisodeData?.data?.title || "다음 에피소드"}
           </p>
         </div>
 
-        <ArrowRight className="h-[7px] w-[11px] shrink-0" />
+        <ArrowRight
+          className={`h-[7px] w-[11px] shrink-0 ${
+            isDarkTheme ? "text-white" : "text-[#111317]"
+          }`}
+        />
       </div>
     </section>
   );
