@@ -121,11 +121,17 @@ const CashCharge = () => {
       customData: {
         item: { id: item.id, name: item.name, price: item.price },
       },
-      customer: {
-        fullName: userInfo?.data?.userName || userInfo?.data?.userNickname || "이용자",
-        phoneNumber: userInfo?.data?.mobileNo || "010-0000-0000",
-        email: userInfo?.data?.email || "user@likenovel.net",
-      },
+      customer: process.env.NEXT_PUBLIC_WWW_SERVER_URI?.includes("likenovel.net")
+        ? {
+            fullName: userInfo?.data?.userName || userInfo?.data?.userNickname || "이용자",
+            phoneNumber: userInfo?.data?.mobileNo || "070-5157-3000",
+            email: userInfo?.data?.email || "admin@likenovel.net",
+          }
+        : {
+            fullName: "테스트",
+            phoneNumber: "010-0000-0000",
+            email: "test@test.com",
+          },
       redirectUrl: appendExistingFunnelResumeToPath(
         `${process.env.NEXT_PUBLIC_WWW_SERVER_URI}/order/payment/complete`,
         encodedResume
