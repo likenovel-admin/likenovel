@@ -6,6 +6,7 @@ import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
 import { getEpisodeBadge } from "@/utils/getEpisodeBadge";
 import { getFormattingDate } from "@/utils/getFormattingDate";
+import { buildViewerPath } from "@/utils/viewerPath";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import EpisodeCard from "./EpisodeCard";
@@ -13,9 +14,10 @@ import Align from "/public/images/align.svg";
 
 interface EpisodeModalProps {
   productId?: number;
+  currentEpisodeId?: number;
 }
 
-const EpisodeModal = ({ productId }: EpisodeModalProps) => {
+const EpisodeModal = ({ productId, currentEpisodeId }: EpisodeModalProps) => {
   const router = useRouter();
   const { withLoginRequired } = useAuthWrapper();
   const { closeModal } = useModalStore();
@@ -142,11 +144,22 @@ const EpisodeModal = ({ productId }: EpisodeModalProps) => {
                       (episode.priceType === "paid" || (episode.episodeNo || 0) > 5)
                     ) {
                       withLoginRequired(() => undefined, {
-                        redirectPath: `/viewer/${episode.episodeId}`,
+                        redirectPath: buildViewerPath(episode.episodeId, {
+                          productId,
+                        }),
+                        resumeContext: productId
+                          ? {
+                              productId,
+                              originPageType: "viewer",
+                              originEpisodeId: currentEpisodeId,
+                            }
+                          : undefined,
                       })?.();
                       return;
                     }
-                    router.push(`/viewer/${episode.episodeId}`);
+                    router.push(
+                      buildViewerPath(episode.episodeId, { productId })
+                    );
                     closeModal();
                   }}
                 />

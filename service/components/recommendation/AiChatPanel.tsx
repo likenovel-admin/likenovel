@@ -5,6 +5,11 @@ import { ErrorCodes } from "@/enums/errorCodes";
 import { IChatMessage } from "@/store/chatStore";
 import useChatStore from "@/store/chatStore";
 import useAuthStore from "@/store/authStore";
+import {
+  buildProductDetailPath,
+  PRODUCT_DETAIL_ENTRY_SOURCE,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import { removeLocalStorage, setLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
 import ProductStateBadge from "@/components/common/ProductStateBadge";
 import SquareBadge from "@/components/common/SquareBadge";
@@ -362,7 +367,13 @@ const AiChatPanel = () => {
               {message.role === "assistant" && message.product && (
                 <div
                   className="mt-8pxr bg-light-gray-100 rounded-xl p-12pxr cursor-pointer hover:bg-light-gray-200 transition-colors"
-                  onClick={() => router.push(`/product/${message.product?.productId}`)}
+                  onClick={() => {
+                    setPendingProductDetailEntrySource(
+                      message.product!.productId,
+                      PRODUCT_DETAIL_ENTRY_SOURCE.AI_CHAT_RECOMMEND
+                    );
+                    router.push(buildProductDetailPath(message.product!.productId));
+                  }}
                 >
                   <div className="flex gap-12pxr">
                     <div className="relative flex-shrink-0 w-[70px] h-[98px] bg-light-gray-200 rounded-lg overflow-hidden">

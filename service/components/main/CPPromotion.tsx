@@ -3,6 +3,11 @@ import UserNickname from "@/components/common/UserNickname";
 import { DEFAULT_PRODUCT_IMAGE } from "@/constants/common";
 import { IProduct } from "@/types";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import {
+  ProductDetailEntrySource,
+  setPendingProductDetailEntrySource,
+  buildProductDetailPath,
+} from "@/utils/productPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import ErrorArea from "../common/ErrorArea";
@@ -11,9 +16,14 @@ import SquareBadge from "../common/SquareBadge";
 interface Props {
   data: IProduct[] | null;
   title?: string;
+  entrySource?: ProductDetailEntrySource;
 }
 
-const CPPromotion = ({ data, title = "출판사 프로모션" }: Props) => {
+const CPPromotion = ({
+  data,
+  title = "출판사 프로모션",
+  entrySource,
+}: Props) => {
   const router = useRouter();
 
   console.log("data", data);
@@ -21,6 +31,13 @@ const CPPromotion = ({ data, title = "출판사 프로모션" }: Props) => {
   if (!data || !data.length) {
     return <ErrorArea />;
   }
+
+  const navigateToProductDetail = (productId: number) => {
+    if (entrySource) {
+      setPendingProductDetailEntrySource(productId, entrySource);
+    }
+    router.push(buildProductDetailPath(productId));
+  };
 
   return (
     <div className="mb-[10px]">
@@ -40,7 +57,7 @@ const CPPromotion = ({ data, title = "출판사 프로모션" }: Props) => {
                 key={product.productId}
                 className="cursor-pointer"
                 onClick={() => {
-                  router.push(`/product/${product.productId}`);
+                  navigateToProductDetail(product.productId);
                 }}
               >
                 <div className="relative flex flex-shrink-0">

@@ -10,6 +10,7 @@ import { INotice } from "@/types";
 import { formatKoreanNumber } from "@/utils/formatKoreanNumber";
 import { getEpisodeBadge } from "@/utils/getEpisodeBadge";
 import { getFormattingDate } from "@/utils/getFormattingDate";
+import { buildViewerPath } from "@/utils/viewerPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -127,7 +128,11 @@ const ProductEpisodes = ({
   const handleClickEpisode = (episode: ISelectEpisodeObject) => {
     if (!isAuthenticated && (episode.priceType === "paid" || (episode.episodeNo || 0) > 5)) {
       withLoginRequired(() => undefined, {
-        redirectPath: `/viewer/${episode.episodeId}`,
+        redirectPath: buildViewerPath(episode.episodeId, { productId }),
+        resumeContext: {
+          productId,
+          originPageType: "product_detail",
+        },
       })?.();
       return;
     }
@@ -150,7 +155,7 @@ const ProductEpisodes = ({
     }
 
     // Free episode or has rental tickets - go to viewer
-    router.push(`/viewer/${episode.episodeId}`);
+    router.push(buildViewerPath(episode.episodeId, { productId }));
   };
 
   return (
@@ -358,7 +363,7 @@ const ProductEpisodes = ({
           </>
         )}
         {visibleCount < (episodeCount || 0) && (
-          <div className="absolute bottom-[0px] w-full flex items-end h-[100px] bg-gradient-to-t from-white to-transparent">
+          <div className="absolute bottom-[0px] w-full flex items-end justify-center h-[100px] bg-gradient-to-t from-white to-transparent">
             <MoreReadButton onClick={handleLoadMore} />
           </div>
         )}

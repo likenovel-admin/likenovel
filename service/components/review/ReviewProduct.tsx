@@ -1,4 +1,5 @@
 import { IProduct } from "@/types";
+import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 import ProductListCard from "../common/ProductListCard";
 
 interface ReviewProductProps {
@@ -16,6 +17,7 @@ const ReviewProduct = ({ product }: ReviewProductProps) => {
       data={product}
       hasPromotionBadge
       isReviewPage
+      entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.REVIEW_PRODUCT}
     />
   );
 };

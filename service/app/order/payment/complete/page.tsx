@@ -3,6 +3,7 @@
 import { instance } from "@/app/api/axios";
 import Button from "@/components/common/Button";
 import useToastStore from "@/store/toastStore";
+import { getFunnelResumeReturnPath } from "@/utils/funnelResume";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,6 +17,7 @@ const PaymentRedirect = () => {
   const pgCode = searchParams.get("pgCode");
   const pgMessage = searchParams.get("pgMessage");
   const transactionType = searchParams.get("transactionType");
+  const resumeReturnPath = getFunnelResumeReturnPath(searchParams);
 
   const [paymentStatus, setPaymentStatus] = useState("IDLE");
   const [paymentStatusText, setPaymentStatusText] =
@@ -27,6 +29,16 @@ const PaymentRedirect = () => {
 
   useEffect(() => {
     const handlePaymentComplete = async () => {
+      if (code || !paymentId || !txId) {
+        setPaymentStatus("FAILED");
+        setPaymentStatusText(message || pgMessage || "결제를 실패했습니다.");
+        setToast({
+          message: message || pgMessage || "결제를 실패했습니다.",
+          type: "error",
+        });
+        return;
+      }
+
       const response = await instance.post(
         `${process.env.NEXT_PUBLIC_API_SERVER_URI}/v1/command/orders/complete`,
         {
@@ -59,10 +71,14 @@ const PaymentRedirect = () => {
     };
 
     handlePaymentComplete();
-  }, [paymentId, txId, queryClient, setToast]);
+  }, [code, message, paymentId, pgMessage, queryClient, setToast, txId]);
 
   const handlePaymentComplete = () => {
-    router.push("/");
+    router.push(resumeReturnPath || "/");
+  };
+
+  const handlePaymentFailure = () => {
+    router.push(resumeReturnPath || "/");
   };
 
   return (
@@ -80,9 +96,7 @@ const PaymentRedirect = () => {
             variant="primary"
             size="xl"
             className="p-3"
-            onClick={() => {
-              router.push(`/`);
-            }}
+            onClick={handlePaymentComplete}
           >
             이동하기
           </Button>
@@ -96,6 +110,16 @@ const PaymentRedirect = () => {
             <p>거래 유형: {transactionType}</p>
           </div> */}
         </>
+      )}
+      {paymentStatus === "FAILED" && (
+        <Button
+          variant="primary"
+          size="xl"
+          className="p-3"
+          onClick={handlePaymentFailure}
+        >
+          {resumeReturnPath ? "이전 페이지로" : "홈으로"}
+        </Button>
       )}
     </div>
   );

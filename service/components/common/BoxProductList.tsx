@@ -2,6 +2,11 @@ import { useAdultCoverImage } from "@/hooks/useAdultCoverImage";
 import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import {
+  buildProductDetailPath,
+  ProductDetailEntrySource,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import { useRouter } from "next/navigation";
 import RankingBadge from "../common/RankingBadge";
 import SquareBadge from "../common/SquareBadge";
@@ -11,10 +16,22 @@ interface Props {
   data: IProduct[];
   pageType: "free" | "paid";
   hasLank?: boolean;
+  entrySource?: ProductDetailEntrySource;
 }
-const BoxProductList = ({ data, pageType, hasLank = false }: Props) => {
+const BoxProductList = ({
+  data,
+  pageType,
+  hasLank = false,
+  entrySource,
+}: Props) => {
   const router = useRouter();
   const renderAdultCoverImage = useAdultCoverImage();
+  const navigateToProductDetail = (productId: number) => {
+    if (entrySource) {
+      setPendingProductDetailEntrySource(productId, entrySource);
+    }
+    router.push(buildProductDetailPath(productId));
+  };
   return (
     <div className="max-w-[1120px] mx-auto mt-20pxr md:mt-0">
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 2md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-7 2xl:grid-cols-7 gap-10pxr md:gap-15pxr px-16pxr md:px-0">
@@ -23,7 +40,7 @@ const BoxProductList = ({ data, pageType, hasLank = false }: Props) => {
             key={product.productId}
             className="cursor-pointer"
             onClick={() => {
-              router.push(`/product/${product.productId}`);
+              navigateToProductDetail(product.productId);
             }}
           >
             <div className="relative">

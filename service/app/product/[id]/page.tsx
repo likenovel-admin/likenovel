@@ -9,6 +9,7 @@ import {
   useSelectProductDetail,
 } from "@/app/api/query/product";
 import { useSelectSuggestProducts } from "@/app/api/query/suggest";
+import { usePostAiSignalEvent } from "@/app/api/query/recommendation";
 import CommentArea from "@/components/common/CommentArea";
 import MobileProducts from "@/components/common/MobileProducts";
 import Tab from "@/components/common/Tab";
@@ -22,6 +23,11 @@ import useGiftBoxStore from "@/store/giftboxStore";
 import useToastStore from "@/store/toastStore";
 import { IEvaluation, IProduct } from "@/types";
 import { mergeKeysEvaluation } from "@/utils/common";
+import {
+  consumePendingProductDetailEntrySource,
+  ProductDetailEntrySource,
+  PRODUCT_DETAIL_ENTRY_SOURCE,
+} from "@/utils/productPath";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -37,12 +43,16 @@ export default function ProductDetail() {
   const pathname = usePathname();
   const pathSegments = pathname.split("/");
   const productId = Number(pathSegments[pathSegments.length - 1]);
+  const [entrySource, setEntrySource] = useState<ProductDetailEntrySource | null>(null);
+  const [entrySourceResolved, setEntrySourceResolved] = useState(false);
   const [activeTab, setActiveTab] = useState("episode");
   const { data, isPending, isSuccess } = useSelectProductDetail(productId);
   const { setToast } = useToastStore();
   const { setHasNew } = useGiftBoxStore();
   const queryClient = useQueryClient();
   const addRecentProductMutation = useAddRecentProduct();
+  const { mutate: postAiSignalEvent } = usePostAiSignalEvent();
+  const detailViewSignalKeyRef = useRef<string | null>(null);
 
   // Check if user has already received tickets for this product (using sessionStorage for current session)
   const ticketCheckKey = `rental_ticket_checked_${productId}`;
@@ -148,6 +158,55 @@ export default function ProductDetail() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canUseUserScope, user?.userId, user?.userRole, productId]);
+
+  useEffect(() => {
+    setEntrySourceResolved(false);
+    setEntrySource(consumePendingProductDetailEntrySource(productId));
+    setEntrySourceResolved(true);
+  }, [productId]);
+
+  useEffect(() => {
+    if (!canUseUserScope || !isSuccess || !productData?.productId || !user?.userId) {
+      return;
+    }
+
+    if (!entrySourceResolved) {
+      return;
+    }
+
+    if (productData?.privateYn === "Y" && !productData?.title) {
+      return;
+    }
+
+    const signalKey = `${productData.productId}:${user.userId}`;
+    if (detailViewSignalKeyRef.current === signalKey) {
+      return;
+    }
+
+    detailViewSignalKeyRef.current = signalKey;
+    postAiSignalEvent(
+      {
+        product_id: productData.productId,
+        event_type: "product_detail_view",
+        event_payload: entrySource ? { entry_source: entrySource } : undefined,
+      },
+      {
+        onError: (error) => {
+          console.error("[aiSignal] product_detail_view failed", error);
+        },
+      }
+    );
+  }, [
+    canUseUserScope,
+    entrySource,
+    entrySourceResolved,
+    isSuccess,
+    postAiSignalEvent,
+    productData?.privateYn,
+    productData?.productId,
+    productData?.title,
+    user?.userId,
+  ]);
 
   useEffect(() => {
     const MAX_RECENT_PRODUCTS = 50;
@@ -486,6 +545,7 @@ export default function ProductDetail() {
               {(contentSuggestProducts?.data?.length ?? 0) > 0 && (
                 <SuggestProducts
                   products={contentSuggestProducts?.data ?? []}
+                  entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PRODUCT_DETAIL_CONTENT_SUGGEST}
                 />
               )}
               {/* 추천3-장바구니 - Only show for logged in users */}
@@ -495,6 +555,7 @@ export default function ProductDetail() {
                   <SuggestProducts
                     products={cartSuggestProducts?.data ?? []}
                     title="선호작 추천"
+                    entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PRODUCT_DETAIL_CART_SUGGEST}
                   />
                 )}
             </div>
@@ -504,6 +565,7 @@ export default function ProductDetail() {
                 <MobileProducts
                   headerText="추천 작품"
                   products={contentSuggestProducts?.data ?? []}
+                  entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PRODUCT_DETAIL_CONTENT_SUGGEST}
                 />
               )}
               {/* 추천3-장바구니 - Only show for logged in users */}
@@ -513,12 +575,14 @@ export default function ProductDetail() {
                   <MobileProducts
                     headerText="선호작 추천"
                     products={cartSuggestProducts?.data ?? []}
+                    entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PRODUCT_DETAIL_CART_SUGGEST}
                   />
                 )}
               {(otherProducts?.data?.products.length ?? 0) > 0 && (
                 <MobileProducts
                   headerText="작가의 다른 작품"
                   products={otherProducts?.data.products ?? []}
+                  entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PRODUCT_DETAIL_SAME_AUTHOR}
                 />
               )}
             </div>
@@ -527,6 +591,7 @@ export default function ProductDetail() {
             {(otherProducts?.data?.products.length ?? 0) > 0 && (
               <SameAuthorProducts
                 products={otherProducts?.data.products ?? []}
+                entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PRODUCT_DETAIL_SAME_AUTHOR}
               />
             )}
           </div>

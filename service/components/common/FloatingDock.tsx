@@ -6,6 +6,7 @@ import RecentlyViewedProductModal from "@/components/main/RecentlyViewedProductM
 import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
 import { IProduct } from "@/types";
+import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import ArrowUp from "/public/images/arrow-up.svg";
@@ -82,6 +83,7 @@ export default function FloatingDock({
         products={recentProducts}
         onProductsChange={handleProductsChange}
         isAuthenticated={isAuthenticated}
+        entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.FLOATING_RECENT_VIEWED}
       />
     );
   };

@@ -1,5 +1,6 @@
 import { IProduct } from "@/types";
 import { getLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
+import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BoxProductList from "../common/BoxProductList";
 import ListTypeTab from "../common/ListTypeTab";
@@ -75,6 +76,11 @@ const ProductArea = ({ data, pageType = "free" }: Props) => {
               hasInterestBadge
               hasPromotionBadge={pageType === "paid" ? true : false}
               isAdultFilterEnabled
+              entrySource={
+                pageType === "paid"
+                  ? PRODUCT_DETAIL_ENTRY_SOURCE.TOP50_PAID
+                  : PRODUCT_DETAIL_ENTRY_SOURCE.TOP50_FREE
+              }
             />
           ))}
           {hasMore && (
@@ -88,7 +94,16 @@ const ProductArea = ({ data, pageType = "free" }: Props) => {
         </div>
       ) : (
         <>
-          <BoxProductList data={visibleProducts} pageType={pageType} hasLank />
+          <BoxProductList
+            data={visibleProducts}
+            pageType={pageType}
+            hasLank
+            entrySource={
+              pageType === "paid"
+                ? PRODUCT_DETAIL_ENTRY_SOURCE.TOP50_PAID
+                : PRODUCT_DETAIL_ENTRY_SOURCE.TOP50_FREE
+            }
+          />
           {hasMore && (
             <>
               <div ref={observerTarget} className="h-4" />

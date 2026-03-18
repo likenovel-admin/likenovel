@@ -5,6 +5,11 @@ import {
 } from "@/app/api/query/product";
 import { IProduct } from "@/types";
 import { getUser } from "@/utils/getUser";
+import {
+  buildProductDetailPath,
+  PRODUCT_DETAIL_ENTRY_SOURCE,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -115,7 +120,13 @@ const RecentlyView = () => {
                       key={product.productId}
                       className="flex flex-col gap-9pxr cursor-pointer"
                       onClick={() => {
-                        router.push(`/product/${product.productId}`);
+                        setPendingProductDetailEntrySource(
+                          product.productId,
+                          activeTab === "recentlyView"
+                            ? PRODUCT_DETAIL_ENTRY_SOURCE.HOME_RECENTLY_VIEWED
+                            : PRODUCT_DETAIL_ENTRY_SOURCE.HOME_RECENT_BASED_RECOMMEND
+                        );
+                        router.push(buildProductDetailPath(product.productId));
                       }}
                     >
                       {(product.image && product.image.coverImagePath) ||

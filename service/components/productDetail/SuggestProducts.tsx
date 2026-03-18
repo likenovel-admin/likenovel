@@ -2,6 +2,11 @@ import useMediaDevice from "@/hooks/useMediaDevice";
 import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import {
+  buildProductDetailPath,
+  ProductDetailEntrySource,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -12,11 +17,12 @@ import UserNickname from "../common/UserNickname";
 interface Props {
   title?: string;
   products: IProduct[];
+  entrySource?: ProductDetailEntrySource;
 }
 
 const PAGE_SIZE = 6;
 
-const SuggestProducts = ({ products, title }: Props) => {
+const SuggestProducts = ({ products, title, entrySource }: Props) => {
   const router = useRouter();
   const device = useMediaDevice();
   const [currentPage, setCurrentPage] = useState(0);
@@ -40,6 +46,12 @@ const SuggestProducts = ({ products, title }: Props) => {
       setCurrentPage(currentPage - 1);
     }
   };
+  const navigateToProductDetail = (productId: number) => {
+    if (entrySource) {
+      setPendingProductDetailEntrySource(productId, entrySource);
+    }
+    router.push(buildProductDetailPath(productId));
+  };
   return (
     <div>
       <span className="text-18pxr md:text-22pxr font-bold">
@@ -52,7 +64,7 @@ const SuggestProducts = ({ products, title }: Props) => {
               key={product.productId}
               className="relative flex flex-col cursor-pointer"
               onClick={() => {
-                router.push(`/product/${product.productId}`);
+                navigateToProductDetail(product.productId);
               }}
             >
               <div className="relative">

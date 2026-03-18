@@ -2,6 +2,7 @@ import { useSelectSuggestProducts } from "@/app/api/query/suggest";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useAuthStore from "@/store/authStore";
 import { IProduct } from "@/types";
+import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import CircleArrow from "../common/CircleArrow";
@@ -94,6 +95,7 @@ const RecommendedProduct = ({ productId, productType = "suggest" }: Props) => {
           <ProductCoverCard
             key={product.productId}
             data={product as unknown as IProduct}
+            entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.VIEWER_RECOMMENDED}
           />
         ))}
       </div>

@@ -1,6 +1,7 @@
 import useNoticeStore from "@/store/noticeStore";
 import { INotice } from "@/types";
 import { getFormattingDate } from "@/utils/getFormattingDate";
+import { buildViewerPath } from "@/utils/viewerPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -13,7 +14,11 @@ interface Props {
   productTitle?: string;
 }
 
-const ProductNotice = ({ notices, productTitle, productId }: Props) => {
+const ProductNotice = ({
+  notices,
+  productTitle,
+  productId,
+}: Props) => {
   const router = useRouter();
   const { setNoticeData } = useNoticeStore();
   const [showAll, setShowAll] = useState(false);
@@ -28,7 +33,11 @@ const ProductNotice = ({ notices, productTitle, productId }: Props) => {
   const handleNoticeClick = (notice: INotice) => {
     setNoticeData(notice, productTitle || "");
     router.push(
-      `/viewer/${notice.id}?type=notice&productId=${productId}&title=${productTitle}`
+      buildViewerPath(notice.id, {
+        productId,
+        type: "notice",
+        title: productTitle || undefined,
+      })
     );
   };
 

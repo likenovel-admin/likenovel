@@ -35,6 +35,7 @@ export default function TabLayout({
         <Tab
           tabs={[
             { label: "내 작품 관리", value: "myProduct" },
+            { label: "작품별분석", value: "analytics" },
             { label: "받은 제안", value: "offer" },
             { label: "프로모션", value: "promotion" },
             { label: "정산/통계", value: "settlement" },
@@ -49,6 +50,7 @@ export default function TabLayout({
         <Tab
           tabs={[
             { label: "내 작품 관리", value: "myProduct" },
+            { label: "작품별분석", value: "analytics" },
             { label: "받은 제안", value: "offer" },
             { label: "프로모션", value: "promotion" },
             { label: "정산/통계", value: "settlement" },

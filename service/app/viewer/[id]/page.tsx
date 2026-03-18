@@ -15,11 +15,17 @@ import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
+import { syncProductDetailTransitionDecision } from "@/utils/funnelRouteTracker";
 import {
   getLocalStorage,
   setLocalStorage,
   STORAGE_KEYS,
 } from "@/utils/localStorage";
+import {
+  confirmViewerPageContext,
+  upsertPendingViewerPageContext,
+} from "@/utils/viewerPageContext";
+import { buildViewerPath } from "@/utils/viewerPath";
 import axios from "axios";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -29,6 +35,7 @@ const Viewer = () => {
   const episodeId = Number(pathSegments[pathSegments.length - 1]);
   const searchParams = useSearchParams();
   const viewerType = searchParams.get("type");
+  const viewerContextKind = viewerType === "notice" ? "notice" : "episode";
   const productId = searchParams.get("productId");
   const productTitle = searchParams.get("title");
 
@@ -83,6 +90,27 @@ const Viewer = () => {
   }, [episodeId]);
 
   useEffect(() => {
+    upsertPendingViewerPageContext({
+      episodeId,
+      kind: viewerContextKind,
+      hintProductId: productId,
+    });
+  }, [episodeId, productId, viewerContextKind]);
+
+  useEffect(() => {
+    if (viewerType === "notice") return;
+    if (!data?.data?.product_id) return;
+
+    confirmViewerPageContext({
+      episodeId,
+      kind: viewerContextKind,
+      resolvedProductId: data.data.product_id,
+      hintProductId: productId,
+    });
+    syncProductDetailTransitionDecision();
+  }, [data?.data?.product_id, episodeId, productId, viewerContextKind, viewerType]);
+
+  useEffect(() => {
     const fetchEpubFile = async () => {
       if (!data?.data.epubFilePath) {
         setEpubUrl(null);
@@ -119,7 +147,12 @@ const Viewer = () => {
   const handleOpenEpisode = (e: React.MouseEvent) => {
     e.stopPropagation();
     setModalType("episode");
-    setModal(<EpisodeModal productId={data?.data?.product_id} />);
+    setModal(
+      <EpisodeModal
+        productId={data?.data?.product_id}
+        currentEpisodeId={episodeId}
+      />
+    );
   };
   const handleOpenSetting = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -139,6 +172,13 @@ const Viewer = () => {
   const handleNavigateNextChap = () => {
     const episode = data?.data;
     const productTitle = data?.data?.title;
+    const nextViewerPath = episode?.nextEpisodeId
+      ? buildViewerPath(episode.nextEpisodeId, {
+          productId: episode.product_id,
+        })
+      : null;
+
+    if (!nextViewerPath) return;
 
     if (
       !isAuthenticated &&
@@ -146,7 +186,14 @@ const Viewer = () => {
         (episode?.nextEpisodes || 0) > 5)
     ) {
       withLoginRequired(() => undefined, {
-        redirectPath: `/viewer/${episode?.nextEpisodeId}`,
+        redirectPath: nextViewerPath,
+        resumeContext: episode?.product_id
+          ? {
+              productId: episode.product_id,
+              originPageType: "viewer",
+              originEpisodeId: episodeId,
+            }
+          : undefined,
       })?.();
       return;
     }
@@ -175,7 +222,7 @@ const Viewer = () => {
           event_payload: { redirect_to_episode_id: data.data.nextEpisodeId },
         });
       }
-      router.push(`/viewer/${data?.data?.nextEpisodeId}`);
+      router.push(nextViewerPath);
     }
   };
 
@@ -198,7 +245,11 @@ const Viewer = () => {
       return;
     }
     if (data && data?.data?.previousEpisodeId) {
-      router.push(`/viewer/${data?.data?.previousEpisodeId}`);
+      router.push(
+        buildViewerPath(data?.data?.previousEpisodeId || "", {
+          productId: data?.data?.product_id,
+        })
+      );
     }
   };
 

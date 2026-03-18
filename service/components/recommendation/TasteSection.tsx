@@ -4,6 +4,11 @@ import { IRecommendSection } from "@/app/api/query/recommendation/dto";
 import { usePostAiSignalEvent } from "@/app/api/query/recommendation";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useAuthStore from "@/store/authStore";
+import {
+  buildProductDetailPath,
+  PRODUCT_DETAIL_ENTRY_SOURCE,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Fragment, useState } from "react";
@@ -78,7 +83,11 @@ const TasteSection = ({ section }: Props) => {
                     },
                   });
                 }
-                router.push(`/product/${product.productId}`);
+                setPendingProductDetailEntrySource(
+                  product.productId,
+                  PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION
+                );
+                router.push(buildProductDetailPath(product.productId));
               }}
             >
               <div className="relative w-[108px] md:w-[142px] h-[164px] md:h-[217px] bg-light-gray-100 rounded-[10px] overflow-hidden">

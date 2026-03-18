@@ -4,6 +4,11 @@ import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import { getLatestEpisodeDate } from "@/utils/getLatestEpisodeDate";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import {
+  buildProductDetailPath,
+  PRODUCT_DETAIL_ENTRY_SOURCE,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -82,6 +87,14 @@ const InterestDropCards = () => {
     }));
   };
 
+  const navigateToProductDetail = (productId: number) => {
+    setPendingProductDetailEntrySource(
+      productId,
+      PRODUCT_DETAIL_ENTRY_SOURCE.HOME_INTEREST_DROP_CARD
+    );
+    router.push(buildProductDetailPath(productId));
+  };
+
   return (
     <div className="relative flex flex-col mt-27pxr">
       <MainHeader
@@ -99,7 +112,7 @@ const InterestDropCards = () => {
               key={product.productId}
               className={`relative flex min-w-[264px] min-h-[166px] bg-white rounded-[10px] shadow-lg cursor-pointer mb-5`}
               onClick={() => {
-                router.push(`/product/${product.productId}`);
+                navigateToProductDetail(product.productId);
               }}
             >
               {product.image && product.image.coverImagePath ? (

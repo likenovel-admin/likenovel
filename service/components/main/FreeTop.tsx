@@ -1,6 +1,11 @@
 import { useAdultCoverImage } from "@/hooks/useAdultCoverImage";
 import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
+import {
+  buildProductDetailPath,
+  PRODUCT_DETAIL_ENTRY_SOURCE,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import { useRouter } from "next/navigation";
 import { useState, type CSSProperties } from "react";
 import CircleArrow from "../common/CircleArrow";
@@ -97,7 +102,11 @@ const FreeTop = ({ data }: Props) => {
                 key={`${product.productId}-${index}`}
                 className="flex items-center gap-10pxr cursor-pointer min-w-0"
                 onClick={() => {
-                  router.push(`/product/${product.productId}`);
+                  setPendingProductDetailEntrySource(
+                    product.productId,
+                    PRODUCT_DETAIL_ENTRY_SOURCE.HOME_FREE_TOP
+                  );
+                  router.push(buildProductDetailPath(product.productId));
                 }}
               >
                 <div className="relative shrink-0">
@@ -145,7 +154,11 @@ const FreeTop = ({ data }: Props) => {
                 key={`${product.productId}-${index}`}
                 className="flex w-full min-w-0 h-[116px] border border-light-gray-400 shadow-sm rounded-[10px] cursor-pointer relative bg-white overflow-hidden"
                 onClick={() => {
-                  router.push(`/product/${product.productId}`);
+                  setPendingProductDetailEntrySource(
+                    product.productId,
+                    PRODUCT_DETAIL_ENTRY_SOURCE.HOME_FREE_TOP
+                  );
+                  router.push(buildProductDetailPath(product.productId));
                 }}
               >
                 {renderAdultCoverImage(

@@ -7,6 +7,7 @@ import { TYPE_MODAL } from "@/constants/common";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useAuthStore from "@/store/authStore";
 import useViewStore from "@/store/viewerStore";
+import { buildViewerPath } from "@/utils/viewerPath";
 import Image from "next/image";
 
 interface NextEpisodeProps {
@@ -42,6 +43,13 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
   const handleNextEpisode = () => {
     const episode = data?.data;
     const productTitle = data?.data?.title;
+    const nextViewerPath = episode?.nextEpisodeId
+      ? buildViewerPath(episode.nextEpisodeId, {
+          productId: episode.product_id,
+        })
+      : null;
+
+    if (!nextViewerPath) return;
 
     if (
       !isAuthenticated &&
@@ -49,7 +57,14 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
         (episode?.nextEpisodes || 0) > 5)
     ) {
       withLoginRequired(() => undefined, {
-        redirectPath: `/viewer/${episode?.nextEpisodeId}`,
+        redirectPath: nextViewerPath,
+        resumeContext: episode?.product_id
+          ? {
+              productId: episode.product_id,
+              originPageType: "viewer",
+              originEpisodeId: currentEpisodeId,
+            }
+          : undefined,
       })?.();
       return;
     }
@@ -83,7 +98,7 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
     }
 
     // Navigate to next episode if owned or rental is valid
-    router.push(`/viewer/${data.data.nextEpisodeId}`);
+    router.push(nextViewerPath);
   };
 
   return (

@@ -5,11 +5,22 @@ import {
   setLocalStorage,
   STORAGE_KEYS,
 } from "@/utils/localStorage";
+import {
+  appendFunnelResumeToPath,
+  FunnelResumeOriginPageType,
+} from "@/utils/funnelResume";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
+interface ResumeContext {
+  productId: number;
+  originPageType: FunnelResumeOriginPageType;
+  originEpisodeId?: number;
+}
+
 interface AuthRedirectOptions<T extends any[]> {
   redirectPath?: string | ((...args: T) => string);
+  resumeContext?: ResumeContext | ((...args: T) => ResumeContext | null);
 }
 
 /**
@@ -27,10 +38,29 @@ export const useAuthWrapper = () => {
       options?: AuthRedirectOptions<T>
     ): string | null => {
       const redirectPath = options?.redirectPath;
-      if (!redirectPath) return null;
-      return typeof redirectPath === "function"
-        ? redirectPath(...args)
-        : redirectPath;
+      const resolvedRedirectPath =
+        typeof redirectPath === "function"
+          ? redirectPath(...args)
+          : redirectPath;
+
+      if (!resolvedRedirectPath) return null;
+
+      const resumeContext =
+        typeof options?.resumeContext === "function"
+          ? options.resumeContext(...args)
+          : options?.resumeContext;
+
+      if (!resumeContext?.productId) {
+        return resolvedRedirectPath;
+      }
+
+      return appendFunnelResumeToPath(resolvedRedirectPath, {
+        productId: resumeContext.productId,
+        reason: "login",
+        originPageType: resumeContext.originPageType,
+        originEpisodeId: resumeContext.originEpisodeId,
+        returnPath: resolvedRedirectPath,
+      });
     },
     []
   );
