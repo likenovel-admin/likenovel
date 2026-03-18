@@ -1,4 +1,5 @@
 import { IProduct } from "@/types";
+import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 import MainHeader from "../common/MainHeader";
 import ProductCoverCard from "../common/ProductCoverCard";
 
@@ -21,6 +22,7 @@ const Promotion = ({ data }: Props) => {
                 key={product.productId}
                 data={product as unknown as IProduct}
                 hasInterestBadge
+                entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PAID_PROMOTION}
               />
             ))}
           </div>

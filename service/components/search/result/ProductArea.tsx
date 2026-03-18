@@ -1,6 +1,7 @@
 import ProductListCard from "@/components/common/ProductListCard";
 import Tab from "@/components/common/Tab";
 import { IProduct } from "@/types";
+import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -38,6 +39,7 @@ const ProductArea = ({ data, keyword = "" }: Props) => {
             key={product.productId}
             data={product as unknown as IProduct}
             hasInterestBadge
+            entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.SEARCH_RESULT}
           />
         ))}
       </div>

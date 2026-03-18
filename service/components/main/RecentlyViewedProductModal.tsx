@@ -7,6 +7,11 @@ import BookmarkButton from "@/components/common/BookmarkButton";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import { IProduct } from "@/types";
+import {
+  buildProductDetailPath,
+  ProductDetailEntrySource,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -17,12 +22,14 @@ interface Props {
   products: IProduct[];
   onProductsChange?: (products: IProduct[]) => void;
   isAuthenticated?: boolean;
+  entrySource?: ProductDetailEntrySource;
 }
 
 const RecentlyViewedProductModal = ({
   products,
   onProductsChange,
   isAuthenticated = false,
+  entrySource,
 }: Props) => {
   const router = useRouter();
   const { closeModal } = useModalStore();
@@ -89,6 +96,14 @@ const RecentlyViewedProductModal = ({
       }
     }
   };
+  const navigateToProductDetail = (productId: number) => {
+    if (entrySource) {
+      setPendingProductDetailEntrySource(productId, entrySource);
+    }
+    closeModal();
+    router.push(buildProductDetailPath(productId));
+  };
+
   return (
     <div className="px-6">
       <div className="flex justify-between items-center mt-[15px] mb-[13px]">
@@ -112,8 +127,7 @@ const RecentlyViewedProductModal = ({
               key={product.productId}
               className="relative flex items-start gap-4 p-17pxr bg-white rounded-[10px] border border-[#EDEFF3] cursor-pointer"
               onClick={() => {
-                closeModal();
-                router.push(`/product/${product.productId}`);
+                navigateToProductDetail(product.productId);
               }}
             >
               <div className="relative rounded-[8px] flex-shrink-0">

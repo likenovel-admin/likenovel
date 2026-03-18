@@ -1,5 +1,10 @@
 import { instance } from "@/app/api/axios";
 import useToastStore from "@/store/toastStore";
+import {
+  appendExistingFunnelResumeToPath,
+  getFunnelResumeParamFromSearchParams,
+  getFunnelResumeReturnPath,
+} from "@/utils/funnelResume";
 import PortOne, { Entity } from "@portone/browser-sdk/v2";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -7,6 +12,7 @@ import { useSelectUserInfo } from "@/app/api/query/mypage/user";
 import CashHowToUse from "./CashHowToUse";
 import ChargeList from "./ChargeList";
 import PaymentMethod from "./PaymentMethod";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Item {
   name: string;
@@ -64,6 +70,10 @@ const CashCharge = () => {
   const { setToast } = useToastStore();
   const queryClient = useQueryClient();
   const { data: userInfo } = useSelectUserInfo();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const encodedResume = getFunnelResumeParamFromSearchParams(searchParams);
+  const resumeReturnPath = getFunnelResumeReturnPath(searchParams);
 
   // useEffect(() => {
   //   async function loadItem() {
@@ -116,7 +126,10 @@ const CashCharge = () => {
         phoneNumber: userInfo?.data?.mobileNo || "010-0000-0000",
         email: userInfo?.data?.email || "user@likenovel.net",
       },
-      redirectUrl: `${process.env.NEXT_PUBLIC_WWW_SERVER_URI}/order/payment/complete`, // (모바일)결제 완료 후 이동할 페이지
+      redirectUrl: appendExistingFunnelResumeToPath(
+        `${process.env.NEXT_PUBLIC_WWW_SERVER_URI}/order/payment/complete`,
+        encodedResume
+      ), // (모바일)결제 완료 후 이동할 페이지
       // redirectUrl: `http://localhost:3000/order/payment/complete`,   // (모바일)결제 완료 후 이동할 페이지
       ...((payMethod === "KAKAOPAY" || payMethod === "TOSSPAY") && {
         payMethod: "EASY_PAY" as Entity.PayMethod,
@@ -175,6 +188,11 @@ const CashCharge = () => {
           message: CASH_CHARGE_SUCCESS_MESSAGE,
           type: "success",
         });
+
+        if (resumeReturnPath) {
+          router.push(resumeReturnPath, { scroll: false });
+          return;
+        }
       } else {
         setPaymentStatus({
           status: "FAILED",
@@ -187,7 +205,6 @@ const CashCharge = () => {
       }
     }
   };
-
 
   return (
     <div className="w-full">

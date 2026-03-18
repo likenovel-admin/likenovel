@@ -18,6 +18,7 @@ import {
   findPreviousNonMatchingPath,
   logNavigationHistory,
 } from "@/utils/navigationHistory";
+import { buildViewerPath } from "@/utils/viewerPath";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import BookmarkButton from "../common/BookmarkButton";
@@ -196,8 +197,9 @@ const ProductCoverArea = ({
     const targetEpisodeId = latestEpisodeNo === 0 ? firstEpisodeId : episodeId;
 
     if (targetEpisodeId) {
-      // Add fromProduct query param to track navigation source
-      router.push(`/viewer/${targetEpisodeId}?fromProduct=${data.productId}`);
+      router.push(
+        buildViewerPath(targetEpisodeId, { productId: data.productId })
+      );
     }
   };
 

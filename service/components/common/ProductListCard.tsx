@@ -9,6 +9,11 @@ import { IProduct } from "@/types";
 import { getLatestEpisodeDate } from "@/utils/getLatestEpisodeDate";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
 import { getUpdateFrequency } from "@/utils/getUpdateFrequency";
+import {
+  buildProductDetailPath,
+  ProductDetailEntrySource,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -42,6 +47,7 @@ interface Props {
   isReviewPage?: boolean;
   isAdultFilterEnabled?: boolean;
   refetch?: () => void;
+  entrySource?: ProductDetailEntrySource;
 }
 
 const ProductListCard = ({
@@ -54,6 +60,7 @@ const ProductListCard = ({
   isAdultFilterEnabled = false,
   hasGle = true,
   refetch,
+  entrySource,
 }: Props) => {
   const router = useRouter();
   const device = useMediaDevice();
@@ -77,6 +84,13 @@ const ProductListCard = ({
     isOpen: false,
   });
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
+  const navigateToProductDetail = () => {
+    if (entrySource) {
+      setPendingProductDetailEntrySource(data.productId, entrySource);
+    }
+    router.push(buildProductDetailPath(data.productId));
+  };
+
   useEffect(() => {
     const calculateDaysAgo = () => {
       const currentDate = new Date();
@@ -189,7 +203,7 @@ const ProductListCard = ({
                 ? router.push(
                     `/product/author/episode-manager/${data.productId}`
                   )
-                : router.push(`/product/${data.productId}`);
+                : navigateToProductDetail();
             }
           }}
         >
@@ -328,7 +342,7 @@ const ProductListCard = ({
               </div>
               <span
                 className="text-14pxr font-semibold"
-                onClick={() => router.push(`/product/${data.productId}`)}
+                onClick={() => navigateToProductDetail()}
               >
                 {data.title}
               </span>

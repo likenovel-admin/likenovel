@@ -12,6 +12,11 @@ import { IProduct } from "@/types";
 import { getLatestEpisodeDate } from "@/utils/getLatestEpisodeDate";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
 import { getUpdateFrequency } from "@/utils/getUpdateFrequency";
+import {
+  buildProductDetailPath,
+  ProductDetailEntrySource,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -28,6 +33,7 @@ interface Props {
   hasPromotionBadge?: boolean;
   isAdultFilterEnabled?: boolean;
   refetch?: () => void;
+  entrySource?: ProductDetailEntrySource;
 }
 
 const ProductListCard = ({
@@ -38,6 +44,7 @@ const ProductListCard = ({
   isAdultFilterEnabled = false,
   hasGle = true,
   refetch,
+  entrySource,
 }: Props) => {
   const router = useRouter();
   const device = useMediaDevice();
@@ -67,6 +74,13 @@ const ProductListCard = ({
     };
     setDaysAgo(calculateDaysAgo());
   }, [data.properties?.latestEpisodeDate]);
+
+  const navigateToProductDetail = () => {
+    if (entrySource) {
+      setPendingProductDetailEntrySource(data.productId, entrySource);
+    }
+    router.push(buildProductDetailPath(data.productId));
+  };
 
   const handleOpenGeneralPromotion = () => {
     const handleConfirm = async () => {
@@ -156,7 +170,7 @@ const ProductListCard = ({
         <div
           className={`relative flex items-center border-b ${"w-full"}  gap-12pxr md:gap-20pxr py-[16px] md:py-[20px]`}
           onClick={() => {
-            router.push(`/product/${data.productId}`);
+            navigateToProductDetail();
           }}
         >
           {hasRank && data.rank && (
@@ -284,7 +298,7 @@ const ProductListCard = ({
               </div>
               <span
                 className="text-14pxr font-semibold"
-                onClick={() => router.push(`/product/${data.productId}`)}
+                onClick={navigateToProductDetail}
               >
                 {data.title}
               </span>

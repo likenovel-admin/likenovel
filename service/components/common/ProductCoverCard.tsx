@@ -3,6 +3,11 @@ import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import getNumberToString from "@/utils/getNumberToString";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import {
+  buildProductDetailPath,
+  ProductDetailEntrySource,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -15,17 +20,29 @@ import View from "/public/images/view.svg";
 interface Props {
   data: IProduct;
   hasInterestBadge?: boolean;
+  entrySource?: ProductDetailEntrySource;
 }
-const ProductCoverCard = ({ data, hasInterestBadge = false }: Props) => {
+const ProductCoverCard = ({
+  data,
+  hasInterestBadge = false,
+  entrySource,
+}: Props) => {
   const router = useRouter();
   const device = useMediaDevice();
   const [isHovered, setIsHovered] = useState(false);
+  const navigateToProductDetail = () => {
+    if (entrySource) {
+      setPendingProductDetailEntrySource(data.productId, entrySource);
+    }
+    router.push(buildProductDetailPath(data.productId));
+  };
+
   return (
     <div
       className="flex flex-col gap-13pxr cursor-pointer"
       onClick={() => {
         if (device === "desktop") {
-          router.push(`/product/${data.productId}`);
+          navigateToProductDetail();
         }
       }}
     >
@@ -120,7 +137,7 @@ const ProductCoverCard = ({ data, hasInterestBadge = false }: Props) => {
         className="flex flex-col gap-10pxr"
         onClick={() => {
           if (device !== "desktop") {
-            router.push(`/product/${data.productId}`);
+            navigateToProductDetail();
           }
         }}
       >

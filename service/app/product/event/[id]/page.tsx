@@ -6,6 +6,7 @@ import Button from "@/components/common/Button";
 import Spinner from "@/components/common/Spinner";
 import ProductListCard from "@/components/event/ProductCard";
 import { IProduct } from "@/types";
+import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -116,6 +117,7 @@ const Page = () => {
               key={product.productId}
               data={product}
               hasPromotionBadge
+              entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.EVENT_PRODUCT}
             />
           ))}
         </div>

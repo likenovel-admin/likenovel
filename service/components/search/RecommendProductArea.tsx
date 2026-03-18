@@ -6,6 +6,11 @@ import { useSelectWeeklyMostSearched } from "@/app/api/query/search";
 import useAuthStore from "@/store/authStore";
 import useSearchModalStore from "@/store/searchModalStore";
 import { IProduct } from "@/types";
+import {
+  buildProductDetailPath,
+  PRODUCT_DETAIL_ENTRY_SOURCE,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import MobileProducts from "../common/MobileProducts";
@@ -128,7 +133,13 @@ const RecommendProductArea = ({ type }: Props) => {
                 className="flex flex-col gap-10pxr cursor-pointer"
                 key={product.productId + index}
                 onClick={() => {
-                  router.push(`/product/${product.productId}`);
+                  setPendingProductDetailEntrySource(
+                    product.productId,
+                    type === "mostSearched"
+                      ? PRODUCT_DETAIL_ENTRY_SOURCE.SEARCH_MOST_SEARCHED
+                      : PRODUCT_DETAIL_ENTRY_SOURCE.SEARCH_RECOMMEND
+                  );
+                  router.push(buildProductDetailPath(product.productId));
                   closeSearchModal();
                 }}
               >
@@ -159,6 +170,11 @@ const RecommendProductArea = ({ type }: Props) => {
             <MobileProducts
               headerText=""
               products={(currentData as unknown as IProduct[]) ?? []}
+              entrySource={
+                type === "mostSearched"
+                  ? PRODUCT_DETAIL_ENTRY_SOURCE.SEARCH_MOST_SEARCHED
+                  : PRODUCT_DETAIL_ENTRY_SOURCE.SEARCH_RECOMMEND
+              }
             />
           </div>
         </>

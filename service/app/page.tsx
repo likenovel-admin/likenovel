@@ -32,6 +32,7 @@ import {
   ONBOARDING_STATUS_CHANGED_EVENT,
 } from "@/constants/onboarding";
 import useAuthStore from "@/store/authStore";
+import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 
 export default function Home() {
   const { user, isAuthenticated, accessToken } = useAuthStore();
@@ -175,6 +176,7 @@ export default function Home() {
               <CPPromotion
                 data={cpPromotionProducts}
                 title={data?.publisherPromotionTitle}
+                entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.HOME_CP_PROMOTION}
               />
               {mixedSections.map((item, index) =>
                 item.type === "feature" ? (

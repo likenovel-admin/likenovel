@@ -5,6 +5,7 @@ import useBottomSheetStore from "@/store/bottomSheetStore";
 import useModalStore from "@/store/modalStore";
 import { IProduct } from "@/types";
 import { getLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
+import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BottomSheet from "../common/BottomSheet";
 import BoxProductList from "../common/BoxProductList";
@@ -182,6 +183,11 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
                   key={product.productId}
                   data={product as unknown as IProduct}
                   hasInterestBadge
+                  entrySource={
+                    pageType === "normal"
+                      ? PRODUCT_DETAIL_ENTRY_SOURCE.FREE_NORMAL_LIST
+                      : PRODUCT_DETAIL_ENTRY_SOURCE.FREE_FREE_LIST
+                  }
                 />
               ))}
               <div ref={observerTarget} className="h-4" />
@@ -202,6 +208,11 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
           <BoxProductList
             data={isLoading ? [] : (allProducts as unknown as IProduct[])}
             pageType={"free"}
+            entrySource={
+              pageType === "normal"
+                ? PRODUCT_DETAIL_ENTRY_SOURCE.FREE_NORMAL_BOX
+                : PRODUCT_DETAIL_ENTRY_SOURCE.FREE_FREE_BOX
+            }
           />
           {allProducts.length > 0 && (
             <>

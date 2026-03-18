@@ -9,8 +9,15 @@ import { TYPE_MODAL } from "@/constants/common";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
+import {
+  appendFunnelResumeToPath,
+  getCurrentInternalPath,
+  getEpisodeIdFromViewerPathname,
+  getOriginPageTypeFromPathname,
+} from "@/utils/funnelResume";
+import { buildViewerPath } from "@/utils/viewerPath";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import BottomSheetContainer from "../common/BottomSheetContainer";
 import Button from "../common/Button";
@@ -70,6 +77,7 @@ const CacheStatusContents = ({
   typeModalData?: any;
 }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
   const { setToast } = useToastStore();
 
@@ -118,7 +126,22 @@ const CacheStatusContents = ({
   }, [refetch, typeModalData?.episodeId, typeModalData?.productId]);
 
   const handleMoveToRecharge = () => {
-    router.push("/product/mypage/cash");
+    const productId = Number(typeModalData?.productId || 0);
+    if (!productId) {
+      router.push("/product/mypage/cash");
+      onClose();
+      return;
+    }
+
+    router.push(
+      appendFunnelResumeToPath("/product/mypage/cash", {
+        productId,
+        reason: "payment",
+        originPageType: getOriginPageTypeFromPathname(pathname),
+        originEpisodeId: getEpisodeIdFromViewerPathname(pathname),
+        returnPath: getCurrentInternalPath(),
+      })
+    );
     onClose();
   };
 
@@ -176,7 +199,11 @@ const CacheStatusContents = ({
             onClose();
 
             // Navigate to viewer
-            router.push(`/viewer/${typeModalData.episodeId}`);
+            router.push(
+              buildViewerPath(typeModalData.episodeId, {
+                productId: typeModalData.productId,
+              })
+            );
           },
           onError: (error: any) => {
             setToast({
@@ -242,7 +269,11 @@ const CacheStatusContents = ({
             onClose();
 
             // Navigate to viewer
-            router.push(`/viewer/${typeModalData.episodeId}`);
+            router.push(
+              buildViewerPath(typeModalData.episodeId, {
+                productId: typeModalData.productId,
+              })
+            );
           },
           onError: (error: any) => {
             setToast({

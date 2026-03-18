@@ -7,6 +7,7 @@ import CPPromotion from "@/components/main/CPPromotion";
 import End from "@/components/paid/End";
 import Ongoing from "@/components/paid/Ongoing";
 import Standalone from "@/components/paid/Standalone";
+import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 import { useState } from "react";
 
 export default function Paid() {
@@ -28,6 +29,7 @@ export default function Paid() {
             <CPPromotion
               data={cpPromotionProducts}
               title={data?.publisherPromotionTitle}
+              entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PAID_CP_PROMOTION}
             />
             <div className="pl-16pxr md:pl-0 mt-50pxr">
               <Tab

@@ -1,5 +1,10 @@
 import { IProduct } from "@/types";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import {
+  buildProductDetailPath,
+  ProductDetailEntrySource,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import SquareBadge from "../common/SquareBadge";
@@ -7,10 +12,17 @@ import UserNickname from "../common/UserNickname";
 
 interface Props {
   products: IProduct[];
+  entrySource?: ProductDetailEntrySource;
 }
 
-const SameAuthorProducts = ({ products }: Props) => {
+const SameAuthorProducts = ({ products, entrySource }: Props) => {
   const router = useRouter();
+  const navigateToProductDetail = (productId: number) => {
+    if (entrySource) {
+      setPendingProductDetailEntrySource(productId, entrySource);
+    }
+    router.push(buildProductDetailPath(productId));
+  };
   return (
     <div className="flex flex-col w-full pl-50pxr">
       <span className="text-22pxr font-bold">작가의 다른 작품</span>
@@ -21,7 +33,7 @@ const SameAuthorProducts = ({ products }: Props) => {
             className="flex gap-16pxr cursor-pointer"
             key={product.productId}
             onClick={() => {
-              router.push(`/product/${product.productId}`);
+              navigateToProductDetail(product.productId);
             }}
           >
             <div className="relative">

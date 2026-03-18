@@ -1,6 +1,7 @@
 import { ISectionData } from "@/app/api/query/product/dto";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import { IProduct } from "@/types";
+import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import CircleArrow from "../common/CircleArrow";
@@ -80,6 +81,11 @@ const BottomProducts = ({ suggestionData, productType = "suggest" }: Props) => {
           <ProductCoverCard
             key={product.productId}
             data={product as unknown as IProduct}
+            entrySource={
+              productType === "interest"
+                ? PRODUCT_DETAIL_ENTRY_SOURCE.HOME_BOTTOM_INTEREST
+                : PRODUCT_DETAIL_ENTRY_SOURCE.HOME_BOTTOM_SUGGEST
+            }
           />
         ))}
       </div>

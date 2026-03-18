@@ -8,9 +8,15 @@ import { TYPE_MODAL } from "@/constants/common";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
+import {
+  appendFunnelResumeToPath,
+  getCurrentInternalPath,
+  getEpisodeIdFromViewerPathname,
+  getOriginPageTypeFromPathname,
+} from "@/utils/funnelResume";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import BottomSheetContainer from "../common/BottomSheetContainer";
 import Button from "../common/Button";
 import ModalBottomButton from "../common/ModalBottomButton";
@@ -57,6 +63,7 @@ const CacheUseContents = ({
   };
 }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
   const { setToast } = useToastStore();
 
@@ -153,8 +160,20 @@ const CacheUseContents = ({
   };
 
   const handleChargeClick = () => {
-    // TODO: Navigate to charge page or open charge modal
-    router.push("/product/mypage/cash"); // Adjust route as needed
+    if (!productId) {
+      router.push("/product/mypage/cash");
+      return;
+    }
+
+    router.push(
+      appendFunnelResumeToPath("/product/mypage/cash", {
+        productId,
+        reason: "payment",
+        originPageType: getOriginPageTypeFromPathname(pathname),
+        originEpisodeId: getEpisodeIdFromViewerPathname(pathname),
+        returnPath: getCurrentInternalPath(),
+      })
+    );
   };
   return (
     <div className="h-fit flex flex-col items-center md:w-[300px]">

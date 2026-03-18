@@ -5,6 +5,7 @@ import useBottomSheetStore from "@/store/bottomSheetStore";
 import useModalStore from "@/store/modalStore";
 import { IProduct } from "@/types";
 import { getLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
+import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BottomSheet from "../common/BottomSheet";
 import BoxProductList from "../common/BoxProductList";
@@ -186,6 +187,13 @@ const ProductArea = ({ stateType }: Props) => {
                   data={product as unknown as IProduct}
                   hasInterestBadge
                   hasPromotionBadge
+                  entrySource={
+                    stateType === "ongoing"
+                      ? PRODUCT_DETAIL_ENTRY_SOURCE.PAID_ONGOING_LIST
+                      : stateType === "end"
+                      ? PRODUCT_DETAIL_ENTRY_SOURCE.PAID_END_LIST
+                      : PRODUCT_DETAIL_ENTRY_SOURCE.PAID_STANDALONE_LIST
+                  }
                 />
               ))}
               <div ref={observerTarget} className="h-4" />
@@ -216,6 +224,13 @@ const ProductArea = ({ stateType }: Props) => {
               <BoxProductList
                 data={allProducts as unknown as IProduct[]}
                 pageType="paid"
+                entrySource={
+                  stateType === "ongoing"
+                    ? PRODUCT_DETAIL_ENTRY_SOURCE.PAID_ONGOING_BOX
+                    : stateType === "end"
+                    ? PRODUCT_DETAIL_ENTRY_SOURCE.PAID_END_BOX
+                    : PRODUCT_DETAIL_ENTRY_SOURCE.PAID_STANDALONE_BOX
+                }
               />
               <div ref={observerTarget} className="h-4" />
               {isFetchingNextPage && (

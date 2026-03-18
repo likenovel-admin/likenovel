@@ -13,6 +13,11 @@ import {
   isEndDateExpired,
 } from "@/utils/getLatestEpisodeDate";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import {
+  buildProductDetailPath,
+  PRODUCT_DETAIL_ENTRY_SOURCE,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -35,6 +40,20 @@ interface Props {
   data: ILastViewedProduct;
   hasGle?: boolean;
 }
+
+const getEntrySourceByPageType = (pageType: Props["pageType"]) => {
+  switch (pageType) {
+    case "preference":
+      return PRODUCT_DETAIL_ENTRY_SOURCE.PREFERENCE_BOOKMARK;
+    case "interestDrop":
+      return PRODUCT_DETAIL_ENTRY_SOURCE.PREFERENCE_INTEREST_DROP;
+    case "lastViewed":
+      return PRODUCT_DETAIL_ENTRY_SOURCE.PREFERENCE_LAST_VIEWED;
+    default:
+      return undefined;
+  }
+};
+
 const ProductListCard = ({ pageType, data, hasGle = true }: Props) => {
   const router = useRouter();
   const { setModal } = useModalStore();
@@ -294,9 +313,15 @@ const ProductListCard = ({ pageType, data, hasGle = true }: Props) => {
   };
 
   const handleButtonClick = () => {
+    const entrySource = getEntrySourceByPageType(pageType);
+    if (entrySource) {
+      setPendingProductDetailEntrySource(data.productId, entrySource);
+    }
+    const detailPath = buildProductDetailPath(data.productId);
+
     // 관심 끊김 작품인 경우
     if (data.badge?.interestEndDate) {
-      return router.push(`/product/${data.productId}`);
+      return router.push(detailPath);
       // 회차 이동인 경우
     } else {
       // data.episodeCount !== 0 && data.episodeId !== undefined
@@ -305,7 +330,7 @@ const ProductListCard = ({ pageType, data, hasGle = true }: Props) => {
       //       content: "열람 가능한 회차가 없거나 작품 열람이 닫혔습니다.",
       //       buttonCount: 1,
       //     });
-      router.push(`/product/${data.productId}`);
+      router.push(detailPath);
     }
   };
 
@@ -314,7 +339,11 @@ const ProductListCard = ({ pageType, data, hasGle = true }: Props) => {
       <div
         className="relative flex gap-10pxr md:gap-24pxr cursor-pointer"
         onClick={() => {
-          router.push(`/product/${data.productId}`);
+          const entrySource = getEntrySourceByPageType(pageType);
+          if (entrySource) {
+            setPendingProductDetailEntrySource(data.productId, entrySource);
+          }
+          router.push(buildProductDetailPath(data.productId));
         }}
       >
         {(data?.image && data?.image?.coverImagePath) ||

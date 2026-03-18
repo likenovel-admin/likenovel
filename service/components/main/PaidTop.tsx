@@ -3,6 +3,11 @@ import useMediaDevice from "@/hooks/useMediaDevice";
 import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import {
+  buildProductDetailPath,
+  PRODUCT_DETAIL_ENTRY_SOURCE,
+  setPendingProductDetailEntrySource,
+} from "@/utils/productPath";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import CircleArrow from "../common/CircleArrow";
@@ -74,7 +79,11 @@ const PaidTop = ({ data }: Props) => {
               key={product.productId}
               className="relative flex flex-col cursor-pointer flex-shrink-0"
               onClick={() => {
-                router.push(`/product/${product.productId}`);
+                setPendingProductDetailEntrySource(
+                  product.productId,
+                  PRODUCT_DETAIL_ENTRY_SOURCE.HOME_PAID_TOP
+                );
+                router.push(buildProductDetailPath(product.productId));
               }}
             >
               <div className="relative">
