@@ -23,12 +23,12 @@ const PaymentMethod = ({ payMethod, onSetPayMethod }: PayMethodProps) => {
           onClick={() => onSetPayMethod("TRANSFER")}
           active={payMethod === "TRANSFER"}
         />
-        {/* <PaymentItem
-          name="무통장입금"
+        <PaymentItem
+          name="가상계좌"
           icon="/images/deposit.svg"
           onClick={() => onSetPayMethod("VIRTUAL_ACCOUNT")}
           active={payMethod === "VIRTUAL_ACCOUNT"}
-        /> */}
+        />
         <PaymentItem
           name="휴대폰"
           icon="/images/phone.svg"
@@ -40,12 +40,6 @@ const PaymentMethod = ({ payMethod, onSetPayMethod }: PayMethodProps) => {
           icon="/images/kakao.png"
           onClick={() => onSetPayMethod("KAKAOPAY")}
           active={payMethod === "KAKAOPAY"}
-        />
-        <PaymentItem
-          name="토스페이"
-          icon="/images/simple-pay.svg"
-          onClick={() => onSetPayMethod("TOSSPAY")}
-          active={payMethod === "TOSSPAY"}
         />
       </div>
     </div>
