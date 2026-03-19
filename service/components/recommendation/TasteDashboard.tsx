@@ -125,9 +125,14 @@ const TasteDashboard = () => {
         <p className="text-13pxr text-dark-gray-400 mb-6pxr">
           아직 수집된 취향 데이터가 없어요.
         </p>
-        <p className="text-12pxr text-dark-gray-400 mb-14pxr">
-          7일 단위로 갱신됩니다.
-        </p>
+        <div className="mb-14pxr space-y-4pxr">
+          <p className="text-12pxr leading-[1.5] text-dark-gray-400">
+            설정한 취향은 추천에 먼저 반영됩니다.
+          </p>
+          <p className="text-12pxr leading-[1.5] text-dark-gray-400">
+            아래 분석은 최근 읽기 행동을 바탕으로 7일 단위로 갱신됩니다.
+          </p>
+        </div>
         {renderAxisList()}
         <Button
           variant="primary"
@@ -150,9 +155,14 @@ const TasteDashboard = () => {
       <div className="flex items-center justify-between mb-14pxr">
         <div>
           <h3 className="text-16pxr font-bold">현재 취향</h3>
-          <p className="mt-2pxr text-12pxr text-dark-gray-400">
-            7일 단위로 갱신됩니다.
-          </p>
+          <div className="mt-2pxr space-y-2pxr">
+            <p className="text-12pxr leading-[1.5] text-dark-gray-400">
+              설정한 취향은 추천에 먼저 반영됩니다.
+            </p>
+            <p className="text-12pxr leading-[1.5] text-dark-gray-400">
+              아래 분석은 최근 읽기 행동을 바탕으로 7일 단위로 갱신됩니다.
+            </p>
+          </div>
         </div>
         <Button
           variant="blueBorder"

@@ -100,9 +100,16 @@ export default function Home() {
     () => mainRuleSlotsData?.data ?? [],
     [mainRuleSlotsData]
   );
+  const shouldShowTasteSections = useMemo(() => {
+    if (!canUseTasteRecommend) return false;
+    return tasteRecommendationsData?.data?.needs_onboarding !== true;
+  }, [canUseTasteRecommend, tasteRecommendationsData]);
   const tasteSections = useMemo<IRecommendSection[]>(
-    () => tasteRecommendationsData?.data?.sections ?? [],
-    [tasteRecommendationsData]
+    () =>
+      shouldShowTasteSections
+        ? tasteRecommendationsData?.data?.sections ?? []
+        : [],
+    [shouldShowTasteSections, tasteRecommendationsData]
   );
   const mixedSections = useMemo<
     Array<{ type: "feature"; section: ISectionData } | { type: "ai"; section: IRecommendSection }>

@@ -137,10 +137,10 @@ const CashCharge = () => {
         encodedResume
       ), // (모바일)결제 완료 후 이동할 페이지
       // redirectUrl: `http://localhost:3000/order/payment/complete`,   // (모바일)결제 완료 후 이동할 페이지
-      ...((payMethod === "KAKAOPAY" || payMethod === "TOSSPAY") && {
+      ...(payMethod === "KAKAOPAY" && {
         payMethod: "EASY_PAY" as Entity.PayMethod,
         easyPay: {
-          easyPayProvider: payMethod as Entity.EasyPayProvider,
+          easyPayProvider: "KAKAOPAY" as Entity.EasyPayProvider,
           availablePayMethods: ["CARD"] as Entity.EasyPayPaymentMethod[],
         },
       }),

@@ -1,17 +1,11 @@
 "use client";
 
 import {
-  useGetOnboardingProducts,
   usePostOnboarding,
   usePostOnboardingDismiss,
 } from "@/app/api/query/recommendation";
-import {
-  IOnboardingProduct,
-  IOnboardingTagTab,
-} from "@/app/api/query/recommendation/dto";
 import Button from "@/components/common/Button";
 import { useQueryClient } from "@tanstack/react-query";
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface Props {
@@ -20,173 +14,170 @@ interface Props {
   dismissOnClose?: boolean;
 }
 
-type OnboardingTagTab = "hero" | "worldTone" | "relation";
+type OnboardingTagTab = "hero" | "world" | "relation" | "style";
 type SelectedTagState = Record<OnboardingTagTab, string[]>;
 
-const toTagList = (raw: unknown): string[] => {
-  if (!raw) return [];
-  if (Array.isArray(raw)) {
-    return raw
-      .map((item) => String(item).trim())
-      .filter(Boolean);
-  }
-  if (typeof raw === "string") {
-    const trimmed = raw.trim();
-    if (!trimmed) return [];
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (Array.isArray(parsed)) {
-        return parsed
-          .map((item) => String(item).trim())
-          .filter(Boolean);
-      }
-    } catch {
-      return trimmed
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean);
-    }
-  }
-  return [];
+type OnboardingTagConfig = {
+  key: OnboardingTagTab;
+  label: string;
+  tags: string[];
 };
+
+const ONBOARDING_TAG_TABS: OnboardingTagConfig[] = [
+  {
+    key: "hero",
+    label: "주인공",
+    tags: [
+      "성장형",
+      "먼치킨",
+      "망나니",
+      "귀환자",
+      "헌터",
+      "천재",
+      "고인물",
+      "랭커",
+      "엑스트라",
+      "전략",
+    ],
+  },
+  {
+    key: "world",
+    label: "세계관",
+    tags: [
+      "현대",
+      "아카데미",
+      "중세",
+      "게임",
+      "게이트",
+      "던전",
+      "아포칼립스",
+      "탑",
+      "대체역사",
+      "디스토피아",
+    ],
+  },
+  {
+    key: "relation",
+    label: "관계",
+    tags: [
+      "집착",
+      "순애",
+      "러브코미디",
+      "소꿉친구",
+      "츤데레",
+      "하렘",
+      "악녀",
+      "조력자",
+      "성녀",
+      "메이드",
+    ],
+  },
+  {
+    key: "style",
+    label: "작풍",
+    tags: [
+      "착각",
+      "코미디",
+      "유쾌",
+      "통쾌",
+      "피폐",
+      "힐링",
+      "모험",
+      "전쟁",
+      "느와르",
+      "밀리터리",
+    ],
+  },
+];
+
+const EMPTY_SELECTED_TAGS: SelectedTagState = {
+  hero: [],
+  world: [],
+  relation: [],
+  style: [],
+};
+
+const MIN_SELECTED_TAGS = 2;
+const MAX_SELECTED_TAGS = 6;
 
 const OnboardingModal = ({
   isOpen,
   onClose,
   dismissOnClose = false,
 }: Props) => {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
-  const [analysisType, setAnalysisType] = useState("맞춤");
-  const [analysisSummary, setAnalysisSummary] = useState("");
   const [activeTagTab, setActiveTagTab] = useState<OnboardingTagTab>("hero");
-  const [selectedTags, setSelectedTags] = useState<SelectedTagState>({
-    hero: [],
-    worldTone: [],
-    relation: [],
-  });
-  const [brokenCoverProductIds, setBrokenCoverProductIds] = useState<
-    Record<number, true>
-  >({});
+  const [selectedTags, setSelectedTags] = useState<SelectedTagState>(
+    EMPTY_SELECTED_TAGS
+  );
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  const { data: onboardingData } = useGetOnboardingProducts();
   const { mutateAsync: postOnboarding, isPending } = usePostOnboarding();
   const { mutateAsync: dismissOnboarding } = usePostOnboardingDismiss();
   const queryClient = useQueryClient();
 
-  const products: IOnboardingProduct[] = useMemo(
-    () => onboardingData?.data ?? [],
-    [onboardingData]
-  );
-  const tagTabs = useMemo(() => {
-    if (onboardingData?.tag_tabs?.length) {
-      return onboardingData.tag_tabs;
-    }
-
-    const heroTagCount = new Map<string, number>();
-    const worldToneTagCount = new Map<string, number>();
-    const relationTagCount = new Map<string, number>();
-
-    const increaseCount = (counter: Map<string, number>, tag: string) => {
-      const normalized = tag.trim();
-      if (!normalized) return;
-      counter.set(normalized, (counter.get(normalized) || 0) + 1);
-    };
-
-    products.forEach((product) => {
-      toTagList(product.protagonist_type_tags).forEach((tag) =>
-        increaseCount(heroTagCount, tag)
-      );
-      toTagList(product.protagonist_job_tags).forEach((tag) =>
-        increaseCount(heroTagCount, tag)
-      );
-      toTagList(product.protagonist_material_tags).forEach((tag) =>
-        increaseCount(heroTagCount, tag)
-      );
-      toTagList(product.worldview_tags).forEach((tag) =>
-        increaseCount(worldToneTagCount, tag)
-      );
-      toTagList(product.axis_style_tags).forEach((tag) =>
-        increaseCount(worldToneTagCount, tag)
-      );
-      toTagList(product.axis_romance_tags).forEach((tag) =>
-        increaseCount(relationTagCount, tag)
-      );
-    });
-
-    const toItems = (counter: Map<string, number>, limit: number) =>
-      Array.from(counter.entries())
-        .sort((a, b) => (b[1] === a[1] ? a[0].localeCompare(b[0]) : b[1] - a[1]))
-        .slice(0, limit)
-        .map(([tag, count]) => ({ tag, count }));
-
-    return [
-      { key: "hero", label: "주인공", tags: toItems(heroTagCount, 30) },
-      { key: "worldTone", label: "세계관/분위기", tags: toItems(worldToneTagCount, 30) },
-      { key: "relation", label: "관계/기타", tags: toItems(relationTagCount, 24) },
-    ] as IOnboardingTagTab[];
-  }, [onboardingData, products]);
-
   const activeTags = useMemo(
-    () => tagTabs.find((tab) => tab.key === activeTagTab)?.tags ?? [],
-    [tagTabs, activeTagTab]
+    () => ONBOARDING_TAG_TABS.find((tab) => tab.key === activeTagTab)?.tags ?? [],
+    [activeTagTab]
   );
-  const totalSelectedTagCount = useMemo(
+
+  const selectedTagItems = useMemo(
     () =>
-      selectedTags.hero.length +
-      selectedTags.worldTone.length +
-      selectedTags.relation.length,
+      ONBOARDING_TAG_TABS.flatMap((tab) =>
+        selectedTags[tab.key].map((tag) => ({
+          key: `${tab.key}:${tag}`,
+          tabKey: tab.key,
+          label: tag,
+        }))
+      ),
     [selectedTags]
   );
 
-  const fallbackType = useMemo(() => {
-    if (selectedTags.hero.length > 0) {
-      return selectedTags.hero[0];
-    }
-    return "맞춤";
-  }, [selectedTags.hero]);
+  const totalSelectedTagCount = selectedTagItems.length;
+  const canSubmit = totalSelectedTagCount >= MIN_SELECTED_TAGS;
+  const hasReachedSelectionLimit = totalSelectedTagCount >= MAX_SELECTED_TAGS;
 
   useEffect(() => {
     if (!isOpen) {
-      setStep(1);
-      setSelectedProducts([]);
-      setAnalysisType("맞춤");
-      setAnalysisSummary("");
       setActiveTagTab("hero");
-      setSelectedTags({ hero: [], worldTone: [], relation: [] });
-      setBrokenCoverProductIds({});
+      setSelectedTags(EMPTY_SELECTED_TAGS);
+      setHasSubmitted(false);
     }
   }, [isOpen]);
 
-  const toggleProduct = useCallback((productId: number) => {
-    setSelectedProducts((prev) => {
-      if (prev.includes(productId)) {
-        return prev.filter((id) => id !== productId);
-      }
-      if (prev.length >= 2) {
-        return prev;
-      }
-      return [...prev, productId];
-    });
-  }, []);
-  const toggleTag = useCallback((tab: OnboardingTagTab, tag: string) => {
-    setSelectedTags((prev) => {
-      const next = new Set(prev[tab]);
-      if (next.has(tag)) {
-        next.delete(tag);
-      } else {
-        next.add(tag);
-      }
-      return {
-        ...prev,
-        [tab]: Array.from(next),
-      };
-    });
-  }, []);
+  const toggleTag = useCallback(
+    (tab: OnboardingTagTab, tag: string) => {
+      setSelectedTags((prev) => {
+        const next = new Set(prev[tab]);
 
-  const handleRequestClose = async () => {
-    if (step === 2 && isPending) return;
-    if (dismissOnClose && step !== 3) {
+        if (next.has(tag)) {
+          next.delete(tag);
+        } else {
+          const currentCount =
+            prev.hero.length +
+            prev.world.length +
+            prev.relation.length +
+            prev.style.length;
+
+          if (currentCount >= MAX_SELECTED_TAGS) {
+            return prev;
+          }
+
+          next.add(tag);
+        }
+
+        return {
+          ...prev,
+          [tab]: Array.from(next),
+        };
+      });
+    },
+    []
+  );
+
+  const handleRequestClose = useCallback(async () => {
+    if (isPending) return;
+
+    if (dismissOnClose && !hasSubmitted) {
       try {
         await dismissOnboarding();
         queryClient.invalidateQueries({
@@ -196,75 +187,64 @@ const OnboardingModal = ({
         console.error("onboarding dismiss failed", error);
       }
     }
-    onClose();
-  };
 
-  const handleSelect = async () => {
-    if ((selectedProducts.length === 0 && totalSelectedTagCount === 0) || isPending) {
+    onClose();
+  }, [dismissOnClose, dismissOnboarding, hasSubmitted, isPending, onClose, queryClient]);
+
+  const handleSubmit = async () => {
+    if (!canSubmit || isPending) {
       return;
     }
 
-    setStep(2);
     try {
-      const response = await postOnboarding({
-        product_ids: selectedProducts,
+      await postOnboarding({
+        product_ids: [],
         moods: [],
         hero_tags: selectedTags.hero,
-        world_tone_tags: selectedTags.worldTone,
+        world_tone_tags: [...selectedTags.world, ...selectedTags.style],
         relation_tags: selectedTags.relation,
       });
-
-      const dominantType = response?.data?.dominant_type || fallbackType;
-      const summary =
-        response?.data?.taste_summary ||
-        "선택한 작품과 태그를 바탕으로 추천 구좌를 구성했어요.";
-
-      setAnalysisType(dominantType);
-      setAnalysisSummary(summary);
 
       queryClient.invalidateQueries({
         queryKey: ["tasteRecommendations"],
       });
       queryClient.invalidateQueries({ queryKey: ["tasteProfile"] });
 
-      setStep(3);
+      setHasSubmitted(true);
+      onClose();
     } catch (error) {
-      setStep(1);
       console.error("onboarding analysis failed", error);
-      window.alert("취향 분석에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      window.alert("취향 설정에 실패했습니다. 잠시 후 다시 시도해주세요.");
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-end md:items-center justify-center">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center">
       <div className="absolute inset-0 bg-black/50" onClick={handleRequestClose} />
 
-      <div className="relative bg-white rounded-t-[20px] md:rounded-[20px] border border-light-gray-400 shadow-xl w-full max-w-[560px] max-h-[85vh] overflow-hidden flex flex-col md:m-[15px]">
-        <div className="flex items-start justify-between px-20pxr py-16pxr border-b border-light-gray-400">
+      <div className="relative flex max-h-[85vh] w-full max-w-[560px] flex-col overflow-hidden rounded-t-[20px] border border-light-gray-400 bg-white shadow-xl md:m-[15px] md:rounded-[20px]">
+        <div className="flex items-start justify-between border-b border-light-gray-400 px-20pxr py-16pxr">
           <div>
-            <h2 className="text-18pxr font-bold text-black-100">
-              {step === 1
-                ? "좋아하는 웹소설 작품을 골라보세요."
-                : step === 2
-                  ? "취향 분석 중"
-                  : "분석완료!"}
+            <h2 className="text-18pxr font-bold tracking-[-2%] text-black-100">
+              취향에 맞는 작품을 바로 보여드릴게요
             </h2>
-            {step === 1 && (
-              <p className="mt-4pxr text-13pxr text-dark-gray-400 tracking-[-2%]">
-                작품(최대 2개) 또는 태그를 선택해 주세요.
-              </p>
-            )}
+            <p className="mt-4pxr text-13pxr tracking-[-2%] text-dark-gray-400">
+              마음에 드는 태그를 2~6개 골라주세요.
+            </p>
+            <p className="mt-4pxr text-12pxr leading-[1.5] tracking-[-2%] text-dark-gray-400">
+              선택한 취향은 추천에 먼저 반영되고, 취향 분석은 최근 읽기 행동을 바탕으로 7일 단위로 갱신됩니다.
+            </p>
           </div>
           <button
-            className="p-4pxr disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-4pxr disabled:cursor-not-allowed disabled:opacity-50"
             onClick={handleRequestClose}
-            disabled={step === 2 && isPending}
+            disabled={isPending}
             aria-label="온보딩 모달 닫기"
           >
             <svg
-              className="w-6 h-6 text-dark-gray-400"
+              className="h-6 w-6 text-dark-gray-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -280,197 +260,107 @@ const OnboardingModal = ({
         </div>
 
         <div className="flex-1 overflow-y-auto px-20pxr py-16pxr">
-          {step === 1 && (
-            <>
-              <p className="text-14pxr text-dark-gray-500 mb-16pxr tracking-[-2%]">
-                선택: 작품 {selectedProducts.length}/2 · 태그 {totalSelectedTagCount}개
-              </p>
-              <div className="mb-16pxr">
-                <div className="flex gap-6pxr overflow-x-auto scroll-hidden">
-                  {tagTabs.map((tab) => (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      className={`shrink-0 rounded-full border px-10pxr py-6pxr text-12pxr font-medium tracking-[-2%] ${
-                        activeTagTab === tab.key
-                          ? "border-primary-100 bg-primary-100 text-white"
-                          : "border-light-gray-400 bg-white text-dark-gray-500"
-                      }`}
-                      onClick={() => setActiveTagTab(tab.key)}
-                    >
-                      {tab.label} ({tab.tags.length})
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-8pxr min-h-[46px] rounded-[10px] border border-light-gray-400 bg-light-gray-100 p-8pxr">
-                  {activeTags.length > 0 ? (
-                    <div className="flex flex-wrap gap-6pxr">
-                      {activeTags.map((item) => (
-                        <button
-                          key={`${activeTagTab}-${item.tag}`}
-                          type="button"
-                          className={`rounded-full border px-8pxr py-4pxr text-12pxr tracking-[-2%] ${
-                            selectedTags[activeTagTab].includes(item.tag)
-                              ? "border-primary-100 bg-primary-100 text-white"
-                              : "border-light-gray-400 bg-white text-dark-gray-500"
-                          }`}
-                          onClick={() => toggleTag(activeTagTab, item.tag)}
-                        >
-                          #{item.tag}
-                          {item.count > 0 ? ` · ${item.count}` : ""}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-12pxr text-dark-gray-400 tracking-[-2%]">
-                      표시할 태그가 없어요.
-                    </p>
-                  )}
-                </div>
-              </div>
-              {products.length === 0 ? (
-                <div className="min-h-[280px] flex items-center justify-center rounded-[10px] border border-light-gray-400 bg-light-gray-100">
-                  <p className="text-14pxr text-dark-gray-400 tracking-[-2%]">
-                    지금은 선택 가능한 작품이 없어요.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-12pxr">
-                  {products.map((product) => {
-                    const isSelected = selectedProducts.includes(product.product_id);
-                    const isCoverBroken = Boolean(
-                      brokenCoverProductIds[product.product_id]
-                    );
-                    return (
-                      <button
-                        key={product.product_id}
-                        className={`relative rounded-[10px] overflow-hidden border-2 transition-colors text-left ${
-                          isSelected ? "border-primary-100" : "border-light-gray-400"
+          <div className="mx-[-20pxr] mb-14pxr px-20pxr">
+            <div className="flex w-full">
+              {ONBOARDING_TAG_TABS.map((tab) => {
+                const isActive = activeTagTab === tab.key;
+                const hasSelections = selectedTags[tab.key].length > 0;
+
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    className={`relative flex h-[46px] flex-1 items-center justify-center border border-t-0 border-l-0 border-r-0 text-13pxr font-medium tracking-[-2%] transition-colors ${
+                      isActive
+                        ? "border-b-[2px] border-b-black-100 text-black-100"
+                        : "border-b-[1px] border-b-light-gray-300 text-dark-gray-400"
+                    }`}
+                    onClick={() => setActiveTagTab(tab.key)}
+                  >
+                    <span>{tab.label}</span>
+                    {hasSelections && (
+                      <span
+                        className={`ml-6pxr inline-block h-[6px] w-[6px] rounded-full ${
+                          isActive ? "bg-black-100" : "bg-primary-100"
                         }`}
-                        onClick={() => toggleProduct(product.product_id)}
-                      >
-                        <div className="w-full aspect-[2/3] bg-light-gray-100">
-                          {product.cover_url && !isCoverBroken ? (
-                            <Image
-                              src={product.cover_url}
-                              alt={product.title}
-                              width={148}
-                              height={215}
-                              unoptimized
-                              className="object-cover w-full h-full"
-                              onError={() =>
-                                setBrokenCoverProductIds((prev) => ({
-                                  ...prev,
-                                  [product.product_id]: true,
-                                }))
-                              }
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-11pxr text-dark-gray-300">
-                              표지
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-8pxr">
-                          <p className="text-13pxr font-semibold text-black-100 line-clamp-2 tracking-[-2%]">
-                            {product.title}
-                          </p>
-                          <p className="mt-2pxr text-12pxr text-dark-gray-400 line-clamp-1 tracking-[-2%]">
-                            {product.author_name || "-"}
-                          </p>
-                        </div>
-                        {isSelected && (
-                          <div className="absolute top-[6px] right-[6px] w-[22px] h-[22px] bg-primary-100 rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-3 h-3 text-white"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={3}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </>
-          )}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-          {step === 2 && (
-            <div className="h-full min-h-[280px] flex flex-col items-center justify-center">
-              <p className="text-15pxr font-medium text-dark-gray-700 text-center tracking-[-2%]">
-                선택한 작품에 맞게 독자님의 취향을 분석합니다.
-              </p>
-              <div className="mt-20pxr w-10 h-10 border-2 border-light-gray-500 border-t-primary-100 rounded-full animate-spin" />
+          {selectedTagItems.length > 0 && (
+            <div className="mb-16pxr rounded-[10px] border border-light-gray-400 bg-light-gray-100 p-10pxr">
+              <div className="flex flex-wrap gap-8pxr">
+                {selectedTagItems.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => toggleTag(item.tabKey, item.label)}
+                    className="inline-flex items-center gap-6pxr rounded-full border border-primary-100 bg-white px-10pxr py-6pxr text-12pxr font-medium tracking-[-2%] text-primary-100"
+                  >
+                    <span>{item.label}</span>
+                    <span aria-hidden="true">×</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
-          {step === 3 && (
-            <div className="min-h-[280px] flex flex-col gap-14pxr">
-              <p className="text-16pxr font-semibold text-black-100 tracking-[-2%]">
-                {analysisType} 타입.
-              </p>
-              <p className="text-14pxr leading-[1.6] text-dark-gray-700 tracking-[-2%]">
-                {analysisSummary}
-              </p>
-              <p className="text-14pxr leading-[1.6] text-dark-gray-700 tracking-[-2%]">
-                분석결과를 토대로 AI 추천 구좌가 표시됩니다.
-              </p>
-              <p className="text-13pxr leading-[1.6] text-dark-gray-400 tracking-[-2%]">
-                이 분석결과는 마이페이지에서도 다시 보거나, 재분석도 가능해요.
-              </p>
+          <div className="mt-12pxr rounded-[10px] border border-light-gray-400 bg-white p-10pxr">
+            <div className="flex flex-wrap gap-8pxr">
+              {activeTags.map((tag) => {
+                const isSelected = selectedTags[activeTagTab].includes(tag);
+                const isDisabled = !isSelected && hasReachedSelectionLimit;
+
+                return (
+                  <button
+                    key={`${activeTagTab}-${tag}`}
+                    type="button"
+                    onClick={() => toggleTag(activeTagTab, tag)}
+                    disabled={isDisabled}
+                    className={`rounded-full border px-12pxr py-8pxr text-13pxr font-medium tracking-[-2%] transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+                      isSelected
+                        ? "border-primary-100 bg-primary-100 text-white"
+                        : "border-light-gray-400 bg-white text-dark-gray-500"
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
             </div>
-          )}
+          </div>
         </div>
 
-        <div className="px-20pxr py-16pxr border-t border-light-gray-400">
-          {step === 1 && (
-            <div className="flex flex-col items-center gap-10pxr">
-              <Button
-                variant="primary"
-                size="md"
-                className="w-full"
-                disabled={
-                  isPending ||
-                  (selectedProducts.length === 0 && totalSelectedTagCount === 0)
-                }
-                onClick={handleSelect}
-              >
-                선택
-              </Button>
-              <button
-                className="text-12pxr text-dark-gray-400 underline underline-offset-2"
-                onClick={handleRequestClose}
-              >
-                나중에 고르기
-              </button>
-            </div>
-          )}
-
-          {step === 2 && (
-            <Button variant="gray" size="md" className="w-full" disabled>
-              분석 중...
-            </Button>
-          )}
-
-          {step === 3 && (
+        <div className="border-t border-light-gray-400 px-20pxr py-16pxr">
+          <div className="mb-10pxr min-h-[20px] text-12pxr tracking-[-2%] text-dark-gray-400">
+            {!canSubmit
+              ? "최소 2개 선택해주세요."
+              : hasReachedSelectionLimit
+                ? "최대 6개까지 선택할 수 있어요."
+                : ""}
+          </div>
+          <div className="flex flex-col items-center gap-10pxr">
             <Button
               variant="primary"
               size="md"
               className="w-full"
-              onClick={handleRequestClose}
+              disabled={!canSubmit || isPending}
+              onClick={handleSubmit}
             >
-              확인
+              {isPending ? "적용 중..." : "이 취향으로 추천받기"}
             </Button>
-          )}
+            <button
+              className="text-12pxr tracking-[-2%] text-dark-gray-400 underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={handleRequestClose}
+              disabled={isPending}
+            >
+              나중에 할게요
+            </button>
+          </div>
         </div>
       </div>
     </div>
