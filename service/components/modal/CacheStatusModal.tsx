@@ -126,6 +126,23 @@ const CacheStatusContents = ({
     }
   }, [refetch, typeModalData?.episodeId, typeModalData?.productId]);
 
+  const invalidateViewerPathQueries = () => {
+    const destinationEpisodeId = Number(typeModalData?.episodeId || 0);
+    const fromEpisodeId = Number(typeModalData?.signalContext?.fromEpisodeId || 0);
+
+    if (destinationEpisodeId) {
+      queryClient.invalidateQueries({
+        queryKey: ["selectViewerPath", destinationEpisodeId],
+      });
+    }
+
+    if (fromEpisodeId) {
+      queryClient.invalidateQueries({
+        queryKey: ["selectViewerPath", fromEpisodeId],
+      });
+    }
+  };
+
   const navigateToViewer = (episodeId: number, productId: number) => {
     postNextEpisodeClickSignalBestEffort(typeModalData?.signalContext);
     router.push(
@@ -205,6 +222,7 @@ const CacheStatusContents = ({
                 typeModalData.productId,
               ],
             });
+            invalidateViewerPathQueries();
 
             onClose();
 
@@ -270,6 +288,7 @@ const CacheStatusContents = ({
                 typeModalData.productId,
               ],
             });
+            invalidateViewerPathQueries();
 
             onClose();
 
