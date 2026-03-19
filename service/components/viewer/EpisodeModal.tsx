@@ -4,6 +4,7 @@ import Spinner from "@/components/common/Spinner";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
+import useViewStore from "@/store/viewerStore";
 import { getEpisodeBadge } from "@/utils/getEpisodeBadge";
 import { getFormattingDate } from "@/utils/getFormattingDate";
 import { buildViewerPath } from "@/utils/viewerPath";
@@ -24,13 +25,20 @@ const EpisodeModal = ({ productId, currentEpisodeId }: EpisodeModalProps) => {
   const { isAuthenticated } = useAuthStore((state) => ({
     isAuthenticated: state.isAuthenticated,
   }));
-  const [alignType, setAlignType] = useState<"new" | "old">("new");
+  const { episodeListAlignType, setEpisodeListAlignType } = useViewStore(
+    (state) => ({
+      episodeListAlignType: state.episodeListAlignType,
+      setEpisodeListAlignType: state.setEpisodeListAlignType,
+    })
+  );
   const observerTarget = useRef<HTMLDivElement>(null);
+  const currentEpisodeRef = useRef<HTMLDivElement | null>(null);
+  const hasFocusedCurrentEpisodeRef = useRef(false);
 
   const queryParams: IGetEpisodeProductParams = {
     product_id: productId?.toString() || "0",
     order_by: "episodeNo",
-    order_dir: alignType === "new" ? "desc" : "asc",
+    order_dir: episodeListAlignType === "new" ? "desc" : "asc",
     limit: 20,
   };
 
@@ -44,7 +52,8 @@ const EpisodeModal = ({ productId, currentEpisodeId }: EpisodeModalProps) => {
   } = useGetInfiniteEpisodeList(queryParams);
 
   const handleAlignType = () => {
-    setAlignType(alignType === "new" ? "old" : "new");
+    hasFocusedCurrentEpisodeRef.current = false;
+    setEpisodeListAlignType(episodeListAlignType === "new" ? "old" : "new");
   };
 
   const allEpisodes = useMemo(() => {
@@ -53,6 +62,13 @@ const EpisodeModal = ({ productId, currentEpisodeId }: EpisodeModalProps) => {
     // No need to sort again on client-side
     return data.pages.flatMap((page) => page.data.episodes);
   }, [data]);
+  const hasCurrentEpisode = useMemo(
+    () =>
+      currentEpisodeId
+        ? allEpisodes.some((episode) => episode.episodeId === currentEpisodeId)
+        : false,
+    [allEpisodes, currentEpisodeId]
+  );
 
   // Intersection Observer for infinite scroll
   const handleObserver = useCallback(
@@ -79,6 +95,38 @@ const EpisodeModal = ({ productId, currentEpisodeId }: EpisodeModalProps) => {
       observer.unobserve(element);
     };
   }, [handleObserver]);
+
+  useEffect(() => {
+    if (!currentEpisodeId || hasCurrentEpisode || !hasNextPage || isFetchingNextPage) {
+      return;
+    }
+    fetchNextPage();
+  }, [
+    currentEpisodeId,
+    hasCurrentEpisode,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  ]);
+
+  useEffect(() => {
+    hasFocusedCurrentEpisodeRef.current = false;
+  }, [currentEpisodeId, episodeListAlignType]);
+
+  useEffect(() => {
+    if (!hasCurrentEpisode || hasFocusedCurrentEpisodeRef.current) {
+      return;
+    }
+    const node = currentEpisodeRef.current;
+    if (!node) {
+      return;
+    }
+    hasFocusedCurrentEpisodeRef.current = true;
+    requestAnimationFrame(() => {
+      node.scrollIntoView({ block: "center" });
+    });
+  }, [hasCurrentEpisode, allEpisodes.length]);
+
   if (isLoading) {
     return (
       <div className="px-6 py-20 flex justify-center items-center">
@@ -104,7 +152,7 @@ const EpisodeModal = ({ productId, currentEpisodeId }: EpisodeModalProps) => {
         <button className="flex items-center gap-2" onClick={handleAlignType}>
           <Align />
           <span className="text-dark-gray-400 text-14pxr">
-            {alignType === "old" ? "최신화부터" : "첫화부터"}
+            {episodeListAlignType === "new" ? "최신화부터" : "첫화부터"}
           </span>
         </button>
       </div>
@@ -125,44 +173,53 @@ const EpisodeModal = ({ productId, currentEpisodeId }: EpisodeModalProps) => {
               };
 
               return (
-                <EpisodeCard
+                <div
                   key={episode.episodeId}
-                  episode={episode.episodeNo}
-                  episodeTitle={episode.episodeTitle}
-                  badges={badges}
-                  isRead={episode?.usage?.readYn === "Y" || false}
-                  uploadDate={
-                    episode.createdDate
-                      ? getFormattingDate(episode.createdDate, "YYYY.MM.DD")
-                      : ""
-                  } // TODO: Format date properly
-                  viewCount={episode.countHit}
-                  likeCount={episode.countLike || 0}
-                  onClick={() => {
-                    if (
-                      !isAuthenticated &&
-                      (episode.priceType === "paid" || (episode.episodeNo || 0) > 5)
-                    ) {
-                      withLoginRequired(() => undefined, {
-                        redirectPath: buildViewerPath(episode.episodeId, {
-                          productId,
-                        }),
-                        resumeContext: productId
-                          ? {
-                              productId,
-                              originPageType: "viewer",
-                              originEpisodeId: currentEpisodeId,
-                            }
-                          : undefined,
-                      })?.();
-                      return;
-                    }
-                    router.push(
-                      buildViewerPath(episode.episodeId, { productId })
-                    );
-                    closeModal();
-                  }}
-                />
+                  ref={
+                    episode.episodeId === currentEpisodeId
+                      ? currentEpisodeRef
+                      : null
+                  }
+                >
+                  <EpisodeCard
+                    episode={episode.episodeNo}
+                    episodeTitle={episode.episodeTitle}
+                    isCurrent={episode.episodeId === currentEpisodeId}
+                    badges={badges}
+                    isRead={episode?.usage?.readYn === "Y" || false}
+                    uploadDate={
+                      episode.createdDate
+                        ? getFormattingDate(episode.createdDate, "YYYY.MM.DD")
+                        : ""
+                    } // TODO: Format date properly
+                    viewCount={episode.countHit}
+                    likeCount={episode.countLike || 0}
+                    onClick={() => {
+                      if (
+                        !isAuthenticated &&
+                        (episode.priceType === "paid" || (episode.episodeNo || 0) > 5)
+                      ) {
+                        withLoginRequired(() => undefined, {
+                          redirectPath: buildViewerPath(episode.episodeId, {
+                            productId,
+                          }),
+                          resumeContext: productId
+                            ? {
+                                productId,
+                                originPageType: "viewer",
+                                originEpisodeId: currentEpisodeId,
+                              }
+                            : undefined,
+                        })?.();
+                        return;
+                      }
+                      router.push(
+                        buildViewerPath(episode.episodeId, { productId })
+                      );
+                      closeModal();
+                    }}
+                  />
+                </div>
               );
             })}
             {/* Intersection Observer Target */}
