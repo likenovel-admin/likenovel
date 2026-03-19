@@ -1,5 +1,4 @@
 import { useSelectViewerPath, useSelectNextEpisodeInfo } from "@/app/api/query/episode";
-import { usePostAiSignalEvent } from "@/app/api/query/recommendation";
 import { useRouter } from "next/navigation";
 import ArrowRight from "/public/images/arrow-right-medium.svg";
 import useModalStore from "@/store/modalStore";
@@ -7,6 +6,10 @@ import { TYPE_MODAL } from "@/constants/common";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useAuthStore from "@/store/authStore";
 import useViewStore from "@/store/viewerStore";
+import {
+  type NextEpisodeClickSignalContext,
+  postNextEpisodeClickSignalBestEffort,
+} from "@/utils/nextEpisodeClickSignal";
 import { buildViewerPath } from "@/utils/viewerPath";
 import Image from "next/image";
 
@@ -21,7 +24,6 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
   const { settings } = useViewStore((state) => ({
     settings: state.settings,
   }));
-  const { mutate: postSignalEvent } = usePostAiSignalEvent();
   const { isAuthenticated } = useAuthStore((state) => ({
     isAuthenticated: state.isAuthenticated,
   }));
@@ -50,6 +52,16 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
       : null;
 
     if (!nextViewerPath) return;
+
+    const signalContext: NextEpisodeClickSignalContext | null =
+      episode?.product_id && episode?.nextEpisodeId
+        ? {
+            originAction: "next_episode_click",
+            productId: episode.product_id,
+            fromEpisodeId: currentEpisodeId,
+            redirectToEpisodeId: episode.nextEpisodeId,
+          }
+        : null;
 
     if (
       !isAuthenticated &&
@@ -82,20 +94,12 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
         title: `${productTitle} ${episode.nextEpisodes}화`,
         episodeId: episode.nextEpisodeId,
         productId: episode.product_id,
+        signalContext,
       });
       return;
     }
 
-    // Fire next_episode_click signal event
-    if (data.data.product_id) {
-      postSignalEvent({
-        product_id: data.data.product_id,
-        episode_id: currentEpisodeId,
-        event_type: "next_episode_click",
-        next_available_yn: "Y",
-        event_payload: { redirect_to_episode_id: data.data.nextEpisodeId },
-      });
-    }
+    postNextEpisodeClickSignalBestEffort(signalContext);
 
     // Navigate to next episode if owned or rental is valid
     router.push(nextViewerPath);

@@ -15,6 +15,7 @@ import {
   getEpisodeIdFromViewerPathname,
   getOriginPageTypeFromPathname,
 } from "@/utils/funnelResume";
+import { postNextEpisodeClickSignalBestEffort } from "@/utils/nextEpisodeClickSignal";
 import { buildViewerPath } from "@/utils/viewerPath";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
@@ -125,6 +126,15 @@ const CacheStatusContents = ({
     }
   }, [refetch, typeModalData?.episodeId, typeModalData?.productId]);
 
+  const navigateToViewer = (episodeId: number, productId: number) => {
+    postNextEpisodeClickSignalBestEffort(typeModalData?.signalContext);
+    router.push(
+      buildViewerPath(episodeId, {
+        productId,
+      })
+    );
+  };
+
   const handleMoveToRecharge = () => {
     const productId = Number(typeModalData?.productId || 0);
     if (!productId) {
@@ -198,12 +208,7 @@ const CacheStatusContents = ({
 
             onClose();
 
-            // Navigate to viewer
-            router.push(
-              buildViewerPath(typeModalData.episodeId, {
-                productId: typeModalData.productId,
-              })
-            );
+            navigateToViewer(typeModalData.episodeId, typeModalData.productId);
           },
           onError: (error: any) => {
             setToast({
@@ -268,12 +273,7 @@ const CacheStatusContents = ({
 
             onClose();
 
-            // Navigate to viewer
-            router.push(
-              buildViewerPath(typeModalData.episodeId, {
-                productId: typeModalData.productId,
-              })
-            );
+            navigateToViewer(typeModalData.episodeId, typeModalData.productId);
           },
           onError: (error: any) => {
             setToast({

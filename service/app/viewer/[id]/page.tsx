@@ -1,7 +1,6 @@
 "use client";
 import { useGetProductNoticeDetail } from "@/app/api/query/author/episode";
 import { useSelectViewerPath } from "@/app/api/query/episode";
-import { usePostAiSignalEvent } from "@/app/api/query/recommendation";
 import Modal from "@/components/common/Modal";
 import ViewerBottomNav from "@/components/menu/ViewerBottomNav";
 import ViewerNav from "@/components/menu/ViewerNav";
@@ -25,6 +24,10 @@ import {
   confirmViewerPageContext,
   upsertPendingViewerPageContext,
 } from "@/utils/viewerPageContext";
+import {
+  type NextEpisodeClickSignalContext,
+  postNextEpisodeClickSignalBestEffort,
+} from "@/utils/nextEpisodeClickSignal";
 import { buildViewerPath } from "@/utils/viewerPath";
 import axios from "axios";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -61,7 +64,6 @@ const Viewer = () => {
   const [epubUrl, setEpubUrl] = useState<string | null>(null);
   const [goFirstRequest, setGoFirstRequest] = useState(0);
 
-  const { mutate: postSignalEvent } = usePostAiSignalEvent();
   const { data } = useSelectViewerPath(episodeId);
   const { data: noticeDetailData } = useGetProductNoticeDetail(
     viewerType === "notice" ? episodeId : "",
@@ -171,6 +173,16 @@ const Viewer = () => {
 
     if (!nextViewerPath) return;
 
+    const signalContext: NextEpisodeClickSignalContext | null =
+      episode?.product_id && episode?.nextEpisodeId
+        ? {
+            originAction: "next_episode_click",
+            productId: episode.product_id,
+            fromEpisodeId: episodeId,
+            redirectToEpisodeId: episode.nextEpisodeId,
+          }
+        : null;
+
     if (
       !isAuthenticated &&
       (episode?.nextEpisodePriceType === "paid" ||
@@ -200,19 +212,12 @@ const Viewer = () => {
         title: `${productTitle} ${episode.nextEpisodes}화`,
         episodeId: episode.nextEpisodeId,
         productId: episode.product_id,
+        signalContext,
       });
       return;
     }
     if (data && data?.data?.nextEpisodeId) {
-      if (data.data.product_id) {
-        postSignalEvent({
-          product_id: data.data.product_id,
-          episode_id: episodeId,
-          event_type: "next_episode_click",
-          next_available_yn: "Y",
-          event_payload: { redirect_to_episode_id: data.data.nextEpisodeId },
-        });
-      }
+      postNextEpisodeClickSignalBestEffort(signalContext);
       router.push(nextViewerPath);
     }
   };
