@@ -5,6 +5,7 @@ interface Props {
   episodeTitle?: string;
   episode?: number;
   isRead?: boolean;
+  isCurrent?: boolean;
   badges?: Badge;
   uploadDate?: string;
   viewCount?: number;
@@ -22,6 +23,7 @@ const EpisodeCard = ({
   episodeTitle,
   episode,
   isRead = false,
+  isCurrent = false,
   badges = { free: true, rental: false, collect: false },
   uploadDate,
   viewCount,
@@ -30,7 +32,11 @@ const EpisodeCard = ({
 }: Props) => {
   return (
     <div
-      className="rounded-lg border border-light-gray-400 px-20pxr py-21pxr cursor-pointer"
+      className={`rounded-lg border px-20pxr py-21pxr cursor-pointer ${
+        isCurrent
+          ? "border-[#0092C1] bg-[#F4FBFE]"
+          : "border-light-gray-400"
+      }`}
       onClick={onclick}
     >
       <div className="flex justify-between mb-5pxr">
@@ -43,11 +49,18 @@ const EpisodeCard = ({
           {badges?.rental && <SquareBadge type="rental" />}
           {badges?.collect && <SquareBadge type="collect" />}
         </div>
-        {isRead && (
-          <div className="flex justify-center items-center w-34pxr h-22pxr rounded-xl border border-[#0092C1] text-[#0092C1] text-12pxr">
-            읽음
-          </div>
-        )}
+        <div className="flex items-center gap-4pxr">
+          {isCurrent && (
+            <div className="flex justify-center items-center min-w-34pxr h-22pxr px-8pxr rounded-xl border border-[#B9E7F7] bg-[#F4FBFE] text-[#0092C1] text-12pxr">
+              현재
+            </div>
+          )}
+          {isRead && (
+            <div className="flex justify-center items-center w-34pxr h-22pxr rounded-xl border border-[#0092C1] text-[#0092C1] text-12pxr">
+              읽음
+            </div>
+          )}
+        </div>
       </div>
       <div className="w-4/5">
         <span className="text-18pxr font-medium break-words">

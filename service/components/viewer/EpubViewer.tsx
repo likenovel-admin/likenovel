@@ -101,12 +101,11 @@ const EpubViewer = ({
   const [progress, setProgress] = useState(0);
   const [epubReady, setEpubReady] = useState(false);
   const resolvedCoverImagePath = (coverImagePath || DEFAULT_PRODUCT_IMAGE).trim();
-  const contentTextColor =
-    settings.theme === "dark" ? "#E4E4E4" : "#111317";
 
   const renditionRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const settingsRef = useRef(settings);
   const showLastPageRef = useRef(false);
   const isTransitioningRef = useRef(false);
   const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -116,18 +115,6 @@ const EpubViewer = ({
   const lastPageHostRef = useRef<HTMLElement | null>(null);
   const epubReadyTimerRef = useRef<NodeJS.Timeout | null>(null);
   const epubReadyDoneRef = useRef(false);
-  const initialRelocatedDoneRef = useRef(false);
-  const initialRenderableReadyRef = useRef(false);
-  const latestLocationRef = useRef<string | number>(location);
-  const prevIsScrollRef = useRef(isScroll);
-  const settingsRef = useRef(settings);
-  const bgColorRef = useRef(themeColors[settings.theme] || "#f9f8f8");
-  const contentTextColorRef = useRef(contentTextColor);
-  const coverImagePathRef = useRef(resolvedCoverImagePath);
-  const parserErrorFallbackImageUrlRef = useRef<string | null>(null);
-  const parserErrorFallbackImagePromiseRef = useRef<Promise<string | null> | null>(
-    null
-  );
 
   const device = useMediaDevice();
   const { isAuthenticated } = useAuthStore((s) => ({ isAuthenticated: s.isAuthenticated }));
@@ -278,29 +265,8 @@ const EpubViewer = ({
       }
       resizeTimeoutRef.current = setTimeout(() => {
         if (rendition && width > 0 && height > 0) {
-          const isScrolledFlow = rendition?.settings?.flow === "scrolled";
-          const container =
-            rendition?.manager?.views?.container ||
-            rendition?.manager?.container ||
-            null;
-          const previousScrollTop =
-            isScrolledFlow && container ? container.scrollTop : null;
-
           lastResizeDimensionsRef.current = { width, height };
           rendition.resize(width, height);
-
-          if (
-            isScrolledFlow &&
-            container &&
-            typeof previousScrollTop === "number"
-          ) {
-            requestAnimationFrame(() => {
-              container.scrollTop = previousScrollTop;
-              requestAnimationFrame(() => {
-                container.scrollTop = previousScrollTop;
-              });
-            });
-          }
         }
       }, 150);
     },
@@ -337,8 +303,6 @@ const EpubViewer = ({
     setShowLastPage(false);
     setEpubReady(false);
     epubReadyDoneRef.current = false;
-    initialRelocatedDoneRef.current = false;
-    initialRenderableReadyRef.current = false;
     showLastPageRef.current = false;
     lastResizeDimensionsRef.current = { width: 0, height: 0 };
     if (epubReadyTimerRef.current) {
@@ -431,29 +395,18 @@ const EpubViewer = ({
     () => themeColors[settings.theme] || "#f9f8f8",
     [settings.theme]
   );
+  const bgColorRef = useRef(bgColor);
+  const contentTextColor = useMemo(
+    () => (settings.theme === "dark" ? "#E4E4E4" : "#111317"),
+    [settings.theme]
+  );
+  const contentTextColorRef = useRef(contentTextColor);
 
   useEffect(() => {
     settingsRef.current = settings;
     bgColorRef.current = bgColor;
     contentTextColorRef.current = contentTextColor;
-    coverImagePathRef.current = resolvedCoverImagePath;
-  }, [settings, bgColor, contentTextColor, resolvedCoverImagePath]);
-
-  useEffect(() => {
-    parserErrorFallbackImageUrlRef.current = null;
-    parserErrorFallbackImagePromiseRef.current = null;
-  }, [epubUrl]);
-
-  useEffect(() => {
-    latestLocationRef.current = location;
-  }, [location]);
-
-  useEffect(() => {
-    if (prevIsScrollRef.current && !isScroll) {
-      setLocation(latestLocationRef.current);
-    }
-    prevIsScrollRef.current = isScroll;
-  }, [isScroll, setLocation]);
+  }, [settings, bgColor, contentTextColor]);
 
   const goToPrevPage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -534,24 +487,15 @@ const EpubViewer = ({
 
       coverCandidates.forEach((img) => {
         const imgEl = img as HTMLElement;
-        const isParserErrorCover = imgEl.classList.contains(
-          "ln-parsererror-cover-image"
-        );
         // cross-frame: iframe 내부 요소는 메인 윈도우의 HTMLImageElement와 다른 생성자이므로
         // instanceof 대신 tagName으로 체크
         if (
-          !isParserErrorCover &&
           resolvedCoverImagePath &&
           imgEl.tagName === 'IMG' &&
           (imgEl as HTMLImageElement).src !== resolvedCoverImagePath
         ) {
           (imgEl as HTMLImageElement).src = resolvedCoverImagePath;
         }
-
-        imgEl.style.width = "100%";
-        imgEl.style.maxWidth = "100%";
-        imgEl.style.height = "auto";
-        imgEl.style.objectFit = "";
 
         let toggleButton =
           img.parentElement?.querySelector<HTMLButtonElement>(
@@ -592,24 +536,18 @@ const EpubViewer = ({
 
         // Only show in scrolled mode
         toggleButton.style.display = isScroll ? "block" : "none";
-        toggleButton.style.margin =
-          isScroll && settings.hideImageCover && showNav
-            ? "78px auto 10px"
-            : "10px auto";
 
         if (isScroll) {
           imgEl.style.display = settings.hideImageCover ? "none" : "block";
           imgEl.style.margin = "0 auto";
           if (imgEl.parentElement) {
             imgEl.parentElement.style.textAlign = "center";
-            imgEl.parentElement.style.width = "100%";
           }
         } else {
           imgEl.style.display = "";
           imgEl.style.margin = "";
           if (imgEl.parentElement) {
             imgEl.parentElement.style.textAlign = "";
-            imgEl.parentElement.style.width = "";
           }
         }
 
@@ -634,120 +572,7 @@ const EpubViewer = ({
         doc.body.setAttribute("data-cover-toggle-setup", "true");
       }
     });
-  }, [isScroll, resolvedCoverImagePath, setSettings, settings.hideImageCover, showNav]);
-
-  const getParserErrorFallbackImageUrl = useCallback(
-    async (rendition: Rendition): Promise<string | null> => {
-      if (parserErrorFallbackImageUrlRef.current) {
-        return parserErrorFallbackImageUrlRef.current;
-      }
-      if (parserErrorFallbackImagePromiseRef.current) {
-        return parserErrorFallbackImagePromiseRef.current;
-      }
-
-      const promise = (async () => {
-        const book = (rendition as any)?.book;
-        if (!book) return null;
-
-        try {
-          if (book.ready) {
-            await book.ready;
-          }
-        } catch {
-          // fall through: manifest access is best-effort
-        }
-
-        const manifest =
-          book.packaging?.manifest ||
-          (typeof book.loaded?.manifest?.then === "function"
-            ? await book.loaded.manifest.catch(() => null)
-            : null);
-
-        if (!manifest || typeof manifest !== "object") {
-          return null;
-        }
-
-        const imageItems = Object.values(manifest).filter((item: any) => {
-          return (
-            item &&
-            typeof item.href === "string" &&
-            typeof item.type === "string" &&
-            item.type.startsWith("image/")
-          );
-        }) as Array<{ href: string }>;
-
-        if (imageItems.length === 0) {
-          return null;
-        }
-
-        const coverPath = book.packaging?.coverPath;
-        const targetHref =
-          (coverPath &&
-            imageItems.find((item) => item.href === coverPath)?.href) ||
-          imageItems[0].href;
-
-        if (!targetHref) {
-          return null;
-        }
-
-        const resolvedHref =
-          typeof book.resolve === "function" ? book.resolve(targetHref) : targetHref;
-
-        if (typeof book.resources?.createUrl === "function") {
-          const createdUrl = await book.resources.createUrl(resolvedHref);
-          if (typeof createdUrl === "string" && createdUrl) {
-            return createdUrl;
-          }
-        }
-
-        if (typeof book.archive?.createUrl === "function") {
-          const createdUrl = await book.archive.createUrl(resolvedHref);
-          if (typeof createdUrl === "string" && createdUrl) {
-            return createdUrl;
-          }
-        }
-
-        return resolvedHref || null;
-      })()
-        .then((url) => {
-          parserErrorFallbackImageUrlRef.current = url;
-          return url;
-        })
-        .finally(() => {
-          parserErrorFallbackImagePromiseRef.current = null;
-        });
-
-      parserErrorFallbackImagePromiseRef.current = promise;
-      return promise;
-    },
-    []
-  );
-
-  const applyParserErrorFallbackImage = useCallback(
-    (doc: Document, imageUrl: string) => {
-      if (!doc.body) return;
-
-      const wrapper = doc.createElement("div");
-      wrapper.className = "ln-parsererror-cover";
-      wrapper.style.width = "100%";
-      wrapper.style.textAlign = "center";
-
-      const img = doc.createElement("img");
-      img.src = imageUrl;
-      img.alt = "cover";
-      img.className = "ln-parsererror-cover-image";
-      img.style.display = "block";
-      img.style.width = "100%";
-      img.style.maxWidth = "100%";
-      img.style.height = "auto";
-      img.style.margin = "0 auto";
-
-      wrapper.appendChild(img);
-      doc.body.innerHTML = "";
-      doc.body.appendChild(wrapper);
-    },
-    []
-  );
+  }, [isScroll, resolvedCoverImagePath, setSettings, settings.hideImageCover]);
 
   // ========================= THEME =========================
 
@@ -790,9 +615,7 @@ const EpubViewer = ({
       rendition.themes.default({
         p: {
           ...(lineHeight ? { "line-height": `${lineHeight} !important` } : {}),
-          "text-indent": currentSettings.useParagraphIndent
-            ? "1em !important"
-            : "0 !important",
+          "text-indent": currentSettings.useParagraphIndent ? "" : "0 !important",
         },
       });
       if (containerRef.current) {
@@ -839,7 +662,7 @@ const EpubViewer = ({
         });
       });
     },
-    [device, isScroll, marginSizeMap, desktopScrolledMaxWidthMap]
+    [marginSizeMap, isScroll, device, desktopScrolledMaxWidthMap]
   );
 
   useEffect(() => {
@@ -873,16 +696,6 @@ const EpubViewer = ({
     const r = renditionRef.current;
     return r?.manager?.views?.container || r?.manager?.container || null;
   };
-
-  const needsHostPlacement = useCallback((container: HTMLElement | null) => {
-    if (!container) return false;
-    const host = lastPageHostRef.current;
-    if (!host) return true;
-    return (
-      host.parentElement !== container ||
-      container.lastElementChild !== host
-    );
-  }, []);
 
   // Keep LastPage host at the end of the EPUB scroll container
   const placeHostAtEnd = useCallback(() => {
@@ -918,54 +731,6 @@ const EpubViewer = ({
       container.appendChild(host);
     }
   }, [isScroll]);
-
-  const markEpubReady = useCallback(() => {
-    if (epubReadyDoneRef.current) return;
-    epubReadyDoneRef.current = true;
-    if (epubReadyTimerRef.current) {
-      clearTimeout(epubReadyTimerRef.current);
-      epubReadyTimerRef.current = null;
-    }
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setEpubReady(true);
-      });
-    });
-  }, []);
-
-  const hasRenderableText = useCallback((doc: Document) => {
-    const text = (doc.body?.textContent || "").replace(/\s+/g, "");
-    return text.length > 0;
-  }, []);
-
-  const hasRenderableLayout = useCallback((doc: Document) => {
-    const body = doc.body;
-    if (!body) return false;
-    const rect = body.getBoundingClientRect();
-    return body.scrollHeight > 0 && rect.height > 0;
-  }, []);
-
-  const tryMarkScrolledReady = useCallback(() => {
-    if (epubReadyDoneRef.current) return;
-    if (!initialRelocatedDoneRef.current) return;
-    if (!initialRenderableReadyRef.current) return;
-    markEpubReady();
-  }, [markEpubReady]);
-
-  const scheduleScrolledReadyCheck = useCallback(
-    (doc: Document | null | undefined) => {
-      if (!doc || epubReadyDoneRef.current) return;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (epubReadyDoneRef.current) return;
-          if (!hasRenderableText(doc) || !hasRenderableLayout(doc)) return;
-          initialRenderableReadyRef.current = true;
-          tryMarkScrolledReady();
-        });
-      });
-    },
-    [hasRenderableLayout, hasRenderableText, tryMarkScrolledReady]
-  );
 
   const restoreVisibleRendition = useCallback(() => {
     const rendition = renditionRef.current;
@@ -1044,57 +809,28 @@ const EpubViewer = ({
     };
 
     document.addEventListener("visibilitychange", handleResume);
+    window.addEventListener("focus", handleResume);
     window.addEventListener("pageshow", handleResume);
     return () => {
       document.removeEventListener("visibilitychange", handleResume);
+      window.removeEventListener("focus", handleResume);
       window.removeEventListener("pageshow", handleResume);
     };
   }, [isScroll, restoreVisibleRendition]);
 
   useEffect(() => {
-    if (!isScroll || !wrapperRef.current) {
-      return;
+    if (isScroll && renditionRef.current && wrapperRef.current) {
+      const width = wrapperRef.current.offsetWidth;
+      const height = wrapperRef.current.offsetHeight;
+      debouncedResize(renditionRef.current, width, height);
     }
 
-    const wrapper = wrapperRef.current;
-    const resizeObserver = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      const rendition = renditionRef.current;
-      if (!entry || !rendition) return;
-
-      const width = Math.round(entry.contentRect.width);
-      const height = Math.round(entry.contentRect.height);
-      if (width <= 0 || height <= 0) return;
-
-      debouncedResize(rendition, width, height);
-    });
-
-    resizeObserver.observe(wrapper);
-
     return () => {
-      resizeObserver.disconnect();
       if (resizeTimeoutRef.current) {
         clearTimeout(resizeTimeoutRef.current);
       }
     };
   }, [isScroll, debouncedResize]);
-
-  useEffect(() => {
-    if (!isScroll || !goFirstRequest || !renditionRef.current) {
-      return;
-    }
-
-    latestLocationRef.current = 0;
-    setLocation(0);
-
-    requestAnimationFrame(() => {
-      try {
-        renditionRef.current?.display(0);
-      } catch {
-        // keep current frame if display fails
-      }
-    });
-  }, [goFirstRequest, isScroll, setLocation]);
 
   // ========================= MOBILE SCROLLED: ENABLE DRAG SCROLL ON LastPage =========================
 
@@ -1201,19 +937,23 @@ const EpubViewer = ({
           style={{
             backgroundColor: showLastPage ? bgColor : "transparent",
           }}
-          className="relative h-screen w-full"
+          className={`relative ${
+            showNav
+              ? "h-[calc(100vh-128px)] md:h-[calc(100vh-128px)] mt-[68px] w-full"
+              : "h-screen w-full"
+          }`}
         >
           {/* MAIN EPUB AREA */}
-          <div className="w-full h-full">
+          <div
+            className="w-full h-full"
+            style={{ display: showLastPage ? "none" : "block" }}
+          >
             <ReactReader
               key={`${epubUrl}-${isScroll ? "scrolled" : "paginated"}`}
               url={epubUrl}
-              location={isScroll ? null : location}
+              location={location}
               locationChanged={(loc) => {
-                latestLocationRef.current = loc;
-                if (!isScroll) {
-                  setLocation(loc);
-                }
+                setLocation(loc);
               }}
               showToc={false}
               epubOptions={epubOptions}
@@ -1227,7 +967,7 @@ const EpubViewer = ({
                   : ReactReaderStyle.reader,
                 readerArea: {
                   ...ReactReaderStyle.readerArea,
-                  backgroundColor: bgColor,
+                  backgroundColor: "var(--background-gray)",
                   padding: "0",
                   margin: "0",
                   overflowY: "hidden",
@@ -1236,7 +976,6 @@ const EpubViewer = ({
                 },
                 container: {
                   ...ReactReaderStyle.container,
-                  backgroundColor: bgColor,
                   padding: "0",
                   margin: "0",
                   height: "100%",
@@ -1245,29 +984,25 @@ const EpubViewer = ({
               getRendition={(_rendition) => {
                 renditionRef.current = _rendition;
 
-                if (isScroll && wrapperRef.current) {
-                  const width = wrapperRef.current.offsetWidth;
-                  const height = wrapperRef.current.offsetHeight;
-                  if (width > 0 && height > 0) {
-                    debouncedResize(_rendition, width, height);
-                  }
-                }
-
                 _rendition.on("rendered", () => {
                   if (isScroll && wrapperRef.current) {
-                    const container =
-                      (_rendition as any)?.manager?.views?.container ||
-                      (_rendition as any)?.manager?.container ||
-                      null;
-                    if (needsHostPlacement(container)) {
-                      placeHostAtEnd();
-                    }
-                    if (!epubReadyDoneRef.current && !epubReadyTimerRef.current) {
+                    const width = wrapperRef.current.offsetWidth;
+                    const height = wrapperRef.current.offsetHeight;
+                    debouncedResize(_rendition, width, height);
+                    placeHostAtEnd();
+                    // rendered에서도 타이머 리셋 — resize/placeHost가 스크롤을 밀 수 있음
+                    if (!epubReadyDoneRef.current) {
+                      if (epubReadyTimerRef.current) {
+                        clearTimeout(epubReadyTimerRef.current);
+                      }
                       epubReadyTimerRef.current = setTimeout(() => {
-                        markEpubReady();
-                      }, 2000);
+                        _rendition.display(0);
+                        epubReadyDoneRef.current = true;
+                        setEpubReady(true);
+                      }, 800);
                     }
                   }
+                  updateProgress();
                 });
 
                 _rendition.on("click", () => {
@@ -1312,17 +1047,6 @@ const EpubViewer = ({
                   // Only used in paginated mode
                   if (!isScroll) {
                     setAtBookEnd(isLastSection && isLastPageInSection);
-                  } else if (!epubReadyDoneRef.current) {
-                    initialRelocatedDoneRef.current = true;
-                    const renderedContents = _rendition.getContents?.();
-                    if (Array.isArray(renderedContents)) {
-                      renderedContents.forEach((content: Contents) =>
-                        scheduleScrolledReadyCheck(
-                          (content as any).document || content.window?.document
-                        )
-                      );
-                    }
-                    tryMarkScrolledReady();
                   }
 
                   updateProgress();
@@ -1393,28 +1117,37 @@ const EpubViewer = ({
                   style.appendChild(doc.createTextNode(css));
                   doc.head.appendChild(style);
 
-                  // 깨진 XHTML cover 페이지 복구:
-                  // EPUB 내부 cover.xhtml 파싱 실패 시, EPUB 내부 이미지 자산을 우선 표지로 사용한다.
+                  // 깨진 XHTML cover 페이지 복구: parsererror가 있으면
+                  // body를 API coverImagePath로 교체 (정상 EPUB 표지와 동일한 뷰포트 맞춤)
                   const parserError = doc.querySelector("parsererror");
-                  if (parserError) {
+                  if (parserError && resolvedCoverImagePath) {
+                    doc.body.innerHTML = `
+                      <div style="
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        width:100%;
+                        height:100vh;
+                        margin:0;
+                        padding:0;
+                        overflow:hidden;
+                      ">
+                        <img
+                          src="${resolvedCoverImagePath}"
+                          alt="cover"
+                          style="
+                            display:block;
+                            max-width:100%;
+                            max-height:100vh;
+                            object-fit:contain;
+                          "
+                        />
+                      </div>`;
+                    doc.body.style.margin = "0";
+                    doc.body.style.padding = "0";
+                    doc.body.style.overflow = "hidden";
+                  } else if (parserError) {
                     parserError.style.display = "none";
-                    void getParserErrorFallbackImageUrl(_rendition).then((epubImageUrl) => {
-                      const fallbackImageUrl =
-                        epubImageUrl || coverImagePathRef.current;
-                      if (!fallbackImageUrl) return;
-
-                      applyParserErrorFallbackImage(doc, fallbackImageUrl);
-                      updateTheme(_rendition);
-                      updateToggleButtons();
-
-                      if (isScroll) {
-                        placeHostAtEnd();
-                        scheduleScrolledReadyCheck(doc);
-                      } else if (!epubReadyDoneRef.current) {
-                        epubReadyDoneRef.current = true;
-                        setEpubReady(true);
-                      }
-                    });
                   }
 
                   updateTheme(_rendition);
@@ -1422,7 +1155,6 @@ const EpubViewer = ({
 
                   if (isScroll) {
                     placeHostAtEnd();
-                    scheduleScrolledReadyCheck(doc);
                   } else if (!epubReadyDoneRef.current) {
                     epubReadyDoneRef.current = true;
                     setEpubReady(true);
@@ -1434,19 +1166,13 @@ const EpubViewer = ({
 
           {/* PAGINATED LastPage AREA */}
           <div
-            className={`absolute inset-0 z-30 w-full h-full ${
-              !isScroll ? "overflow-y-auto" : ""
-            }`}
+            className={`w-full h-full ${!isScroll ? "overflow-y-auto" : ""}`}
             style={{
-              display: !isScroll && showLastPage ? "block" : "none",
+              display: showLastPage ? "block" : "none",
               backgroundColor: bgColor,
             }}
-            onClick={handleToggleNav}
           >
-            <div
-              className="mt-[96px] mb-[10px]"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="mt-[96px] mb-[10px]">
               <LastPage
                 currentEpisodeId={currentEpisodeId}
                 handleCommentState={handleCommentState}
@@ -1456,7 +1182,7 @@ const EpubViewer = ({
 
           {/* PAGINATED ARROWS */}
           <div
-            className="absolute inset-y-1/2 left-0 right-0 z-40 flex justify-between items-center px-4"
+            className="absolute inset-y-1/2 left-0 right-0 flex justify-between items-center px-4"
             style={{ display: isScroll ? "none" : "flex" }}
           >
             <ArrowIcon

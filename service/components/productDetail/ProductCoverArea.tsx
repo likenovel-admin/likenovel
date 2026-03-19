@@ -18,6 +18,7 @@ import {
   findPreviousNonMatchingPath,
   logNavigationHistory,
 } from "@/utils/navigationHistory";
+import { logProductTrace } from "@/utils/productTrace";
 import { buildViewerPath } from "@/utils/viewerPath";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
@@ -75,6 +76,35 @@ const ProductCoverArea = ({
   const [showReadMore, setShowReadMore] = useState(false);
   const extraMenuRef = useRef<HTMLDivElement | null>(null);
   const synopsisRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    logProductTrace(
+      "product-cover-area",
+      "render-state",
+      {
+        isLoading,
+        isSuccess,
+        hasData: !!data,
+        productId: data?.productId ?? null,
+        title: data?.title ?? null,
+        coverImagePath: data?.image?.coverImagePath ?? null,
+        latestEpisodeNo: latestEpisodeNo ?? null,
+        latestEpisodeTitle: latestEpisodeTitle ?? null,
+        episodeCount: episodeCount ?? null,
+      },
+      {
+        pathname: typeof window !== "undefined" ? window.location.pathname : undefined,
+        productId: data?.productId,
+      }
+    );
+  }, [
+    data,
+    episodeCount,
+    isLoading,
+    isSuccess,
+    latestEpisodeNo,
+    latestEpisodeTitle,
+  ]);
 
   const isShowButtonProposal =
     user &&

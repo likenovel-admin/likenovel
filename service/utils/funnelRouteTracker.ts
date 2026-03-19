@@ -1,5 +1,6 @@
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { getViewerPageContext } from "@/utils/viewerPageContext";
+import { logViewerTrace } from "@/utils/viewerTrace";
 
 export type FunnelTrackedPageType = "product_detail" | "viewer" | "other";
 
@@ -501,6 +502,10 @@ export const syncProductDetailTransitionDecision = () => {
   );
 
   if (syncedDecision === existingDecision) {
+    logViewerTrace("funnel-route-utils", "sync-transition-skip", {
+      existingDecision,
+      currentRoute: currentRouteState.current,
+    });
     return syncedDecision;
   }
 
@@ -509,6 +514,11 @@ export const syncProductDetailTransitionDecision = () => {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("funnel:product-detail-transition-synced"));
   }
+  logViewerTrace("funnel-route-utils", "sync-transition-updated", {
+    existingDecision,
+    syncedDecision,
+    currentRoute: currentRouteState.current,
+  });
   return syncedDecision;
 };
 
@@ -523,6 +533,10 @@ export const trackFunnelRouteContext = (nextContext: FunnelRouteContext) => {
     state.current?.viewerEpisodeId === nextContext.viewerEpisodeId &&
     state.current?.viewerKind === nextContext.viewerKind
   ) {
+    logViewerTrace("funnel-route-utils", "track-skip-duplicate", {
+      current: state.current,
+      nextContext,
+    });
     return false;
   }
 
@@ -536,6 +550,13 @@ export const trackFunnelRouteContext = (nextContext: FunnelRouteContext) => {
 
   setProductDetailTransitionDecision(nextDecision);
   setProductDetailExitCandidate(toProductDetailExitCandidate(nextDecision));
+
+  logViewerTrace("funnel-route-utils", "track-route-updated", {
+    previous: state.current,
+    nextContext,
+    immediateDecision,
+    nextDecision,
+  });
 
   return setFunnelRouteState({
     previous: state.current,

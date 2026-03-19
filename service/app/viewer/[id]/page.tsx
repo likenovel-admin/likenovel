@@ -15,27 +15,20 @@ import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
-import { syncProductDetailTransitionDecision } from "@/utils/funnelRouteTracker";
 import {
   getLocalStorage,
   setLocalStorage,
   STORAGE_KEYS,
 } from "@/utils/localStorage";
-import {
-  confirmViewerPageContext,
-  upsertPendingViewerPageContext,
-} from "@/utils/viewerPageContext";
-import { buildViewerPath } from "@/utils/viewerPath";
 import axios from "axios";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 const Viewer = () => {
   const pathname = usePathname();
   const pathSegments = pathname.split("/");
   const episodeId = Number(pathSegments[pathSegments.length - 1]);
   const searchParams = useSearchParams();
   const viewerType = searchParams.get("type");
-  const viewerContextKind = viewerType === "notice" ? "notice" : "episode";
   const productId = searchParams.get("productId");
   const productTitle = searchParams.get("title");
 
@@ -60,7 +53,6 @@ const Viewer = () => {
   >(null);
   const [epubUrl, setEpubUrl] = useState<string | null>(null);
   const [goFirstRequest, setGoFirstRequest] = useState(0);
-  const epubRequestSeqRef = useRef(0);
 
   const { mutate: postSignalEvent } = usePostAiSignalEvent();
   const { data } = useSelectViewerPath(episodeId);
@@ -90,47 +82,18 @@ const Viewer = () => {
   }, [episodeId]);
 
   useEffect(() => {
-    upsertPendingViewerPageContext({
-      episodeId,
-      kind: viewerContextKind,
-      hintProductId: productId,
-    });
-  }, [episodeId, productId, viewerContextKind]);
-
-  useEffect(() => {
-    if (viewerType === "notice") return;
-    if (!data?.data?.product_id) return;
-
-    confirmViewerPageContext({
-      episodeId,
-      kind: viewerContextKind,
-      resolvedProductId: data.data.product_id,
-      hintProductId: productId,
-    });
-    syncProductDetailTransitionDecision();
-  }, [data?.data?.product_id, episodeId, productId, viewerContextKind, viewerType]);
-
-  useEffect(() => {
     const fetchEpubFile = async () => {
       if (!data?.data.epubFilePath) {
         setEpubUrl(null);
         return;
       }
 
-      const requestSeq = ++epubRequestSeqRef.current;
-
       try {
         await axios.get(data.data.epubFilePath, {
           responseType: "blob",
         });
-        if (epubRequestSeqRef.current !== requestSeq) {
-          return;
-        }
         setEpubUrl(data.data.epubFilePath);
       } catch (error) {
-        if (epubRequestSeqRef.current !== requestSeq) {
-          return;
-        }
         setToast({
           message: "Epub 파일을 불러오는데 실패했습니다.",
           type: "error",
@@ -138,7 +101,7 @@ const Viewer = () => {
       }
     };
     fetchEpubFile();
-  }, [data?.data.epubFilePath, setToast]);
+  }, [data?.data.epubFilePath]);
 
   const handleToggleNav = () => {
     setShowNav(!showNav);
@@ -172,13 +135,6 @@ const Viewer = () => {
   const handleNavigateNextChap = () => {
     const episode = data?.data;
     const productTitle = data?.data?.title;
-    const nextViewerPath = episode?.nextEpisodeId
-      ? buildViewerPath(episode.nextEpisodeId, {
-          productId: episode.product_id,
-        })
-      : null;
-
-    if (!nextViewerPath) return;
 
     if (
       !isAuthenticated &&
@@ -186,14 +142,7 @@ const Viewer = () => {
         (episode?.nextEpisodes || 0) > 5)
     ) {
       withLoginRequired(() => undefined, {
-        redirectPath: nextViewerPath,
-        resumeContext: episode?.product_id
-          ? {
-              productId: episode.product_id,
-              originPageType: "viewer",
-              originEpisodeId: episodeId,
-            }
-          : undefined,
+        redirectPath: `/viewer/${episode?.nextEpisodeId}`,
       })?.();
       return;
     }
@@ -222,7 +171,7 @@ const Viewer = () => {
           event_payload: { redirect_to_episode_id: data.data.nextEpisodeId },
         });
       }
-      router.push(nextViewerPath);
+      router.push(`/viewer/${data?.data?.nextEpisodeId}`);
     }
   };
 
@@ -245,11 +194,7 @@ const Viewer = () => {
       return;
     }
     if (data && data?.data?.previousEpisodeId) {
-      router.push(
-        buildViewerPath(data?.data?.previousEpisodeId || "", {
-          productId: data?.data?.product_id,
-        })
-      );
+      router.push(`/viewer/${data?.data?.previousEpisodeId}`);
     }
   };
 
@@ -328,7 +273,6 @@ const Viewer = () => {
           <div className={`relative ${showNav ? "" : ""} `}>
             {epubUrl && (
               <EpubViewer
-                key={epubUrl}
                 location={location}
                 setLocation={setLocation}
                 goFirstRequest={goFirstRequest}

@@ -10,6 +10,7 @@ import {
   isLastProductDetailExitCandidateSent,
   peekLastProductDetailExitCandidate,
 } from "@/utils/funnelRouteTracker";
+import { logViewerTrace } from "@/utils/viewerTrace";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 
@@ -28,11 +29,17 @@ export const useProductDetailExitSignal = () => {
   const flushExitCandidate = useCallback(() => {
     const candidate = peekLastProductDetailExitCandidate();
     if (!candidate) {
+      logViewerTrace("product-detail-exit", "no-candidate", undefined, {
+        pathname,
+      });
       return;
     }
 
     const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
     if (!canUseUserScope) {
+      logViewerTrace("product-detail-exit", "skip-no-user-scope", {
+        candidate,
+      });
       return;
     }
 
@@ -41,13 +48,24 @@ export const useProductDetailExitSignal = () => {
       clearLastProductDetailExitCandidate();
       clearLastProductDetailTransitionDecision();
       attemptedCandidateKeyRef.current = candidateKey;
+      logViewerTrace("product-detail-exit", "skip-already-sent", {
+        candidateKey,
+        candidate,
+      });
       return;
     }
 
     if (attemptedCandidateKeyRef.current === candidateKey) {
+      logViewerTrace("product-detail-exit", "skip-duplicate-attempt", {
+        candidateKey,
+      });
       return;
     }
     attemptedCandidateKeyRef.current = candidateKey;
+    logViewerTrace("product-detail-exit", "post-start", {
+      candidateKey,
+      candidate,
+    });
 
     postAiSignalEvent(
       {
@@ -66,13 +84,20 @@ export const useProductDetailExitSignal = () => {
       {
         onSuccess: () => {
           completeLastProductDetailExitCandidate(candidate);
+          logViewerTrace("product-detail-exit", "post-success", {
+            candidateKey,
+          });
         },
         onError: (error) => {
           console.error("[aiSignal] product_detail_exit failed", error);
+          logViewerTrace("product-detail-exit", "post-error", {
+            candidateKey,
+            error: error instanceof Error ? error.message : error,
+          });
         },
       }
     );
-  }, [accessToken, isAuthenticated, postAiSignalEvent, user?.userId]);
+  }, [accessToken, isAuthenticated, pathname, postAiSignalEvent, user?.userId]);
 
   useEffect(() => {
     flushExitCandidate();

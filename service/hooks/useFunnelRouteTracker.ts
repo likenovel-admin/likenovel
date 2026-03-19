@@ -4,6 +4,7 @@ import {
   createFunnelRouteContext,
   trackFunnelRouteContext,
 } from "@/utils/funnelRouteTracker";
+import { logViewerTrace } from "@/utils/viewerTrace";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 
@@ -18,6 +19,19 @@ export const useFunnelRouteTracker = () => {
   );
 
   useEffect(() => {
-    trackFunnelRouteContext(routeContext);
+    const tracked = trackFunnelRouteContext(routeContext);
+    logViewerTrace(
+      "funnel-route-tracker",
+      "track-route-context",
+      {
+        tracked,
+        routeContext,
+      },
+      {
+        pathname: routeContext.pathname,
+        episodeId: routeContext.viewerEpisodeId,
+        productId: routeContext.productId,
+      }
+    );
   }, [routeContext]);
 };

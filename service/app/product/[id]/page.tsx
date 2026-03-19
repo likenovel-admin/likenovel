@@ -28,6 +28,12 @@ import {
   ProductDetailEntrySource,
   PRODUCT_DETAIL_ENTRY_SOURCE,
 } from "@/utils/productPath";
+import {
+  endProductTrace,
+  logProductTrace,
+  startProductTrace,
+  updateProductTrace,
+} from "@/utils/productTrace";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -126,6 +132,27 @@ export default function ProductDetail() {
     };
   }, [data]);
 
+  useEffect(() => {
+    logProductTrace(
+      "product-page",
+      "derived-product-state",
+      {
+        hasProductData: !!productData,
+        title: productData?.title ?? null,
+        priceType: productData?.priceType ?? null,
+        singleRegularPrice: productData?.singleRegularPrice ?? null,
+        singleRentalPrice: productData?.singleRentalPrice ?? null,
+        seriesRegularPrice: productData?.seriesRegularPrice ?? null,
+        coverImagePath: productData?.image?.coverImagePath ?? null,
+        episodeTypePaidCount,
+      },
+      {
+        pathname,
+        productId,
+      }
+    );
+  }, [episodeTypePaidCount, pathname, productData, productId]);
+
   const adultYn = user?.isOnAdult || user?.isAdult ? "Y" : "N";
   const { data: otherProducts } = useSelectAuthorProducts(
     productData?.authorId,
@@ -143,6 +170,44 @@ export default function ProductDetail() {
     6,
     "recommend"
   );
+
+  useEffect(() => {
+    startProductTrace({
+      pathname,
+      productId,
+    });
+    updateProductTrace({
+      pathname,
+      productId,
+    });
+
+    return () => {
+      endProductTrace("product-page-unmount", {
+        pathname,
+        productId,
+      });
+    };
+  }, [pathname, productId]);
+
+  useEffect(() => {
+    logProductTrace(
+      "product-page",
+      "query-state",
+      {
+        isPending,
+        isSuccess,
+        hasData: !!data?.data?.product,
+        title: data?.data?.product?.title ?? null,
+        coverImagePath: data?.data?.product?.image?.coverImagePath ?? null,
+        latestEpisodeId: data?.data?.product?.latestEpisodeId ?? null,
+        episodeCount: data?.data?.episodes?.length ?? 0,
+      },
+      {
+        pathname,
+        productId,
+      }
+    );
+  }, [data, isPending, isSuccess, pathname, productId]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);

@@ -40,31 +40,33 @@ export default function RootLayout({
       <body className={`${pretendard.className}`}>
         <WithNoSSR>
           <ReactQueryProvider>
-            <Suspense
-              fallback={
-                <div className="w-full h-screen flex justify-center items-center">
-                  <Spinner />
-                </div>
-              }
-            >
               <ErrorBoundaryWrapper>
                 <AuthInitializer />
-                <NavigationTracker />
-                {children}
-                <AiChatPanel />
-                {modal}
-                <div id="modal-root" />
-                <Confirm />
-                <Toast />
-                <AdminPopup />
-                <SearchModal />
-                <CacheUseModal />
-                <DonateModal />
-                <CacheStatusModal />
-                <RentalStatusModal />
-                <ReportReasonModal />
+                <Suspense fallback={null}>
+                  <NavigationTracker />
+                </Suspense>
+                <Suspense
+                  fallback={
+                    <div className="w-full h-screen flex justify-center items-center">
+                      <Spinner />
+                    </div>
+                  }
+                >
+                  {children}
+                  <AiChatPanel />
+                  {modal}
+                  <div id="modal-root" />
+                  <Confirm />
+                  <Toast />
+                  <AdminPopup />
+                  <SearchModal />
+                  <CacheUseModal />
+                  <DonateModal />
+                  <CacheStatusModal />
+                  <RentalStatusModal />
+                  <ReportReasonModal />
+                </Suspense>
               </ErrorBoundaryWrapper>
-            </Suspense>
           </ReactQueryProvider>
         </WithNoSSR>
       </body>
