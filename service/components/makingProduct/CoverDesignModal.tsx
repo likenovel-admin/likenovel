@@ -19,8 +19,41 @@ const FONTS = [
   { label: "마루부리", value: "MaruBuri" },
 ];
 
-// Tab 1: 기본 표지 1장
-const BASIC_COVERS = [{ id: 0, src: "/images/default_cover.png" }];
+// Tab 1: 기본 표지 (로고추가 표지 → 로고있는 표지 → 단색 표지)
+const BASIC_COVERS = [
+  // 로고 없던 것 → 로고 추가됨
+  { id: 0, src: "/images/covers/cover_01.jpg" },
+  { id: 1, src: "/images/covers/cover_02.jpg" },
+  { id: 2, src: "/images/covers/cover_03.jpg" },
+  { id: 3, src: "/images/covers/cover_04.jpg" },
+  { id: 4, src: "/images/covers/cover_05.jpg" },
+  { id: 5, src: "/images/covers/cover_06.jpg" },
+  { id: 6, src: "/images/covers/cover_07.jpg" },
+  { id: 7, src: "/images/covers/cover_08.jpg" },
+  { id: 8, src: "/images/covers/cover_09.jpg" },
+  { id: 9, src: "/images/covers/cover_10.jpg" },
+  { id: 10, src: "/images/covers/cover_11.jpg" },
+  // 원본에 로고 있는 것
+  { id: 11, src: "/images/covers/cover_12.jpg" },
+  { id: 12, src: "/images/covers/cover_13.jpg" },
+  { id: 13, src: "/images/covers/cover_14.jpg" },
+  { id: 14, src: "/images/covers/cover_15.jpg" },
+  { id: 15, src: "/images/covers/cover_16.jpg" },
+  { id: 16, src: "/images/covers/cover_17.jpg" },
+  { id: 17, src: "/images/covers/cover_18.jpg" },
+  { id: 18, src: "/images/covers/cover_19.jpg" },
+  { id: 19, src: "/images/covers/cover_20.jpg" },
+  { id: 20, src: "/images/covers/cover_21.jpg" },
+  { id: 21, src: "/images/covers/cover_22.jpg" },
+  { id: 22, src: "/images/covers/cover_23.jpg" },
+  { id: 23, src: "/images/covers/cover_24.jpg" },
+  { id: 24, src: "/images/covers/cover_25.jpg" },
+  { id: 25, src: "/images/covers/cover_26.jpg" },
+  { id: 26, src: "/images/covers/cover_27.jpg" },
+  { id: 27, src: "/images/covers/cover_28.jpg" },
+  // 기존 단색 표지
+  { id: 28, src: "/images/default_cover.png" },
+];
 
 // Tab 2: 배경 이미지
 const BG_TEMPLATES = [
