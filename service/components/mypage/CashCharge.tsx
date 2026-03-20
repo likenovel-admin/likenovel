@@ -266,6 +266,7 @@ const CashCharge = () => {
       process.env.NEXT_PUBLIC_WWW_SERVER_URI ?? window.location.origin
     );
     redirectUrl.searchParams.set("pay_method", "VIRTUAL_ACCOUNT");
+    redirectUrl.searchParams.set("amount", String(item.price));
     return redirectUrl.toString();
   };
 
@@ -575,6 +576,7 @@ const CashCharge = () => {
               입금 완료 후 캐시가 충전됩니다.
             </p>
             <div className="mt-12pxr space-y-6pxr text-14pxr text-dark-gray-700">
+              <p className="text-16pxr font-semibold">입금금액: {item.price.toLocaleString()}원</p>
               <p>은행: {paymentStatus.virtualAccount.bank || "-"}</p>
               <div className="flex items-center gap-8pxr">
                 <p>계좌번호: {paymentStatus.virtualAccount.account_number}</p>

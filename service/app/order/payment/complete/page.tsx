@@ -40,6 +40,7 @@ const PaymentRedirect = () => {
   const pgCode = searchParams.get("pgCode");
   const pgMessage = searchParams.get("pgMessage");
   const transactionType = searchParams.get("transactionType");
+  const amount = searchParams.get("amount");
   const resumeReturnPath = getFunnelResumeReturnPath(searchParams);
 
   const [paymentStatus, setPaymentStatus] = useState("IDLE");
@@ -197,6 +198,9 @@ const PaymentRedirect = () => {
               입금 완료 후 캐시가 충전됩니다.
             </p>
             <div className="mt-12pxr space-y-6pxr text-14pxr text-dark-gray-700">
+              {amount && (
+                <p className="text-16pxr font-semibold">입금금액: {Number(amount).toLocaleString()}원</p>
+              )}
               <p>은행: {virtualAccount.bank || "-"}</p>
               <div className="flex items-center gap-8pxr">
                 <p>계좌번호: {virtualAccount.account_number}</p>
