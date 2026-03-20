@@ -41,6 +41,12 @@ const PaymentMethod = ({ payMethod, onSetPayMethod }: PayMethodProps) => {
           onClick={() => onSetPayMethod("KAKAOPAY")}
           active={payMethod === "KAKAOPAY"}
         />
+        <PaymentItem
+          name="네이버페이"
+          icon="/images/naver.png"
+          onClick={() => onSetPayMethod("NAVERPAY")}
+          active={payMethod === "NAVERPAY"}
+        />
       </div>
     </div>
   );
