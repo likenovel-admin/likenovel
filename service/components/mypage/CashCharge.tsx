@@ -418,16 +418,14 @@ const CashCharge = () => {
     });
 
     if (payment && payment.code !== undefined) {
-      console.error("PortOne payment error:", payment.code, payment.message);
-      const errorMsg = payment.message || CASH_CHARGE_STOP_MESSAGE;
       setToast({
-        message: errorMsg,
+        message: CASH_CHARGE_STOP_MESSAGE,
         type: "error",
       });
 
       setPaymentStatus({
         status: "FAILED",
-        message: errorMsg,
+        message: CASH_CHARGE_STOP_MESSAGE,
       });
 
       return;
