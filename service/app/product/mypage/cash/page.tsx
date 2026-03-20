@@ -11,14 +11,14 @@ const Page = () => {
   return (
     <div className="pt-[30px] px-4 pb-[10px] md:pt-11 md:pb-8 flex md:items-center flex-col md:w-[555px] md:mx-auto">
       <span className="text-18pxr md:text-24pxr font-semibold pb-[10px] md:pb-8">
-        캐쉬
+        캐시
       </span>
       <Tab
         activeTab={type}
         onTabChange={setType}
         tabs={[
           {
-            label: "캐쉬 충전",
+            label: "캐시 충전",
             value: "cash",
           },
           {

@@ -43,7 +43,7 @@ const Page = () => {
                   router.push("/product/mypage/cash");
                 }}
               >
-                캐쉬충전
+                캐시충전
               </div>
             }
           />
