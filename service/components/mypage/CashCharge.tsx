@@ -1,6 +1,7 @@
 import { instance } from "@/app/api/axios";
 import useToastStore from "@/store/toastStore";
 import useAuthStore from "@/store/authStore";
+import useConfirmStore from "@/store/confirmStore";
 import {
   appendExistingFunnelResumeToPath,
   getFunnelResumeParamFromSearchParams,
@@ -102,6 +103,7 @@ const CashCharge = () => {
   const [isVirtualAccountNoticeOpen, setIsVirtualAccountNoticeOpen] = useState(true);
 
   const { setToast } = useToastStore();
+  const { setConfirm } = useConfirmStore();
   const queryClient = useQueryClient();
   const { data: userInfo } = useSelectUserInfo();
   const { user } = useAuthStore((state) => ({ user: state.user }));
@@ -231,6 +233,63 @@ const CashCharge = () => {
     }
 
     return [`${apiServerUri}/v1/command/payments/webhook`];
+  };
+
+  const showPendingVirtualAccountNotice = (
+    pendingPaymentId: string,
+    virtualAccount: VirtualAccountInfo
+  ) => {
+    savePendingVirtualAccount(pendingPaymentId);
+    setConfirm({
+      content: "이미 발급된 가상계좌가 있습니다.",
+      confirmText: "확인",
+      buttonCount: 1,
+      onConfirm: () => {
+        setPayMethod("VIRTUAL_ACCOUNT");
+        setPaymentStatus({
+          status: "VIRTUAL_ACCOUNT_ISSUED",
+          message: "가상계좌가 발급되었습니다.",
+          virtualAccount,
+        });
+        setIsVirtualAccountNoticeOpen(true);
+      },
+    });
+  };
+
+  const handleSetPaymentMethod = async (method: string) => {
+    if (method !== "VIRTUAL_ACCOUNT") {
+      setPayMethod(method);
+      return;
+    }
+
+    try {
+      const response = await instance.get(
+        "/v1/query/payments/virtual-account/pending"
+      );
+
+      if (
+        response?.data?.has_pending &&
+        response?.data?.payment?.status === "VIRTUAL_ACCOUNT_ISSUED" &&
+        response?.data?.payment?.payment_id &&
+        response?.data?.virtual_account
+      ) {
+        showPendingVirtualAccountNotice(
+          response.data.payment.payment_id,
+          response.data.virtual_account
+        );
+        return;
+      }
+
+      if (response?.data?.payment?.status === "PAID") {
+        clearPendingVirtualAccount();
+        queryClient.invalidateQueries({ queryKey: ["selectUserInfo"] });
+        queryClient.invalidateQueries({ queryKey: ["selectUserCash"] });
+      }
+    } catch (error) {
+      console.error("active virtual account pending lookup failed:", error);
+    }
+
+    setPayMethod("VIRTUAL_ACCOUNT");
   };
 
   const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -491,7 +550,7 @@ const CashCharge = () => {
   return (
     <div className="w-full">
       <ChargeList item={item} onSetItem={setItem} />
-      <PaymentMethod payMethod={payMethod} onSetPayMethod={setPayMethod} />
+      <PaymentMethod payMethod={payMethod} onSetPayMethod={handleSetPaymentMethod} />
       <button
         className="w-full bg-black text-white rounded-md px-4 py-3 my-4"
         onClick={handleSubmit}
