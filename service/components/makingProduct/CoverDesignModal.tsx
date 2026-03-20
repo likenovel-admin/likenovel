@@ -19,8 +19,11 @@ const FONTS = [
   { label: "마루부리", value: "MaruBuri" },
 ];
 
-// Tab 1: 기본 표지 (로고추가 표지 → 로고있는 표지 → 단색 표지)
-const BASIC_COVERS = [
+// Tab 1: 기본 표지 1장
+const BASIC_COVERS = [{ id: 0, src: "/images/default_cover.png" }];
+
+// Tab 2: 배경 이미지 (로고추가 표지 → 로고있는 표지 → 단색/스포츠 표지)
+const BG_TEMPLATES = [
   // 로고 없던 것 → 로고 추가됨
   { id: 0, src: "/images/covers/cover_01.jpg" },
   { id: 1, src: "/images/covers/cover_02.jpg" },
@@ -51,30 +54,26 @@ const BASIC_COVERS = [
   { id: 25, src: "/images/covers/cover_26.jpg" },
   { id: 26, src: "/images/covers/cover_27.jpg" },
   { id: 27, src: "/images/covers/cover_28.jpg" },
-  // 기존 단색 표지
-  { id: 28, src: "/images/default_cover.png" },
-];
-
-// Tab 2: 배경 이미지
-const BG_TEMPLATES = [
-  { id: 0, src: "/images/default_black.png" },
-  { id: 1, src: "/images/default_navy.png" },
-  { id: 2, src: "/images/default_purple.png" },
-  { id: 3, src: "/images/default_wine.png" },
-  { id: 4, src: "/images/default_slateblue.png" },
-  { id: 5, src: "/images/default_green.png" },
-  { id: 6, src: "/images/default_gray.png" },
-  { id: 7, src: "/images/default_orange.png" },
-  { id: 8, src: "/images/default_yellow.png" },
-  { id: 9, src: "/images/default_soccer.png" },
-  { id: 10, src: "/images/default_soccer2.png" },
-  { id: 11, src: "/images/default_soccer3.png" },
-  { id: 12, src: "/images/default_baseball.png" },
-  { id: 13, src: "/images/default_baseball2.png" },
-  { id: 14, src: "/images/default_baseball3.png" },
-  { id: 15, src: "/images/default_basketball.png" },
-  { id: 16, src: "/images/default_basketball2.png" },
-  { id: 17, src: "/images/default_basketball3.png" },
+  // 스포츠 표지
+  { id: 28, src: "/images/default_soccer.png" },
+  { id: 29, src: "/images/default_soccer2.png" },
+  { id: 30, src: "/images/default_soccer3.png" },
+  { id: 31, src: "/images/default_baseball.png" },
+  { id: 32, src: "/images/default_baseball2.png" },
+  { id: 33, src: "/images/default_baseball3.png" },
+  { id: 34, src: "/images/default_basketball.png" },
+  { id: 35, src: "/images/default_basketball2.png" },
+  { id: 36, src: "/images/default_basketball3.png" },
+  // 단색 표지
+  { id: 37, src: "/images/default_black.png" },
+  { id: 38, src: "/images/default_navy.png" },
+  { id: 39, src: "/images/default_purple.png" },
+  { id: 40, src: "/images/default_wine.png" },
+  { id: 41, src: "/images/default_slateblue.png" },
+  { id: 42, src: "/images/default_green.png" },
+  { id: 43, src: "/images/default_gray.png" },
+  { id: 44, src: "/images/default_orange.png" },
+  { id: 45, src: "/images/default_yellow.png" },
 ];
 
 type TabType = "basic" | "make" | "upload";
