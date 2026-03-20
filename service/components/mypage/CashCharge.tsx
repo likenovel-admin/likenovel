@@ -418,16 +418,16 @@ const CashCharge = () => {
     });
 
     if (payment && payment.code !== undefined) {
-      // 결제 중지 토스트 메시지 출력
+      console.error("PortOne payment error:", payment.code, payment.message);
+      const errorMsg = payment.message || CASH_CHARGE_STOP_MESSAGE;
       setToast({
-        message: CASH_CHARGE_STOP_MESSAGE,
+        message: errorMsg,
         type: "error",
       });
 
-      // 결제 실패 상태 업데이트
       setPaymentStatus({
         status: "FAILED",
-        message: CASH_CHARGE_STOP_MESSAGE,
+        message: errorMsg,
       });
 
       return;
