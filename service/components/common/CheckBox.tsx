@@ -24,11 +24,12 @@ const Checkbox = (
   }: Props,
   ref: React.Ref<HTMLInputElement>
 ) => {
+  const isDisabled = Boolean(props.disabled);
   return (
     <div className="flex items-center">
       <label
         htmlFor={typeof label === "string" ? label : labelId}
-        className={`flex items-center cursor-pointer ${labelStyle}`}
+        className={`flex items-center ${isDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${labelStyle}`}
       >
         <input
           type="checkbox"
@@ -42,7 +43,7 @@ const Checkbox = (
         <div
           className={`flex justify-center items-center ${checkBoxStyle} ${
             checked ? checkedColor : "border-light-gray-600"
-          }  rounded-[6px] mr-[8px]`}
+          } rounded-[6px] mr-[8px]`}
         >
           <Check className="w-[10px] h-[7px] text-light-gray-600" />
         </div>

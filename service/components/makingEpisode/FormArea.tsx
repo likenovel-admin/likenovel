@@ -104,12 +104,21 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
   } = methods;
 
   const categoryValue = watch("category");
+  const isEpisodeOpenValue = watch("isEpisodeOpen");
+  const hasPublishEpisodeDateValue = watch("hasPublishEpisodeDate");
 
   useEffect(() => {
     if (categoryValue === "notice") {
       setValue("authorComment", "");
     }
   }, [categoryValue, setValue]);
+
+  useEffect(() => {
+    if (isEpisodeOpenValue === "Y" && hasPublishEpisodeDateValue === "Y") {
+      setValue("hasPublishEpisodeDate", "N");
+      setValue("publishEpisodeDate", null);
+    }
+  }, [hasPublishEpisodeDateValue, isEpisodeOpenValue, setValue]);
 
   const getDefaultValue = (data: ISelectEpisodeResponse) => {
     return {
@@ -545,9 +554,10 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
               render={({ field: checkboxField }) => (
                 <div className="flex items-center gap-10pxr">
                   <CheckBox
-                    label="예약설정 시작일"
+                    label="예약공개 설정"
                     labelStyle={labelClassName}
                     checked={checkboxField.value === "Y"}
+                    disabled={isEpisodeOpenValue === "Y"}
                     onChange={(e) => {
                       const isChecked = e.target.checked;
                       checkboxField.onChange(isChecked ? "Y" : "N");

@@ -42,6 +42,8 @@ import PhotoArea from "./PhotoArea";
 import StoppedTooltip from "./StoppedTooltip";
 dayjs.extend(utc);
 
+const NEXT_PAID_START_CHAPTER_VALUE = -1;
+
 const GENRE_OPTIONS = [
   "무협",
   "정통판타지",
@@ -175,6 +177,40 @@ const FormArea = ({ productId }: Props) => {
       (data?.data.priceType === "paid" || data?.data.paidApprovedYn === "Y")
   );
   const isPaidConversionLocked = isPaidProduct;
+  const paidStartChapter = watch("paidStartChapter");
+  const paidStartChapterDate = watch("paidStartChapterDate");
+  const episodeTotalCount = episodeCount?.data?.hasEpisodeCount ?? 0;
+  const nextPaidStartChapterNo = episodeTotalCount + 1;
+  const selectPaidStartChapterValue =
+    paidStartChapter === nextPaidStartChapterNo
+      ? String(NEXT_PAID_START_CHAPTER_VALUE)
+      : String(paidStartChapter || "1");
+  const resolvedPaidStartChapter =
+    paidStartChapter === NEXT_PAID_START_CHAPTER_VALUE
+      ? nextPaidStartChapterNo
+      : paidStartChapter || 1;
+  const paidStartChapterOptions =
+    episodeTotalCount >= 1
+      ? [
+          ...Array.from({ length: episodeTotalCount }, (_, index) => ({
+            label: `${index + 1}회`,
+            value: `${index + 1}`,
+          })),
+          {
+            label: "다음회차부터",
+            value: String(NEXT_PAID_START_CHAPTER_VALUE),
+          },
+        ]
+      : [
+          {
+            label: "다음회차부터",
+            value: String(NEXT_PAID_START_CHAPTER_VALUE),
+          },
+        ];
+  const paidStartGuideDateText =
+    usePaidStartDate && paidStartChapterDate
+      ? dayjs(paidStartChapterDate).format("YYYY-MM-DD HH:mm")
+      : "즉시";
 
   // Set authorNickname from userInfo when it loads (for new product only)
   useEffect(() => {
@@ -345,7 +381,10 @@ const FormArea = ({ productId }: Props) => {
             .millisecond(0)
             .toDate();
       requestData.paid_setting_date = dayjs.utc(paidDate).format();
-      requestData.paid_episode_no = data.paidStartChapter || 1;
+      requestData.paid_episode_no =
+        data.paidStartChapter === NEXT_PAID_START_CHAPTER_VALUE
+          ? nextPaidStartChapterNo
+          : data.paidStartChapter || 1;
       updateProduct(
         { productId, data: requestData },
         {
@@ -465,7 +504,9 @@ const FormArea = ({ productId }: Props) => {
         (requestData as IUpdateProductRequest).paid_setting_date =
           effectivePaidSettingDate;
         (requestData as IUpdateProductRequest).paid_episode_no =
-          formData.paidStartChapter || 1;
+          formData.paidStartChapter === NEXT_PAID_START_CHAPTER_VALUE
+            ? nextPaidStartChapterNo
+            : formData.paidStartChapter || 1;
       }
     }
     return requestData;
@@ -983,30 +1024,42 @@ const FormArea = ({ productId }: Props) => {
                       name="paidStartChapter"
                       control={control}
                       render={({ field }) => (
-                        <SelectBox
-                          label="유료 시작 회차"
-                          full
-                          labelClassName={labelClassName}
-                          options={
-                            episodeCount &&
-                            episodeCount.data?.hasEpisodeCount >= 1
-                              ? Array.from(
-                                  {
-                                    length:
-                                      episodeCount?.data.hasEpisodeCount ?? 0,
-                                  },
-                                  (_, index) => ({
-                                    label: `${index + 1}회`,
-                                    value: `${index + 1}`,
-                                  })
-                                )
-                              : [{ label: "연재 회차가 없습니다.", value: "1" }]
-                          }
-                          value={String(field.value || "1")}
-                          onChange={field.onChange}
-                          ref={field.ref}
-                          disabled={isPaidConversionLocked}
-                        />
+                        <div className="w-full">
+                          <SelectBox
+                            label="유료 시작 회차"
+                            full
+                            labelClassName={labelClassName}
+                            options={paidStartChapterOptions}
+                            value={selectPaidStartChapterValue}
+                            onChange={(event) =>
+                              field.onChange(Number(event.target.value))
+                            }
+                            ref={field.ref}
+                            disabled={isPaidConversionLocked}
+                          />
+                          <p className="mt-8pxr text-12pxr leading-[1.6] text-dark-gray-500">
+                            <span>설정한 </span>
+                            <span className="text-primary-100">
+                              {paidStartGuideDateText}
+                            </span>
+                            <span>에 </span>
+                            {resolvedPaidStartChapter === nextPaidStartChapterNo ? (
+                              <>
+                                <span className="text-primary-100">
+                                  다음회차부터
+                                </span>
+                                <span> 유료로 전환됩니다.</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-primary-100">
+                                  {resolvedPaidStartChapter}번째회차 이후로 모든 회차
+                                </span>
+                                <span>가 유료로 전환됩니다.</span>
+                              </>
+                            )}
+                          </p>
+                        </div>
                       )}
                     />
                   </>
