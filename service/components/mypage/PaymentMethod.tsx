@@ -41,12 +41,14 @@ const PaymentMethod = ({ payMethod, onSetPayMethod }: PayMethodProps) => {
           onClick={() => onSetPayMethod("KAKAOPAY")}
           active={payMethod === "KAKAOPAY"}
         />
+        {/* 네이버페이: PortOne 운영 채널 활성화 후 복원
         <PaymentItem
           name="네이버페이"
           icon="/images/naver.png"
           onClick={() => onSetPayMethod("NAVERPAY")}
           active={payMethod === "NAVERPAY"}
         />
+        */}
       </div>
     </div>
   );
