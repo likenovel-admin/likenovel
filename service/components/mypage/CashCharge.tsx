@@ -176,6 +176,53 @@ const CashCharge = () => {
     sessionStorage.removeItem(key);
   };
 
+  useEffect(() => {
+    const restorePendingVirtualAccount = async () => {
+      const pending = loadPendingVirtualAccount();
+      if (!pending) {
+        return;
+      }
+
+      try {
+        const verifyResponse = await instance.post(
+          "v1/command/payments/verify-virtual-account",
+          {
+            payment_id: pending.paymentId,
+          }
+        );
+
+        if (
+          verifyResponse?.data?.payment?.status === "VIRTUAL_ACCOUNT_ISSUED" &&
+          verifyResponse?.data?.virtual_account
+        ) {
+          setPaymentStatus({
+            status: "VIRTUAL_ACCOUNT_ISSUED",
+            message: "가상계좌가 발급되었습니다.",
+            virtualAccount: verifyResponse.data.virtual_account,
+          });
+          setIsVirtualAccountNoticeOpen(true);
+          return;
+        }
+
+        if (verifyResponse?.data?.payment?.status === "PAID") {
+          clearPendingVirtualAccount();
+          queryClient.invalidateQueries({ queryKey: ["selectUserInfo"] });
+          queryClient.invalidateQueries({ queryKey: ["selectUserCash"] });
+          setPaymentStatus({ status: "PAID" });
+          return;
+        }
+
+        clearPendingVirtualAccount();
+        return;
+      } catch (error) {
+        console.error("restore virtual account failed:", error);
+      }
+    };
+
+    restorePendingVirtualAccount();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryClient, user?.userId]);
+
   // useEffect(() => {
   //   async function loadItem() {
   //     //const response = await fetch("/api/item")
@@ -500,52 +547,6 @@ const CashCharge = () => {
       });
     }
   };
-
-  useEffect(() => {
-    const restorePendingVirtualAccount = async () => {
-      const pending = loadPendingVirtualAccount();
-      if (!pending) {
-        return;
-      }
-
-      try {
-        const verifyResponse = await instance.post(
-          "v1/command/payments/verify-virtual-account",
-          {
-            payment_id: pending.paymentId,
-          }
-        );
-
-        if (
-          verifyResponse?.data?.payment?.status === "VIRTUAL_ACCOUNT_ISSUED" &&
-          verifyResponse?.data?.virtual_account
-        ) {
-          setPaymentStatus({
-            status: "VIRTUAL_ACCOUNT_ISSUED",
-            message: "가상계좌가 발급되었습니다.",
-            virtualAccount: verifyResponse.data.virtual_account,
-          });
-          setIsVirtualAccountNoticeOpen(true);
-          return;
-        }
-
-        if (verifyResponse?.data?.payment?.status === "PAID") {
-          clearPendingVirtualAccount();
-          queryClient.invalidateQueries({ queryKey: ["selectUserInfo"] });
-          queryClient.invalidateQueries({ queryKey: ["selectUserCash"] });
-          setPaymentStatus({ status: "PAID" });
-          return;
-        }
-
-        clearPendingVirtualAccount();
-        return;
-      } catch (error) {
-        console.error("restore virtual account failed:", error);
-      }
-    };
-
-    restorePendingVirtualAccount();
-  }, [queryClient, user?.userId]);
 
   return (
     <div className="w-full">
