@@ -326,7 +326,7 @@ const CacheStatusContents = ({
             </span>
           </li>
           <li>
-            잔여캐쉬
+            잔여캐시
             <span className="text-primary-100 font-semibold">
               {totalCash.toLocaleString()}원
             </span>
@@ -339,7 +339,7 @@ const CacheStatusContents = ({
             className="text-primary-100 flex items-center gap-1"
             onClick={handleMoveToRecharge}
           >
-            캐쉬충전하기
+            캐시충전하기
             <ArrowRight className="w-3 h-3" />
           </button>
         </div>

@@ -261,7 +261,7 @@ const GlobalMenuModal = ({ isOpen, setIsOpen, onClose }: CommonModalProps) => {
                 router.push("/product/mypage/cash");
               }}
             >
-              캐쉬충전
+              캐시충전
             </Button>
           </div>
           <div className="flex gap-4 mx-6 py-5 justify-evenly border-b">
