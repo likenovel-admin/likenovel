@@ -624,10 +624,44 @@ const EpubViewer = ({
 
       const marginSize = marginSizeMap[currentSettings.marginSize - 1];
       if (wrapperRef.current) {
-        if (isScroll && device !== "mobile") {
+        // EPUB 본문 영역 (wrapper의 첫 번째 자식)
+        const epubArea = wrapperRef.current.querySelector<HTMLElement>('[style*="display"]') || wrapperRef.current.firstElementChild as HTMLElement | null;
+
+        if (device === "mobile") {
+          // 모바일: wrapper는 전체 폭 유지 (LastPage 보호)
+          wrapperRef.current.style.removeProperty("width");
+          wrapperRef.current.style.removeProperty("maxWidth");
+          // EPUB 영역에만 max-width 적용
+          if (epubArea && !isScroll) {
+            const viewportW = window.innerWidth || 390;
+            const gap = (currentSettings.marginSize - 1) * 40;
+            const mobileMaxW = `${viewportW - gap}px`;
+            epubArea.style.maxWidth = mobileMaxW;
+            epubArea.style.margin = "0 auto";
+          }
+        } else if (isScroll) {
           wrapperRef.current.style.removeProperty("width");
         } else if (marginSize) {
           wrapperRef.current.style.width = marginSize;
+        }
+      }
+
+      // 모바일 여백 변경 시 rendition 재계산 + 현재 위치 복원
+      if (device === "mobile" && rendition) {
+        const currentCfi = rendition.location?.start?.cfi;
+        const mgr = (rendition as any).manager;
+        const container = mgr?.views?.container || mgr?.container;
+        if (container) {
+          const w = container.offsetWidth;
+          const h = container.offsetHeight;
+          if (w > 0 && h > 0) {
+            try { rendition.resize(w, h); } catch {}
+            if (currentCfi) {
+              requestAnimationFrame(() => {
+                try { rendition.display(currentCfi); } catch {}
+              });
+            }
+          }
         }
       }
 
@@ -645,7 +679,14 @@ const EpubViewer = ({
         doc.body.style.backgroundColor = currentBgColor;
         doc.body.style.color = currentContentTextColor;
 
-        if (isScroll && device !== "mobile") {
+        if (isScroll && device === "mobile") {
+          // 모바일 세로보기: iframe 내부 body도 절대 px로 제한
+          const viewportW = window.innerWidth || 390;
+          const gap = (currentSettings.marginSize - 1) * 40;
+          const mobileMaxW = `${viewportW - gap}px`;
+          doc.body.style.setProperty("max-width", mobileMaxW, "important");
+          doc.body.style.setProperty("margin", "0 auto", "important");
+        } else if (isScroll && device !== "mobile") {
           const maxWidth =
             desktopScrolledMaxWidthMap[currentSettings.marginSize - 1] ||
             desktopScrolledMaxWidthMap[1];
@@ -1098,9 +1139,16 @@ const EpubViewer = ({
                     ${isScroll ? (
                       device === "mobile"
                         ? `
-                    html, body {
+                    html {
                       margin: 0 !important;
-                      padding: 0 24px !important;
+                      padding: 0 !important;
+                      min-height: auto !important;
+                      height: auto !important;
+                      box-sizing: border-box !important;
+                    }
+                    body {
+                      margin: 0 auto !important;
+                      padding: 0 !important;
                       min-height: auto !important;
                       height: auto !important;
                       box-sizing: border-box !important;
