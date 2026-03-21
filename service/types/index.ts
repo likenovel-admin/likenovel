@@ -494,7 +494,7 @@ export interface IQuest {
 }
 
 export interface ICash {
-  category: "charge" | "used";
+  category: "charge" | "use" | "used";
   amount: number;
   product_title: string;
   episode_title: string;

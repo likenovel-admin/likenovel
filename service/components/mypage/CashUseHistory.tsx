@@ -10,9 +10,15 @@ const CashUseHistory = () => {
   const { data: cashData, isLoading } = useSelectUserCash();
 
   // Filter cash data based on selected category
-  const filteredData = cashData?.data?.filter((item) =>
-    category === "all" || item.category === category
-  );
+  const filteredData = cashData?.data?.filter((item) => {
+    if (category === "all") {
+      return true;
+    }
+    if (category === "used") {
+      return item.category === "used" || item.category === "use";
+    }
+    return item.category === category;
+  });
 
   return (
     <div className="flex justify-start w-full mt-4">

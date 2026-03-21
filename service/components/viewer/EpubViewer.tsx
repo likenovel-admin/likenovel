@@ -28,6 +28,8 @@ const fontSizeMap = [
 
 const letterSpacingMap = ["0px", "1px", "2px", "3px", "4px"];
 const lineHeightMap = ["1.5rem", "2.5rem", "3.5rem", "4.5rem", "5.5rem"];
+const COVER_IMAGE_SELECTORS =
+  'img[src*="cover"], img[alt*="cover"], img[class*="cover"], .cover img, .cover-image, .titlepage img, .frontcover img';
 
 const themeColors: Record<string, string> = {
   light: "#f9f8f8",
@@ -110,6 +112,7 @@ const EpubViewer = ({
   const isTransitioningRef = useRef(false);
   const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastResizeDimensionsRef = useRef({ width: 0, height: 0 });
+  const skippedInitialMobileCoverRef = useRef(false);
 
   // Scrolled mode: host element at the end of EPUB scroll container
   const lastPageHostRef = useRef<HTMLElement | null>(null);
@@ -471,9 +474,7 @@ const EpubViewer = ({
       if (!doc) return;
 
       const coverImages = Array.from(
-        doc.querySelectorAll(
-        'img[src*="cover"], img[alt*="cover"], img[class*="cover"], .cover img, .cover-image, .titlepage img, .frontcover img'
-        )
+        doc.querySelectorAll(COVER_IMAGE_SELECTORS)
       );
 
       // 빈 src 이미지 감지 (벌크 업로드 등으로 깨진 표지)
@@ -505,7 +506,8 @@ const EpubViewer = ({
         const handleToggleClick = (e: Event) => {
           e.preventDefault();
           e.stopPropagation();
-          setSettings({ hideImageCover: !settings.hideImageCover });
+          // settingsRef로 항상 최신값 참조 (stale closure 방지)
+          setSettings({ hideImageCover: !settingsRef.current.hideImageCover });
         };
 
         if (!toggleButton) {
@@ -538,7 +540,7 @@ const EpubViewer = ({
         toggleButton.style.display = isScroll ? "block" : "none";
 
         if (isScroll) {
-          imgEl.style.display = settings.hideImageCover ? "none" : "block";
+          imgEl.style.display = settingsRef.current.hideImageCover ? "none" : "block";
           imgEl.style.margin = "0 auto";
           if (imgEl.parentElement) {
             imgEl.parentElement.style.textAlign = "center";
@@ -551,7 +553,7 @@ const EpubViewer = ({
           }
         }
 
-        const iconSVG = settings.hideImageCover
+        const iconSVG = settingsRef.current.hideImageCover
           ? `<svg width="9" height="5" viewBox="0 0 9 5" fill="none" xmlns="http://www.w3.org/2000/svg">
                <path fill-rule="evenodd" clip-rule="evenodd" d="M8.37701 0.219783C8.08412 -0.0731099 7.60924 -0.0731095 7.31635 0.219784L4.29851 3.23762L1.28056 0.21967C0.987664 -0.0732237 0.51279 -0.0732236 0.219896 0.21967C-0.0729962 0.512563 -0.0729962 0.987437 0.219897 1.28033L3.7232 4.78363C3.88083 4.94126 4.09118 5.01406 4.2975 5.00202C4.50443 5.01462 4.71559 4.94186 4.87371 4.78374L8.37701 1.28044C8.6699 0.98755 8.6699 0.512676 8.37701 0.219783Z" fill="#8A8E96"/>
              </svg>`
@@ -559,7 +561,7 @@ const EpubViewer = ({
                <path fill-rule="evenodd" clip-rule="evenodd" d="M0.21967 4.78412C0.512563 5.07702 0.987437 5.07702 1.28033 4.78412L4.29817 1.76628L7.31612 4.78424C7.60902 5.07713 8.08389 5.07713 8.37678 4.78424C8.66968 4.49134 8.66968 4.01647 8.37678 3.72358L4.87348 0.220278C4.71585 0.0626419 4.5055 -0.0101535 4.29918 0.00189047C4.09225 -0.0107142 3.88109 0.0620435 3.72297 0.220165L0.21967 3.72346C-0.0732234 4.01636 -0.0732233 4.49123 0.21967 4.78412Z" fill="#8A8E96"/>
              </svg>`;
 
-        const labelText = settings.hideImageCover ? "표지펴기" : "표지접기";
+        const labelText = settingsRef.current.hideImageCover ? "표지펴기" : "표지접기";
         toggleButton!.innerHTML = `
           <span style="display:inline-flex;align-items:center;gap:8px;">
             <span>${labelText}</span>
@@ -573,6 +575,28 @@ const EpubViewer = ({
       }
     });
   }, [isScroll, resolvedCoverImagePath, setSettings, settings.hideImageCover]);
+
+  const isInitialMobileCoverVisible = useCallback((rendition?: Rendition | null) => {
+    if (device !== "mobile" || isScroll) {
+      return false;
+    }
+
+    const currentRendition = rendition ?? renditionRef.current;
+    const currentIndex = currentRendition?.location?.start?.index;
+    if (currentIndex !== 0) {
+      return false;
+    }
+
+    const contents = currentRendition?.getContents?.();
+    if (!Array.isArray(contents) || contents.length === 0) {
+      return false;
+    }
+
+    return contents.some((content: Contents) => {
+      const doc = (content as any).document || content.window?.document;
+      return Boolean(doc?.querySelector(COVER_IMAGE_SELECTORS));
+    });
+  }, [device, isScroll]);
 
   // ========================= THEME =========================
 
@@ -633,11 +657,16 @@ const EpubViewer = ({
           wrapperRef.current.style.removeProperty("maxWidth");
           // EPUB 영역에만 max-width 적용
           if (epubArea && !isScroll) {
-            const viewportW = window.innerWidth || 390;
-            const gap = (currentSettings.marginSize - 1) * 40;
-            const mobileMaxW = `${viewportW - gap}px`;
-            epubArea.style.maxWidth = mobileMaxW;
-            epubArea.style.margin = "0 auto";
+            if (isInitialMobileCoverVisible(rendition)) {
+              epubArea.style.removeProperty("maxWidth");
+              epubArea.style.removeProperty("margin");
+            } else {
+              const viewportW = window.innerWidth || 390;
+              const gap = (currentSettings.marginSize - 1) * 40;
+              const mobileMaxW = `${viewportW - gap}px`;
+              epubArea.style.maxWidth = mobileMaxW;
+              epubArea.style.margin = "0 auto";
+            }
           }
         } else if (isScroll) {
           wrapperRef.current.style.removeProperty("width");
@@ -646,24 +675,6 @@ const EpubViewer = ({
         }
       }
 
-      // 모바일 여백 변경 시 rendition 재계산 + 현재 위치 복원
-      if (device === "mobile" && rendition) {
-        const currentCfi = rendition.location?.start?.cfi;
-        const mgr = (rendition as any).manager;
-        const container = mgr?.views?.container || mgr?.container;
-        if (container) {
-          const w = container.offsetWidth;
-          const h = container.offsetHeight;
-          if (w > 0 && h > 0) {
-            try { rendition.resize(w, h); } catch {}
-            if (currentCfi) {
-              requestAnimationFrame(() => {
-                try { rendition.display(currentCfi); } catch {}
-              });
-            }
-          }
-        }
-      }
 
       const contents = rendition.getContents?.();
       if (!Array.isArray(contents)) {
@@ -724,6 +735,36 @@ const EpubViewer = ({
       }
     }
   }, [settings, updateTheme]);
+
+  // 모바일 여백 변경 시에만 rendition 재계산 + 위치 복원
+  useEffect(() => {
+    if (device !== "mobile" || isScroll || !renditionRef.current) return;
+    const rendition = renditionRef.current;
+    if (isInitialMobileCoverVisible(rendition)) {
+      skippedInitialMobileCoverRef.current = true;
+      return;
+    }
+    // rAF 2번: CSS maxWidth 적용 → 레이아웃 계산 → resize
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const currentCfi = rendition.location?.start?.cfi;
+        const mgr = (rendition as any).manager;
+        const container = mgr?.views?.container || mgr?.container;
+        if (container) {
+          const w = container.offsetWidth;
+          const h = container.offsetHeight;
+          if (w > 0 && h > 0) {
+            try { rendition.resize(w, h); } catch {}
+            if (currentCfi) {
+              requestAnimationFrame(() => {
+                try { rendition.display(currentCfi); } catch {}
+              });
+            }
+          }
+        }
+      });
+    });
+  }, [device, isScroll, settings.marginSize, epubReady, isInitialMobileCoverVisible]);
 
   useEffect(() => {
     if (renditionRef.current) {
@@ -1104,9 +1145,35 @@ const EpubViewer = ({
 
                   const isLastSection = currentIndex >= lastIndex;
 
-                  // Only used in paginated mode
                   if (!isScroll) {
                     setAtBookEnd(isLastSection && isLastPageInSection);
+                    if (
+                      device === "mobile" &&
+                      skippedInitialMobileCoverRef.current &&
+                      !isInitialMobileCoverVisible(_rendition)
+                    ) {
+                      skippedInitialMobileCoverRef.current = false;
+                      requestAnimationFrame(() => {
+                        updateTheme(_rendition);
+                        const mgr = (_rendition as any).manager;
+                        const container = mgr?.views?.container || mgr?.container;
+                        const currentCfi = _rendition.location?.start?.cfi;
+                        const width = container?.offsetWidth ?? 0;
+                        const height = container?.offsetHeight ?? 0;
+                        if (width > 0 && height > 0) {
+                          try {
+                            _rendition.resize(width, height);
+                          } catch {}
+                          if (currentCfi) {
+                            requestAnimationFrame(() => {
+                              try {
+                                _rendition.display(currentCfi);
+                              } catch {}
+                            });
+                          }
+                        }
+                      });
+                    }
                   }
 
                   updateProgress();
@@ -1218,6 +1285,13 @@ const EpubViewer = ({
 
                   updateTheme(_rendition);
                   updateToggleButtons();
+
+                  // content 재로드 시 표지 접기 상태 유지 (settingsRef는 항상 최신값)
+                  if (isScroll && settingsRef.current.hideImageCover) {
+                    doc.querySelectorAll(COVER_IMAGE_SELECTORS).forEach((el: Element) => {
+                      (el as HTMLElement).style.display = "none";
+                    });
+                  }
 
                   if (isScroll) {
                     placeHostAtEnd();
