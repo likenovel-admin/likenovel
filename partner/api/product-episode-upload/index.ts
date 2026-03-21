@@ -3,6 +3,8 @@
 import {
   IEpisodeDeleteRequest,
   IEpisodeDeleteResponse,
+  IEpisodeTitleBulkUpdateRequest,
+  IEpisodeTitleBulkUpdateResponse,
   IEpubEpisodeBatchUploadRequest,
   IEpubEpisodeBatchUploadResponse,
   IEpubEpisodeUploadRequest,
@@ -52,6 +54,21 @@ export const useUploadBatchEpisodeEpub = () => {
         url: `/v1/command/episodes/products/${productId}/epub/batch`,
         method: "POST",
         queryParams: save ? { save } : undefined,
+        body,
+      }),
+  });
+};
+
+export const useBulkUpdateEpisodeTitles = () => {
+  return useMutation<
+    IEpisodeTitleBulkUpdateResponse,
+    Error,
+    IUploadEpisodeParam<IEpisodeTitleBulkUpdateRequest>
+  >({
+    mutationFn: async ({ productId, body }: IUploadEpisodeParam<IEpisodeTitleBulkUpdateRequest>) =>
+      apiClient.request<IEpisodeTitleBulkUpdateResponse>({
+        url: `/v1/command/episodes/products/${productId}/titles/bulk`,
+        method: "POST",
         body,
       }),
   });

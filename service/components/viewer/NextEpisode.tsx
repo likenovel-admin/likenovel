@@ -12,6 +12,7 @@ import {
 } from "@/utils/nextEpisodeClickSignal";
 import { buildViewerPath } from "@/utils/viewerPath";
 import Image from "next/image";
+import { useRef } from "react";
 
 interface NextEpisodeProps {
   currentEpisodeId: number;
@@ -19,6 +20,7 @@ interface NextEpisodeProps {
 
 export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
   const router = useRouter();
+  const lastTouchTriggeredAtRef = useRef(0);
   const { withLoginRequired } = useAuthWrapper();
   const { setTypeModal } = useModalStore();
   const { settings } = useViewStore((state) => ({
@@ -105,14 +107,31 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
     router.push(nextViewerPath);
   };
 
+  const handleNextEpisodeTouchEnd = (e: React.TouchEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    lastTouchTriggeredAtRef.current = Date.now();
+    handleNextEpisode();
+  };
+
+  const handleNextEpisodeClick = () => {
+    if (Date.now() - lastTouchTriggeredAtRef.current < 700) {
+      return;
+    }
+    handleNextEpisode();
+  };
+
   return (
     <section
+      data-lastpage-interactive="true"
       className={`w-full rounded-[20px] border border-line px-[22px] py-[21px] sm:p-5 mt-[10px] cursor-pointer transition ${
         isDarkTheme
           ? "bg-[#2B2F35] hover:bg-[#343942]"
           : "bg-card/60 hover:bg-gray-50"
       }`}
-      onClick={handleNextEpisode}
+      onClick={handleNextEpisodeClick}
+      onTouchEnd={handleNextEpisodeTouchEnd}
+      style={{ touchAction: "manipulation" }}
     >
       <div className="flex items-center gap-4">
         <div className="h-20 w-16 shrink-0 overflow-hidden rounded-md">

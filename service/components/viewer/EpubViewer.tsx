@@ -845,10 +845,24 @@ const EpubViewer = ({
     let startY = 0;
     let startScrollTop = 0;
     let isDragging = false;
+    let bypassInteractiveTouch = false;
+    const isInteractiveTarget = (target: EventTarget | null) =>
+      target instanceof Element &&
+      Boolean(
+        target.closest(
+          '[data-lastpage-interactive="true"], button, a, input, textarea, select, [role="button"]'
+        )
+      );
 
     // Use native touch events to control the EPUB scroll container
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
+      if (isInteractiveTarget(e.target)) {
+        bypassInteractiveTouch = true;
+        isDragging = false;
+        return;
+      }
+      bypassInteractiveTouch = false;
       // Re-fetch container each time to avoid stale closure
       const c = getScrollContainer();
       if (!c) return;
@@ -858,6 +872,7 @@ const EpubViewer = ({
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      if (bypassInteractiveTouch) return;
       if (!isDragging || e.touches.length !== 1) return;
       const currentY = e.touches[0].clientY;
       const deltaY = startY - currentY;
@@ -877,11 +892,15 @@ const EpubViewer = ({
     };
 
     const handleTouchEnd = () => {
+      if (bypassInteractiveTouch) {
+        bypassInteractiveTouch = false;
+        return;
+      }
       isDragging = false;
     };
 
     host.addEventListener("touchstart", handleTouchStart, {
-      passive: false,
+      passive: true,
       capture: true,
     });
     host.addEventListener("touchmove", handleTouchMove, {
@@ -1057,7 +1076,6 @@ const EpubViewer = ({
                   const doc =
                     (contents as any).document || contents.window?.document;
                   if (!doc) return;
-
                   const css = `
                     @font-face {
                       font-family:"NanumMyeongjo";
