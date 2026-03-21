@@ -118,6 +118,7 @@ export interface IProductDetailsGroupEpisode {
   publishReserveDate?: string | null;
   createdDate?: string | null;
   epubFilePath?: string | null;
+  epubFileName?: string | null;
 }
 
 export interface IProductDetailsGroupResponse {

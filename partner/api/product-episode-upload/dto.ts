@@ -18,6 +18,16 @@ export interface IEpubEpisodeBatchUploadRequest {
   episodes: IEpubEpisodeUploadRequest[];
 }
 
+export interface IEpisodeTitleBulkUpdateItem {
+  no: number;
+  file_name: string;
+  title: string;
+}
+
+export interface IEpisodeTitleBulkUpdateRequest {
+  episodes: IEpisodeTitleBulkUpdateItem[];
+}
+
 export interface IEpisodeReviewRequest {
   episode_ids: number[];
 }
@@ -60,6 +70,13 @@ export interface IEpisodeDeleteRequest {
 }
 
 export interface IEpisodeDeleteResponse {
+  data: {
+    count: number;
+    episodeIds: number[];
+  };
+}
+
+export interface IEpisodeTitleBulkUpdateResponse {
   data: {
     count: number;
     episodeIds: number[];

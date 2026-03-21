@@ -15,6 +15,7 @@ import {
   IUpdateProductRequest,
 } from "@/api/product/dto";
 import {
+  useBulkUpdateEpisodeTitles,
   useCancelEpisodeReview,
   useCancelReserveEpisodeSale,
   useDeleteEpisodes,
@@ -53,8 +54,9 @@ import {
 import { ChevronLeft, ImagePlus, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import * as XLSX from "xlsx";
 
 type PublicationType = "serial" | "volume";
 type RatingType = "all" | "15" | "19";
@@ -113,6 +115,18 @@ const ONGOING_OPTIONS: { value: OngoingType; label: string }[] = [
   { value: "stop", label: "중단" },
 ];
 
+const EPISODE_TITLE_TEMPLATE_HEADERS = ["NO", "파일명", "회차명"] as const;
+
+const escapeExcelText = (value?: string | null) => {
+  const text = (value || "").trim();
+  return /^[=+\-@]/.test(text) ? `'${text}` : text;
+};
+
+const unescapeExcelText = (value: string) =>
+  value.startsWith("'") && /^[=+\-@]/.test(value.slice(1))
+    ? value.slice(1)
+    : value;
+
 const formatEpisodeDate = (dateValue?: string | null) => {
   if (!dateValue) return "-";
   const date = new Date(dateValue);
@@ -142,6 +156,22 @@ const getEpisodeStatusLabel = (episode: {
   return "업로드완료";
 };
 
+const isEpisodeUploadCompleted = (
+  episode: Parameters<typeof getEpisodeStatusLabel>[0]
+) => {
+  const effectiveOpenYn = episode.openYn ?? episode.episodeOpenYn ?? "N";
+  const reserveAt =
+    !!episode.publishReserveDate &&
+    new Date(episode.publishReserveDate).getTime() > Date.now();
+
+  return (
+    (episode.useYn ?? "Y") === "Y" &&
+    effectiveOpenYn === "N" &&
+    !reserveAt &&
+    (episode.latestApplyStatus == null || episode.latestApplyStatus === "cancel")
+  );
+};
+
 export default function ProductUploadPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -159,6 +189,7 @@ export default function ProductUploadPage() {
   const requestEpisodeReview = useRequestEpisodeReview();
   const cancelEpisodeReview = useCancelEpisodeReview();
   const deleteEpisodes = useDeleteEpisodes();
+  const bulkUpdateEpisodeTitles = useBulkUpdateEpisodeTitles();
   const startEpisodeSale = useStartEpisodeSale();
   const reserveEpisodeSale = useReserveEpisodeSale();
   const cancelReserveEpisodeSale = useCancelReserveEpisodeSale();
@@ -182,6 +213,7 @@ export default function ProductUploadPage() {
   const [isCoverUploading, setIsCoverUploading] = useState(false);
   const [selectedEpisodeIds, setSelectedEpisodeIds] = useState<number[]>([]);
   const [reserveDateTime, setReserveDateTime] = useState("");
+  const episodeTitleExcelInputRef = useRef<HTMLInputElement | null>(null);
 
   const primaryGenres = useMemo(
     () => genres?.filter((genre) => genre.major_genre_yn === "Y") ?? [],
@@ -216,6 +248,7 @@ export default function ProductUploadPage() {
   const isApplyingReview = requestEpisodeReview.isPending;
   const isCancellingReview = cancelEpisodeReview.isPending;
   const isDeletingEpisodes = deleteEpisodes.isPending;
+  const isBulkUpdatingEpisodeTitles = bulkUpdateEpisodeTitles.isPending;
   const isStartingSale = startEpisodeSale.isPending;
   const isReservingSale = reserveEpisodeSale.isPending;
   const isCancellingReserve = cancelReserveEpisodeSale.isPending;
@@ -223,12 +256,17 @@ export default function ProductUploadPage() {
     isApplyingReview ||
     isCancellingReview ||
     isDeletingEpisodes ||
+    isBulkUpdatingEpisodeTitles ||
     isStartingSale ||
     isReservingSale ||
     isCancellingReserve;
   const allEpisodeSelected =
     episodes.length > 0 &&
     episodes.every((episode) => selectedEpisodeIds.includes(episode.episodeId));
+  const titleBulkEligibleEpisodes = useMemo(
+    () => episodes.filter((episode) => isEpisodeUploadCompleted(episode)),
+    [episodes]
+  );
 
   const handlePublicationTypeChange = (value: PublicationType) => {
     setForm((prev) => ({
@@ -707,6 +745,137 @@ export default function ProductUploadPage() {
       }),
       queryClient.invalidateQueries({ queryKey: ["GetProductParams"] }),
     ]);
+  };
+
+  const handleDownloadEpisodeTitleTemplate = async () => {
+    if (!titleBulkEligibleEpisodes.length) {
+      showAlert("안내", "업로드완료 회차가 있을 때만 양식을 다운로드할 수 있습니다.", "확인");
+      return;
+    }
+
+    const hasMissingFileName = titleBulkEligibleEpisodes.some(
+      (episode) => !(episode.epubFileName || "").trim()
+    );
+    if (hasMissingFileName) {
+      showAlert("오류", "현재 파일명이 없는 회차가 있어 양식을 만들 수 없습니다.", "확인");
+      return;
+    }
+
+    const rows = [
+      [...EPISODE_TITLE_TEMPLATE_HEADERS],
+      ...titleBulkEligibleEpisodes.map((episode) => [
+        episode.episodeNo,
+        escapeExcelText(episode.epubFileName),
+        episode.episodeTitle || "",
+      ]),
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "회차명양식");
+    XLSX.writeFile(workbook, "회차명-일괄수정-양식.xlsx");
+  };
+
+  const handleOpenEpisodeTitleExcelPicker = () => {
+    if (!titleBulkEligibleEpisodes.length || isActionPending) {
+      return;
+    }
+    episodeTitleExcelInputRef.current?.click();
+  };
+
+  const handleEpisodeTitleExcelSelected = async (
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      showAlert("파일 형식 오류", "엑셀 양식(.xlsx) 파일만 업로드할 수 있습니다.", "확인");
+      return;
+    }
+
+    if (!editProductId) {
+      showAlert("안내", "작품 정보가 없습니다.", "확인");
+      return;
+    }
+
+    try {
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", raw: false });
+      const sheetNames = workbook.SheetNames || [];
+      if (sheetNames.length !== 1) {
+        throw new Error("양식에는 시트가 1개만 있어야 합니다.");
+      }
+
+      const worksheet = workbook.Sheets[sheetNames[0]];
+      const sheetRows = XLSX.utils.sheet_to_json<(string | number)[]>(worksheet, {
+        header: 1,
+        raw: false,
+        defval: "",
+        blankrows: false,
+      });
+
+      if (sheetRows.length < 2) {
+        throw new Error("유효한 회차 데이터가 없습니다.");
+      }
+
+      const header = (sheetRows[0] || []).slice(0, 3).map((cell) => String(cell).trim());
+      const hasExtraHeaderCell = (sheetRows[0] || [])
+        .slice(3)
+        .some((cell) => String(cell ?? "").trim() !== "");
+      if (
+        hasExtraHeaderCell ||
+        header.length !== EPISODE_TITLE_TEMPLATE_HEADERS.length ||
+        header.some((value, index) => value !== EPISODE_TITLE_TEMPLATE_HEADERS[index])
+      ) {
+        throw new Error("양식 헤더가 올바르지 않습니다.");
+      }
+
+      const payloadRows = sheetRows.slice(1).map((row) => {
+        const values = row.slice(0, 3).map((cell) => String(cell ?? "").trim());
+        const hasExtraCell = row
+          .slice(3)
+          .some((cell) => String(cell ?? "").trim() !== "");
+        if (hasExtraCell || values.length !== 3 || values.some((value) => value === "")) {
+          throw new Error("누락된 셀 또는 잘못된 양식이 있습니다.");
+        }
+
+        const no = Number(values[0]);
+        if (!Number.isInteger(no) || no <= 0) {
+          throw new Error("NO 값이 올바르지 않습니다.");
+        }
+
+        return {
+          no,
+          file_name: unescapeExcelText(values[1]),
+          title: values[2],
+        };
+      });
+
+      const confirmResult = await confirm({
+        title: "회차명 적용",
+        text: `업로드완료 회차 ${payloadRows.length}건의 회차명을 일괄 변경하시겠습니까?`,
+        confirm: "확인",
+        cancel: "취소",
+      });
+      if (!confirmResult.isConfirmed) return;
+
+      const response = await bulkUpdateEpisodeTitles.mutateAsync({
+        productId: editProductId,
+        body: { episodes: payloadRows },
+      });
+
+      await invalidateEpisodeQueries();
+      setSelectedEpisodeIds([]);
+      await showAlert(
+        "완료",
+        `${response.data.count.toLocaleString()}개 회차명이 변경되었습니다.`,
+        "확인"
+      );
+    } catch (error) {
+      showAlert("회차명 적용 실패", catchErrorMessage(error), "확인");
+    }
   };
 
   const handleRequestSelectedReviews = async () => {
@@ -1510,6 +1679,28 @@ export default function ProductUploadPage() {
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#E7E9EE] bg-[#FBFCFF] p-3">
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleDownloadEpisodeTitleTemplate}
+                    disabled={!titleBulkEligibleEpisodes.length || isActionPending}
+                  >
+                    양식 다운로드
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleOpenEpisodeTitleExcelPicker}
+                    disabled={!titleBulkEligibleEpisodes.length || isActionPending}
+                  >
+                    {isBulkUpdatingEpisodeTitles ? "처리 중..." : "회차명 적용"}
+                  </Button>
+                  <input
+                    ref={episodeTitleExcelInputRef}
+                    type="file"
+                    accept=".xlsx"
+                    className="hidden"
+                    onChange={handleEpisodeTitleExcelSelected}
+                    disabled={!titleBulkEligibleEpisodes.length || isActionPending}
+                  />
                   <Button
                     variant="outline"
                     onClick={handleDeleteSelectedEpisodes}
