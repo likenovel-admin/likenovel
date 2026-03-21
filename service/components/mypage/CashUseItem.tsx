@@ -1,5 +1,5 @@
 interface ICashUseItemProps {
-  category: "charge" | "used";
+  category: "charge" | "use" | "used";
   amount: number;
   product_title: string;
   episode_title: string;
@@ -19,10 +19,12 @@ const CashUseItem = ({
         <div className="text-15pxr md:text-16pxr font-medium">{product_title}</div>
         <div
           className={`text-12pxr md:text-14pxr font-normal min-w-10 text-right ${
-            category === "used" ? "text-[#ff5e03]" : "text-[#176bf2]"
+            category === "used" || category === "use"
+              ? "text-[#ff5e03]"
+              : "text-[#176bf2]"
           }`}
         >
-          {category === "used" ? "사용" : "충전"}
+          {category === "used" || category === "use" ? "사용" : "충전"}
         </div>
       </div>
       <div className="flex justify-between">
