@@ -496,9 +496,12 @@ export interface IQuest {
 export interface ICash {
   category: "charge" | "use" | "used";
   amount: number;
-  product_title: string;
-  episode_title: string;
-  created_date: string;
+  productTitle?: string | null;
+  episodeTitle?: string | null;
+  createdDate?: string;
+  product_title?: string | null;
+  episode_title?: string | null;
+  created_date?: string;
 }
 
 export interface IProductsContractOffered {
