@@ -119,6 +119,8 @@ export interface IGetAvailableTicketsResponse {
     waiting_for_free: number;
     "6-9-path": number;
     gift: number;
+    quest: number;
+    event: number;
   };
   wff_next_charge_at: string | null;
 }
