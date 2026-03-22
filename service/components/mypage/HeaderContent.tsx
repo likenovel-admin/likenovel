@@ -4,20 +4,15 @@ import {
   useUserUpdateProfiles,
 } from "@/app/api/query/mypage/user";
 import { useUpdateUpload } from "@/app/api/query/upload";
-import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import { getFileName } from "@/utils/common";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChangeEvent, useCallback, useRef, useState } from "react";
-import Button from "../common/Button";
 import Modal from "../common/Modal";
 import RoundBadge from "../common/RoundBadge";
-import RequestEditorModal from "./RequestEditorModal";
-
 const HeaderContent = () => {
-  const { setModal } = useModalStore();
   const { setToast } = useToastStore();
   const queryClient = useQueryClient();
   const selectProfileFile = useSelectProfileFile();
@@ -28,10 +23,6 @@ const HeaderContent = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
-
-  const handleOpenModal = useCallback(() => {
-    setModal(<RequestEditorModal />);
-  }, [setModal]);
 
   const handleFileChange = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
@@ -214,27 +205,6 @@ const HeaderContent = () => {
           </span>
         </div>
       </div>
-      {!["editor", "CP"].includes(userInfo?.data?.userRole || "") &&
-        userInfo?.data?.applyCPEditorYN === "N" && (
-          <>
-            <Button
-              size="lg"
-              className="hidden md:block"
-              variant="black"
-              onClick={handleOpenModal}
-            >
-              CP사 입점 신청
-            </Button>
-            <Button
-              size="sm"
-              className="block md:hidden"
-              variant="black"
-              onClick={handleOpenModal}
-            >
-              CP사 입점 신청
-            </Button>
-          </>
-        )}
       <Modal size="full" />
     </div>
   );

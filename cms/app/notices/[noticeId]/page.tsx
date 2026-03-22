@@ -151,7 +151,11 @@ export default function Page() {
               <TableRow>
                 <TableHead className="require">본문</TableHead>
                 <TableCell>
-                  <Editor value={content} setValue={setContent} />
+                  <Editor
+                    value={content}
+                    setValue={setContent}
+                    preservePlainTextNewlines
+                  />
                 </TableCell>
               </TableRow>
               <TableRow>

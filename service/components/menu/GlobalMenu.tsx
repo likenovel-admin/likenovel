@@ -314,14 +314,14 @@ const GlobalMenuModal = ({ isOpen, setIsOpen, onClose }: CommonModalProps) => {
               iconWidth={16}
               iconHeight={21}
             />
-            <StatItem
+            {/* <StatItem
               icon="/images/check2.svg"
               label="인기 적중"
               value={userInfo?.data?.totalVoteWinCount ?? 0}
               value2={userInfo?.data?.totalVoteRound ?? 0}
               iconWidth={22}
               iconHeight={22}
-            />
+            /> */}
             <StatItem
               icon="/images/paper.svg"
               label="총 읽은 작품 수"

@@ -10,6 +10,8 @@ import Spinner from "@/components/common/Spinner";
 // import AddProfileButton from "@/components/mypage/AddProfileButton";
 import ProfileAddModal from "@/components/mypage/ProfileAddModal";
 import ProfileItem from "@/components/mypage/ProfileItem";
+import RequestEditorModal from "@/components/mypage/RequestEditorModal";
+import Button from "@/components/common/Button";
 import useConfirmStore from "@/store/confirmStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
@@ -171,9 +173,18 @@ const Page = () => {
           </li>
         ))}
       </ul>
-      {/* <div className="md:hidden">
-        <AddProfileButton onAddProfile={handleAddProfile} />
-      </div> */}
+      {!["editor", "CP"].includes(userRole) &&
+        userInfoData?.data?.applyCPEditorYN === "N" && (
+          <div className="mt-8">
+            <Button
+              variant="black"
+              size="lg"
+              onClick={() => setModal(<RequestEditorModal />)}
+            >
+              CP사 입점 신청
+            </Button>
+          </div>
+        )}
     </div>
   );
 };

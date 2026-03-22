@@ -60,7 +60,7 @@ const Page = () => {
             rightContent={<ExclamationTooltip />}
           />
         </li>
-        <li>
+        {/* <li>
           <HomeItem
             icon={"/images/popular.svg"}
             title="인기 적중"
@@ -74,7 +74,7 @@ const Page = () => {
             }
             rightContent={<ExclamationTooltip />}
           />
-        </li>
+        </li> */}
         <li>
           <HomeItem
             icon={"/images/total-read.svg"}

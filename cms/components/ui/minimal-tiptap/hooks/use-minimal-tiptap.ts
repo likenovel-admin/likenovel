@@ -29,6 +29,7 @@ export interface UseMinimalTiptapEditorProps extends UseEditorOptions {
   onUpdate?: (content: Content) => void;
   onBlur?: (content: Content) => void;
   uploader?: (file: File) => Promise<string>;
+  preservePlainTextNewlines?: boolean;
 }
 
 async function fakeuploader(file: File): Promise<string> {
@@ -192,8 +193,12 @@ export const useMinimalTiptapEditor = ({
   onUpdate,
   onBlur,
   uploader,
+  preservePlainTextNewlines = false,
+  editorProps: incomingEditorProps,
   ...props
 }: UseMinimalTiptapEditorProps) => {
+  const editorRef = React.useRef<Editor | null>(null);
+
   const throttledSetValue = useThrottle(
     (value: Content) => onUpdate?.(value),
     throttleDelay
@@ -218,19 +223,74 @@ export const useMinimalTiptapEditor = ({
     [output, onBlur]
   );
 
+  const insertPlainTextWithHardBreaks = React.useCallback((rawText: string) => {
+    const normalized = rawText.replace(/\r\n/g, "\n");
+    const lines = normalized.split("\n");
+    const contentToInsert: Content[] = [];
+
+    lines.forEach((line, idx) => {
+      if (line.length > 0) {
+        contentToInsert.push({ type: "text", text: line });
+      }
+      if (idx < lines.length - 1) {
+        contentToInsert.push({ type: "hardBreak" });
+      }
+    });
+
+    editorRef.current?.chain().focus().insertContent(contentToInsert).run();
+  }, []);
+
+  const incomingAttributes = incomingEditorProps?.attributes;
+
+  const mergedAttributes =
+    typeof incomingAttributes === "function"
+      ? (state: unknown) => {
+          const attrs = incomingAttributes(state as never);
+
+          return {
+            ...attrs,
+            autocomplete: "off",
+            autocorrect: "off",
+            autocapitalize: "off",
+            class: cn("focus:outline-hidden", attrs.class, editorClassName),
+          };
+        }
+      : {
+          ...incomingAttributes,
+          autocomplete: "off",
+          autocorrect: "off",
+          autocapitalize: "off",
+          class: cn(
+            "focus:outline-hidden",
+            incomingAttributes?.class,
+            editorClassName
+          ),
+        };
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: createExtensions({ placeholder, uploader }),
     editorProps: {
-      attributes: {
-        autocomplete: "off",
-        autocorrect: "off",
-        autocapitalize: "off",
-        class: cn("focus:outline-hidden", editorClassName),
+      ...incomingEditorProps,
+      attributes: mergedAttributes,
+      handlePaste: (view, event, slice) => {
+        const pastedText = event.clipboardData?.getData("text/plain") || "";
+        const pastedHtml = event.clipboardData?.getData("text/html") || "";
+
+        if (preservePlainTextNewlines && pastedText && !pastedHtml) {
+          event.preventDefault();
+          insertPlainTextWithHardBreaks(pastedText);
+          return true;
+        }
+
+        return incomingEditorProps?.handlePaste?.(view, event, slice) ?? false;
       },
     },
     onUpdate: ({ editor }) => handleUpdate(editor),
-    onCreate: ({ editor }) => handleCreate(editor),
+    onCreate: ({ editor }) => {
+      editorRef.current = editor;
+      handleCreate(editor);
+    },
     onBlur: ({ editor }) => handleBlur(editor),
     ...props,
   });

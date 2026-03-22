@@ -85,6 +85,7 @@ export default function Page() {
                     value={content}
                     setValue={setContent}
                     placeholder="FAQ 본문 내용을 입력해주세요."
+                    preservePlainTextNewlines
                   />
                 </TableCell>
               </TableRow>
