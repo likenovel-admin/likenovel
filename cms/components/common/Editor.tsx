@@ -10,9 +10,15 @@ interface PropsType {
   value?: string;
   setValue?: (value: string) => void;
   placeholder?: string;
+  preservePlainTextNewlines?: boolean;
 }
 
-export const Editor = ({ value, setValue, placeholder }: PropsType) => {
+export const Editor = ({
+  value,
+  setValue,
+  placeholder,
+  preservePlainTextNewlines = false,
+}: PropsType) => {
   const { mutateAsync: selectStoragePath } = useSelectStoragePath();
   const { mutateAsync: getPresignedUrl } = useSelectPresignedFilePathByEpisode();
 
@@ -72,6 +78,7 @@ export const Editor = ({ value, setValue, placeholder }: PropsType) => {
       autofocus={false}
       editable={true}
       editorClassName="focus:outline-hidden"
+      preservePlainTextNewlines={preservePlainTextNewlines}
       uploader={handleImageUpload}
     />
   );

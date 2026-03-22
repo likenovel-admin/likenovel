@@ -21,6 +21,7 @@ export interface MinimalTiptapProps
   onChange?: (value: Content) => void;
   className?: string;
   editorContentClassName?: string;
+  preservePlainTextNewlines?: boolean;
 }
 
 const Toolbar = ({ editor }: { editor: Editor }) => (

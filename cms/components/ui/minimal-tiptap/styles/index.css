@@ -100,7 +100,7 @@
 
 .minimal-tiptap-editor .ProseMirror {
   @apply flex max-w-full cursor-text flex-col;
-  @apply z-0 outline-0;
+  @apply z-0 outline-0 leading-6;
 }
 
 .minimal-tiptap-editor .ProseMirror > div.editor {
@@ -128,7 +128,7 @@
 }
 
 .minimal-tiptap-editor .ProseMirror li {
-  @apply leading-7;
+  @apply leading-6;
 }
 
 .minimal-tiptap-editor .ProseMirror p {
