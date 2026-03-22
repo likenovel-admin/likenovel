@@ -58,6 +58,9 @@ const RentalStatusContents = ({
     waiting_for_free: 0,
     "6-9-path": 0,
     total: 0,
+    quest: 0,
+    event: 0,
+    other: 0,
   };
 
   return (
@@ -102,15 +105,23 @@ const RentalStatusContents = ({
             </span>
           </li>
           <li>
+            퀘스트 대여권{" "}
+            <span className="text-black-100 font-medium ">
+              {ticketCounts.quest}장
+            </span>
+          </li>
+          <li>
+            이벤트 대여권{" "}
+            <span className="text-black-100 font-medium ">
+              {ticketCounts.event}장
+            </span>
+          </li>
+          <li>
             기타 대여권{" "}
             <span className="text-black-100 font-medium ">
               {ticketCounts.other}장
             </span>
           </li>
-          {/* <li>
-            이벤트 대여권{" "}
-            <span className="text-black-100 font-medium ">{ticketCounts.event}장</span>
-          </li> */}
         </ul>
       </div>
       <div className="md:p-5 w-full">

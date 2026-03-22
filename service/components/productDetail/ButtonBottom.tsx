@@ -73,6 +73,8 @@ const ButtonBottom = ({
       "6-9-path": 0,
       total: 0,
       gift: 0,
+      quest: 0,
+      event: 0,
       other: 0,
     };
 
@@ -89,6 +91,8 @@ const ButtonBottom = ({
       waiting_for_free: count_by_type.waiting_for_free || 0,
       "6-9-path": count_by_type["6-9-path"] || 0,
       gift: count_by_type.gift || 0,
+      quest: count_by_type.quest || 0,
+      event: count_by_type.event || 0,
     };
 
     // Only check ticketsData.data if gift count > 0
@@ -117,13 +121,15 @@ const ButtonBottom = ({
 
     const total = ticketsData.data?.length || 0;
 
-    // Calculate "other" = all tickets EXCEPT (free-for-first, reader-of-prev, waiting-for-free, 6-9-path)
+    // Calculate "other" = all tickets EXCEPT categorized ticket types
     const other =
       total -
       (counts.free_for_first +
         counts.reader_of_prev +
         counts.waiting_for_free +
-        counts["6-9-path"]);
+        counts["6-9-path"] +
+        counts.quest +
+        counts.event);
 
     return {
       ...counts,
