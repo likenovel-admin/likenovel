@@ -15,7 +15,6 @@ import Checkbox from "../../components/common/CheckBox";
 import AdPage from "../product/agree/ad/page";
 import PrivacyPage from "../product/agree/privacy/page";
 import TermsPage from "../product/agree/terms/page";
-import ArrowRight from "/public/images/arrow-right-medium.svg";
 export interface IForm {
   birthDate: string;
   email: string;
@@ -324,14 +323,6 @@ const SignUp = () => {
               <span className="underline text-11pxr md:text-14pxr ml-5pxr font-bold">
                 로그인하기
               </span>
-            </button>
-          </div>
-          <div className="mt-10pxr">
-            <button className="flex items-center gap-9pxr" type="button">
-              <span className="text-11pxr md:text-14pxr">
-                CP 입점/편집자라면?
-              </span>
-              <ArrowRight className="w-[10px] md:w-[12px] h-[10px] md:h-[12px]" />
             </button>
           </div>
         </form>

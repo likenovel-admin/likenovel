@@ -14,6 +14,8 @@ const ProductStateBadge = ({
   hasUpBadge = true,
 }: Props) => {
   const badges: JSX.Element[] = [];
+  // 계약 상태 데이터는 유지하되, 유저웹에서는 계약 배지를 노출하지 않는다.
+  const showCpContractBadge = false;
 
   if (hasFreeOrPaidBadge) {
     const freeOrPaidBadge = product.priceType ? (
@@ -38,7 +40,11 @@ const ProductStateBadge = ({
 
   if (product.contract?.monopolyYn === "Y")
     badges.push(<SquareBadge key="only" type="only" />);
-  if (product.contract?.cpContractYn === "Y" && product.priceType === "paid")
+  if (
+    showCpContractBadge &&
+    product.contract?.cpContractYn === "Y" &&
+    product.priceType === "paid"
+  )
     badges.push(<SquareBadge key="CPContract" type="CPContract" />);
   if (product.badge?.newReleaseYn === "Y")
     badges.push(<SquareBadge key="new" type="new" />);

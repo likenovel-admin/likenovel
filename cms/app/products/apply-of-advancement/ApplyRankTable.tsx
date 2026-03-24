@@ -80,6 +80,7 @@ export default function ApplyRankTable({ data, loading, refetch }: Props) {
     { header: "작품 ID", key: "product_id" },
     { header: "작가명", key: "authorNickname" },
     { header: "작가 ID", key: "author_id" },
+    { header: "CP 닉네임", key: "cp_nickname" },
     { header: "회차수", key: "count_episode" },
     {
       header: "작품등록일",

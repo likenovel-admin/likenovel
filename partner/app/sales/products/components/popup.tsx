@@ -14,22 +14,36 @@ interface SalesPopupProps {
   close: () => void;
 }
 
+const displayValue = (value: number | null | undefined) =>
+  value ?? "";
+
 const SalesPopup = (props: SalesPopupProps) => {
   const { data } = useGetMonthlySaleByProductDetail(props.productId || "");
 
-  const [sumSettlementPriceWeb, setSumSettlementPriceWeb] = useState<number>();
-  const [sumSettlementCompedTicketPrice, setSumSettlementCompedTicketPrice] =
-    useState<number>();
-  const [taxPrice, setTaxPrice] = useState<number>();
-  const [totalPrice, setTotalPrice] = useState<number>();
+  const [paidPrice, setPaidPrice] = useState<number | null>();
+  const [freePrice, setFreePrice] = useState<number | null>();
+  const [sumPrice, setSumPrice] = useState<number | null>();
+  const [paidSettlementPrice, setPaidSettlementPrice] = useState<
+    number | null
+  >();
+  const [freeSettlementPrice, setFreeSettlementPrice] = useState<
+    number | null
+  >();
+  const [settlementPrice, setSettlementPrice] = useState<number | null>();
+  const [taxPrice, setTaxPrice] = useState<number | null>();
+  const [totalPrice, setTotalPrice] = useState<number | null>();
 
   useEffect(() => {
     if (data) {
       const { summary } = data;
-      setSumSettlementPriceWeb(summary.paid_price);
-      setSumSettlementCompedTicketPrice(summary.free_price);
+      setPaidPrice(summary.gross_paid_price);
+      setFreePrice(summary.gross_free_price);
+      setSumPrice(summary.gross_total_price);
+      setPaidSettlementPrice(summary.paid_settlement_price);
+      setFreeSettlementPrice(summary.free_settlement_price);
+      setSettlementPrice(summary.settlement_price);
       setTaxPrice(summary.tax_price);
-      setTotalPrice(summary.total_price);
+      setTotalPrice(summary.gross_total_price);
     }
   }, [data]);
 
@@ -55,16 +69,16 @@ const SalesPopup = (props: SalesPopupProps) => {
             <TableRow>
               <TableHead>일반 구매</TableHead>
               <TableCell className="border-l">
-                {data?.result?.sum_normal_price_web || "" || ""}
+                {displayValue(data?.result?.sum_normal_price_web)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.sum_normal_price_playstore || ""}
+                {displayValue(data?.result?.sum_normal_price_playstore)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.sum_normal_price_ios || ""}
+                {displayValue(data?.result?.sum_normal_price_ios)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.sum_normal_price_onestore || ""}
+                {displayValue(data?.result?.sum_normal_price_onestore)}
               </TableCell>
               <TableCell className="border-l">-</TableCell>
             </TableRow>
@@ -72,76 +86,76 @@ const SalesPopup = (props: SalesPopupProps) => {
             <TableRow>
               <TableHead>대여권</TableHead>
               <TableCell className="border-l">
-                {data?.result?.sum_ticket_price_web || ""}
+                {displayValue(data?.result?.sum_ticket_price_web)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.sum_ticket_price_playstore || ""}
+                {displayValue(data?.result?.sum_ticket_price_playstore)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.sum_ticket_price_ios || ""}
+                {displayValue(data?.result?.sum_ticket_price_ios)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.sum_ticket_price_onestore || ""}
+                {displayValue(data?.result?.sum_ticket_price_onestore)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.sum_comped_ticket_price || ""}
+                {displayValue(data?.result?.sum_comped_ticket_price)}
               </TableCell>
             </TableRow>
 
             <TableRow>
               <TableHead>결제 수수료</TableHead>
               <TableCell className="border-l">
-                {data?.result?.fee_web || ""}
+                {displayValue(data?.result?.fee_web)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.fee_playstore || ""}
+                {displayValue(data?.result?.fee_playstore)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.fee_ios || ""}
+                {displayValue(data?.result?.fee_ios)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.fee_onestore || ""}
+                {displayValue(data?.result?.fee_onestore)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.fee_comped_ticket || ""}
+                {displayValue(data?.result?.fee_comped_ticket)}
               </TableCell>
             </TableRow>
 
             <TableRow>
               <TableHead>취소액</TableHead>
               <TableCell className="border-l">
-                {data?.result?.sum_refund_price_web || ""}
+                {displayValue(data?.result?.sum_refund_price_web)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.sum_refund_price_playstore || ""}
+                {displayValue(data?.result?.sum_refund_price_playstore)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.sum_refund_price_ios || ""}
+                {displayValue(data?.result?.sum_refund_price_ios)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.sum_refund_price_onestore || ""}
+                {displayValue(data?.result?.sum_refund_price_onestore)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.sum_refund_comped_ticket_price || ""}
+                {displayValue(data?.result?.sum_refund_comped_ticket_price)}
               </TableCell>
             </TableRow>
 
             <TableRow>
               <TableHead>정산율(%)</TableHead>
               <TableCell className="border-l">
-                {data?.result?.settlement_rate_web || ""}
+                {displayValue(data?.result?.settlement_rate_web)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.settlement_rate_playstore || ""}
+                {displayValue(data?.result?.settlement_rate_playstore)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.settlement_rate_ios || ""}
+                {displayValue(data?.result?.settlement_rate_ios)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.settlement_rate_onestore || ""}
+                {displayValue(data?.result?.settlement_rate_onestore)}
               </TableCell>
               <TableCell className="border-l">
-                {data?.result?.settlement_rate_comped_ticket || ""}
+                {displayValue(data?.result?.settlement_rate_comped_ticket)}
               </TableCell>
             </TableRow>
           </Table>
@@ -154,15 +168,40 @@ const SalesPopup = (props: SalesPopupProps) => {
               <TableHead></TableHead>
             </TableRow>
             <TableRow className="border-0">
+              <TableCell>매출액</TableCell>
+              <TableCell>
+                <Input
+                  readOnly
+                  type="number"
+                  step="any"
+                  value={paidPrice ?? ""}
+                  onChange={(e) => setPaidPrice(Number(e.target.value))}
+                />
+              </TableCell>
+              <TableCell>
+                <Input
+                  readOnly
+                  type="number"
+                  step={"any"}
+                  value={freePrice ?? ""}
+                  onChange={(e) => setFreePrice(Number(e.target.value))}
+                />
+              </TableCell>
+              <TableCell>
+                <Input type="number" value={sumPrice ?? ""} readOnly />
+              </TableCell>
+              <TableCell></TableCell>
+            </TableRow>
+            <TableRow className="border-0">
               <TableCell>정산액</TableCell>
               <TableCell>
                 <Input
                   readOnly
                   type="number"
                   step="any"
-                  value={sumSettlementPriceWeb}
+                  value={paidSettlementPrice ?? ""}
                   onChange={(e) =>
-                    setSumSettlementPriceWeb(Number(e.target.value))
+                    setPaidSettlementPrice(Number(e.target.value))
                   }
                 />
               </TableCell>
@@ -170,56 +209,51 @@ const SalesPopup = (props: SalesPopupProps) => {
                 <Input
                   readOnly
                   type="number"
-                  step={"any"}
-                  value={sumSettlementCompedTicketPrice}
+                  step="any"
+                  value={freeSettlementPrice ?? ""}
                   onChange={(e) =>
-                    setSumSettlementCompedTicketPrice(Number(e.target.value))
+                    setFreeSettlementPrice(Number(e.target.value))
                   }
                 />
               </TableCell>
               <TableCell>
                 <Input
-                  type="number"
-                  value={
-                    (sumSettlementPriceWeb || 0) +
-                    (sumSettlementCompedTicketPrice || 0)
-                  }
                   readOnly
+                  type="number"
+                  step="any"
+                  value={settlementPrice ?? ""}
+                  onChange={(e) => setSettlementPrice(Number(e.target.value))}
                 />
               </TableCell>
               <TableCell></TableCell>
             </TableRow>
             <TableRow className="border-0">
               <TableCell>세액</TableCell>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
               <TableCell>
                 <Input
                   readOnly
                   type="number"
                   step="any"
-                  value={taxPrice}
+                  value={taxPrice ?? ""}
                   onChange={(e) => setTaxPrice(Number(e.target.value))}
                 />
               </TableCell>
               <TableCell></TableCell>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
             </TableRow>
             <TableRow className="border-0">
-              <TableCell>합계</TableCell>
+              <TableCell>총 매출</TableCell>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
               <TableCell>
                 <Input
                   type="number"
                   step={"any"}
-                  value={
-                    (sumSettlementPriceWeb || 0) +
-                    (sumSettlementCompedTicketPrice || 0) -
-                    (taxPrice || 0)
-                  }
+                  value={totalPrice ?? ""}
                   readOnly
                 />
               </TableCell>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
               <TableCell></TableCell>
             </TableRow>
           </Table>

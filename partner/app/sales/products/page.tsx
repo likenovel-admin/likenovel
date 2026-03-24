@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ManageSalesPopup, SalesPopup } from "./components/popup";
+import { SalesPopup } from "./components/popup";
 import { IGetMonthlySaleByProductParams } from "@/api/monthly-sales-by-product/dto";
 import { item_per_page } from "@/constants/common";
 import {
@@ -28,16 +28,11 @@ import MonthlySaleByProductsTable from "@/app/sales/products/DataTable";
 import PaginationControls from "@/components/common/PaginationControls";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import PageHeader from "@/components/ui/page-header";
-import { useProfile } from "@/hooks/useProfile";
 
 export default function Page() {
   // const isMobile = useIsMobile()
   const route = useRouter();
-  const { isAdmin, isInitialized } = useProfile();
-
   const [salesPopupProductId, setSalesPopupProductId] = useState("");
-  const [manageSalesPopupProductId, setManageSalesPopupProductId] =
-    useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilers] = useState<IGetMonthlySaleByProductParams>({
     page: 1,
@@ -110,8 +105,8 @@ export default function Page() {
         "uci",
         "series_regular_price",
         "sale_price",
-        "total_price",
-        "sum_settlement_price_web",
+        "gross_total_price",
+        "settlement_price",
       ],
       filename: "작품별 월매출",
       onStart: () => setIsLoading(true),
@@ -171,9 +166,7 @@ export default function Page() {
           <MonthlySaleByProductsTable
             data={data?.results ?? []}
             loading={isLoadingData || isFetching}
-            isAdmin={isAdmin}
             onEdit={(id: string) => setSalesPopupProductId(id)}
-            onManage={(id: string) => setManageSalesPopupProductId(id)}
           />
           <PaginationControls
             page={filters.page || 1}
@@ -192,12 +185,6 @@ export default function Page() {
         <SalesPopup
           productId={salesPopupProductId}
           close={() => setSalesPopupProductId("")}
-        />
-      )}
-      {manageSalesPopupProductId != "" && (
-        <ManageSalesPopup
-          productId={manageSalesPopupProductId}
-          close={() => setManageSalesPopupProductId("")}
         />
       )}
     </>

@@ -244,6 +244,11 @@ export default function ProductUploadPage() {
   const canManage =
     userProfile?.role_type === "admin" || userProfile?.role_type === "CP";
   const isAdmin = userProfile?.role_type === "admin";
+  const isCpUser = userProfile?.role_type === "CP";
+  const autoAssignedCpCompanyName =
+    isCpUser && cpCompanies && cpCompanies.length === 1
+      ? cpCompanies[0].company_name
+      : "";
   const isSubmitting = createProduct.isPending || updateProduct.isPending;
   const isApplyingReview = requestEpisodeReview.isPending;
   const isCancellingReview = cancelEpisodeReview.isPending;
@@ -362,6 +367,15 @@ export default function ProductUploadPage() {
       detailWithOptional.cover_image_file_id || detailWithOptional.thumbnail_file_id;
     if (existingCoverId) setCoverImageFileId((prev) => prev ?? existingCoverId);
   }, [isDetailMode, productDetail]);
+
+  useEffect(() => {
+    if (isDetailMode || !isCpUser || !autoAssignedCpCompanyName) return;
+    setForm((prev) =>
+      prev.cpCompanyName === autoAssignedCpCompanyName
+        ? prev
+        : { ...prev, cpCompanyName: autoAssignedCpCompanyName }
+    );
+  }, [autoAssignedCpCompanyName, isCpUser, isDetailMode]);
 
   const requestCoverUploadUrl = async (fileName: string) => {
     return apiClient.request<{ data: { fileId: number; uploadPath: string } }>({
@@ -492,6 +506,8 @@ export default function ProductUploadPage() {
       open_yn: "N",
       monopoly_yn: form.monopolyYn ? "Y" : "N",
       cp_contract_yn: form.cpCompanyName ? "Y" : "N",
+      cp_nickname:
+        form.cpCompanyName && isCpUser ? userProfile?.nickname?.trim() || null : null,
       series_regular_price: form.publicationType === "serial" ? activePrice : 0,
       single_regular_price: form.publicationType === "volume" ? activePrice : 0,
       single_rental_price:
@@ -594,6 +610,15 @@ export default function ProductUploadPage() {
     }
 
     try {
+      if (!isEditMode && isAdmin && form.cpCompanyName) {
+        showAlert(
+          "입력 확인",
+          "관리자는 신규작품생성 단계에서 CP사를 바로 설정할 수 없습니다. 작품 생성 후 작품 상세에서 설정해주세요.",
+          "확인"
+        );
+        return;
+      }
+
       if (isEditMode) {
         if (!editProductId) {
           throw new Error("수정할 작품 ID가 없습니다.");
@@ -1450,12 +1475,13 @@ export default function ProductUploadPage() {
                 <Select
                   value={form.cpCompanyName || "none"}
                   onValueChange={(value) => setField("cpCompanyName", value === "none" ? "" : value)}
+                  disabled={isCpUser}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="선택 안함" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">선택 안함</SelectItem>
+                    {!isCpUser && <SelectItem value="none">선택 안함</SelectItem>}
                     {cpCompanies?.map((cp) => (
                       <SelectItem key={cp.company_name} value={cp.company_name}>
                         {cp.company_name}

@@ -29,7 +29,7 @@ const fontSizeMap = [
 const letterSpacingMap = ["0px", "1px", "2px", "3px", "4px"];
 const lineHeightMap = ["1.5rem", "2.5rem", "3.5rem", "4.5rem", "5.5rem"];
 const COVER_IMAGE_SELECTORS =
-  'img[src*="cover"], img[alt*="cover"], img[class*="cover"], .cover img, .cover-image, .titlepage img, .frontcover img';
+  'img[src*="cover"], img[alt*="cover"], img[alt*="표지"], img[class*="cover"], .cover-image, .titlepage img, .frontcover img';
 
 const themeColors: Record<string, string> = {
   light: "#f9f8f8",
@@ -476,11 +476,14 @@ const EpubViewer = ({
       const coverImages = Array.from(
         doc.querySelectorAll(COVER_IMAGE_SELECTORS)
       );
+      const docTitle = (doc.title || "").toLowerCase();
 
       // 빈 src 이미지 감지 (벌크 업로드 등으로 깨진 표지)
-      const brokenCoverImgs = Array.from(
-        doc.querySelectorAll('img')
-      ).filter((img) => !img.getAttribute('src') || img.getAttribute('src') === '');
+      const brokenCoverImgs = docTitle.includes("cover")
+        ? Array.from(doc.querySelectorAll("img")).filter(
+            (img) => !img.getAttribute("src") || img.getAttribute("src") === ""
+          )
+        : [];
 
       let coverCandidates = coverImages.length > 0
         ? (coverImages as HTMLElement[])
@@ -488,10 +491,20 @@ const EpubViewer = ({
 
       coverCandidates.forEach((img) => {
         const imgEl = img as HTMLElement;
+        const attrSrc = (imgEl.getAttribute("src") || "").toLowerCase();
+        const altText = (imgEl.getAttribute("alt") || "").toLowerCase();
+        const classText = (imgEl.getAttribute("class") || "").toLowerCase();
+        const isExplicitCoverContext =
+          docTitle.includes("cover") ||
+          attrSrc.includes("cover") ||
+          altText.includes("cover") ||
+          altText.includes("표지") ||
+          classText.includes("cover");
         // cross-frame: iframe 내부 요소는 메인 윈도우의 HTMLImageElement와 다른 생성자이므로
         // instanceof 대신 tagName으로 체크
         if (
           resolvedCoverImagePath &&
+          isExplicitCoverContext &&
           imgEl.tagName === 'IMG' &&
           (imgEl as HTMLImageElement).src !== resolvedCoverImagePath
         ) {
@@ -1097,7 +1110,6 @@ const EpubViewer = ({
                         clearTimeout(epubReadyTimerRef.current);
                       }
                       epubReadyTimerRef.current = setTimeout(() => {
-                        _rendition.display(0);
                         epubReadyDoneRef.current = true;
                         setEpubReady(true);
                       }, 800);

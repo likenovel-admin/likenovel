@@ -3,9 +3,9 @@ import {
   useCanCreateNormal,
   useMakeProduct,
   useSelectEpisodeCount,
-
   useSelectMakingProduct,
   useUpdateProduct,
+  useValidateCpNickname,
 } from "@/app/api/query/author/product";
 import {
   IMakeProductRequest,
@@ -81,6 +81,7 @@ export interface IMakeProductForm {
   open: "Y" | "N";
   monopoly: "Y" | "N";
   contract: "Y" | "N";
+  cpNickname: string;
   paidStartChapterDate: Date | null;
   paidStartChapter: number;
   agree: boolean;
@@ -93,6 +94,7 @@ interface IOriginProduct extends IMakeProductForm {
   coverImagePath: string;
   priceType: "free" | "paid";
   paidApprovedYn?: "Y" | "N";
+  paidApplyStatus?: "review" | "accepted" | "denied" | null;
   publishRegularYn: "Y" | "N";
   paidEpisodeNo?: number | null;
   paidSettingDate?: Date | null;
@@ -108,6 +110,8 @@ const FormArea = ({ productId }: Props) => {
 
   const { mutateAsync: selectEpisodeCount, data: episodeCount } =
     useSelectEpisodeCount();
+  const { mutateAsync: validateCpNickname, isPending: isValidatingCpNickname } =
+    useValidateCpNickname();
   const { mutate: makeProduct } = useMakeProduct();
   const {
     mutateAsync: selectProduct,
@@ -148,6 +152,7 @@ const FormArea = ({ productId }: Props) => {
         open: productId ? originData.open : "Y",
         monopoly: productId ? originData.monopoly : "Y",
         contract: productId ? originData.contract : "N",
+        cpNickname: productId ? originData.cpNickname : "",
         paidStartChapterDate:
           productId &&
           (defaultData?.data.priceType === "paid" ||
@@ -163,8 +168,16 @@ const FormArea = ({ productId }: Props) => {
     },
   });
 
-  const { handleSubmit, register, control, setValue, reset, watch, formState } =
-    methods;
+  const {
+    handleSubmit,
+    register,
+    control,
+    setValue,
+    setError,
+    clearErrors,
+    watch,
+    formState,
+  } = methods;
   const { setToast } = useToastStore();
   const { setConfirm } = useConfirmStore();
   const router = useRouter();
@@ -176,9 +189,25 @@ const FormArea = ({ productId }: Props) => {
     productId &&
       (data?.data.priceType === "paid" || data?.data.paidApprovedYn === "Y")
   );
+  const shouldIncludePaidFieldsOnUpdate = Boolean(
+    productId &&
+      (data?.data.priceType === "paid" ||
+        data?.data.paidApprovedYn === "Y" ||
+        data?.data.paidApplyStatus === "accepted")
+  );
+  const isContractLocked = Boolean(
+    productId &&
+      (data?.data.priceType === "paid" ||
+        data?.data.paidApplyStatus === "review" ||
+        data?.data.paidApplyStatus === "accepted")
+  );
   const isPaidConversionLocked = isPaidProduct;
   const paidStartChapter = watch("paidStartChapter");
   const paidStartChapterDate = watch("paidStartChapterDate");
+  const monopolyValue = watch("monopoly");
+  const contractValue = watch("contract");
+  const cpNicknameValue = watch("cpNickname");
+  const isMonopolyLocked = Boolean(productId);
   const episodeTotalCount = episodeCount?.data?.hasEpisodeCount ?? 0;
   const nextPaidStartChapterNo = episodeTotalCount + 1;
   const selectPaidStartChapterValue =
@@ -211,6 +240,13 @@ const FormArea = ({ productId }: Props) => {
     usePaidStartDate && paidStartChapterDate
       ? dayjs(paidStartChapterDate).format("YYYY-MM-DD HH:mm")
       : "즉시";
+  const [cpValidation, setCpValidation] = useState<{
+    valid: boolean | null;
+    message: string;
+  }>({
+    valid: null,
+    message: "",
+  });
 
   // Set authorNickname from userInfo when it loads (for new product only)
   useEffect(() => {
@@ -240,6 +276,33 @@ const FormArea = ({ productId }: Props) => {
       setUsePaidStartDate(Boolean(data.data.paidSettingDate));
     }
   }, [productId, data?.data?.paidSettingDate]);
+
+  useEffect(() => {
+    if (monopolyValue !== "Y") {
+      setValue("contract", "N", {
+        shouldDirty: false,
+        shouldTouch: false,
+      });
+      setValue("cpNickname", "", {
+        shouldDirty: false,
+        shouldTouch: false,
+      });
+      clearErrors("cpNickname");
+      setCpValidation({ valid: null, message: "" });
+    }
+  }, [clearErrors, monopolyValue, setValue]);
+
+  useEffect(() => {
+    if (contractValue !== "Y") {
+      clearErrors("cpNickname");
+      setCpValidation({ valid: null, message: "" });
+      return;
+    }
+
+    if (cpNicknameValue) {
+      setCpValidation({ valid: null, message: "" });
+    }
+  }, [clearErrors, contractValue, cpNicknameValue]);
 
   // Warn user before leaving page with unsaved changes
   useEffect(() => {
@@ -320,6 +383,7 @@ const FormArea = ({ productId }: Props) => {
       open: data?.data.openYn || "Y",
       monopoly: data?.data.monopolyYn || "N",
       contract: data?.data.cpContractYn || "N",
+      cpNickname: data?.data.cpNickname || "",
       paidStartChapterDate: data?.data?.paidSettingDate
         ? new Date(data.data.paidSettingDate)
         : dayjs()
@@ -342,6 +406,7 @@ const FormArea = ({ productId }: Props) => {
       coverImagePath: data?.data.coverImagePath || "",
       priceType: data?.data.priceType || "free",
       paidApprovedYn: data?.data.paidApprovedYn || "N",
+      paidApplyStatus: data?.data.paidApplyStatus || null,
       publishRegularYn: data?.data.publishRegularYn || "Y",
       productType: data?.data.productType === "normal" ? "normal" : "",
     };
@@ -356,9 +421,74 @@ const FormArea = ({ productId }: Props) => {
     setFileId(newFileId);
   };
 
+  const validateLinkedCpNickname = async (nickname: string) => {
+    const trimmedNickname = nickname.trim();
+    if (!trimmedNickname) {
+      setCpValidation({
+        valid: false,
+        message: "CP 닉네임을 입력해주세요.",
+      });
+      setError("cpNickname", {
+        type: "manual",
+        message: "CP 닉네임을 입력해주세요.",
+      });
+      return false;
+    }
+
+    try {
+      const response = await validateCpNickname(trimmedNickname);
+      if (!response.data.valid) {
+        setCpValidation({
+          valid: false,
+          message: "유효한 CP 닉네임을 확인할 수 없습니다.",
+        });
+        setError("cpNickname", {
+          type: "manual",
+          message: "유효한 CP 닉네임을 확인할 수 없습니다.",
+        });
+        return false;
+      }
+
+      setValue("cpNickname", trimmedNickname, {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+      clearErrors("cpNickname");
+      setCpValidation({
+        valid: true,
+        message: "유효한 CP가 확인되었습니다.",
+      });
+      return true;
+    } catch {
+      setCpValidation({
+        valid: false,
+        message: "유효한 CP 닉네임을 확인할 수 없습니다.",
+      });
+      setError("cpNickname", {
+        type: "manual",
+        message: "유효한 CP 닉네임을 확인할 수 없습니다.",
+      });
+      return false;
+    }
+  };
+
+  const handleCpNicknameBlur = async () => {
+    if (contractValue !== "Y" || isContractLocked) {
+      return;
+    }
+    await validateLinkedCpNickname(watch("cpNickname") || "");
+  };
+
   const onSubmit = async (data: IMakeProductForm) => {
     if (!data.agree) {
       return;
+    }
+    if (data.monopoly === "Y" && data.contract === "Y" && !isContractLocked) {
+      const isValidCpNickname = await validateLinkedCpNickname(data.cpNickname);
+      if (!isValidCpNickname) {
+        setIsSubmitting(false);
+        return;
+      }
     }
     if (isCoverUploading) {
       setToast({
@@ -370,21 +500,23 @@ const FormArea = ({ productId }: Props) => {
     setIsSubmitting(true);
     if (productId) {
       const requestData: any = transformFormDataToRequestData(data);
-      // Ensure valid date with default to tomorrow 12:00 if null/invalid
-      const paidDate = data.paidStartChapterDate
-        ? data.paidStartChapterDate
-        : dayjs()
-            .add(1, "day")
-            .hour(12)
-            .minute(0)
-            .second(0)
-            .millisecond(0)
-            .toDate();
-      requestData.paid_setting_date = dayjs.utc(paidDate).format();
-      requestData.paid_episode_no =
-        data.paidStartChapter === NEXT_PAID_START_CHAPTER_VALUE
-          ? nextPaidStartChapterNo
-          : data.paidStartChapter || 1;
+      if (shouldIncludePaidFieldsOnUpdate) {
+        // Keep paid metadata only when the product is already in a paid flow.
+        const paidDate = data.paidStartChapterDate
+          ? data.paidStartChapterDate
+          : dayjs()
+              .add(1, "day")
+              .hour(12)
+              .minute(0)
+              .second(0)
+              .millisecond(0)
+              .toDate();
+        requestData.paid_setting_date = dayjs.utc(paidDate).format();
+        requestData.paid_episode_no =
+          data.paidStartChapter === NEXT_PAID_START_CHAPTER_VALUE
+            ? nextPaidStartChapterNo
+            : data.paidStartChapter || 1;
+      }
       updateProduct(
         { productId, data: requestData },
         {
@@ -483,11 +615,15 @@ const FormArea = ({ productId }: Props) => {
       open_yn:
         data?.data.blindYn === "Y" ? (data?.data.openYn ?? "N") : formData.open,
       monopoly_yn: formData.monopoly,
-      cp_contract_yn: formData.contract,
+      cp_contract_yn: formData.monopoly === "Y" ? formData.contract : "N",
+      cp_nickname:
+        formData.monopoly === "Y" && formData.contract === "Y"
+          ? formData.cpNickname.trim() || null
+          : null,
       product_type: formData.productType === "normal" ? "normal" : null,
     };
 
-    if (productId) {
+    if (productId && shouldIncludePaidFieldsOnUpdate) {
       if (isPaidConversionLocked) {
         (requestData as IUpdateProductRequest).paid_setting_date =
           data?.data?.paidSettingDate
@@ -912,7 +1048,11 @@ const FormArea = ({ productId }: Props) => {
                         </div>
                       }
                       labelStyle={labelClassName}
-                      optionsStyle="peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md cursor-pointer"
+                      optionsStyle={`peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md ${
+                        isMonopolyLocked
+                          ? "cursor-not-allowed opacity-60"
+                          : "cursor-pointer"
+                      }`}
                       activeOptionStyle="border-primary-100"
                       options={[
                         {
@@ -924,52 +1064,89 @@ const FormArea = ({ productId }: Props) => {
                           value: "N",
                         },
                       ]}
+                      disabled={isMonopolyLocked}
                       {...field}
                       checkedValue={field.value}
                     />
                   )}
                 />
-                <Controller
-                  name={"contract"}
-                  control={control}
-                  rules={{
-                    required: "계약 여부를 선택해주세요.",
-                  }}
-                  render={({ field }) => (
-                    <Input
-                      label={
-                        <div className="flex gap-1 mb-2 items-center">
-                          <span
-                            className={
-                              "text-13pxr md:text-16pxr text-dark-gray-500 after:content-['*'] after:text-red-100 font-semibold"
-                            }
-                          >
-                            계약 여부
-                          </span>
-                          <ClickExclamationTooltip
-                            message="회차를 읽고 작품 평가에 참여합니다."
-                            id="contract-tooltip"
-                          />
-                        </div>
-                      }
-                      labelStyle={labelClassName}
-                      optionsStyle="peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md cursor-pointer"
-                      activeOptionStyle="border-primary-100"
-                      options={[
-                        {
-                          label: "계약 안됨",
-                          value: "N",
-                        },
-                        {
-                          label: "계약",
-                          value: "Y",
-                        },
-                      ]}
-                      {...field}
-                      checkedValue={field.value}
-                    />
-                  )}
-                />
+                <p className="mt-[-16px] text-[13px] text-dark-gray-300">
+                  독점/비독점 설정은 최초 생성 시에만 가능하니, 신중하게 선택해주세요.
+                  라이크노벨은 독점작만 CP(출판사, 매니지먼트) 유료화가 가능합니다.
+                </p>
+                {monopolyValue === "Y" && (
+                  <Controller
+                    name={"contract"}
+                    control={control}
+                    rules={{
+                      required: "계약 여부를 선택해주세요.",
+                    }}
+                    render={({ field }) => (
+                      <Input
+                        label={
+                          <div className="flex gap-1 mb-2 items-center">
+                            <span
+                              className={
+                                "text-13pxr md:text-16pxr text-dark-gray-500 after:content-['*'] after:text-red-100 font-semibold"
+                              }
+                            >
+                              계약 여부
+                            </span>
+                            <ClickExclamationTooltip
+                              message="회차를 읽고 작품 평가에 참여합니다."
+                              id="contract-tooltip"
+                            />
+                          </div>
+                        }
+                        labelStyle={labelClassName}
+                        optionsStyle={`peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md ${
+                          isContractLocked
+                            ? "cursor-not-allowed opacity-60"
+                            : "cursor-pointer"
+                        }`}
+                        activeOptionStyle="border-primary-100"
+                        options={[
+                          {
+                            label: "계약 안됨",
+                            value: "N",
+                          },
+                          {
+                            label: "계약",
+                            value: "Y",
+                          },
+                        ]}
+                        disabled={isContractLocked}
+                        {...field}
+                        checkedValue={field.value}
+                      />
+                    )}
+                  />
+                )}
+                {monopolyValue === "Y" && contractValue === "Y" && (
+                  <Input
+                    label="CP 닉네임"
+                    labelStyle={requiredLabelClassName}
+                    placeholder="담당 CP의 기본 닉네임을 입력하세요"
+                    inputStyle={inputTextClassName}
+                    disabled={isContractLocked}
+                    isError={!!formState.errors.cpNickname || cpValidation.valid === false}
+                    errorText={formState.errors.cpNickname?.message || cpValidation.message}
+                    successText={cpValidation.valid ? cpValidation.message : undefined}
+                    isLoading={isValidatingCpNickname}
+                    {...register("cpNickname", {
+                      validate: (value) => {
+                        if (watch("contract") !== "Y") {
+                          return true;
+                        }
+                        if (!value?.trim()) {
+                          return "CP 닉네임을 입력해주세요.";
+                        }
+                        return true;
+                      },
+                      onBlur: handleCpNicknameBlur,
+                    })}
+                  />
+                )}
                 {isPaidSettingEnabled && (
                   <>
                     <Controller

@@ -10,11 +10,11 @@ export interface IMonthlySettlement {
   net_sales_price: number;
   taxable_price: number;
   vat_price: number;
-  settlement_price: number;
+  settlement_price: number | null;
   platform_revenue: number;
   privious_offer_amount: number;
   current_offer_amount: number;
-  final_settlement_price: number;
+  final_settlement_price: number | null;
   created_id: number;
   created_date: string; // ISO 8601 date string
   updated_id: number;

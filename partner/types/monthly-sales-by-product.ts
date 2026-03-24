@@ -34,10 +34,12 @@ export interface IMonthlySaleByProduct {
   settlement_rate_ios: number;
   settlement_rate_onestore: number;
   settlement_rate_comped_ticket: number;
-  sum_settlement_price_web: number;
+  sum_settlement_price_web: number | null;
   sum_settlement_comped_ticket_price: number;
   tax_price: number;
   total_price: number;
+  gross_total_price: number;
+  settlement_price: number | null;
   created_date: string;
   updated_date: string;
 }
@@ -85,11 +87,14 @@ export interface IMonthlySaleByProductDetail {
   settlement_rate_onestore: number;
   settlement_rate_comped_ticket: number;
 
-  sum_settlement_price_web: number;
+  sum_settlement_price_web: number | null;
   sum_settlement_comped_ticket_price: number;
 
   tax_price: number;
   total_price: number;
+  gross_paid_price: number;
+  gross_free_price: number;
+  gross_total_price: number;
 
   created_id: number;
   created_date: string; // ISO format

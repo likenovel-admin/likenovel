@@ -9,17 +9,13 @@ import { useRouter } from "next/navigation";
 interface Props {
   data: IMonthlySaleByProduct[];
   loading?: boolean;
-  isAdmin?: boolean;
   onEdit: (id: string) => void;
-  onManage: (id: string) => void;
 }
 
 export default function MonthlySaleByProductsTable({
   data,
   loading,
-  isAdmin,
   onEdit,
-  onManage,
 }: Props) {
   const router = useRouter();
 
@@ -84,11 +80,11 @@ export default function MonthlySaleByProductsTable({
     },
     {
       header: "총 매출",
-      key: "total_price",
+      key: "gross_total_price",
     },
     {
       header: "총 정산액",
-      key: "sum_settlement_price_web",
+      key: "settlement_price",
     },
     {
       header: "상세",
@@ -98,14 +94,6 @@ export default function MonthlySaleByProductsTable({
           <Button variant="outline" onClick={() => onEdit(row.product_id + "")}>
             확인
           </Button>
-          {isAdmin && (
-            <Button
-              variant="outline"
-              onClick={() => onManage(row.product_id + "")}
-            >
-              관리
-            </Button>
-          )}
         </div>
       ),
     },
