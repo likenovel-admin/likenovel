@@ -248,7 +248,8 @@ const RequestPromotion = ({
                         {promotion.type === "waiting-for-free" && (
                           <div className="flex gap-2 items-center">
                             <SquareBadge type={["waitForFree"]} />
-                            기다리면 무료 <ExclamationTooltip />
+                            기다리면 무료{" "}
+                            <ExclamationTooltip message="기다리면 무료 대상 기간 동안 24시간마다 무료대여권 1장을 지급합니다." />
                           </div>
                         )}
                       </div>
@@ -296,7 +297,8 @@ const RequestPromotion = ({
                             type={["timePass"]}
                             timePassValue="6-9"
                           />
-                          6-9 무료 <ExclamationTooltip />
+                          6-9 무료{" "}
+                          <ExclamationTooltip message="매주 69패스에 선정된 작품은 오전/오후 6시~9시 동안 무료대여권 1장을 지급합니다." />
                         </div>
                       )}
                       {!!promotion.start_date && !!promotion.end_date && (

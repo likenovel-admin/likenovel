@@ -48,6 +48,8 @@ const RecentlyView = () => {
   );
 
   const { data: suggestProducts } = useGetSuggestByRecentViewed(adultYn);
+  const hasRecentViewedProducts =
+    (recentlyViewedProducts?.data?.length ?? 0) > 0;
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -74,7 +76,7 @@ const RecentlyView = () => {
     return allTabs;
   }, [isAuthenticated]);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !hasRecentViewedProducts) {
     return <></>;
   }
 

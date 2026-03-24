@@ -180,7 +180,7 @@ const ButtonBottom = ({
       onSuccess: () => {
         setToast({
           message: "관심이 되살아났습니다.",
-          type: "success",
+          type: "confirm",
         });
         // Refetch product details to update interest status
         queryClient.invalidateQueries({

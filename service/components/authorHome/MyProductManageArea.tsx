@@ -24,6 +24,11 @@ const ratingLabels: Record<string, string> = {
   highlyNegative: "다들 시간낭비하지 마세요",
 };
 
+const summaryGuideLines = [
+  "조회수·선작수·추천수·CP 조회수는 현재 누적 기준이며, 우측 증감 수치는 전일 대비입니다.",
+  "관심 관련 지표는 무료작품 기준으로 집계되며, 당일 읽기 기록은 익일 반영될 수 있습니다.",
+];
+
 const MyProductManageArea = () => {
   const router = useRouter();
   const { data: summaryData, isLoading, error } = useMySummary();
@@ -214,6 +219,13 @@ const MyProductManageArea = () => {
               </div>
             ))}
             <div className="min-w-[155px]" />
+          </div>
+          <div className="flex flex-col gap-6pxr">
+            {summaryGuideLines.map((line) => (
+              <span key={line} className="text-12pxr text-dark-gray-300">
+                {line}
+              </span>
+            ))}
           </div>
         </div>
       </div>

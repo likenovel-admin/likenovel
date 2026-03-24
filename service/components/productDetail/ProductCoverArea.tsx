@@ -74,8 +74,12 @@ const ProductCoverArea = ({
   const [isExtraOpen, setIsExtraOpen] = useState(false);
   const [isActiveBookmark, setIsActiveBookmark] = useState(false);
   const [showReadMore, setShowReadMore] = useState(false);
+  const [isInterestTooltipOpen, setIsInterestTooltipOpen] = useState(false);
   const extraMenuRef = useRef<HTMLDivElement | null>(null);
   const synopsisRef = useRef<HTMLDivElement | null>(null);
+  const interestTooltipRef = useRef<HTMLButtonElement | null>(null);
+  const interestTooltipMessage =
+    "무료작품을 최근 3일 내 1회차 이상 읽으면 관심 상태가 유지됩니다.";
 
   useEffect(() => {
     logProductTrace(
@@ -252,12 +256,49 @@ const ProductCoverArea = ({
       ) {
         setIsSynopsisOpen(false);
       }
+      if (
+        interestTooltipRef.current &&
+        !interestTooltipRef.current.contains(event.target as Node)
+      ) {
+        setIsInterestTooltipOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [data?.synopsis]);
+
+  const renderInterestTooltipIcon = (src: string, alt: string) => {
+    return (
+      <button
+        ref={interestTooltipRef}
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={isInterestTooltipOpen}
+        className="relative flex justify-center items-center"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsInterestTooltipOpen((prev) => !prev);
+        }}
+      >
+        <img
+          src={src}
+          alt={alt}
+          width={20}
+          height={26}
+          className="w-[20px] h-[26px] md:w-[20px] md:h-[26px]"
+        />
+        {isInterestTooltipOpen && (
+          <div className="absolute z-10 inline-block w-auto min-w-[240px] break-words rounded-[14px] bg-black-100 text-white leading-[15px] text-12pxr p-7pxr left-[-28px] top-full mt-2">
+            <span className="block">{interestTooltipMessage}</span>
+            <div className="absolute w-2 h-2 bg-black-100 rotate-45 left-[30px] -top-[3px]" />
+          </div>
+        )}
+      </button>
+    );
+  };
 
   useEffect(() => {
     if (!isLoading && isSuccess && !data) {
@@ -284,44 +325,12 @@ const ProductCoverArea = ({
       data.badge?.interestEndDate &&
       isEndDateExpired(data.badge.interestEndDate)
     ) {
-      return (
-        <div className="relative group flex justify-center items-center">
-          <img
-            src="/images/fire-off.png"
-            alt="관심 끊김"
-            width={20}
-            height={26}
-            className="w-[20px] h-[26px] md:w-[20px] md:h-[26px]"
-          />
-          {/* <div className="absolute bottom-full mb-2 hidden group-hover:block z-50">
-            <div className="relative bg-black-100 text-white text-12pxr px-10pxr py-6pxr rounded-[8px] whitespace-nowrap">
-              관심탈락
-              <div className="absolute w-2 h-2 bg-black-100 rotate-45 left-1/2 -translate-x-1/2 -bottom-[3px]" />
-            </div>
-          </div> */}
-        </div>
-      );
+      return renderInterestTooltipIcon("/images/fire-off.png", "관심 끊김");
     } else if (
       data.interestStatus === "interest_active" ||
       data.interestStatus === "interest_ending_soon"
     ) {
-      return (
-        <div className="relative group flex justify-center items-center">
-          <img
-            src="/images/test/fire.svg"
-            alt="관심 유지중"
-            width={20}
-            height={26}
-            className="w-[20px] h-[26px] md:w-[20px] md:h-[26px]"
-          />
-          {/* <div className="absolute bottom-full mb-2 hidden group-hover:block z-50">
-            <div className="relative bg-black-100 text-white text-12pxr px-10pxr py-6pxr rounded-[8px] whitespace-nowrap">
-              관심유지중
-              <div className="absolute w-2 h-2 bg-black-100 rotate-45 left-1/2 -translate-x-1/2 -bottom-[3px]" />
-            </div>
-          </div> */}
-        </div>
-      );
+      return renderInterestTooltipIcon("/images/test/fire.svg", "관심 유지중");
     }
   };
 

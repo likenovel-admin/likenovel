@@ -96,7 +96,7 @@ const QuestList = () => {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">{quest.title}</span>
-                      <ExclamationTooltip />
+                      <ExclamationTooltip message="퀘스트는 매일 00시에 갱신되며, 진행 조건을 충족하면 보상을 받을 수 있습니다." />
                     </div>
 
                     <button
