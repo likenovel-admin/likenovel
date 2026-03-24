@@ -200,8 +200,11 @@ export default function ProductUploadPage() {
     [genres]
   );
   const subGenres = useMemo(
-    () => genres?.filter((genre) => genre.major_genre_yn !== "Y") ?? [],
-    [genres]
+    () =>
+      primaryGenres.filter(
+        (genre) => String(genre.keyword_id) !== form.primaryGenreId
+      ),
+    [form.primaryGenreId, primaryGenres]
   );
 
   const episodes = useMemo(() => {
@@ -1042,7 +1045,12 @@ export default function ProductUploadPage() {
                 <label className="mb-1 block text-sm font-semibold text-[#1F2124]">1차 장르 *</label>
                 <Select
                   value={form.primaryGenreId}
-                  onValueChange={(value) => setField("primaryGenreId", value)}
+                  onValueChange={(value) => {
+                    setField("primaryGenreId", value);
+                    if (form.subGenreId === value) {
+                      setField("subGenreId", "");
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="1차 장르 선택" />

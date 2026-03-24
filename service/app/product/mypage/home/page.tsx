@@ -57,7 +57,9 @@ const Page = () => {
                 {(userData?.totalInterestSustainCount || 0).toLocaleString()}
               </div>
             }
-            rightContent={<ExclamationTooltip />}
+            rightContent={
+              <ExclamationTooltip message="관심 유지수는 최근 3일 내 무료작품을 1회차 이상 읽어 관심이 유지되고 있는 작품 수입니다." />
+            }
           />
         </li>
         {/* <li>
@@ -72,7 +74,9 @@ const Page = () => {
                 </span>
               </div>
             }
-            rightContent={<ExclamationTooltip />}
+            rightContent={
+              <ExclamationTooltip message="총 읽은 작품 수는 회원님이 열람한 누적 작품 수입니다." />
+            }
           />
         </li> */}
         <li>
@@ -84,7 +88,9 @@ const Page = () => {
                 {(userData?.totalReadProductCount || 0).toLocaleString()}
               </div>
             }
-            rightContent={<ExclamationTooltip />}
+            rightContent={
+              <ExclamationTooltip message="총 읽은 작품 수는 회원님이 열람한 누적 작품 수입니다." />
+            }
           />
         </li>
         <li>
@@ -96,7 +102,9 @@ const Page = () => {
                 {(userData?.totalWrittenProductCount || 0).toLocaleString()}
               </div>
             }
-            rightContent={<ExclamationTooltip />}
+            rightContent={
+              <ExclamationTooltip message="연재한 작품 수는 회원님이 등록해 연재한 누적 작품 수입니다." />
+            }
           />
         </li>
         {/* <li>

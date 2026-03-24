@@ -3,6 +3,7 @@ import {
   useCanCreateNormal,
   useMakeProduct,
   useSelectEpisodeCount,
+  useSelectGenres,
   useSelectMakingProduct,
   useUpdateProduct,
   useValidateCpNickname,
@@ -43,21 +44,6 @@ import StoppedTooltip from "./StoppedTooltip";
 dayjs.extend(utc);
 
 const NEXT_PAID_START_CHAPTER_VALUE = -1;
-
-const GENRE_OPTIONS = [
-  "무협",
-  "정통판타지",
-  "현대판타지",
-  "퓨전판타지",
-  "게임",
-  "스포츠",
-  "대체역사",
-  "전쟁/밀리터리",
-  "SF",
-  "추리",
-  "공포/미스테리",
-  "드라마",
-] as const;
 
 export interface IMakeProductForm {
   ongoingState: "ongoing" | "end" | "stop" | "rest";
@@ -119,11 +105,13 @@ const FormArea = ({ productId }: Props) => {
     isPending,
   } = useSelectMakingProduct();
   const { mutate: updateProduct } = useUpdateProduct();
+  const { data: genresData } = useSelectGenres();
   const { data: userInfo } = useSelectUserInfo(currentUser?.userId ?? 0);
   const { data: canCreateNormalData } = useCanCreateNormal(
     !productId && !!currentUser
   );
   const canCreateNormal = canCreateNormalData?.can_create_normal ?? false;
+  const genreOptions = genresData?.data?.map((genre) => genre.genre) ?? [];
 
   const methods = useForm<IMakeProductForm>({
     mode: "onChange",
@@ -204,9 +192,13 @@ const FormArea = ({ productId }: Props) => {
   const isPaidConversionLocked = isPaidProduct;
   const paidStartChapter = watch("paidStartChapter");
   const paidStartChapterDate = watch("paidStartChapterDate");
+  const primaryGenreValue = watch("primaryGenre");
   const monopolyValue = watch("monopoly");
   const contractValue = watch("contract");
   const cpNicknameValue = watch("cpNickname");
+  const subGenreOptions = genreOptions.filter(
+    (genre) => genre !== primaryGenreValue
+  );
   const isMonopolyLocked = Boolean(productId);
   const episodeTotalCount = episodeCount?.data?.hasEpisodeCount ?? 0;
   const nextPaidStartChapterNo = episodeTotalCount + 1;
@@ -692,7 +684,7 @@ const FormArea = ({ productId }: Props) => {
                           >
                             연재상태
                           </span>
-                          <ExclamationTooltip />
+                          <ExclamationTooltip message="연재 상태는 작품의 진행 여부를 의미합니다. 완결/휴재/중지 상태는 노출과 운영 가능 범위에 영향을 줄 수 있으니 현재 상태에 맞게 선택해 주세요." />
                         </div>
                       }
                       optionsStyle="peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md cursor-pointer"
@@ -714,7 +706,7 @@ const FormArea = ({ productId }: Props) => {
                           label: (
                             <div className="flex gap-1 items-center">
                               <span>연재 중지</span>
-                              <StoppedTooltip />
+                              <StoppedTooltip message="더이상 연재가 어려울 경우, 반드시 선택해주세요. 단, 연재중지되면 작품이 구좌 등에 노출되지 않습니다." />
                             </div>
                           ),
                           value: "stop",
@@ -893,7 +885,7 @@ const FormArea = ({ productId }: Props) => {
                             value: "",
                             disabled: true,
                           },
-                          ...GENRE_OPTIONS.map((g) => ({
+                          ...genreOptions.map((g) => ({
                             label: g,
                             value: g,
                           })),
@@ -922,9 +914,7 @@ const FormArea = ({ productId }: Props) => {
                             label: "선택 안함",
                             value: "",
                           },
-                          ...GENRE_OPTIONS.filter(
-                            (g) => g !== watch("primaryGenre")
-                          ).map((g) => ({
+                          ...subGenreOptions.map((g) => ({
                             label: g,
                             value: g,
                           })),
@@ -1042,7 +1032,7 @@ const FormArea = ({ productId }: Props) => {
                             독점 여부
                           </span>
                           <ClickExclamationTooltip
-                            message="회차를 읽고 작품 평가에 참여합니다."
+                            message="독점으로 등록한 작품만 CP 유료화 대상이 됩니다. 독점/비독점 설정은 최초 생성 시에만 가능하며, 이후 변경할 수 없습니다."
                             id="monopoly-tooltip"
                           />
                         </div>
@@ -1093,7 +1083,7 @@ const FormArea = ({ productId }: Props) => {
                               계약 여부
                             </span>
                             <ClickExclamationTooltip
-                              message="회차를 읽고 작품 평가에 참여합니다."
+                              message="계약 여부는 독점 작품에서만 설정할 수 있습니다. 계약 상태로 저장한 작품만 유료전환 신청이 가능하며, CP 닉네임을 정확히 입력해야 합니다."
                               id="contract-tooltip"
                             />
                           </div>
