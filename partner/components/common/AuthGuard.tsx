@@ -62,6 +62,18 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const isPublicRoute = publicRoutes.includes(pathname);
+    const hasStoredSession =
+      typeof window !== "undefined" &&
+      !!localStorage.getItem("token") &&
+      !!localStorage.getItem("refreshToken");
+
+    if (isAuthenticated && !hasStoredSession) {
+      reset();
+      if (!isPublicRoute) {
+        router.replace("/login");
+      }
+      return;
+    }
 
     if (isAuthenticated && pathname === "/login") {
       router.replace("/products");

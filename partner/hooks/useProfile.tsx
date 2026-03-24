@@ -1,5 +1,6 @@
 "use client";
 import { getAdminDetail } from "@/api/auth";
+import { clearLocalStorage } from "@/lib/utils";
 import { useAuthStore } from "@/store/useAuthenticate";
 import { useProfileStore } from "@/store/useProfileStore";
 import { IUserAdmin } from "@/types/user";
@@ -18,6 +19,15 @@ export function useProfile() {
       const response = await getAdminDetail(profile?.id || 0);
       setUserProfile(response && response.length > 0 ? response[0] : null);
     } catch (error) {
+      const statusCode = (error as any)?.statusCode;
+      const code = (error as any)?.code;
+      if (
+        statusCode === 401 ||
+        code === "E4010" ||
+        code === "E4011"
+      ) {
+        clearLocalStorage();
+      }
       setUserProfile(null);
     } finally {
       setIsLoading(false);
