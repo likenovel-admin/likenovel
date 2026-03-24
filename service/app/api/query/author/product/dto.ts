@@ -36,6 +36,7 @@ export interface IMakeProductRequest {
   open_yn: "Y" | "N";
   monopoly_yn: "Y" | "N";
   cp_contract_yn: "Y" | "N";
+  cp_nickname?: string | null;
   product_type?: "normal" | null;
 }
 
@@ -62,14 +63,22 @@ export interface IMakingProductObject {
   blindYn?: "Y" | "N";
   monopolyYn: "Y" | "N";
   cpContractYn: "Y" | "N";
+  cpNickname?: string | null;
   paidSettingDate: Date | null;
   paidEpisodeNo: number | null;
   priceType: "free" | "paid";
   paidApprovedYn?: "Y" | "N";
+  paidApplyStatus?: "review" | "accepted" | "denied" | null;
   productType?: "normal" | null;
 }
 export interface ISelectMakingProductResponse {
   data: IMakingProductObject;
+}
+
+export interface IValidateCpNicknameResponse {
+  data: {
+    valid: boolean;
+  };
 }
 
 export interface IUpdateProductRequest extends IMakeProductRequest {

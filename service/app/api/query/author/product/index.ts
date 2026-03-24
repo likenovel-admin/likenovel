@@ -10,6 +10,7 @@ import {
   ISelectMySummaryResponse,
   ISelectPresignedFilePathResponse,
   IUpdateProductRequest,
+  IValidateCpNicknameResponse,
 } from "./dto";
 
 export const useSelectPresignedFilePath = () => {
@@ -62,6 +63,20 @@ export const useCanCreateNormal = (enabled: boolean) => {
       return response.data;
     },
     enabled,
+  });
+};
+
+export const useValidateCpNickname = () => {
+  return useMutation<IValidateCpNicknameResponse, Error, string>({
+    mutationFn: async (nickname: string) => {
+      const response = await instance.get(
+        `/v1/query/products/cp-nickname/validate`,
+        {
+          params: { nickname },
+        }
+      );
+      return response.data;
+    },
   });
 };
 

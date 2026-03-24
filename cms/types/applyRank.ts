@@ -30,6 +30,7 @@ export interface IApplyRank {
   approval_yn: "Y" | "N";
   monopoly_yn: "Y" | "N";
   contract_yn: "Y" | "N";
+  cp_nickname?: string | null;
 
   paid_open_date: string; // e.g. "2024-08-01"
   paid_episode_no: number;

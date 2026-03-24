@@ -201,7 +201,8 @@ const data = {
         pathname.includes("/popups") ||
         pathname.includes("/notices") ||
         pathname.includes("/faqs") ||
-        pathname.includes("/adjust-ratio"),
+        pathname.includes("/adjust-ratio") ||
+        pathname.includes("/platform-service-rate"),
       items: [
         {
           title: "배너 및 팝업 관리",
@@ -214,6 +215,10 @@ const data = {
         {
           title: "비율 조정",
           url: "/adjust-ratio",
+        },
+        {
+          title: "플랫폼 수수료",
+          url: "/platform-service-rate",
         },
       ],
     },

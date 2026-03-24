@@ -22,11 +22,17 @@ export interface IGetMonthlySaleByProductParams {
 export type IGetMonthlySaleByProductDetailResponse = {
   result: IMonthlySaleByProductDetail;
   summary: {
-    paid_price: number;
-    free_price: number;
-    sum_price: number;
-    tax_price: number;
-    total_price: number;
+    paid_price: number | null;
+    free_price: number | null;
+    sum_price: number | null;
+    tax_price: number | null;
+    total_price: number | null;
+    gross_paid_price: number | null;
+    gross_free_price: number | null;
+    gross_total_price: number | null;
+    paid_settlement_price: number | null;
+    free_settlement_price: number | null;
+    settlement_price: number | null;
   };
 };
 

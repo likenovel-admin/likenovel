@@ -6,6 +6,7 @@ import UserNickname from "@/components/common/UserNickname";
 import ApplyPaidModal from "@/components/modal/ApplyPaidModal";
 import { useAdultCoverImage } from "@/hooks/useAdultCoverImage";
 import useMediaDevice from "@/hooks/useMediaDevice";
+import useConfirmStore from "@/store/confirmStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import { IProduct } from "@/types";
@@ -50,6 +51,7 @@ const ProductListCard = ({
   const device = useMediaDevice();
   const renderAdultCoverImage = useAdultCoverImage();
   const { setModal } = useModalStore();
+  const { setConfirm } = useConfirmStore();
   const { setToast } = useToastStore();
   const updateConversionProductMutation = useUpdateConversionProduct();
   const [daysAgo, setDaysAgo] = useState<number | null>(null);
@@ -123,6 +125,15 @@ const ProductListCard = ({
   };
 
   const handleOpenApplyPaid = () => {
+    if (data.contract?.cpContractYn !== "Y") {
+      setConfirm({
+        content:
+          "계약 상태 작품만 유료전환 신청이 가능합니다. 작품수정에서 계약 여부를 먼저 설정해주세요.",
+        buttonCount: 1,
+      });
+      return;
+    }
+
     const handleConfirm = async () => {
       if (updateConversionProductMutation.isPending) {
         return;

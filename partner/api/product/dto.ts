@@ -48,6 +48,7 @@ export interface ICreateProductRequest {
   blind_yn?: "Y" | "N";
   monopoly_yn: "Y" | "N";
   cp_contract_yn: "Y" | "N";
+  cp_nickname?: string | null;
   series_regular_price?: number;
   single_regular_price?: number;
   single_rental_price?: number;
