@@ -84,6 +84,15 @@ type FormState = {
   synopsis: string;
 };
 
+type SaleReserveOptionState = {
+  launchStartNo: string;
+  launchEndNo: string;
+  launchDateTime: string;
+  openWeekdays: number[];
+  reserveTime: string;
+  includeLaunchDate: boolean;
+};
+
 const REQUIRED_MARK = <span className="ml-1 text-[#E54949]">*</span>;
 
 const INITIAL_FORM: FormState = {
@@ -116,6 +125,23 @@ const ONGOING_OPTIONS: { value: OngoingType; label: string }[] = [
 ];
 
 const EPISODE_TITLE_TEMPLATE_HEADERS = ["NO", "파일명", "회차명"] as const;
+const SALE_RESERVE_WEEKDAY_OPTIONS = [
+  { label: "월", value: 1 },
+  { label: "화", value: 2 },
+  { label: "수", value: 3 },
+  { label: "목", value: 4 },
+  { label: "금", value: 5 },
+  { label: "토", value: 6 },
+  { label: "일", value: 0 },
+] as const;
+const INITIAL_SALE_RESERVE_OPTION: SaleReserveOptionState = {
+  launchStartNo: "",
+  launchEndNo: "",
+  launchDateTime: "",
+  openWeekdays: [],
+  reserveTime: "",
+  includeLaunchDate: true,
+};
 
 const escapeExcelText = (value?: string | null) => {
   const text = (value || "").trim();
@@ -134,6 +160,66 @@ const formatEpisodeDate = (dateValue?: string | null) => {
   return `${date.getFullYear()}.${`${date.getMonth() + 1}`.padStart(2, "0")}.${`${date.getDate()}`.padStart(2, "0")}`;
 };
 
+const formatReserveDateTime = (dateValue?: string | null) => {
+  if (!dateValue) return "-";
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "-";
+  return `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, "0")}-${`${date.getDate()}`.padStart(2, "0")} ${`${date.getHours()}`.padStart(2, "0")}:${`${date.getMinutes()}`.padStart(2, "0")}`;
+};
+
+const getEpisodeEffectiveOpenYn = (episode: {
+  openYn?: "Y" | "N";
+  episodeOpenYn?: "Y" | "N";
+}) => episode.openYn ?? episode.episodeOpenYn ?? "N";
+
+const hasEpisodeReserveDate = (episode: { publishReserveDate?: string | null }) =>
+  !!episode.publishReserveDate;
+
+const isSaleReserveOptionEligibleEpisode = (episode: {
+  openYn?: "Y" | "N";
+  episodeOpenYn?: "Y" | "N";
+  useYn?: "Y" | "N";
+  latestApplyStatus?: EpisodeApplyStatusCode | null;
+  reviewYn?: "Y" | "N";
+  publishReserveDate?: string | null;
+}) => {
+  const effectiveOpenYn = getEpisodeEffectiveOpenYn(episode);
+
+  if ((episode.useYn ?? "Y") !== "Y") return false;
+  if (effectiveOpenYn === "Y") return false;
+  if (episode.latestApplyStatus === "denied") return false;
+  if (episode.latestApplyStatus === "cancel") return false;
+  if (episode.latestApplyStatus === "review" || episode.reviewYn === "Y") return false;
+
+  return episode.latestApplyStatus === "accepted" || hasEpisodeReserveDate(episode);
+};
+
+const getNextRecurringReserveDate = (
+  baseDate: Date,
+  weekdays: number[],
+  reserveTime: string
+) => {
+  const [hourText, minuteText] = reserveTime.split(":");
+  const reserveHour = Number(hourText);
+  const reserveMinute = Number(minuteText);
+  const selectedWeekdays = new Set(weekdays);
+
+  for (let offset = 0; offset < 14; offset += 1) {
+    const candidate = new Date(baseDate);
+    candidate.setDate(candidate.getDate() + offset);
+    candidate.setHours(reserveHour, reserveMinute, 0, 0);
+
+    if (
+      selectedWeekdays.has(candidate.getDay()) &&
+      candidate.getTime() > baseDate.getTime()
+    ) {
+      return candidate;
+    }
+  }
+
+  return null;
+};
+
 const getEpisodeStatusLabel = (episode: {
   openYn?: "Y" | "N";
   episodeOpenYn?: "Y" | "N";
@@ -142,17 +228,17 @@ const getEpisodeStatusLabel = (episode: {
   reviewYn?: "Y" | "N";
   publishReserveDate?: string | null;
 }) => {
-  const effectiveOpenYn = episode.openYn ?? episode.episodeOpenYn ?? "N";
-  const reserveAt =
-    episode.publishReserveDate && new Date(episode.publishReserveDate).getTime() > Date.now();
+  const effectiveOpenYn = getEpisodeEffectiveOpenYn(episode);
 
   if ((episode.useYn ?? "Y") !== "Y") return "-";
   if (episode.latestApplyStatus === "denied") return "반려";
   if (episode.latestApplyStatus === "cancel") return "업로드완료";
   if (episode.latestApplyStatus === "review" || episode.reviewYn === "Y") return "심사중";
   if (effectiveOpenYn === "Y") return "판매중";
-  if (episode.latestApplyStatus === "accepted") return reserveAt ? "판매예약" : "승인완료";
-  if (reserveAt) return "판매예약";
+  if (hasEpisodeReserveDate(episode)) {
+    return `판매예약(${formatReserveDateTime(episode.publishReserveDate)})`;
+  }
+  if (episode.latestApplyStatus === "accepted") return "승인완료";
   return "업로드완료";
 };
 
@@ -213,6 +299,9 @@ export default function ProductUploadPage() {
   const [isCoverUploading, setIsCoverUploading] = useState(false);
   const [selectedEpisodeIds, setSelectedEpisodeIds] = useState<number[]>([]);
   const [reserveDateTime, setReserveDateTime] = useState("");
+  const [saleReserveOption, setSaleReserveOption] = useState<SaleReserveOptionState>(
+    INITIAL_SALE_RESERVE_OPTION
+  );
   const episodeTitleExcelInputRef = useRef<HTMLInputElement | null>(null);
 
   const primaryGenres = useMemo(
@@ -235,6 +324,38 @@ export default function ProductUploadPage() {
   }, [productDetailsGroup]);
 
   const totalEpisodeCount = episodes.length;
+  const firstEpisodeNo = episodes[0]?.episodeNo ?? 1;
+  const contiguousEligibleEpisodeCount = useMemo(() => {
+    let count = 0;
+
+    for (const episode of episodes) {
+      if (!isSaleReserveOptionEligibleEpisode(episode)) break;
+      count += 1;
+    }
+
+    return count;
+  }, [episodes]);
+  const hasSaleReserveOptionIneligibleEpisode = useMemo(
+    () => episodes.some((episode) => !isSaleReserveOptionEligibleEpisode(episode)),
+    [episodes]
+  );
+  const saleReserveOverwriteCount = useMemo(
+    () => episodes.filter((episode) => hasEpisodeReserveDate(episode)).length,
+    [episodes]
+  );
+  const launchStartPreviewNo = Number(saleReserveOption.launchStartNo || firstEpisodeNo);
+  const launchEndPreviewNo = Number(saleReserveOption.launchEndNo || 0);
+  const launchEpisodePreviewCount =
+    Number.isInteger(launchStartPreviewNo) &&
+    Number.isInteger(launchEndPreviewNo) &&
+    launchStartPreviewNo > 0 &&
+    launchEndPreviewNo >= launchStartPreviewNo
+      ? launchEndPreviewNo - launchStartPreviewNo + 1
+      : 0;
+  const tailEpisodePreviewCount = Math.max(
+    contiguousEligibleEpisodeCount - launchEndPreviewNo,
+    0
+  );
   const sellingEpisodeCount = episodes.filter((episode) => {
     const effectiveOpenYn = episode.openYn ?? episode.episodeOpenYn;
     const effectiveUseYn = episode.useYn ?? "Y";
@@ -288,6 +409,22 @@ export default function ProductUploadPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const setSaleReserveOptionField = <K extends keyof SaleReserveOptionState>(
+    key: K,
+    value: SaleReserveOptionState[K]
+  ) => {
+    setSaleReserveOption((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const toggleSaleReserveWeekday = (weekday: number) => {
+    setSaleReserveOption((prev) => ({
+      ...prev,
+      openWeekdays: prev.openWeekdays.includes(weekday)
+        ? prev.openWeekdays.filter((value) => value !== weekday)
+        : [...prev.openWeekdays, weekday],
+    }));
+  };
+
   useEffect(() => {
     return () => {
       if (coverPreview?.startsWith("blob:")) {
@@ -300,6 +437,19 @@ export default function ProductUploadPage() {
     const episodeIdSet = new Set<number>(episodes.map((episode) => episode.episodeId));
     setSelectedEpisodeIds((prev) => prev.filter((id) => episodeIdSet.has(id)));
   }, [episodes]);
+
+  useEffect(() => {
+    if (!episodes.length) return;
+
+    setSaleReserveOption((prev) =>
+      prev.launchStartNo
+        ? prev
+        : {
+            ...prev,
+            launchStartNo: String(firstEpisodeNo),
+          }
+    );
+  }, [episodes, firstEpisodeNo]);
 
   useEffect(() => {
     if (!isDetailMode || !productDetail) return;
@@ -1029,6 +1179,158 @@ export default function ProductUploadPage() {
     }
   };
 
+  const handleApplySaleReserveOption = async () => {
+    if (!episodes.length) {
+      showAlert("안내", "적용 가능한 회차가 없습니다.", "확인");
+      return;
+    }
+
+    const launchStartNo = Number(saleReserveOption.launchStartNo);
+    const launchEndNo = Number(saleReserveOption.launchEndNo);
+
+    if (!Number.isInteger(launchStartNo) || launchStartNo <= 0) {
+      showAlert("입력 확인", "런칭회차범위 시작 회차를 입력해주세요.", "확인");
+      return;
+    }
+    if (!Number.isInteger(launchEndNo) || launchEndNo <= 0) {
+      showAlert("입력 확인", "런칭회차범위 종료 회차를 입력해주세요.", "확인");
+      return;
+    }
+    if (launchStartNo !== firstEpisodeNo) {
+      showAlert("입력 확인", "런칭회차범위 시작은 첫 회차여야 합니다.", "확인");
+      return;
+    }
+    if (launchStartNo > launchEndNo) {
+      showAlert("입력 확인", "런칭회차범위 시작은 종료보다 클 수 없습니다.", "확인");
+      return;
+    }
+    if (!saleReserveOption.launchDateTime) {
+      showAlert("입력 확인", "런칭일시를 선택해주세요.", "확인");
+      return;
+    }
+
+    const launchDate = new Date(saleReserveOption.launchDateTime);
+    if (Number.isNaN(launchDate.getTime()) || launchDate.getTime() <= Date.now()) {
+      showAlert("입력 확인", "런칭일시는 현재 시간 이후로 선택해주세요.", "확인");
+      return;
+    }
+
+    if (launchEndNo > contiguousEligibleEpisodeCount) {
+      showAlert("입력 확인", "현재 승인완료된 회차 수가 부족합니다.", "확인");
+      return;
+    }
+
+    if (hasSaleReserveOptionIneligibleEpisode) {
+      showAlert("안내", "승인완료/판매예약된 회차만 적용됩니다.", "확인");
+      return;
+    }
+
+    const launchEpisodes = episodes.filter(
+      (episode) =>
+        episode.episodeNo >= launchStartNo && episode.episodeNo <= launchEndNo
+    );
+    const tailEpisodes = episodes.filter((episode) => episode.episodeNo > launchEndNo);
+
+    if (!launchEpisodes.length) {
+      showAlert("입력 확인", "런칭회차범위에 해당하는 회차가 없습니다.", "확인");
+      return;
+    }
+
+    if (
+      (!saleReserveOption.includeLaunchDate || tailEpisodes.length > 0) &&
+      !saleReserveOption.openWeekdays.length
+    ) {
+      showAlert("입력 확인", "후속 회차 오픈 요일을 선택해주세요.", "확인");
+      return;
+    }
+
+    if (
+      (!saleReserveOption.includeLaunchDate || tailEpisodes.length > 0) &&
+      !saleReserveOption.reserveTime
+    ) {
+      showAlert("입력 확인", "회차당 오픈예약시간을 입력해주세요.", "확인");
+      return;
+    }
+
+    let launchReserveDate = launchDate;
+    if (!saleReserveOption.includeLaunchDate) {
+      const nextLaunchReserveDate = getNextRecurringReserveDate(
+        launchDate,
+        saleReserveOption.openWeekdays,
+        saleReserveOption.reserveTime
+      );
+
+      if (!nextLaunchReserveDate) {
+        showAlert("입력 확인", "후속 회차 예약 조건을 다시 확인해주세요.", "확인");
+        return;
+      }
+      launchReserveDate = nextLaunchReserveDate;
+    }
+
+    const groupedEpisodeIds = new Map<string, number[]>();
+    const addGroupedEpisode = (episodeId: number, reserveDate: Date) => {
+      const key = reserveDate.toISOString();
+      const current = groupedEpisodeIds.get(key) ?? [];
+      current.push(episodeId);
+      groupedEpisodeIds.set(key, current);
+    };
+
+    launchEpisodes.forEach((episode) => {
+      addGroupedEpisode(episode.episodeId, launchReserveDate);
+    });
+
+    let cursorDate = launchReserveDate;
+    for (const episode of tailEpisodes) {
+      const nextReserveDate = getNextRecurringReserveDate(
+        cursorDate,
+        saleReserveOption.openWeekdays,
+        saleReserveOption.reserveTime
+      );
+
+      if (!nextReserveDate) {
+        showAlert("입력 확인", "후속 회차 예약 조건을 다시 확인해주세요.", "확인");
+        return;
+      }
+
+      addGroupedEpisode(episode.episodeId, nextReserveDate);
+      cursorDate = nextReserveDate;
+    }
+
+    const totalAffectedCount = launchEpisodes.length + tailEpisodes.length;
+    const confirmText =
+      tailEpisodes.length > 0
+        ? `총 ${totalAffectedCount}개 회차에 적용됩니다. 런칭 ${launchStartNo}~${launchEndNo}회는 ${formatReserveDateTime(launchReserveDate.toISOString())}에 공개되고, 이후 ${tailEpisodes.length}개 회차는 선택한 주기에 따라 예약됩니다.${saleReserveOverwriteCount ? ` 기존 판매예약 ${saleReserveOverwriteCount}건은 덮어씁니다.` : ""}`
+        : `총 ${totalAffectedCount}개 회차에 적용됩니다. ${launchStartNo}~${launchEndNo}회차를 ${formatReserveDateTime(launchReserveDate.toISOString())}에 판매예약합니다.${saleReserveOverwriteCount ? ` 기존 판매예약 ${saleReserveOverwriteCount}건은 덮어씁니다.` : ""}`;
+
+    const confirmResult = await confirm({
+      title: "판매예약 적용",
+      text: confirmText,
+      confirm: "적용",
+      cancel: "취소",
+    });
+    if (!confirmResult.isConfirmed) return;
+
+    try {
+      const reserveGroups = Array.from(groupedEpisodeIds.entries()).sort(
+        ([dateA], [dateB]) =>
+          new Date(dateA).getTime() - new Date(dateB).getTime()
+      );
+
+      for (const [publishReserveDate, episodeIds] of reserveGroups) {
+        await reserveEpisodeSale.mutateAsync({
+          episode_ids: episodeIds,
+          publish_reserve_date: publishReserveDate,
+        });
+      }
+
+      await invalidateEpisodeQueries();
+      setSelectedEpisodeIds([]);
+      await showAlert("완료", "판매예약 옵션이 적용되었습니다.", "확인");
+    } catch (error) {
+      showAlert("판매예약 적용 실패", catchErrorMessage(error), "확인");
+    }
+  };
+
   const handleCancelReserveSale = async () => {
     if (!selectedEpisodeIds.length) {
       showAlert("안내", "예약취소할 회차를 먼저 선택해주세요.", "확인");
@@ -1397,8 +1699,12 @@ export default function ProductUploadPage() {
                 <Input
                   value={form.isbn}
                   placeholder="ISBN 입력"
-                  onChange={(e) => setField("isbn", e.target.value)}
+                  inputMode="numeric"
+                  onChange={(e) =>
+                    setField("isbn", e.target.value.replace(/\D/g, ""))
+                  }
                 />
+                <p className="mt-1 text-xs text-[#8A909C]">-를 제외한 숫자만 입력해주세요.</p>
               </div>
 
               {form.publicationType === "serial" ? (
@@ -1632,7 +1938,7 @@ export default function ProductUploadPage() {
                           <TableCell>{episode.episodeTitle || "-"}</TableCell>
                           <TableCell>
                             {episode.priceType === "paid"
-                              ? "완료"
+                              ? "유료"
                               : episode.priceType === "free"
                                 ? "무료"
                                 : "-"}
@@ -1758,6 +2064,151 @@ export default function ProductUploadPage() {
                   >
                     {isCancellingReserve ? "처리 중..." : "예약취소"}
                   </Button>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-lg border border-[#E7E9EE] bg-[#FBFCFF] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-[#1F2124]">판매예약 옵션</p>
+                    <p className="mt-1 text-xs text-[#6C7383]">
+                      승인완료/판매예약된 회차에만 적용됩니다. 기존 판매예약은 덮어씁니다.
+                    </p>
+                    <p className="mt-1 text-xs text-[#6C7383]">
+                      적용 예상: 런칭 {launchEpisodePreviewCount}회차, 후속 {tailEpisodePreviewCount}회차
+                      {saleReserveOverwriteCount ? `, 기존 예약 ${saleReserveOverwriteCount}건 덮어쓰기` : ""}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={handleApplySaleReserveOption}
+                    disabled={isActionPending}
+                  >
+                    {isReservingSale ? "처리 중..." : "판매예약 옵션 적용"}
+                  </Button>
+                </div>
+
+                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-[#1F2124]">
+                      런칭회차범위
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={saleReserveOption.launchStartNo}
+                        onChange={(e) =>
+                          setSaleReserveOptionField(
+                            "launchStartNo",
+                            isPositiveIntegerInput(e.target.value)
+                              ? e.target.value
+                              : saleReserveOption.launchStartNo
+                          )
+                        }
+                        placeholder="시작"
+                        disabled={isActionPending}
+                      />
+                      <span className="text-sm text-[#6C7383]">~</span>
+                      <Input
+                        value={saleReserveOption.launchEndNo}
+                        onChange={(e) =>
+                          setSaleReserveOptionField(
+                            "launchEndNo",
+                            isPositiveIntegerInput(e.target.value)
+                              ? e.target.value
+                              : saleReserveOption.launchEndNo
+                          )
+                        }
+                        placeholder="종료"
+                        disabled={isActionPending}
+                      />
+                    </div>
+                    {Number(saleReserveOption.launchEndNo || 0) > contiguousEligibleEpisodeCount ? (
+                      <p className="mt-1 text-xs text-[#E54949]">
+                        현재 승인완료된 회차 수가 부족합니다.
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-[#1F2124]">
+                      런칭일시
+                    </label>
+                    <Input
+                      type="datetime-local"
+                      value={saleReserveOption.launchDateTime}
+                      onChange={(e) =>
+                        setSaleReserveOptionField("launchDateTime", e.target.value)
+                      }
+                      disabled={isActionPending}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-[#1F2124]">
+                      회차당 오픈예약시간
+                    </label>
+                    <Input
+                      type="time"
+                      value={saleReserveOption.reserveTime}
+                      onChange={(e) =>
+                        setSaleReserveOptionField("reserveTime", e.target.value)
+                      }
+                      disabled={isActionPending}
+                    />
+                  </div>
+
+                  <div className="flex items-end">
+                    <label className="inline-flex items-center gap-2 text-sm font-medium text-[#1F2124]">
+                      <input
+                        type="checkbox"
+                        checked={saleReserveOption.includeLaunchDate}
+                        onChange={(e) =>
+                          setSaleReserveOptionField(
+                            "includeLaunchDate",
+                            e.target.checked
+                          )
+                        }
+                        disabled={isActionPending}
+                      />
+                      런칭일 포함
+                    </label>
+                  </div>
+                </div>
+
+                <div className="mt-2 text-xs text-[#6C7383]">
+                  런칭일 포함을 해제하면 런칭회차범위도 첫 유효 오픈 요일/시간부터 예약됩니다.
+                </div>
+
+                <div className="mt-4">
+                  <label className="mb-2 block text-sm font-semibold text-[#1F2124]">
+                    회차당 오픈주기
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {SALE_RESERVE_WEEKDAY_OPTIONS.map((weekday) => {
+                      const isSelected = saleReserveOption.openWeekdays.includes(
+                        weekday.value
+                      );
+
+                      return (
+                        <button
+                          key={weekday.value}
+                          type="button"
+                          onClick={() => toggleSaleReserveWeekday(weekday.value)}
+                          disabled={isActionPending}
+                          className={`inline-flex h-9 min-w-10 items-center justify-center rounded-md border px-3 text-sm ${
+                            isSelected
+                              ? "border-[#1F2124] bg-[#1F2124] text-white"
+                              : "border-[#D6DAE4] bg-white text-[#1F2124]"
+                          }`}
+                        >
+                          {weekday.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-2 text-xs text-[#6C7383]">
+                    후속 회차는 선택한 요일마다 1회차씩 공개됩니다.
+                  </p>
                 </div>
               </div>
             </div>

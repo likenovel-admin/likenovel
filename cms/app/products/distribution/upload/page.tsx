@@ -1139,8 +1139,12 @@ export default function ProductUploadPage() {
                     <Input
                       value={form.isbn}
                       placeholder="ISBN 입력"
-                      onChange={(e) => setField("isbn", e.target.value)}
+                      inputMode="numeric"
+                      onChange={(e) =>
+                        setField("isbn", e.target.value.replace(/\D/g, ""))
+                      }
                     />
+                    <p className="mt-1 text-xs text-[#8A909C]">-를 제외한 숫자만 입력해주세요.</p>
                   </div>
 
                   {form.publicationType === "serial" ? (
@@ -1397,7 +1401,7 @@ export default function ProductUploadPage() {
                           <TableCell>{episode.episodeTitle || "-"}</TableCell>
                           <TableCell>
                             {episode.priceType === "paid"
-                              ? "완료"
+                              ? "유료"
                               : episode.priceType === "free"
                                 ? "무료"
                                 : "-"}
