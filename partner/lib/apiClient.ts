@@ -123,14 +123,14 @@ class ApiClient {
           const accessToken = this.getStoredToken() || "";
           if (!refreshToken) {
             clearLocalStorage();
-            return response as T;
-          }
-          const newToken = await this.reissueToken(accessToken, refreshToken);
-          if (newToken) {
-            localStorage.setItem("token", newToken);
-            response = await this.fetchWithAuth(url, options);
           } else {
-            clearLocalStorage();
+            const newToken = await this.reissueToken(accessToken, refreshToken);
+            if (newToken) {
+              localStorage.setItem("token", newToken);
+              response = await this.fetchWithAuth(url, options);
+            } else {
+              clearLocalStorage();
+            }
           }
         } finally {
           release();

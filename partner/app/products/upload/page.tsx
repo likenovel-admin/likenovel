@@ -372,13 +372,13 @@ export default function ProductUploadPage() {
   }, [isDetailMode, productDetail]);
 
   useEffect(() => {
-    if (isDetailMode || !isCpUser || !autoAssignedCpCompanyName) return;
+    if (!isCpUser || !autoAssignedCpCompanyName) return;
     setForm((prev) =>
       prev.cpCompanyName === autoAssignedCpCompanyName
         ? prev
         : { ...prev, cpCompanyName: autoAssignedCpCompanyName }
     );
-  }, [autoAssignedCpCompanyName, isCpUser, isDetailMode]);
+  }, [autoAssignedCpCompanyName, isCpUser]);
 
   const requestCoverUploadUrl = async (fileName: string) => {
     return apiClient.request<{ data: { fileId: number; uploadPath: string } }>({
@@ -1516,34 +1516,6 @@ export default function ProductUploadPage() {
               {isEditMode && !isAdmin && form.blindYn && (
               <div className="md:col-span-2 rounded-md border border-[#F3C4C4] bg-[#FFF6F6] px-4 py-3 text-sm text-[#B42318]">
                 관리자 블라인드된 작품입니다. 사용자에게 노출되지 않으며 해제는 관리자만 가능합니다.
-              </div>
-              )}
-
-              {isEditMode && !form.blindYn && (
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-[#1F2124]">공개 설정</label>
-                <div className="flex items-center gap-3">
-                  <label className="inline-flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="openYn"
-                      checked={form.openYn === "Y"}
-                      onChange={() => setField("openYn", "Y")}
-                      className="h-4 w-4 text-[#4C63FF]"
-                    />
-                    <span className="text-sm">공개</span>
-                  </label>
-                  <label className="inline-flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="openYn"
-                      checked={form.openYn === "N"}
-                      onChange={() => setField("openYn", "N")}
-                      className="h-4 w-4 text-[#4C63FF]"
-                    />
-                    <span className="text-sm">비공개</span>
-                  </label>
-                </div>
               </div>
               )}
 
