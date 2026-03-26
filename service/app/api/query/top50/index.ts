@@ -2,7 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { instance } from "../../axios";
 import { IUseSelectProductsResponse } from "../product/dto";
 
-export const useSelectTop50Products = (productAreaType: string = "freeTop") => {
+export type TTop50Area =
+  | "freeSerialTop"
+  | "paidSerialTop"
+  | "paidEndTop"
+  | "paidStandaloneTop";
+
+export const useSelectTop50Products = (
+  productAreaType: TTop50Area = "freeSerialTop"
+) => {
   return useQuery<IUseSelectProductsResponse, unknown>({
     queryKey: ["selectTop50Products", productAreaType],
     queryFn: async () => {

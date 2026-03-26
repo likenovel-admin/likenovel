@@ -37,10 +37,10 @@ export const useSelectProducts = (adult_yn?: string): any => {
   });
 
   const freeTopsProducts = useQuery<IUseSelectProductsResponse, unknown>({
-    queryKey: ["selectFreeTopProducts", adultYnParam],
+    queryKey: ["selectFreeSerialTopProducts", adultYnParam],
     queryFn: async () => {
       const response = await instance.get(
-        `/v1/query/products/managed?division=main&area=freeTop&limit=${limit}&adult_yn=${adultYnParam}`
+        `/v1/query/products/managed?division=main&area=freeSerialTop&limit=${limit}&adult_yn=${adultYnParam}`
       );
       return response.data;
     },
@@ -60,10 +60,10 @@ export const useSelectProducts = (adult_yn?: string): any => {
   });
 
   const paidTopsProducts = useQuery<IUseSelectProductsResponse, unknown>({
-    queryKey: ["selectPaidTopProducts", adultYnParam],
+    queryKey: ["selectPaidMainTopProducts", adultYnParam],
     queryFn: async () => {
       const response = await instance.get(
-        `/v1/query/products/managed?division=main&area=paidTop&limit=${limit}&adult_yn=${adultYnParam}`
+        `/v1/query/products/managed?division=main&area=paidMainTop&limit=${limit}&adult_yn=${adultYnParam}`
       );
       return response.data;
     },
