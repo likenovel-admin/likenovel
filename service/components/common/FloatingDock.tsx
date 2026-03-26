@@ -24,12 +24,15 @@ export default function FloatingDock({
   const [showDock, setShowDock] = useState(false);
 
   const adultYn = user?.isOnAdult ? "Y" : "N";
+  const recentProductsCacheIdentity =
+    String(user?.userId || "") || (isAuthenticated ? "auth" : "guest");
 
   // Use API to get recent products if authenticated, otherwise use localStorage
   const { data: recentProductsData, refetch } = useGetRecentProduct(
     undefined,
     adultYn,
-    isAuthenticated
+    !!user?.userId,
+    recentProductsCacheIdentity
   );
 
   const [recentProducts, setRecentProducts] = useState<IProduct[]>([]);

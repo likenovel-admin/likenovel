@@ -167,9 +167,7 @@ const HeaderContent = () => {
             className="flex items-center gap-1 text-18pxr md:text-22pxr font-semibold max-w-[500px] cursor-pointer"
             onClick={() => ""}
           >
-            {userInfo?.data.userNickname
-              ? userInfo?.data.userNickname + "님,"
-              : ""}
+            {userInfo?.data.userNickname ? userInfo?.data.userNickname : ""}
             {["author", "CP", "editor"].includes(
               userInfo?.data.userRole as string
             ) && (

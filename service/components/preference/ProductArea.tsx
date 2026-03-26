@@ -6,6 +6,7 @@ import {
   useDeleteAllRecentProduct,
   useSelectInterestDropProducts,
 } from "@/app/api/query/product";
+import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import { IProduct } from "@/types";
@@ -25,8 +26,18 @@ interface Props {
 }
 const ProductArea = ({ products, pageType, hasGle = true }: Props) => {
   // TODO: 작품 조회 api 각각 호출 (선호작, 관심끊기기, 최근 본 작품)
-  const { data: selectedBookmarks, isLoading, refetch } = useSelectBookmarks();
-  const { data: interestDropProducts } = useSelectInterestDropProducts();
+  const { user, isAuthenticated, accessToken } = useAuthStore();
+  const cacheIdentity =
+    String(user?.userId || "") || accessToken || (isAuthenticated ? "auth" : "guest");
+  const isPreferencePage = pageType === "preference";
+  const isInterestDropPage = pageType === "interestDrop";
+  const { data: selectedBookmarks, isLoading, refetch } = useSelectBookmarks(
+    isPreferencePage
+  );
+  const { data: interestDropProducts } = useSelectInterestDropProducts(
+    isInterestDropPage,
+    cacheIdentity
+  );
   const interestDropData: any = useMemo(() => {
     return interestDropProducts ? interestDropProducts.data : [];
   }, [interestDropProducts]);

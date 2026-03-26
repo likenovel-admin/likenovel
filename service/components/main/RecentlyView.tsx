@@ -22,6 +22,8 @@ const RecentlyView = () => {
   const user = getUser();
   const isAuthenticated = !!user?.userRole;
   const adultYn = user?.isOnAdult ? "Y" : "N";
+  const recentProductsCacheIdentity =
+    String(user?.userId || "") || (isAuthenticated ? "auth" : "guest");
   const [activeTab, setActiveTab] = useState(
     isAuthenticated ? "recentlyView" : "suggest"
   );
@@ -44,7 +46,8 @@ const RecentlyView = () => {
   const { data: recentlyViewedProducts } = useGetRecentProduct(
     undefined,
     adultYn,
-    !!user?.userId
+    !!user?.userId,
+    recentProductsCacheIdentity
   );
 
   const { data: suggestProducts } = useGetSuggestByRecentViewed(adultYn);

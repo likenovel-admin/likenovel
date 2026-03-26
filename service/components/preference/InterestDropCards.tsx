@@ -1,5 +1,6 @@
 import { useSelectInterestDropProducts } from "@/app/api/query/product";
 import useMediaDevice from "@/hooks/useMediaDevice";
+import useAuthStore from "@/store/authStore";
 import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import { getLatestEpisodeDate } from "@/utils/getLatestEpisodeDate";
@@ -23,9 +24,15 @@ import UserNickname from "../common/UserNickname";
 const InterestDropCards = () => {
   const router = useRouter();
   const device = useMediaDevice();
+  const { user, isAuthenticated, accessToken } = useAuthStore();
   const [currentPage, setCurrentPage] = useState(0);
+  const cacheIdentity =
+    String(user?.userId || "") || accessToken || (isAuthenticated ? "auth" : "guest");
   // 관심 끊기기 임박 api 연동
-  const { data: interestDropProducts } = useSelectInterestDropProducts();
+  const { data: interestDropProducts } = useSelectInterestDropProducts(
+    true,
+    cacheIdentity
+  );
   const [bookmarkedItems, setBookmarkedItems] = useState<{
     [key: number]: boolean;
   }>({});

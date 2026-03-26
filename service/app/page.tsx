@@ -38,6 +38,15 @@ export default function Home() {
   const { user, isAuthenticated, accessToken } = useAuthStore();
   const adultYn = user?.isOnAdult ? "Y" : "N";
   const canUseTasteRecommend = Boolean(isAuthenticated || accessToken || user?.userId);
+  const canUseInterestDropSoon = Boolean(
+    isAuthenticated || accessToken || user?.userId
+  );
+  const interestDropSoonCacheIdentity =
+    user?.userId != null
+      ? `user:${user.userId}`
+      : accessToken
+        ? `token:${accessToken.slice(-16)}`
+        : "guest";
   const tasteRecommendCacheIdentity =
     user?.userId != null
       ? `user:${user.userId}`
@@ -52,7 +61,11 @@ export default function Home() {
   const { data: mainRuleSlotsData } = useSelectMainRuleSlots(adultYn);
   const { data: latestUpdateData } = useSelectLatestUpdateProducts(adultYn);
   const { data: interestDropSoonData } =
-    useSelectInterestDropSoonUpdateProducts(adultYn);
+    useSelectInterestDropSoonUpdateProducts(
+      adultYn,
+      canUseInterestDropSoon,
+      interestDropSoonCacheIdentity
+    );
   const { data: directRecommendData } = useGetDirectRecommend(adultYn);
   const { data: tasteRecommendationsData } = useGetTasteRecommendations(
     adultYn,
@@ -209,16 +222,18 @@ export default function Home() {
                 }}
                 key="suggest"
               />
-              <BottomProducts
-                suggestionData={{
-                  products: interestDropSoonData?.data || [],
-                  suggestId: 0,
-                  suggestName: "",
-                  suggestTarget: "",
-                  suggestTitle: "관심 끊기기 임박",
-                }}
-                key="interest"
-              />
+              {canUseInterestDropSoon && (
+                <BottomProducts
+                  suggestionData={{
+                    products: interestDropSoonData?.data || [],
+                    suggestId: 0,
+                    suggestName: "",
+                    suggestTarget: "",
+                    suggestTitle: "관심 끊기기 임박",
+                  }}
+                  key="interest"
+                />
+              )}
             </div>
             <div className="w-full mt-[67px]">
               <BottomBanner teriayPanels={data?.banners?.teriayPanels ?? []} />

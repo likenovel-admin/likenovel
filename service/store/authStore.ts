@@ -2,6 +2,7 @@ import { ISocialLoginProvider, ITokens, IUser } from "@/types";
 import { create } from "zustand";
 
 interface IAuthState {
+  isAuthInitialized: boolean;
   isAuthenticated: boolean;
   user: IUser | null;
   accessToken: string | null;
@@ -18,6 +19,7 @@ interface IAuthState {
 }
 
 const useAuthStore = create<IAuthState>((set) => ({
+  isAuthInitialized: false,
   isAuthenticated: false,
   user: null,
   accessToken: null,
@@ -35,6 +37,7 @@ const useAuthStore = create<IAuthState>((set) => ({
       : null;
 
     set({
+      isAuthInitialized: true,
       isAuthenticated: true,
       user,
       accessToken: tokens.accessToken,
