@@ -244,6 +244,8 @@ const ProductCoverArea = ({
             episodes={episodes}
             notices={notices}
             productId={data?.productId || 0}
+            productPriceType={data?.priceType}
+            productType={data?.productType}
             comments={comments}
             updateFrequency={data?.properties?.updateFrequency}
           />

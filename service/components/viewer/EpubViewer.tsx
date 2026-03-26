@@ -72,6 +72,7 @@ interface Props {
   goFirstRequest?: number;
   showNav: boolean;
   setShowNav: React.Dispatch<React.SetStateAction<boolean>>;
+  suppressViewerClickTick?: number;
   handleCommentState: () => void;
   currentEpisodeId?: number;
   productId?: number;
@@ -87,6 +88,7 @@ const EpubViewer = ({
   goFirstRequest = 0,
   showNav,
   setShowNav,
+  suppressViewerClickTick = 0,
   currentEpisodeId,
   productId,
   nextEpisodeId,
@@ -113,6 +115,9 @@ const EpubViewer = ({
   const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastResizeDimensionsRef = useRef({ width: 0, height: 0 });
   const skippedInitialMobileCoverRef = useRef(false);
+  const pendingScrollRestoreTopRef = useRef<number | null>(null);
+  const suppressNavToggleUntilRef = useRef(0);
+  const scrolledContainerTopPaddingRef = useRef<number | null>(null);
 
   // Scrolled mode: host element at the end of EPUB scroll container
   const lastPageHostRef = useRef<HTMLElement | null>(null);
@@ -464,6 +469,11 @@ const EpubViewer = ({
     setShowNav((prev: boolean) => !prev);
   };
 
+  useEffect(() => {
+    if (suppressViewerClickTick <= 0) return;
+    suppressNavToggleUntilRef.current = Date.now() + 500;
+  }, [suppressViewerClickTick]);
+
   // ========================= COVER TOGGLE =========================
 
   const updateToggleButtons = useCallback(() => {
@@ -611,6 +621,40 @@ const EpubViewer = ({
     });
   }, [device, isScroll]);
 
+  const lockContentSelection = useCallback((doc: Document) => {
+    const docWithSelectionLock = doc as Document & {
+      __likenovelSelectionLocked?: boolean;
+    };
+
+    doc.documentElement.style.setProperty("user-select", "none", "important");
+    doc.documentElement.style.setProperty("-webkit-user-select", "none", "important");
+    doc.documentElement.style.setProperty("-webkit-touch-callout", "none", "important");
+    doc.body.style.setProperty("user-select", "none", "important");
+    doc.body.style.setProperty("-webkit-user-select", "none", "important");
+    doc.body.style.setProperty("-webkit-touch-callout", "none", "important");
+
+    doc.querySelectorAll("body *").forEach((element) => {
+      const htmlElement = element as HTMLElement;
+      htmlElement.style.setProperty("user-select", "none", "important");
+      htmlElement.style.setProperty("-webkit-user-select", "none", "important");
+      htmlElement.style.setProperty("-webkit-touch-callout", "none", "important");
+    });
+
+    doc.defaultView?.getSelection?.()?.removeAllRanges();
+
+    if (docWithSelectionLock.__likenovelSelectionLocked) {
+      return;
+    }
+
+    const preventSelection = (event: Event) => {
+      event.preventDefault();
+    };
+
+    doc.addEventListener("selectstart", preventSelection);
+    doc.addEventListener("dragstart", preventSelection);
+    docWithSelectionLock.__likenovelSelectionLocked = true;
+  }, []);
+
   // ========================= THEME =========================
 
   const updateTheme = useCallback(
@@ -652,7 +696,9 @@ const EpubViewer = ({
       rendition.themes.default({
         p: {
           ...(lineHeight ? { "line-height": `${lineHeight} !important` } : {}),
-          "text-indent": currentSettings.useParagraphIndent ? "" : "0 !important",
+          "text-indent": currentSettings.useParagraphIndent
+            ? "1em !important"
+            : "0 !important",
         },
       });
       if (containerRef.current) {
@@ -702,6 +748,7 @@ const EpubViewer = ({
         doc.documentElement.style.color = currentContentTextColor;
         doc.body.style.backgroundColor = currentBgColor;
         doc.body.style.color = currentContentTextColor;
+        lockContentSelection(doc);
 
         if (isScroll && device === "mobile") {
           // 모바일 세로보기: iframe 내부 body도 절대 px로 제한
@@ -722,12 +769,15 @@ const EpubViewer = ({
         }
 
         doc.querySelectorAll("p").forEach((paragraph: Element) => {
-          (paragraph as HTMLElement).style.textIndent =
-            currentSettings.useParagraphIndent ? "1em" : "0";
+          (paragraph as HTMLElement).style.setProperty(
+            "text-indent",
+            currentSettings.useParagraphIndent ? "1em" : "0",
+            "important"
+          );
         });
       });
     },
-    [marginSizeMap, isScroll, device, desktopScrolledMaxWidthMap]
+    [marginSizeMap, isScroll, device, desktopScrolledMaxWidthMap, lockContentSelection]
   );
 
   useEffect(() => {
@@ -741,13 +791,34 @@ const EpubViewer = ({
   // Only re-apply theme when settings change
   useEffect(() => {
     if (renditionRef.current) {
+      const rendition = renditionRef.current;
+      const scrollContainer = isScroll
+        ? (rendition as any)?.manager?.views?.container ||
+          (rendition as any)?.manager?.container ||
+          null
+        : null;
+      if (scrollContainer) {
+        pendingScrollRestoreTopRef.current = scrollContainer.scrollTop;
+      }
       try {
-        updateTheme(renditionRef.current);
+        updateTheme(rendition);
       } catch {
         // epubjs theme update may fail if rendition is stale
       }
+      if (scrollContainer && pendingScrollRestoreTopRef.current !== null) {
+        requestAnimationFrame(() => {
+          const latestContainer =
+            (rendition as any)?.manager?.views?.container ||
+            (rendition as any)?.manager?.container ||
+            null;
+          if (!latestContainer || pendingScrollRestoreTopRef.current === null) {
+            return;
+          }
+          latestContainer.scrollTop = pendingScrollRestoreTopRef.current;
+        });
+      }
     }
-  }, [settings, updateTheme]);
+  }, [settings, updateTheme, isScroll]);
 
   // 모바일 여백 변경 시에만 rendition 재계산 + 위치 복원
   useEffect(() => {
@@ -791,6 +862,33 @@ const EpubViewer = ({
     const r = renditionRef.current;
     return r?.manager?.views?.container || r?.manager?.container || null;
   };
+
+  const syncScrolledContainerLayout = useCallback(
+    (preserveViewport: boolean) => {
+      if (!isScroll) return;
+
+      const container = getScrollContainer();
+      if (!container) return;
+
+      const nextTopPadding = showNav ? 68 : 0;
+      const nextBottomPadding = 120;
+      const prevTopPadding = scrolledContainerTopPaddingRef.current;
+
+      container.style.paddingTop = `${nextTopPadding}px`;
+      container.style.paddingBottom = `${nextBottomPadding}px`;
+
+      if (
+        preserveViewport &&
+        prevTopPadding !== null &&
+        prevTopPadding !== nextTopPadding
+      ) {
+        container.scrollTop += nextTopPadding - prevTopPadding;
+      }
+
+      scrolledContainerTopPaddingRef.current = nextTopPadding;
+    },
+    [isScroll, showNav]
+  );
 
   // Keep LastPage host at the end of the EPUB scroll container
   const placeHostAtEnd = useCallback(() => {
@@ -875,31 +973,32 @@ const EpubViewer = ({
     const container = getScrollContainer();
     if (!container) return;
 
-    container.style.paddingBottom = "120px";
+    syncScrolledContainerLayout(true);
 
     return () => {
       if (container) {
+        container.style.paddingTop = "";
         container.style.paddingBottom = "";
       }
+      scrolledContainerTopPaddingRef.current = null;
     };
-  }, [isScroll]);
+  }, [isScroll, showNav, syncScrolledContainerLayout]);
 
   // ========================= TAB VISIBILITY: 비활성 복귀 시 렌더 복구 ==========
   useEffect(() => {
     const handleResume = () => {
       if (document.visibilityState !== "visible") return;
+
+      if (isScroll) {
+        requestAnimationFrame(() => {
+          syncScrolledContainerLayout(false);
+          updateToggleButtons();
+        });
+        return;
+      }
+
       requestAnimationFrame(() => {
         restoreVisibleRendition();
-
-        if (!isScroll) return;
-        requestAnimationFrame(() => {
-          const container = getScrollContainer();
-          if (!container) return;
-          container.style.overflowY = "auto";
-          const pos = container.scrollTop;
-          container.scrollTop = pos + 1;
-          container.scrollTop = pos;
-        });
       });
     };
 
@@ -911,7 +1010,7 @@ const EpubViewer = ({
       window.removeEventListener("focus", handleResume);
       window.removeEventListener("pageshow", handleResume);
     };
-  }, [isScroll, restoreVisibleRendition]);
+  }, [isScroll, restoreVisibleRendition, syncScrolledContainerLayout, updateToggleButtons]);
 
   useEffect(() => {
     if (isScroll && renditionRef.current && wrapperRef.current) {
@@ -1052,9 +1151,11 @@ const EpubViewer = ({
             backgroundColor: showLastPage ? bgColor : "transparent",
           }}
           className={`relative ${
-            showNav
-              ? "h-[calc(100vh-128px)] md:h-[calc(100vh-128px)] mt-[68px] w-full"
-              : "h-screen w-full"
+            isScroll
+              ? "h-screen w-full"
+              : showNav
+                ? "h-[calc(100vh-128px)] md:h-[calc(100vh-128px)] mt-[68px] w-full"
+                : "h-screen w-full"
           }`}
         >
           {/* MAIN EPUB AREA */}
@@ -1104,6 +1205,20 @@ const EpubViewer = ({
                     const height = wrapperRef.current.offsetHeight;
                     debouncedResize(_rendition, width, height);
                     placeHostAtEnd();
+                    syncScrolledContainerLayout(false);
+                    if (pendingScrollRestoreTopRef.current !== null) {
+                      const targetScrollTop = pendingScrollRestoreTopRef.current;
+                      requestAnimationFrame(() => {
+                        const container =
+                          (_rendition as any)?.manager?.views?.container ||
+                          (_rendition as any)?.manager?.container ||
+                          null;
+                        if (container) {
+                          container.scrollTop = targetScrollTop;
+                        }
+                        pendingScrollRestoreTopRef.current = null;
+                      });
+                    }
                     // rendered에서도 타이머 리셋 — resize/placeHost가 스크롤을 밀 수 있음
                     if (!epubReadyDoneRef.current) {
                       if (epubReadyTimerRef.current) {
@@ -1119,6 +1234,9 @@ const EpubViewer = ({
                 });
 
                 _rendition.on("click", () => {
+                  if (Date.now() < suppressNavToggleUntilRef.current) {
+                    return;
+                  }
                   handleToggleNav();
                 });
 

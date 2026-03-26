@@ -90,8 +90,10 @@ type SaleReserveOptionState = {
   launchDateTime: string;
   openWeekdays: number[];
   reserveTime: string;
-  includeLaunchDate: boolean;
 };
+
+const MIN_RESERVE_LEAD_MINUTES = 5;
+const RESERVE_MINIMUM_MESSAGE = `판매예약은 현재 시간 기준 ${MIN_RESERVE_LEAD_MINUTES}분 이후부터 설정할 수 있습니다.`;
 
 const REQUIRED_MARK = <span className="ml-1 text-[#E54949]">*</span>;
 
@@ -140,7 +142,6 @@ const INITIAL_SALE_RESERVE_OPTION: SaleReserveOptionState = {
   launchDateTime: "",
   openWeekdays: [],
   reserveTime: "",
-  includeLaunchDate: true,
 };
 
 const escapeExcelText = (value?: string | null) => {
@@ -164,7 +165,7 @@ const formatReserveDateTime = (dateValue?: string | null) => {
   if (!dateValue) return "-";
   const date = new Date(dateValue);
   if (Number.isNaN(date.getTime())) return "-";
-  return `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, "0")}-${`${date.getDate()}`.padStart(2, "0")} ${`${date.getHours()}`.padStart(2, "0")}:${`${date.getMinutes()}`.padStart(2, "0")}`;
+  return `${date.getFullYear()}.${`${date.getMonth() + 1}`.padStart(2, "0")}.${`${date.getDate()}`.padStart(2, "0")} ${`${date.getHours()}`.padStart(2, "0")}:${`${date.getMinutes()}`.padStart(2, "0")}`;
 };
 
 const getEpisodeEffectiveOpenYn = (episode: {
@@ -1161,8 +1162,8 @@ export default function ProductUploadPage() {
       showAlert("입력 확인", "유효한 판매예약 일시를 선택해주세요.", "확인");
       return;
     }
-    if (reserveDate.getTime() <= Date.now()) {
-      showAlert("입력 확인", "판매예약 일시는 현재 시간 이후로 선택해주세요.", "확인");
+    if (reserveDate.getTime() < Date.now() + MIN_RESERVE_LEAD_MINUTES * 60 * 1000) {
+      showAlert("입력 확인", "판매예약 일시는 현재 시간 기준 5분 이후로 선택해주세요.", "확인");
       return;
     }
 
@@ -1210,8 +1211,11 @@ export default function ProductUploadPage() {
     }
 
     const launchDate = new Date(saleReserveOption.launchDateTime);
-    if (Number.isNaN(launchDate.getTime()) || launchDate.getTime() <= Date.now()) {
-      showAlert("입력 확인", "런칭일시는 현재 시간 이후로 선택해주세요.", "확인");
+    if (
+      Number.isNaN(launchDate.getTime()) ||
+      launchDate.getTime() < Date.now() + MIN_RESERVE_LEAD_MINUTES * 60 * 1000
+    ) {
+      showAlert("입력 확인", "런칭일시는 현재 시간 기준 5분 이후로 선택해주세요.", "확인");
       return;
     }
 
@@ -1236,36 +1240,17 @@ export default function ProductUploadPage() {
       return;
     }
 
-    if (
-      (!saleReserveOption.includeLaunchDate || tailEpisodes.length > 0) &&
-      !saleReserveOption.openWeekdays.length
-    ) {
+    if (tailEpisodes.length > 0 && !saleReserveOption.openWeekdays.length) {
       showAlert("입력 확인", "후속 회차 오픈 요일을 선택해주세요.", "확인");
       return;
     }
 
-    if (
-      (!saleReserveOption.includeLaunchDate || tailEpisodes.length > 0) &&
-      !saleReserveOption.reserveTime
-    ) {
+    if (tailEpisodes.length > 0 && !saleReserveOption.reserveTime) {
       showAlert("입력 확인", "회차당 오픈예약시간을 입력해주세요.", "확인");
       return;
     }
 
-    let launchReserveDate = launchDate;
-    if (!saleReserveOption.includeLaunchDate) {
-      const nextLaunchReserveDate = getNextRecurringReserveDate(
-        launchDate,
-        saleReserveOption.openWeekdays,
-        saleReserveOption.reserveTime
-      );
-
-      if (!nextLaunchReserveDate) {
-        showAlert("입력 확인", "후속 회차 예약 조건을 다시 확인해주세요.", "확인");
-        return;
-      }
-      launchReserveDate = nextLaunchReserveDate;
-    }
+    const launchReserveDate = launchDate;
 
     const groupedEpisodeIds = new Map<string, number[]>();
     const addGroupedEpisode = (episodeId: number, reserveDate: Date) => {
@@ -2066,6 +2051,9 @@ export default function ProductUploadPage() {
                   </Button>
                 </div>
               </div>
+              <p className="mt-2 text-right text-xs text-[#8A909C]">
+                {RESERVE_MINIMUM_MESSAGE}
+              </p>
 
               <div className="mt-4 rounded-lg border border-[#E7E9EE] bg-[#FBFCFF] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2073,6 +2061,9 @@ export default function ProductUploadPage() {
                     <p className="text-sm font-semibold text-[#1F2124]">판매예약 옵션</p>
                     <p className="mt-1 text-xs text-[#6C7383]">
                       승인완료/판매예약된 회차에만 적용됩니다. 기존 판매예약은 덮어씁니다.
+                    </p>
+                    <p className="mt-1 text-xs text-[#6C7383]">
+                      런칭일시와 판매예약 시간은 현재 시간 기준 5분 이후부터 설정할 수 있습니다.
                     </p>
                     <p className="mt-1 text-xs text-[#6C7383]">
                       적용 예상: 런칭 {launchEpisodePreviewCount}회차, 후속 {tailEpisodePreviewCount}회차
@@ -2088,7 +2079,7 @@ export default function ProductUploadPage() {
                   </Button>
                 </div>
 
-                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <div>
                     <label className="mb-1 block text-sm font-semibold text-[#1F2124]">
                       런칭회차범위
@@ -2157,26 +2148,7 @@ export default function ProductUploadPage() {
                     />
                   </div>
 
-                  <div className="flex items-end">
-                    <label className="inline-flex items-center gap-2 text-sm font-medium text-[#1F2124]">
-                      <input
-                        type="checkbox"
-                        checked={saleReserveOption.includeLaunchDate}
-                        onChange={(e) =>
-                          setSaleReserveOptionField(
-                            "includeLaunchDate",
-                            e.target.checked
-                          )
-                        }
-                        disabled={isActionPending}
-                      />
-                      런칭일 포함
-                    </label>
-                  </div>
-                </div>
 
-                <div className="mt-2 text-xs text-[#6C7383]">
-                  런칭일 포함을 해제하면 런칭회차범위도 첫 유효 오픈 요일/시간부터 예약됩니다.
                 </div>
 
                 <div className="mt-4">

@@ -1,6 +1,7 @@
 import { instance } from "@/app/api/axios";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
+  IAuthorBulkPublishReserveRequest,
   ICreateAuthorEpisodePredictionRequest,
   IGetProductNoticeDetailResponse,
   IMakeEpisodeRequest,
@@ -212,6 +213,14 @@ export const useCancelReserveEpisode = () => {
   return useMutation<unknown, Error, { episode_ids: number[] }>({
     mutationFn: async (body) => {
       return await instance.post(`/v1/command/episodes/sale-reserve-cancel`, body);
+    },
+  });
+};
+
+export const useBulkPublishReserveEpisode = () => {
+  return useMutation<unknown, Error, IAuthorBulkPublishReserveRequest>({
+    mutationFn: async (body) => {
+      return await instance.post(`/v1/command/episodes/publish-reserve-bulk`, body);
     },
   });
 };

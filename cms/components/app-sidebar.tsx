@@ -123,6 +123,10 @@ const data = {
           title: "일괄 작품 업로드",
           url: "/products/bulk-upload",
         },
+        {
+          title: "무료연재 예약 스케줄",
+          url: "/products/free-serial-schedule",
+        },
       ],
     },
     {

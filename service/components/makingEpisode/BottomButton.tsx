@@ -7,6 +7,7 @@ type Props = {
   onUpdate?: () => void;
   actionType?: "save" | "submit";
   isSubmitting?: boolean;
+  isActionDisabled?: boolean;
 };
 
 const BottomButton = ({
@@ -15,6 +16,7 @@ const BottomButton = ({
   onUpdate,
   actionType,
   isSubmitting,
+  isActionDisabled,
 }: Props) => {
   const router = useRouter();
   return (
@@ -28,7 +30,7 @@ const BottomButton = ({
               size={"xl"}
               type="button"
               onClick={onSave}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isActionDisabled}
             >
               임시저장
             </Button>
@@ -37,7 +39,7 @@ const BottomButton = ({
               size={"xl"}
               type="button"
               onClick={onSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isActionDisabled}
             >
               등록
             </Button>
@@ -50,7 +52,7 @@ const BottomButton = ({
               size={"xl"}
               onClick={() => router.back()}
               type="button"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isActionDisabled}
             >
               취소
             </Button>
@@ -59,7 +61,7 @@ const BottomButton = ({
               size={"xl"}
               type="button"
               onClick={onUpdate}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isActionDisabled}
             >
               수정
             </Button>
@@ -75,7 +77,7 @@ const BottomButton = ({
               size={"md"}
               type="button"
               onClick={onSave}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isActionDisabled}
             >
               임시저장
             </Button>
@@ -84,7 +86,7 @@ const BottomButton = ({
               size={"md"}
               type="button"
               onClick={onSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isActionDisabled}
             >
               등록
             </Button>

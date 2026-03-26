@@ -1,7 +1,7 @@
 import { ko } from "date-fns/locale/ko";
 import dayjs from "dayjs";
 import Image from "next/image";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import ReactDatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import Input from "../input";
@@ -42,6 +42,24 @@ const DatePicker = ({
   // Preserve outer references for CustomInput closure (inner params shadow these names)
   const dateValue = value;
   const handleDateChange = onChange;
+  const formattedTimeValue = useMemo(
+    () => (dateValue ? dayjs(dateValue).format("HH:mm") : ""),
+    [dateValue]
+  );
+  const [timeDraft, setTimeDraft] = useState(formattedTimeValue);
+
+  useEffect(() => {
+    setTimeDraft(formattedTimeValue);
+  }, [formattedTimeValue]);
+
+  const normalizeTimeDraft = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 4);
+    if (digits.length <= 2) return digits;
+    return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+  };
+
+  const isCompleteTimeDraft = (raw: string) =>
+    /^([01]\d|2[0-3]):([0-5]\d)$/.test(raw);
 
   const CustomInput = ({
     onBlur,
@@ -87,14 +105,21 @@ const DatePicker = ({
         {showTimeSelect && (
           <div className="flex gap-1 items-center h-fit flex-1">
             <input
-              type="time"
-              value={dateValue ? dayjs(dateValue).format("HH:mm") : ""}
+              type="text"
+              inputMode="numeric"
+              placeholder="HH:mm"
+              value={timeDraft}
               onChange={(e) => {
-                if (!e.target.value) return;
+                const nextDraft = normalizeTimeDraft(e.target.value);
+                setTimeDraft(nextDraft);
+                if (!isCompleteTimeDraft(nextDraft)) return;
                 const current = dateValue ? dayjs(dateValue) : dayjs();
-                const [h, m] = e.target.value.split(":").map(Number);
+                const [h, m] = nextDraft.split(":").map(Number);
                 const merged = current.hour(h).minute(m).second(0).toDate();
                 handleDateChange?.(merged);
+              }}
+              onBlur={() => {
+                setTimeDraft(formattedTimeValue);
               }}
               disabled={disabled}
               className="w-full p-2 border border-gray-300 rounded-lg text-14pxr text-dark-gray-400 font-normal disabled:opacity-40"
@@ -112,14 +137,10 @@ const DatePicker = ({
     setViewType(e.target.value as "year" | "month");
   };
 
-  // ✅ 예약 설정 기본 날짜 = 오늘 날짜 (showTimeSelect 있을 때만 default 사용)
-  const initialDate = dayjs().toDate();
-
   return (
     <ReactDatePicker
       // @ts-ignore
-      // ✅ FIX: showTimeSelect이 true면 기본값을 오늘 날짜로 설정
-      selected={value || (showTimeSelect ? initialDate : null)}
+      selected={value ?? null}
       onChange={(date) => {
         onChange?.(date);
       }}

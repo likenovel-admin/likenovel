@@ -10,14 +10,19 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "../common/Button";
+import CheckBox from "../common/CheckBox";
 import RoundBadge from "../common/RoundBadge";
 import SimpleMenu from "../common/SimpleMenu";
+import BulkReserveModal from "./BulkReserveModal";
 import ArrowUpDown from "/public/images/arrow-up-down.svg";
 import Rating from "/public/images/rating.svg";
 import View from "/public/images/view.svg";
 
 interface EpisodeRoundTabProps {
   episodes: IEpisode[];
+  productId: number;
+  productPriceType?: "free" | "paid";
+  productType?: "free" | "normal" | "paid";
   updateFrequency?: string;
 }
 
@@ -58,8 +63,17 @@ const getTargetWeeklyUploads = (updateFrequency?: string): number => {
   }
 };
 
-const EpisodeRoundTab = ({ episodes, updateFrequency }: EpisodeRoundTabProps) => {
+const EpisodeRoundTab = ({
+  episodes,
+  productId,
+  productPriceType,
+  productType,
+  updateFrequency,
+}: EpisodeRoundTabProps) => {
   const [isDescSort, setIsDescSort] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedEpisodeIds, setSelectedEpisodeIds] = useState<number[]>([]);
+  const [isBulkReserveModalOpen, setIsBulkReserveModalOpen] = useState(false);
   const predictionLogKeyRef = useRef("");
   const { mutate: createPredictionLog } = useCreateAuthorEpisodePrediction();
 
@@ -164,6 +178,40 @@ const EpisodeRoundTab = ({ episodes, updateFrequency }: EpisodeRoundTabProps) =>
     }
     return sorted.sort((a, b) => a.episodeNo - b.episodeNo);
   }, [episodes, isDescSort]);
+
+  const isBulkReserveEnabled =
+    productPriceType === "free" && productType === "normal";
+
+  const selectedEpisodes = useMemo(
+    () =>
+      episodes
+        .filter((episode) => selectedEpisodeIds.includes(episode.episodeId))
+        .sort((a, b) => a.episodeNo - b.episodeNo),
+    [episodes, selectedEpisodeIds]
+  );
+
+  const resetSelectionMode = () => {
+    setIsSelectionMode(false);
+    setSelectedEpisodeIds([]);
+  };
+
+  const toggleEpisodeSelection = (episodeId: number) => {
+    setSelectedEpisodeIds((prev) =>
+      prev.includes(episodeId)
+        ? prev.filter((id) => id !== episodeId)
+        : [...prev, episodeId]
+    );
+  };
+
+  useEffect(() => {
+    if (!isSelectionMode) {
+      setSelectedEpisodeIds([]);
+      return;
+    }
+
+    const currentEpisodeIds = new Set(episodes.map((episode) => episode.episodeId));
+    setSelectedEpisodeIds((prev) => prev.filter((id) => currentEpisodeIds.has(id)));
+  }, [episodes, isSelectionMode]);
 
   const formatNumber = (value: number) =>
     new Intl.NumberFormat("ko-KR").format(value);
@@ -278,20 +326,73 @@ const EpisodeRoundTab = ({ episodes, updateFrequency }: EpisodeRoundTabProps) =>
           {isDescSort ? "최신순" : "첫회부터"}
         </span>
       </Button>
+      {isBulkReserveEnabled && (
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
+          {isSelectionMode ? (
+            <>
+              <span className="text-13pxr text-dark-gray-400">
+                현재 목록에서 {selectedEpisodeIds.length}화 선택됨
+              </span>
+              <div className="flex gap-2 ml-auto">
+                <Button variant="secondary" size="sm" onClick={resetSelectionMode}>
+                  선택취소
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={selectedEpisodeIds.length === 0}
+                  onClick={() => setIsBulkReserveModalOpen(true)}
+                >
+                  예약공개
+                </Button>
+              </div>
+            </>
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="ml-auto"
+              onClick={() => setIsSelectionMode(true)}
+            >
+              선택해서 예약
+            </Button>
+          )}
+        </div>
+      )}
       <div className="border-t mt-4">
         {sortedEpisodes.map((episode) => (
-          <EpisodeRoundItem key={episode.episodeId} episode={episode} />
+          <EpisodeRoundItem
+            key={episode.episodeId}
+            episode={episode}
+            isSelectionMode={isSelectionMode}
+            isSelected={selectedEpisodeIds.includes(episode.episodeId)}
+            onToggleSelect={toggleEpisodeSelection}
+          />
         ))}
       </div>
+      <BulkReserveModal
+        isOpen={isBulkReserveModalOpen}
+        onClose={() => setIsBulkReserveModalOpen(false)}
+        episodes={selectedEpisodes}
+        productId={productId}
+        onCompleted={resetSelectionMode}
+      />
     </div>
   );
 };
 
 interface IEpisodeRoundItemProps {
   episode: IEpisode;
+  isSelectionMode: boolean;
+  isSelected: boolean;
+  onToggleSelect: (episodeId: number) => void;
 }
 
-const EpisodeRoundItem = ({ episode }: IEpisodeRoundItemProps) => {
+const EpisodeRoundItem = ({
+  episode,
+  isSelectionMode,
+  isSelected,
+  onToggleSelect,
+}: IEpisodeRoundItemProps) => {
   const router = useRouter();
   const { setToast } = useToastStore();
   const queryClient = useQueryClient();
@@ -300,14 +401,26 @@ const EpisodeRoundItem = ({ episode }: IEpisodeRoundItemProps) => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("ko-KR") +
-      " " +
-      date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+    return date.toLocaleString("ko-KR", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
   };
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleString("ko-KR");
+    return date.toLocaleString("ko-KR", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
   };
 
   const handleToggleVisibility = async () => {
@@ -386,17 +499,45 @@ const EpisodeRoundItem = ({ episode }: IEpisodeRoundItemProps) => {
   };
 
   const handleOpenEditByCard = () => {
+    if (isSelectionMode) {
+      if (episode.openYn !== "Y") {
+        onToggleSelect(episode.episodeId);
+      }
+      return;
+    }
     handleOpenEditEpisode(episode);
   };
 
   const isScheduledRelease = episode.openYn === "N" && episode.publishReserveDate;
+  const isSelectable = episode.openYn !== "Y";
 
   return (
     <div
       className="py-3 border-b border-b-light-gray-100 flex flex-col cursor-pointer"
       onClick={handleOpenEditByCard}
     >
-      <div className="flex flex-col gap-[6px]">
+      <div className="flex gap-3">
+        {isSelectionMode && (
+          <div
+            className="pt-[2px]"
+            onClick={(event) => event.stopPropagation()}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <CheckBox
+              label=""
+              labelId={`episode-select-${episode.episodeId}`}
+              checked={isSelected}
+              disabled={!isSelectable}
+              onChange={() => {
+                if (!isSelectable) return;
+                onToggleSelect(episode.episodeId);
+              }}
+              checkedColor="bg-primary-100 border-primary-100"
+              checkBoxStyle="w-[20px] h-[20px] border"
+            />
+          </div>
+        )}
+        <div className="flex flex-col gap-[6px] flex-1 min-w-0">
         <div className="flex justify-between w-full items-center">
           <div className="flex gap-1">
             <RoundBadge
@@ -415,29 +556,33 @@ const EpisodeRoundItem = ({ episode }: IEpisodeRoundItemProps) => {
             <span className="text-13pxr font-semibold text-dark-gray-300">
               {episode.episodeTextCount}자
             </span>
-            <div
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              <SimpleMenu
-                menuList={[
-                  {
-                    title: "수정",
-                    onClick: () => handleOpenEditEpisode(episode),
-                  },
-                  {
-                    title: episode.episodeOpenYn === "Y" ? "비공개" : "공개",
-                    onClick: handleToggleVisibility,
-                  },
-                  ...(isScheduledRelease
-                    ? [{
-                        title: "예약취소",
-                        onClick: handleCancelReserve,
-                      }]
-                    : []),
-                ]}
-              />
-            </div>
+            {!isSelectionMode && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <SimpleMenu
+                  menuList={[
+                    {
+                      title: "수정",
+                      onClick: () => handleOpenEditEpisode(episode),
+                    },
+                    {
+                      title: episode.episodeOpenYn === "Y" ? "비공개" : "공개",
+                      onClick: handleToggleVisibility,
+                    },
+                    ...(isScheduledRelease
+                      ? [
+                          {
+                            title: "예약취소",
+                            onClick: handleCancelReserve,
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
+              </div>
+            )}
           </div>
         </div>
         <div className="text-16pxr font-semibold">{episode.episodeTitle}</div>
@@ -483,6 +628,7 @@ const EpisodeRoundItem = ({ episode }: IEpisodeRoundItemProps) => {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
