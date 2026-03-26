@@ -17,6 +17,10 @@ const FONTS = [
   { label: "프리텐다드", value: "Pretendard" },
   { label: "나눔명조", value: "NanumMyeongjo" },
   { label: "마루부리", value: "MaruBuri" },
+  { label: "조선궁서", value: "JoseonPalace" },
+  { label: "나눔고딕", value: "NanumGothic" },
+  { label: "본고딕", value: "NotoSansKR" },
+  { label: "KoPub돋움", value: "KoPubDotum" },
 ];
 
 // Tab 1: 기본 표지 1장
@@ -358,12 +362,18 @@ const CoverDesignModal = ({
 
   // Load background image for Tab 2
   useEffect(() => {
+    let isStale = false;
     const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.src = BG_TEMPLATES[selectedBg].src;
     img.onload = () => {
+      if (isStale) return;
       bgImageRef.current = img;
       setBgLoaded((n) => n + 1);
+    };
+    return () => {
+      isStale = true;
+      img.onload = null;
     };
   }, [selectedBg]);
 

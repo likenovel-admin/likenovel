@@ -677,6 +677,22 @@ const EpubViewer = ({
           themes.override("font-family", "MaruBuri");
           break;
         }
+        case "조선궁서": {
+          themes.override("font-family", "JoseonPalace");
+          break;
+        }
+        case "나눔고딕": {
+          themes.override("font-family", "NanumGothic");
+          break;
+        }
+        case "본고딕": {
+          themes.override("font-family", "NotoSansKR");
+          break;
+        }
+        case "KoPub돋움": {
+          themes.override("font-family", "KoPubDotum");
+          break;
+        }
       }
 
       themes.override("background-color", currentBgColor);
@@ -1332,6 +1348,30 @@ const EpubViewer = ({
                       font-weight:400;
                       font-style:normal;
                       src:url("/fonts/PretendardVariable.woff2") format("woff2");
+                    }
+                    @font-face {
+                      font-family:"JoseonPalace";
+                      font-weight:400;
+                      font-style:normal;
+                      src:url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@1.0/ChosunGs.woff") format("woff");
+                    }
+                    @font-face {
+                      font-family:"NanumGothic";
+                      font-weight:400;
+                      font-style:normal;
+                      src:url("https://fonts.gstatic.com/ea/nanumgothic/v5/NanumGothic-Regular.woff2") format("woff2");
+                    }
+                    @font-face {
+                      font-family:"NotoSansKR";
+                      font-weight:400;
+                      font-style:normal;
+                      src:url("https://fonts.gstatic.com/ea/notosanskr/v2/NotoSansKR-Regular.woff2") format("woff2");
+                    }
+                    @font-face {
+                      font-family:"KoPubDotum";
+                      font-weight:400;
+                      font-style:normal;
+                      src:url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/KoPubDotumMedium.woff") format("woff");
                     }
                     ${isScroll ? (
                       device === "mobile"
