@@ -63,6 +63,7 @@ const Viewer = () => {
   >(null);
   const [epubUrl, setEpubUrl] = useState<string | null>(null);
   const [goFirstRequest, setGoFirstRequest] = useState(0);
+  const [suppressViewerClickTick, setSuppressViewerClickTick] = useState(0);
 
   const { data } = useSelectViewerPath(episodeId);
   const { data: noticeDetailData } = useGetProductNoticeDetail(
@@ -138,7 +139,9 @@ const Viewer = () => {
   };
 
   const handleOpenEpisode = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
+    setSuppressViewerClickTick((prev) => prev + 1);
     setModalType("episode");
     setModal(
       <EpisodeModal
@@ -148,7 +151,9 @@ const Viewer = () => {
     );
   };
   const handleOpenSetting = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
+    setSuppressViewerClickTick((prev) => prev + 1);
     setModalType("setting");
     setModal(<SettingModal />);
   };
@@ -332,6 +337,7 @@ const Viewer = () => {
                 isScroll={isScroll}
                 showNav={showNav}
                 setShowNav={setShowNav}
+                suppressViewerClickTick={suppressViewerClickTick}
                 currentEpisodeId={episodeId}
                 productId={data?.data?.product_id}
                 nextEpisodeId={data?.data?.nextEpisodeId}

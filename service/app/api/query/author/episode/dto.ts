@@ -81,3 +81,12 @@ export interface ICreateAuthorEpisodePredictionRequest {
   has_enough_data: "Y" | "N";
   model_version: string;
 }
+
+export interface IAuthorBulkPublishReserveScheduleItem {
+  episode_id: number;
+  publish_reserve_date: Date | string;
+}
+
+export interface IAuthorBulkPublishReserveRequest {
+  schedules: IAuthorBulkPublishReserveScheduleItem[];
+}

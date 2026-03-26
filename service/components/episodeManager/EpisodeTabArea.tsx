@@ -10,6 +10,8 @@ interface EpisodeTabAreaProps {
   episodes: IEpisode[];
   notices: INotice[];
   productId: number;
+  productPriceType?: "free" | "paid";
+  productType?: "free" | "normal" | "paid";
   comments?: IComment[];
   updateFrequency?: string;
 }
@@ -18,6 +20,8 @@ const EpisodeTabArea = ({
   episodes,
   notices,
   productId,
+  productPriceType,
+  productType,
   comments,
   updateFrequency,
 }: EpisodeTabAreaProps) => {
@@ -57,6 +61,9 @@ const EpisodeTabArea = ({
           <EpisodeRoundTab
             episodes={episodes}
             updateFrequency={updateFrequency}
+            productId={productId}
+            productPriceType={productPriceType}
+            productType={productType}
           />
         )}
         {activeTab === "notice" && <NoticeTab notices={notices} />}

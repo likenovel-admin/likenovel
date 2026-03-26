@@ -18,7 +18,6 @@ import utc from "dayjs/plugin/utc";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Controller, FormProvider, useForm, FieldErrors } from "react-hook-form";
-import CheckBox from "../common/CheckBox";
 import Editor from "../common/Editor";
 import DatePicker from "../form/datepicker";
 import Input from "../form/input";
@@ -37,6 +36,10 @@ export interface IMakeEpisodeForm {
   publishEpisodeDate: Date | null | undefined;
   priceType: "free" | "paid";
 }
+
+type EpisodeReleaseMode = "open" | "reserve" | "private";
+const MIN_RESERVE_MINUTES = 5;
+const RESERVE_MINIMUM_MESSAGE = `예약공개는 현재 시간 기준 ${MIN_RESERVE_MINUTES}분 이후부터 설정할 수 있습니다.`;
 
 interface Props {
   productId?: number;
@@ -101,11 +104,18 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
     control,
     watch,
     setValue,
+    getValues,
   } = methods;
 
   const categoryValue = watch("category");
   const isEpisodeOpenValue = watch("isEpisodeOpen");
   const hasPublishEpisodeDateValue = watch("hasPublishEpisodeDate");
+  const episodeReleaseMode: EpisodeReleaseMode =
+    hasPublishEpisodeDateValue === "Y"
+      ? "reserve"
+      : isEpisodeOpenValue === "Y"
+        ? "open"
+        : "private";
 
   useEffect(() => {
     if (categoryValue === "notice") {
@@ -119,6 +129,61 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
       setValue("publishEpisodeDate", null);
     }
   }, [hasPublishEpisodeDateValue, isEpisodeOpenValue, setValue]);
+
+  const normalizePublishReserveDate = (
+    value: Date | string | null | undefined
+  ) => {
+    if (!value) return null;
+    const parsed = dayjs(value);
+    return parsed.isValid() ? parsed.toDate() : null;
+  };
+
+  const createMinimumReserveDate = () => {
+    const base = dayjs().add(MIN_RESERVE_MINUTES, "minute");
+    const needsCeil = base.second() > 0 || base.millisecond() > 0;
+    return (needsCeil ? base.add(1, "minute") : base)
+      .second(0)
+      .millisecond(0)
+      .toDate();
+  };
+
+  const getReserveValidationMessage = (value: Date | null | undefined) => {
+    if (!value) return "예약공개 일시를 선택해주세요.";
+    const parsed = dayjs(value);
+    if (!parsed.isValid()) return "유효한 예약공개 일시를 선택해주세요.";
+    if (parsed.isBefore(dayjs(createMinimumReserveDate()))) {
+      return RESERVE_MINIMUM_MESSAGE;
+    }
+    return null;
+  };
+
+  const handleEpisodeReleaseModeChange = (mode: EpisodeReleaseMode) => {
+    if (mode === "open") {
+      setValue("isEpisodeOpen", "Y");
+      setValue("hasPublishEpisodeDate", "N");
+      setValue("publishEpisodeDate", null);
+      return;
+    }
+
+    if (mode === "reserve") {
+      setValue("isEpisodeOpen", "N");
+      setValue("hasPublishEpisodeDate", "Y");
+      if (!getValues("publishEpisodeDate")) {
+        setValue("publishEpisodeDate", createMinimumReserveDate());
+      }
+      return;
+    }
+
+    setValue("isEpisodeOpen", "N");
+    setValue("hasPublishEpisodeDate", "N");
+    setValue("publishEpisodeDate", null);
+  };
+
+  const reserveValidationMessage =
+    hasPublishEpisodeDateValue === "Y"
+      ? getReserveValidationMessage(watch("publishEpisodeDate"))
+      : null;
+  const isReserveScheduleInvalid = Boolean(reserveValidationMessage);
 
   const getDefaultValue = (data: ISelectEpisodeResponse) => {
     return {
@@ -134,7 +199,9 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
           : "comment",
       isEpisodeOpen: data.data.episodeOpenYn,
       hasPublishEpisodeDate: data.data.publishReserveYn,
-      publishEpisodeDate: data.data.publishReserveDate,
+      publishEpisodeDate: normalizePublishReserveDate(
+        data.data.publishReserveDate
+      ),
       priceType: data.data.priceType,
     };
   };
@@ -145,7 +212,9 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
       title: data.data.title,
       content: data.data.content,
       hasPublishEpisodeDate: data.data.publishReserveYn,
-      publishEpisodeDate: data.data.publishReserveDate,
+      publishEpisodeDate: normalizePublishReserveDate(
+        data.data.publishReserveDate
+      ),
     };
   };
 
@@ -215,6 +284,15 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
   const handleSave = async (formData: IMakeEpisodeForm) => {
     // Prevent duplicate submissions
     if (!productId || isMutating) return;
+    if (formData.hasPublishEpisodeDate === "Y") {
+      const validationMessage = getReserveValidationMessage(
+        formData.publishEpisodeDate
+      );
+      if (validationMessage) {
+        setToast({ message: validationMessage, type: "error" });
+        return;
+      }
+    }
     try {
       if (formData.category === "notice") {
         const requestData = transformFormDataToNoticeRequestData(formData);
@@ -286,6 +364,15 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
   const handleSubmitForm = async (formData: IMakeEpisodeForm) => {
     // Prevent duplicate submissions
     if (!productId || isMutating) return;
+    if (formData.hasPublishEpisodeDate === "Y") {
+      const validationMessage = getReserveValidationMessage(
+        formData.publishEpisodeDate
+      );
+      if (validationMessage) {
+        setToast({ message: validationMessage, type: "error" });
+        return;
+      }
+    }
 
     try {
       if (formData.category === "notice") {
@@ -356,6 +443,15 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
   const handleUpdate = async (formData: IMakeEpisodeForm) => {
     // Prevent duplicate submissions
     if (isMutating) return;
+    if (formData.hasPublishEpisodeDate === "Y") {
+      const validationMessage = getReserveValidationMessage(
+        formData.publishEpisodeDate
+      );
+      if (validationMessage) {
+        setToast({ message: validationMessage, type: "error" });
+        return;
+      }
+    }
 
     try {
       if (formData.category === "notice") {
@@ -523,62 +619,39 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
                 />
               )}
             />
-            <Controller
-              name={"isEpisodeOpen"}
-              control={control}
-              render={({ field }) => (
-                <Input
-                  label={"회차 공개 여부"}
-                  labelStyle={requiredLabelClassName}
-                  optionsStyle="peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md cursor-pointer"
-                  activeOptionStyle="border-primary-100"
-                  options={[
-                    {
-                      label: "즉시공개",
-                      value: "Y",
-                    },
-                    {
-                      label: "비공개",
-                      value: "N",
-                    },
-                  ]}
-                  {...field}
-                  checkedValue={field.value}
-                />
-              )}
+            <Input
+              label={"공개 상태"}
+              labelStyle={requiredLabelClassName}
+              name="episodeReleaseMode"
+              optionsStyle="peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md cursor-pointer"
+              activeOptionStyle="border-primary-100"
+              options={[
+                {
+                  label: "공개",
+                  value: "open",
+                },
+                {
+                  label: "예약공개",
+                  value: "reserve",
+                },
+                {
+                  label: "비공개",
+                  value: "private",
+                },
+              ]}
+              checkedValue={episodeReleaseMode}
+              onChange={(e) =>
+                handleEpisodeReleaseModeChange(
+                  e.target.value as EpisodeReleaseMode
+                )
+              }
             />
-            <Controller
-              name="hasPublishEpisodeDate"
-              control={control}
-              defaultValue={"N"}
-              render={({ field: checkboxField }) => (
-                <div className="flex items-center gap-10pxr">
-                  <CheckBox
-                    label="예약공개 설정"
-                    labelStyle={labelClassName}
-                    checked={checkboxField.value === "Y"}
-                    disabled={isEpisodeOpenValue === "Y"}
-                    onChange={(e) => {
-                      const isChecked = e.target.checked;
-                      checkboxField.onChange(isChecked ? "Y" : "N");
-                      if (isChecked) {
-                        setValue("isEpisodeOpen", "N");
-                      } else {
-                        setValue("publishEpisodeDate", null);
-                      }
-                    }}
-                    checkedColor="bg-primary-100"
-                    checkBoxStyle="w-[20px] h-[20px] border"
-                  />
-                </div>
-              )}
-            />
-            {watch("hasPublishEpisodeDate") === "Y" && (
+            {hasPublishEpisodeDateValue === "Y" && (
               <Controller
                 name="publishEpisodeDate"
                 control={control}
                 render={({ field }) => (
-                  <div className="flex md:w-[555px] mt-[-30px]">
+                  <div className="flex flex-col md:w-[555px] mt-[-30px]">
                     <DatePicker
                       label=""
                       placeholder="시작일을 선택하세요."
@@ -590,6 +663,15 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
                       onChange={(date) => setValue(field.name, date)}
                       value={field.value === null ? undefined : field.value}
                     />
+                    <p
+                      className={`mt-2 text-12pxr ${
+                        reserveValidationMessage
+                          ? "text-red-100"
+                          : "text-dark-gray-200"
+                      }`}
+                    >
+                      {reserveValidationMessage || RESERVE_MINIMUM_MESSAGE}
+                    </p>
                   </div>
                 )}
               />
@@ -600,6 +682,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
           <BottomButton
             actionType="save"
             isSubmitting={isMutating}
+            isActionDisabled={isReserveScheduleInvalid}
             onSave={() => handleSubmit(handleSave, onError)()}
             onSubmit={() => handleSubmit(handleSubmitForm, onError)()}
           />
@@ -607,6 +690,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
           <BottomButton
             actionType="submit"
             isSubmitting={isMutating}
+            isActionDisabled={isReserveScheduleInvalid}
             onSave={() => handleSubmit(handleSave, onError)()}
             onSubmit={() => handleSubmit(handleSubmitForm, onError)()}
             onUpdate={() => handleSubmit(handleUpdate, onError)()}

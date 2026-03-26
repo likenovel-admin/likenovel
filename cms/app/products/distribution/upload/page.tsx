@@ -78,6 +78,9 @@ type FormState = {
   freeEpisodeEndNo: string;
 };
 
+const MIN_RESERVE_LEAD_MINUTES = 5;
+const RESERVE_MINIMUM_MESSAGE = `판매예약은 현재 시간 기준 ${MIN_RESERVE_LEAD_MINUTES}분 이후부터 설정할 수 있습니다.`;
+
 const INITIAL_FORM: FormState = {
   title: "",
   authorName: "",
@@ -112,6 +115,13 @@ const formatEpisodeDate = (dateValue?: string | null) => {
   const date = new Date(dateValue);
   if (Number.isNaN(date.getTime())) return "-";
   return `${date.getFullYear()}.${`${date.getMonth() + 1}`.padStart(2, "0")}.${`${date.getDate()}`.padStart(2, "0")}`;
+};
+
+const formatEpisodeDateTime = (dateValue?: string | null) => {
+  if (!dateValue) return "-";
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "-";
+  return `${date.getFullYear()}.${`${date.getMonth() + 1}`.padStart(2, "0")}.${`${date.getDate()}`.padStart(2, "0")} ${`${date.getHours()}`.padStart(2, "0")}:${`${date.getMinutes()}`.padStart(2, "0")}`;
 };
 
 const getEpisodeStatusLabel = (
@@ -825,8 +835,8 @@ export default function ProductUploadPage() {
       showAlert("입력 확인", "유효한 판매예약 일시를 선택해주세요.", "확인");
       return;
     }
-    if (reserveDate.getTime() <= Date.now()) {
-      showAlert("입력 확인", "판매예약 일시는 현재 시간 이후로 선택해주세요.", "확인");
+    if (reserveDate.getTime() < Date.now() + MIN_RESERVE_LEAD_MINUTES * 60 * 1000) {
+      showAlert("입력 확인", "판매예약 일시는 현재 시간 기준 5분 이후로 선택해주세요.", "확인");
       return;
     }
 
@@ -1415,7 +1425,9 @@ export default function ProductUploadPage() {
                           </TableCell>
                           <TableCell>EPUB 뷰어</TableCell>
                           <TableCell>
-                            {formatEpisodeDate(episode.publishReserveDate ?? episode.createdDate)}
+                            {episode.publishReserveDate
+                              ? formatEpisodeDateTime(episode.publishReserveDate)
+                              : formatEpisodeDate(episode.createdDate)}
                           </TableCell>
                           <TableCell>
                             {typeof episode.episodeTextCount === "number" &&
@@ -1501,9 +1513,10 @@ export default function ProductUploadPage() {
                   </Button>
                 </div>
               </div>
-              <p className="mt-2 text-right text-xs text-[#8A909C]">
-                체크박스 선택 후 버튼별 처리 가능한 회차에만 적용됩니다.
-              </p>
+              <div className="mt-2 space-y-1 text-right text-xs text-[#8A909C]">
+                <p>{RESERVE_MINIMUM_MESSAGE}</p>
+                <p>체크박스 선택 후 버튼별 처리 가능한 회차에만 적용됩니다.</p>
+              </div>
             </div>
           </>
         ) : null}
