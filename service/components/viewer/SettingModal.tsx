@@ -18,7 +18,7 @@ const SettingModal = () => {
     }
   };
 
-  const handleFontChange = (fontFamily: "고딕" | "명조체" | "마루부리") => {
+  const handleFontChange = (fontFamily: "고딕" | "명조체" | "마루부리" | "조선궁서" | "나눔고딕" | "본고딕" | "KoPub돋움") => {
     setSettings({ fontFamily });
   };
 
@@ -78,6 +78,54 @@ const SettingModal = () => {
                 }`}
               >
                 마루부리
+              </span>
+            </button>
+            <button onClick={() => handleFontChange("조선궁서")}>
+              <span
+                className={`${
+                  settings.fontFamily === "조선궁서"
+                    ? "underline"
+                    : "text-deactivate-color"
+                }`}
+                style={{ fontFamily: "JoseonPalace" }}
+              >
+                조선궁서
+              </span>
+            </button>
+            <button onClick={() => handleFontChange("나눔고딕")}>
+              <span
+                className={`${
+                  settings.fontFamily === "나눔고딕"
+                    ? "underline"
+                    : "text-deactivate-color"
+                }`}
+                style={{ fontFamily: "NanumGothic" }}
+              >
+                나눔고딕
+              </span>
+            </button>
+            <button onClick={() => handleFontChange("본고딕")}>
+              <span
+                className={`${
+                  settings.fontFamily === "본고딕"
+                    ? "underline"
+                    : "text-deactivate-color"
+                }`}
+                style={{ fontFamily: "NotoSansKR" }}
+              >
+                본고딕
+              </span>
+            </button>
+            <button onClick={() => handleFontChange("KoPub돋움")}>
+              <span
+                className={`${
+                  settings.fontFamily === "KoPub돋움"
+                    ? "underline"
+                    : "text-deactivate-color"
+                }`}
+                style={{ fontFamily: "KoPubDotum" }}
+              >
+                KoPub돋움
               </span>
             </button>
           </div>

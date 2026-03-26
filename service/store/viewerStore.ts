@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface IWorkSettings {
-  fontFamily: "고딕" | "명조체" | "마루부리";
+  fontFamily: "고딕" | "명조체" | "마루부리" | "조선궁서" | "나눔고딕" | "본고딕" | "KoPub돋움";
   theme: "light" | "dark" | "green" | "blue";
   fontSize: number;
   letterSpacing: number;
@@ -47,7 +47,11 @@ const sanitizeSettings = (
   const fontFamily =
     next.fontFamily === "고딕" ||
     next.fontFamily === "명조체" ||
-    next.fontFamily === "마루부리"
+    next.fontFamily === "마루부리" ||
+    next.fontFamily === "조선궁서" ||
+    next.fontFamily === "나눔고딕" ||
+    next.fontFamily === "본고딕" ||
+    next.fontFamily === "KoPub돋움"
       ? next.fontFamily
       : DEFAULT_SETTINGS.fontFamily;
   const theme =
