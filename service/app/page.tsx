@@ -135,8 +135,8 @@ export default function Home() {
     data?.topsProducts &&
     Array.isArray(data.topsProducts) &&
     data.topsProducts.map((product: IProduct) => {
-      product?.area === "freeTop" && freeTopProducts.push(product);
-      product?.area === "paidTop" && paidTopProducts.push(product);
+      product?.area === "freeSerialTop" && freeTopProducts.push(product);
+      product?.area === "paidMainTop" && paidTopProducts.push(product);
     });
 
   const cpPromotionProducts = Array.isArray(data?.publisherPromotionProducts)
