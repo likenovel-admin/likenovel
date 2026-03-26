@@ -223,16 +223,25 @@ export const useSelectMainRuleSlots = (adult_yn?: string) => {
   });
 };
 
-export const useSelectInterestDropSoonUpdateProducts = (adult_yn?: string) => {
+export const useSelectInterestDropSoonUpdateProducts = (
+  adult_yn?: string,
+  enabled: boolean = true,
+  cacheIdentity: string = "guest"
+) => {
   const adultYnParam = adult_yn || "N";
   return useQuery<IUseSelectProductsResponse, unknown>({
-    queryKey: ["selectInterestDropSoonUpdateProducts", adultYnParam],
+    queryKey: [
+      "selectInterestDropSoonUpdateProducts",
+      adultYnParam,
+      cacheIdentity,
+    ],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/products/interest-drop-products-soon?adult_yn=${adultYnParam}`
       );
       return response.data;
     },
+    enabled,
   });
 };
 
@@ -404,15 +413,19 @@ export const useSelectPaidAllProductsInfinite = (
   });
 };
 
-export const useSelectInterestDropProducts = () => {
+export const useSelectInterestDropProducts = (
+  enabled: boolean = true,
+  cacheIdentity: string = "guest"
+) => {
   return useQuery<IUseSelectProductsResponse, unknown>({
-    queryKey: ["selectInterestDropSoonProducts"],
+    queryKey: ["selectInterestDropSoonProducts", cacheIdentity],
     queryFn: async () => {
       const response = await instance.get(
         "/v1/query/products/interest-drop-products"
       );
       return response.data;
     },
+    enabled,
   });
 };
 
@@ -613,11 +626,12 @@ export const useDeleteAllRecentProduct = () => {
 export const useGetRecentProduct = (
   limit?: number,
   adult_yn?: string,
-  enabled?: boolean
+  enabled?: boolean,
+  cacheIdentity: string = "guest"
 ) => {
   const adultYnParam = adult_yn || "N";
   return useQuery<IGetRecentProductResponse>({
-    queryKey: ["getRecentProduct", limit, adultYnParam],
+    queryKey: ["getRecentProduct", limit, adultYnParam, cacheIdentity],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/user/recent-products?adult_yn=${adultYnParam}${

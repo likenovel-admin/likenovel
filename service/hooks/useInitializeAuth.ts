@@ -35,6 +35,7 @@ const useInitializeAuth = () => {
     }
 
     setState({
+      isAuthInitialized: true,
       isAuthenticated: !!accessToken,
       user: accessToken && storedUser ? JSON.parse(storedUser) : null,
       accessToken,
