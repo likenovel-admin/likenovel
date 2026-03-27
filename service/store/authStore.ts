@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from "@/utils/localStorage";
 import { ISocialLoginProvider, ITokens, IUser } from "@/types";
 import { create } from "zustand";
 
@@ -90,6 +91,7 @@ const useAuthStore = create<IAuthState>((set) => ({
     // localStorage.removeItem("recent_sign_in_type");
     localStorage.removeItem("keep_signin_yn");
     localStorage.removeItem("recent_viewed_products");
+    localStorage.removeItem(STORAGE_KEYS.QUEST_REWARD_AFTER_LOGIN);
     sessionStorage.removeItem("access_token");
     sessionStorage.removeItem("refresh_token");
     // sessionStorage.removeItem("recent_sign_in_type");

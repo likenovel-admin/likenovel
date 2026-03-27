@@ -1,7 +1,16 @@
 import { useReceiveQuestRewards, useSelectQuest } from "@/app/api/query/quest";
+import useAuthStore from "@/store/authStore";
 import useToastStore from "@/store/toastStore";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef } from "react";
+import {
+  getLocalStorage,
+  removeLocalStorage,
+  setLocalStorage,
+  STORAGE_KEYS,
+} from "@/utils/localStorage";
 import ExclamationTooltip from "../common/ExclamationTooltip";
 import Spinner from "../common/Spinner";
 import ProgressBar from "./ProgressBar";
@@ -32,10 +41,25 @@ const formatRemainingTime = () => {
 };
 
 const QuestList = () => {
-  const { data, isLoading, refetch } = useSelectQuest();
+  const { isAuthenticated, isAuthInitialized } = useAuthStore();
+  const { data, isLoading, refetch } = useSelectQuest(
+    isAuthInitialized,
+    isAuthenticated
+  );
   const receiveReward = useReceiveQuestRewards();
   const { setToast } = useToastStore();
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const hasTriggeredPendingRewardRef = useRef(false);
+
+  const questList = data?.data ?? [];
+  const pendingQuestReward = useMemo(
+    () =>
+      getLocalStorage<{ questId: number; rewardId: number }>(
+        STORAGE_KEYS.QUEST_REWARD_AFTER_LOGIN
+      ),
+    [isAuthenticated, isAuthInitialized]
+  );
 
   const handleReceiveReward = (questId: number, rewardId: number) => {
     if (receiveReward.isPending) {
@@ -68,6 +92,54 @@ const QuestList = () => {
     );
   };
 
+  const handleGuestAttendanceReward = (questId: number, rewardId: number) => {
+    setLocalStorage(STORAGE_KEYS.QUEST_REWARD_AFTER_LOGIN, {
+      questId,
+      rewardId,
+    });
+    setLocalStorage(
+      STORAGE_KEYS.PREVIOUS_PAGE,
+      window.location.pathname + window.location.search
+    );
+    router.push("/login?modal=open", { scroll: false });
+  };
+
+  useEffect(() => {
+    if (!isAuthInitialized || !isAuthenticated) return;
+    if (hasTriggeredPendingRewardRef.current) return;
+    if (!pendingQuestReward) return;
+    if (receiveReward.isPending) return;
+
+    const targetQuest = questList.find(
+      (quest) => quest.quest_id === pendingQuestReward.questId
+    );
+
+    if (!targetQuest) return;
+
+    if (targetQuest.reward_own_yn === "Y") {
+      hasTriggeredPendingRewardRef.current = true;
+      removeLocalStorage(STORAGE_KEYS.QUEST_REWARD_AFTER_LOGIN);
+      return;
+    }
+
+    const isTargetCompleted =
+      targetQuest.progress.current_process >=
+        targetQuest.current_stage.count_process &&
+      targetQuest.reward_own_yn === "N";
+
+    if (!isTargetCompleted) return;
+
+    hasTriggeredPendingRewardRef.current = true;
+    removeLocalStorage(STORAGE_KEYS.QUEST_REWARD_AFTER_LOGIN);
+    handleReceiveReward(pendingQuestReward.questId, pendingQuestReward.rewardId);
+  }, [
+    isAuthInitialized,
+    isAuthenticated,
+    pendingQuestReward,
+    questList,
+    receiveReward.isPending,
+  ]);
+
   if (isLoading) {
     return (
       <div className="flex flex-col md:bg-white md:w-[630px] md:rounded-2xl md:border md:p-3 md:rounded-b-none min-h-[200px] justify-center">
@@ -82,6 +154,8 @@ const QuestList = () => {
         const isCompleted =
           quest.progress.current_process >= quest.current_stage.count_process &&
           quest.reward_own_yn === "N";
+        const canGuestClaimAttendance = !isAuthenticated && quest.quest_id === 1;
+        const canClickReward = isCompleted || canGuestClaimAttendance;
 
         return (
           <div
@@ -100,13 +174,21 @@ const QuestList = () => {
                     </div>
 
                     <button
-                      onClick={() =>
-                        handleReceiveReward(quest.quest_id, quest.reward_id)
-                      }
-                      disabled={!isCompleted || receiveReward.isPending}
+                      onClick={() => {
+                        if (canGuestClaimAttendance) {
+                          handleGuestAttendanceReward(
+                            quest.quest_id,
+                            quest.reward_id
+                          );
+                          return;
+                        }
+
+                        handleReceiveReward(quest.quest_id, quest.reward_id);
+                      }}
+                      disabled={!canClickReward || receiveReward.isPending}
                       className={`w-m px-2.5 py-1.5 rounded-full text-sm transition-colors disabled:cursor-not-allowed
                         ${
-                          isCompleted
+                          canClickReward
                             ? "bg-black text-white hover:bg-gray-800 cursor-pointer"
                             : "bg-gray-200 text-gray-500 cursor-not-allowed"
                         }`}
