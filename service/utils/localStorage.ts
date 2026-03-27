@@ -15,6 +15,7 @@ export const STORAGE_KEYS = {
   PREVIOUS_PAGE: "previous_page",
   POPUP_CLOSED_UNTIL: "popup_closed_until",
   AI_RECOMMEND_OPEN_AFTER_LOGIN: "ai_recommend_open_after_login",
+  QUEST_REWARD_AFTER_LOGIN: "quest_reward_after_login",
 } as const;
 
 /**
