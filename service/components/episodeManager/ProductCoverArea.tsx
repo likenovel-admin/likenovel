@@ -1,6 +1,8 @@
+import { useSelectUserInfo } from "@/app/api/query/mypage/user";
 import { IComment } from "@/components/common/CommentArea";
 import ProductReaction from "@/components/common/ProductReaction";
 import { AlarmContents } from "@/components/modal/SendAlarmModal";
+import WarningModal from "@/components/modal/WarningModal";
 import useModalStore from "@/store/modalStore";
 import { IEpisode, IEvaluation, INotice, IProduct } from "@/types";
 import { sumTimesEvaluation } from "@/utils/common";
@@ -44,6 +46,8 @@ const ProductCoverArea = ({
 }: Props) => {
   const router = useRouter();
   const { setModal } = useModalStore();
+  const { data: userInfo } = useSelectUserInfo();
+  const isCpUser = userInfo?.data?.userRole === "CP";
   const handleGoBack = () => {
     // router.back();
     router.push("/product/author");
@@ -90,6 +94,19 @@ const ProductCoverArea = ({
                 {
                   title: "작품 정보 수정",
                   onClick() {
+                    if (isCpUser) {
+                      setModal(
+                        <WarningModal
+                          content={
+                            <span className="text-17pxr font-bold">
+                              파트너사이트에서 작품수정을 해주세요.
+                            </span>
+                          }
+                        />
+                      );
+                      return;
+                    }
+
                     router.push(
                       `/product/author/making-product/${data.productId}`
                     );
