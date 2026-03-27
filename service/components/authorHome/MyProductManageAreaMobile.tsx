@@ -1,6 +1,9 @@
 import { useMyEvaluation, useMySummary } from "@/app/api/query/author/product";
+import { useSelectUserInfo } from "@/app/api/query/mypage/user";
 import ProductReaction from "@/components/common/ProductReaction";
 import Spinner from "@/components/common/Spinner";
+import WarningModal from "@/components/modal/WarningModal";
+import useModalStore from "@/store/modalStore";
 import { mergeKeysEvaluation, sumTimesEvaluation } from "@/utils/common";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -25,8 +28,28 @@ const MyProductManageAreaMobile = () => {
   const { data: summaryData, isLoading, error } = useMySummary();
   const { data: evaluationData, isLoading: evaluationLoading } =
     useMyEvaluation();
+  const { data: userInfo } = useSelectUserInfo();
+  const { setModal } = useModalStore();
 
   const ratingData = evaluationData?.data || {};
+  const isCpUser = userInfo?.data?.userRole === "CP";
+
+  const handleCreateProductClick = () => {
+    if (isCpUser) {
+      setModal(
+        <WarningModal
+          content={
+            <span className="text-15pxr font-bold">
+              파트너사이트에서 신규작품생성을 해주세요.
+            </span>
+          }
+        />
+      );
+      return;
+    }
+
+    router.push("/product/author/making-product");
+  };
 
   const totalParticipants = useMemo(() => {
     if (evaluationData?.data) {
@@ -132,10 +155,7 @@ const MyProductManageAreaMobile = () => {
           </div>
           <button
             className="flex items-center justify-center w-[110px] h-[40px] border border-primary-100 text-primary-100 text-13pxr font-medium rounded-[14px] hover:bg-primary-100 hover:text-white"
-            //   TODO: 작품 등록 페이지로 이동
-            onClick={() => {
-              router.push("/product/author/making-product");
-            }}
+            onClick={handleCreateProductClick}
           >
             새로운 작품 등록
           </button>
