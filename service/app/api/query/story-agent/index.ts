@@ -74,7 +74,7 @@ export const usePostStoryAgentMessage = () => {
   return useMutation<
     IPostStoryAgentMessageResponse,
     unknown,
-    { sessionId: number; content: string; guest_key?: string | null }
+    { sessionId: number; content: string; client_message_id: string; guest_key?: string | null }
   >({
     mutationFn: async ({ sessionId, ...body }) => {
       const response = await instance.post(

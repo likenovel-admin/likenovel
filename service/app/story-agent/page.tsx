@@ -102,6 +102,7 @@ export default function StoryAgentPage() {
     await postMessage({
       sessionId,
       content,
+      client_message_id: window.crypto.randomUUID(),
       guest_key: guestKey || undefined,
     });
     setDraft("");
