@@ -691,6 +691,9 @@ export default function ProductUploadPage() {
       freeEpisodeStartNoInput !== "" && freeEpisodeEndNoInput !== "";
     const clearFreeEpisodeRange =
       freeEpisodeStartNoInput === "" && freeEpisodeEndNoInput === "";
+    const currentCpCompanyName = productDetail?.cp_company_name ?? "";
+    const nextCpCompanyName = form.cpCompanyName.trim();
+    const shouldSendCpCompanyName = !isEditMode || nextCpCompanyName !== currentCpCompanyName;
 
     return {
       author_nickname: form.authorName.trim() || undefined,
@@ -707,7 +710,7 @@ export default function ProductUploadPage() {
       series_regular_price: nextSeriesRegularPrice,
       single_regular_price: nextSingleRegularPrice,
       single_rental_price: nextSingleRentalPrice,
-      cp_company_name: form.cpCompanyName || undefined,
+      cp_company_name: shouldSendCpCompanyName ? nextCpCompanyName || undefined : undefined,
       monopoly_yn: form.monopolyYn ? "Y" : "N",
       free_episode_start_no: hasFreeEpisodeRange
         ? Number(freeEpisodeStartNoInput)
