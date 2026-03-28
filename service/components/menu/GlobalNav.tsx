@@ -137,6 +137,16 @@ const GlobalNav = () => {
                   dotColor="blue"
                 />
               </button>
+              <button onClick={() => router.push("/story-agent")}>
+                <MenuIcon
+                  menu={
+                    <span className="text-20pxr font-bold hover:text-dark-gray-400">
+                      스토리
+                    </span>
+                  }
+                  dotColor="blue"
+                />
+              </button>
             </div>
           </div>
           <div className="flex">

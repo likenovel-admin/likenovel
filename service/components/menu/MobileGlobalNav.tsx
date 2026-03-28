@@ -121,6 +121,16 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
               dotColor="blue"
             />
           </button>
+          <button onClick={() => router.push("/story-agent")}>
+            <MenuIcon
+              menu={
+                <span className="text-16pxr font-bold hover:text-dark-gray-400 min-w-[45px]">
+                  스토리
+                </span>
+              }
+              dotColor="blue"
+            />
+          </button>
         </div>
         {!isVisible && (
           <div className="flex gap-18pxr">
