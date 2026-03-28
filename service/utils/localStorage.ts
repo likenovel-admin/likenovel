@@ -16,6 +16,7 @@ export const STORAGE_KEYS = {
   POPUP_CLOSED_UNTIL: "popup_closed_until",
   AI_RECOMMEND_OPEN_AFTER_LOGIN: "ai_recommend_open_after_login",
   QUEST_REWARD_AFTER_LOGIN: "quest_reward_after_login",
+  STORY_AGENT_GUEST_KEY: "story_agent_guest_key",
 } as const;
 
 /**
