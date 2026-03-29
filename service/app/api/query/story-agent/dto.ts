@@ -17,6 +17,11 @@ export interface IStoryAgentSessionItem {
   title: string;
   createdDate: string;
   updatedDate: string;
+  productTitle?: string | null;
+  productAuthorNickname?: string | null;
+  latestEpisodeNo?: number;
+  canSendMessage?: boolean;
+  unavailableMessage?: string | null;
 }
 
 export interface IGetStoryAgentSessionsResponse {

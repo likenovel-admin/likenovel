@@ -40,6 +40,8 @@ export const useGetStoryAgentSessions = (
       return response.data;
     },
     enabled: !!guestKey,
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: "always",
   });
 };
 
@@ -53,6 +55,8 @@ export const useGetStoryAgentMessages = (sessionId: number | null, guestKey: str
       return response.data;
     },
     enabled: !!sessionId && !!guestKey,
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: "always",
   });
 };
 
@@ -79,8 +83,26 @@ export const usePostStoryAgentMessage = () => {
     mutationFn: async ({ sessionId, ...body }) => {
       const response = await instance.post(
         `/v1/command/story-agent/sessions/${sessionId}/messages`,
-        body
+        body,
+        {
+          skipAuthRedirectOn401: true,
+        } as any
       );
+      return response.data;
+    },
+  });
+};
+
+export const useDeleteStoryAgentSession = () => {
+  return useMutation<
+    { data: { sessionId: number; deletedYn: "Y" } },
+    unknown,
+    { sessionId: number; guest_key?: string | null }
+  >({
+    mutationFn: async ({ sessionId, ...body }) => {
+      const response = await instance.delete(`/v1/command/story-agent/sessions/${sessionId}`, {
+        data: body,
+      });
       return response.data;
     },
   });

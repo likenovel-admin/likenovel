@@ -2,6 +2,7 @@
 
 import {
   useCreateStoryAgentSession,
+  useDeleteStoryAgentSession,
   useGetStoryAgentMessages,
   useGetStoryAgentProducts,
   useGetStoryAgentSessions,
@@ -10,13 +11,19 @@ import {
 import Button from "@/components/common/Button";
 import Spinner from "@/components/common/Spinner";
 import useAuthStore from "@/store/authStore";
+import useConfirmStore from "@/store/confirmStore";
 import { STORAGE_KEYS } from "@/utils/localStorage";
 import { useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export default function StoryAgentPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuthStore();
+  const { setConfirm } = useConfirmStore();
   const adultYn: "Y" | "N" = user?.isOnAdult ? "Y" : "N";
   const [keyword, setKeyword] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
@@ -50,7 +57,14 @@ export default function StoryAgentPage() {
     guestKey
   );
   const { mutateAsync: createSession, isPending: isCreatingSession } = useCreateStoryAgentSession();
+  const { mutateAsync: deleteSession, isPending: isDeletingSession } = useDeleteStoryAgentSession();
   const { mutateAsync: postMessage, isPending: isPostingMessage } = usePostStoryAgentMessage();
+
+  const activeSession = useMemo(
+    () => sessionsData?.data?.find((item) => item.sessionId === activeSessionId) ?? null,
+    [sessionsData, activeSessionId]
+  );
+  const activeSessionMeta = messagesData?.data?.session ?? null;
 
   const selectedProduct = useMemo(
     () => productsData?.data?.find((item) => item.productId === selectedProductId) ?? null,
@@ -72,6 +86,100 @@ export default function StoryAgentPage() {
     }
   }, [sessionsData, activeSessionId]);
 
+  useEffect(() => {
+    if (!activeSession?.productId) return;
+    if (selectedProductId === activeSession.productId) return;
+    setSelectedProductId(activeSession.productId);
+  }, [activeSession, selectedProductId]);
+
+  const sessionContextTitle = selectedProduct?.title
+    ?? activeSessionMeta?.productTitle
+    ?? (activeSession ? "이전 세션 이어쓰기" : "작품을 먼저 선택하세요");
+  const sessionContextDescription = selectedProduct
+    ? `${selectedProduct.authorNickname || "작가명 없음"} · 공개 ${selectedProduct.latestEpisodeNo}화`
+    : activeSessionMeta?.productTitle
+      ? `${activeSessionMeta.productAuthorNickname || "작가명 없음"} · 공개 ${activeSessionMeta.latestEpisodeNo || 0}화`
+      : activeSession
+        ? "이전 세션을 다시 열었습니다."
+        : "선택한 작품 기준으로 세션이 열립니다.";
+  const canSendMessage = activeSessionMeta?.canSendMessage ?? true;
+  const unavailableMessage =
+    activeSessionMeta?.unavailableMessage || "비공개된 작품과는 더이상 이야기하실 수 없습니다.";
+
+  const openLoginConfirm = () => {
+    const currentUrl = encodeURIComponent(pathname || "/story-agent");
+    setConfirm({
+      content: "스토리 에이전트는 하루 2회까지 무료입니다. 계속하려면 로그인이 필요합니다.",
+      confirmText: "로그인하기",
+      onConfirm: () => {
+        window.location.href = `/login?redirect=${currentUrl}`;
+      },
+      buttonCount: 2,
+    });
+  };
+
+  const openCashChargeConfirm = () => {
+    setConfirm({
+      content: "무료 사용을 모두 소진했습니다. 캐시 20개가 필요합니다.",
+      confirmText: "캐시 충전하기",
+      onConfirm: () => {
+        router.push("/product/mypage/cash");
+      },
+      buttonCount: 2,
+    });
+  };
+
+  const handleForegroundSync = async () => {
+    if (!guestKey) return;
+    await queryClient.invalidateQueries({ queryKey: ["storyAgentSessions"] });
+    if (activeSessionId) {
+      await queryClient.invalidateQueries({ queryKey: ["storyAgentMessages", activeSessionId, guestKey] });
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleFocus = () => {
+      void handleForegroundSync();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void handleForegroundSync();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("pageshow", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("pageshow", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [activeSessionId, guestKey, queryClient]);
+
+  const handleDeleteSession = (sessionId: number) => {
+    setConfirm({
+      content: "이 세션을 삭제합니다.",
+      confirmText: "삭제",
+      onConfirm: async () => {
+        await deleteSession({
+          sessionId,
+          guest_key: guestKey || undefined,
+        });
+        if (activeSessionId === sessionId) {
+          setDraft("");
+        }
+        await queryClient.invalidateQueries({ queryKey: ["storyAgentSessions"] });
+        await queryClient.invalidateQueries({ queryKey: ["storyAgentMessages"] });
+      },
+      buttonCount: 2,
+    });
+  };
+
   const handleCreateSession = async () => {
     if (!selectedProductId) return;
     const response = await createSession({
@@ -85,29 +193,45 @@ export default function StoryAgentPage() {
 
   const handleSend = async () => {
     const content = draft.trim();
-    if (!content || !selectedProductId) return;
+    if (!content || !selectedProductId || !canSendMessage) return;
 
-    let sessionId = activeSessionId;
-    if (!sessionId) {
-      const created = await createSession({
-        product_id: selectedProductId,
+    try {
+      let sessionId = activeSessionId;
+      if (!sessionId) {
+        const created = await createSession({
+          product_id: selectedProductId,
+          guest_key: guestKey || undefined,
+          adult_yn: adultYn,
+        });
+        sessionId = created.data.sessionId;
+        setActiveSessionId(sessionId);
+        await queryClient.invalidateQueries({ queryKey: ["storyAgentSessions", selectedProductId, guestKey, adultYn] });
+      }
+
+      await postMessage({
+        sessionId,
+        content,
+        client_message_id: window.crypto.randomUUID(),
         guest_key: guestKey || undefined,
-        adult_yn: adultYn,
       });
-      sessionId = created.data.sessionId;
-      setActiveSessionId(sessionId);
+      setDraft("");
+      await queryClient.invalidateQueries({ queryKey: ["storyAgentMessages", sessionId, guestKey] });
       await queryClient.invalidateQueries({ queryKey: ["storyAgentSessions", selectedProductId, guestKey, adultYn] });
-    }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401 && !user?.userId) {
+          openLoginConfirm();
+          return;
+        }
 
-    await postMessage({
-      sessionId,
-      content,
-      client_message_id: window.crypto.randomUUID(),
-      guest_key: guestKey || undefined,
-    });
-    setDraft("");
-    await queryClient.invalidateQueries({ queryKey: ["storyAgentMessages", sessionId, guestKey] });
-    await queryClient.invalidateQueries({ queryKey: ["storyAgentSessions", selectedProductId, guestKey, adultYn] });
+        const message = error.response?.data?.message;
+        if (message === "캐시 잔액이 부족합니다.") {
+          openCashChargeConfirm();
+          return;
+        }
+      }
+      throw error;
+    }
   };
 
   return (
@@ -164,13 +288,13 @@ export default function StoryAgentPage() {
               <div>
                 <div className="text-16pxr font-semibold">세션</div>
                 <div className="text-12pxr text-dark-gray-300">
-                  {selectedProduct ? `${selectedProduct.title}` : "작품을 먼저 선택하세요"}
+                  {sessionContextTitle}
                 </div>
               </div>
               <Button
                 size="sm"
                 variant="secondary"
-                disabled={!selectedProductId || isCreatingSession}
+                disabled={!selectedProductId || isCreatingSession || isDeletingSession}
                 onClick={handleCreateSession}
               >
                 새 대화
@@ -181,19 +305,36 @@ export default function StoryAgentPage() {
                 <Spinner size={24} />
               ) : sessionsData?.data?.length ? (
                 sessionsData.data.map((session) => (
-                  <button
+                  <div
                     key={session.sessionId}
-                    type="button"
-                    onClick={() => setActiveSessionId(session.sessionId)}
-                    className={`rounded-[12px] border px-12pxr py-10pxr text-left ${
+                    className={`rounded-[12px] border px-12pxr py-10pxr ${
                       activeSessionId === session.sessionId
                         ? "border-primary-100 bg-light-gray-100"
                         : "border-light-gray-300"
                     }`}
                   >
-                    <div className="text-14pxr font-medium line-clamp-1">{session.title}</div>
-                    <div className="mt-4pxr text-12pxr text-dark-gray-300">{session.updatedDate}</div>
-                  </button>
+                    <div className="flex items-start justify-between gap-8pxr">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedProductId(session.productId);
+                          setActiveSessionId(session.sessionId);
+                        }}
+                        className="flex-1 text-left"
+                      >
+                        <div className="text-14pxr font-medium line-clamp-1">{session.title}</div>
+                        <div className="mt-4pxr text-12pxr text-dark-gray-300">{session.updatedDate}</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSession(session.sessionId)}
+                        disabled={isDeletingSession}
+                        className="shrink-0 text-12pxr text-dark-gray-300 hover:text-dark-gray-500 disabled:opacity-40"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
                 ))
               ) : (
                 <div className="text-13pxr text-dark-gray-300">세션이 없습니다.</div>
@@ -205,12 +346,10 @@ export default function StoryAgentPage() {
             <div className="flex items-center justify-between gap-8pxr border-b border-light-gray-300 pb-12pxr">
               <div>
                 <div className="text-16pxr font-semibold">
-                  {selectedProduct?.title || "작품을 선택하세요"}
+                  {sessionContextTitle}
                 </div>
                 <div className="text-12pxr text-dark-gray-300">
-                  {selectedProduct
-                    ? `${selectedProduct.authorNickname || "작가명 없음"} · 공개 ${selectedProduct.latestEpisodeNo}화`
-                    : "선택한 작품 기준으로 세션이 열립니다."}
+                  {sessionContextDescription}
                 </div>
               </div>
             </div>
@@ -238,22 +377,28 @@ export default function StoryAgentPage() {
               )}
             </div>
 
-            <div className="flex gap-8pxr">
-              <textarea
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                placeholder="이 작품 기준으로 자유롭게 물어보세요. 예: 주인공 성격 분석해줘"
-                className="flex-1 min-h-[96px] rounded-[12px] border border-light-gray-400 px-12pxr py-10pxr outline-none resize-none"
-              />
-              <Button
-                size="md"
-                className="min-w-[88px] self-end"
-                disabled={!selectedProductId || !draft.trim() || isPostingMessage || isCreatingSession}
-                onClick={handleSend}
-              >
-                전송
-              </Button>
-            </div>
+            {activeSessionId && !canSendMessage ? (
+              <div className="rounded-[12px] border border-light-gray-300 bg-light-gray-100 px-14pxr py-16pxr text-14pxr text-dark-gray-400">
+                {unavailableMessage}
+              </div>
+            ) : (
+              <div className="flex gap-8pxr">
+                <textarea
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  placeholder="이 작품 기준으로 자유롭게 물어보세요. 예: 주인공 성격 분석해줘"
+                  className="flex-1 min-h-[96px] rounded-[12px] border border-light-gray-400 px-12pxr py-10pxr outline-none resize-none"
+                />
+                <Button
+                  size="md"
+                  className="min-w-[88px] self-end"
+                  disabled={!selectedProductId || !draft.trim() || isPostingMessage || isCreatingSession || isDeletingSession}
+                  onClick={handleSend}
+                >
+                  전송
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
