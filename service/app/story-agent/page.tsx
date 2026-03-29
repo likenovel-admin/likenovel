@@ -103,6 +103,9 @@ export default function StoryAgentPage() {
         ? "이전 세션을 다시 열었습니다."
         : "선택한 작품 기준으로 세션이 열립니다.";
   const canSendMessage = activeSessionMeta?.canSendMessage ?? true;
+  const isSelectedProductReady = selectedProduct
+    ? selectedProduct.contextStatus === "ready"
+    : (selectedProductId ? (activeSessionMeta?.canSendMessage ?? false) : false);
   const unavailableMessage =
     activeSessionMeta?.unavailableMessage || "비공개된 작품과는 더이상 이야기하실 수 없습니다.";
 
@@ -262,17 +265,35 @@ export default function StoryAgentPage() {
                   <button
                     key={product.productId}
                     type="button"
-                    onClick={() => setSelectedProductId(product.productId)}
+                    onClick={() => {
+                      if (product.contextStatus !== "ready") return;
+                      setSelectedProductId(product.productId);
+                    }}
+                    disabled={product.contextStatus !== "ready"}
                     className={`w-full rounded-[12px] border px-14pxr py-12pxr text-left ${
                       selectedProductId === product.productId
                         ? "border-primary-100 bg-light-gray-100"
                         : "border-light-gray-300"
-                    }`}
+                    } ${product.contextStatus !== "ready" ? "opacity-60 cursor-not-allowed" : ""}`}
                   >
-                    <div className="text-16pxr font-semibold">{product.title}</div>
+                    <div className="flex items-center justify-between gap-8pxr">
+                      <div className="text-16pxr font-semibold">{product.title}</div>
+                      <span
+                        className={`text-12pxr font-medium ${
+                          product.contextStatus === "ready" ? "text-primary-100" : "text-dark-gray-300"
+                        }`}
+                      >
+                        {product.contextStatus === "ready" ? "대화 가능" : "준비 중"}
+                      </span>
+                    </div>
                     <div className="mt-4pxr text-13pxr text-dark-gray-300">
                       {product.authorNickname || "작가명 없음"} · 공개 {product.latestEpisodeNo}화
                     </div>
+                    {product.contextStatus !== "ready" ? (
+                      <div className="mt-4pxr text-12pxr text-dark-gray-300">
+                        곧 대화할 수 있습니다.
+                      </div>
+                    ) : null}
                   </button>
                 ))}
               </div>
@@ -294,7 +315,7 @@ export default function StoryAgentPage() {
               <Button
                 size="sm"
                 variant="secondary"
-                disabled={!selectedProductId || isCreatingSession || isDeletingSession}
+                disabled={!selectedProductId || !isSelectedProductReady || isCreatingSession || isDeletingSession}
                 onClick={handleCreateSession}
               >
                 새 대화

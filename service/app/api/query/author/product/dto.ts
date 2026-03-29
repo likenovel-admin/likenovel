@@ -58,6 +58,7 @@ export interface IMakingProductObject {
   keywords: string[];
   customKeywords: string[];
   synopsis: string;
+  storyAgentSetting?: string | null;
   adultYn: "Y" | "N";
   openYn: "Y" | "N";
   blindYn?: "Y" | "N";
@@ -84,6 +85,7 @@ export interface IValidateCpNicknameResponse {
 export interface IUpdateProductRequest extends IMakeProductRequest {
   paid_setting_date: Date | null;
   paid_episode_no: number;
+  story_agent_setting?: string | null;
 }
 
 export interface ISelectAuthorProductsResponse {
