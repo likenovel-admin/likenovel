@@ -48,8 +48,8 @@ export default function Page() {
   const getBannerSpec = (pos: string) => {
     if (pos === "main-top" || pos === "paid" || pos === "review")
       return { pc: "1100x400", mobile: "400x350" };
-    if (pos === "main-mid") return { pc: "840x120", mobile: "840x120" };
-    if (pos === "viewer") return { pc: "1080x347", mobile: "375x120" };
+    if (pos === "main-mid") return { pc: "1080x116", mobile: null };
+    if (pos === "viewer") return { pc: "839x122", mobile: "375x122" };
     return null;
   };
   const spec = getBannerSpec(position);
@@ -324,7 +324,11 @@ export default function Page() {
                     )}
                     onFileChange={setMobileImage}
                   />
-                  {spec ? `Mobile: ${spec.mobile}, 포멧: jpg|png|gif` : "포멧: jpg|png|gif"}
+                  {spec
+                    ? spec.mobile
+                      ? `Mobile: ${spec.mobile}, 포멧: jpg|png|gif`
+                      : "이 위치는 모바일 이미지를 사용하지 않습니다"
+                    : "포멧: jpg|png|gif"}
                 </TableCell>
               </TableRow>
               {(mobileImage || data?.mobile_file_name) && (
