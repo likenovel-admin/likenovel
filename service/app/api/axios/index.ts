@@ -2,6 +2,13 @@ import useAuthStore from "@/store/authStore";
 import axios from "axios";
 import { IRefreshTokenRequest } from "../auth/dto";
 
+type AxiosRequestConfigWithAuthBypass = {
+  _retry?: boolean;
+  skipAuthRedirectOn401?: boolean;
+  headers?: Record<string, any>;
+  url?: string;
+};
+
 export const instance = axios.create({
   baseURL: "/api",
   timeout: 3 * 60 * 1000,
@@ -74,7 +81,7 @@ instance.interceptors.response.use(
     return response;
   },
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest = (error.config || {}) as AxiosRequestConfigWithAuthBypass;
     // if (
     //   error.response &&
     //   error.response.status === 401 &&
@@ -145,6 +152,10 @@ instance.interceptors.response.use(
       originalRequest.url?.includes("/auth/signin") ||
       originalRequest.url?.includes("/auth/signup");
 
+    if (error.response?.status === 401 && originalRequest.skipAuthRedirectOn401) {
+      return Promise.reject(error);
+    }
+
     if (
       error.response &&
       error.response.status === 401 &&
@@ -182,7 +193,8 @@ instance.interceptors.response.use(
           if (newAccessToken) {
             setAccessToken(newAccessToken);
             instance.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
-            originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+            const requestHeaders = originalRequest.headers ?? (originalRequest.headers = {});
+            requestHeaders["Authorization"] = `Bearer ${newAccessToken}`;
             return instance(originalRequest);
           }
         } catch (_) {}
