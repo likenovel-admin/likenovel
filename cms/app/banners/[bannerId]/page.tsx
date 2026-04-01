@@ -43,6 +43,7 @@ export default function Page() {
   const [url, setUrl] = useState<string>("");
   const [image, setImage] = useState<File | null>(null);
   const [mobileImage, setMobileImage] = useState<File | null>(null);
+  const [showOrder, setShowOrder] = useState<number>(1);
 
   const { data, isLoading, isFetching } = useGetBannerDetail(bannerId || "");
   const updateBanner = useEditBanner();
@@ -58,6 +59,7 @@ export default function Page() {
         `${data.position}${data.division ? `-${data.division}` : ""}`
       );
       setUrl(data.url);
+      setShowOrder(data.show_order ?? 1);
     }
   }, [data]);
 
@@ -168,6 +170,7 @@ export default function Page() {
           division: divisionValue,
           title: title,
           url: url,
+          show_order: showOrder,
           image_id: imageId || undefined,
           mobile_image_id: mobileImageId || undefined,
         },
@@ -257,6 +260,18 @@ export default function Page() {
                       </SelectGroup>
                     </SelectContent>
                   </Select>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableHead>노출 순서</TableHead>
+                <TableCell>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={showOrder}
+                    onChange={(e) => setShowOrder(Number(e.target.value) || 1)}
+                    className="w-[100px]"
+                  />
                 </TableCell>
               </TableRow>
               <TableRow>

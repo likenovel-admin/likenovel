@@ -5,6 +5,7 @@ export interface IStoryAgentProductItem {
   coverImagePath?: string | null;
   statusCode?: string | null;
   latestEpisodeNo: number;
+  contextStatus?: string | null;
 }
 
 export interface IGetStoryAgentProductsResponse {
@@ -17,6 +18,12 @@ export interface IStoryAgentSessionItem {
   title: string;
   createdDate: string;
   updatedDate: string;
+  productTitle?: string | null;
+  productAuthorNickname?: string | null;
+  latestEpisodeNo?: number;
+  contextStatus?: string | null;
+  canSendMessage?: boolean;
+  unavailableMessage?: string | null;
 }
 
 export interface IGetStoryAgentSessionsResponse {

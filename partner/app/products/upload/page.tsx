@@ -1835,6 +1835,7 @@ export default function ProductUploadPage() {
                 />
                 <p className="mt-1 text-right text-xs text-[#8A909C]">{form.synopsis.length} / 800</p>
               </div>
+
             </div>
             </fieldset>
           </div>

@@ -30,6 +30,8 @@ const Carousel = ({ primaryPanels, contained }: Props) => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const sliderRef = useRef<any>(null);
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
 
   const isSingle = primaryPanels.length <= 1;
   const settings = {
@@ -108,7 +110,17 @@ const Carousel = ({ primaryPanels, contained }: Props) => {
           <div
             key={index}
             className="relative w-full focus:outline-none cursor-pointer"
+            onMouseDown={(e) => {
+              isDragging.current = false;
+              dragStartX.current = e.clientX;
+            }}
+            onMouseMove={(e) => {
+              if (Math.abs(e.clientX - dragStartX.current) > 5) {
+                isDragging.current = true;
+              }
+            }}
             onClick={() => {
+              if (isDragging.current) return;
               if (panel.linkPath) {
                 const normalizedUrl = normalizeUrl(panel.linkPath);
                 window.open(normalizedUrl, "_blank");

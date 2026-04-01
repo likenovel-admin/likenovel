@@ -63,6 +63,7 @@ export interface IMakeProductForm {
   primaryGenre: string;
   subGenre: string;
   synopsis: string;
+  storyAgentSetting: string;
   ageGrade: "all" | "under18";
   open: "Y" | "N";
   monopoly: "Y" | "N";
@@ -136,6 +137,7 @@ const FormArea = ({ productId }: Props) => {
         primaryGenre: productId ? originData.primaryGenre || "" : "무협",
         subGenre: productId ? originData.subGenre : "",
         synopsis: productId ? originData.synopsis : "",
+        storyAgentSetting: productId ? originData.storyAgentSetting : "",
         ageGrade: productId ? originData.ageGrade : "all",
         open: productId ? originData.open : "Y",
         monopoly: productId ? originData.monopoly : "Y",
@@ -371,6 +373,7 @@ const FormArea = ({ productId }: Props) => {
       primaryGenre: data?.data.primaryGenre || "",
       subGenre: data?.data.subGenre || "",
       synopsis: data?.data.synopsis || "",
+      storyAgentSetting: data?.data.storyAgentSetting || "",
       ageGrade: data?.data.adultYn === "N" ? "all" : ("under18" as const),
       open: data?.data.openYn || "Y",
       monopoly: data?.data.monopolyYn || "N",
@@ -614,6 +617,11 @@ const FormArea = ({ productId }: Props) => {
           : null,
       product_type: formData.productType === "normal" ? "normal" : null,
     };
+
+    if (productId && data?.data.priceType === "free") {
+      (requestData as IUpdateProductRequest).story_agent_setting =
+        formData.storyAgentSetting.trim() || null;
+    }
 
     if (productId && shouldIncludePaidFieldsOnUpdate) {
       if (isPaidConversionLocked) {
@@ -947,6 +955,29 @@ const FormArea = ({ productId }: Props) => {
                     </div>
                   }
                 />
+                {productId && data?.data.priceType === "free" && (
+                  <TextArea
+                    {...register("storyAgentSetting")}
+                    label="스토리 에이전트 보조 설정"
+                    labelStyle={labelClassName}
+                    placeholder={"캐릭터, 세계관, 전력 비교, IF 전개에 필요한 보조 설정을 입력하세요. 원문이 우선됩니다."}
+                    inputStyle={
+                      "text-14pxr md:text-16pxr h-[212px] text-dark-gray-500 placeholder:text-dark-gray-100 w-[100%]"
+                    }
+                    maxLength={1000}
+                    additionalText={
+                      <div className="text-black-100 text-11pxr bg-white pl-1 h-full mr-3">
+                        {watch("storyAgentSetting")?.length || 0}
+                        <span className="text-dark-gray-100">{` / 1000자`}</span>
+                      </div>
+                    }
+                    successText={
+                      <div className="text-dark-gray-300 text-11pxr mt-2">
+                        선택 입력입니다. 캐릭터, 세계관, 전력 비교, IF 질문에서만 스토리 에이전트가 보조 설정으로 참고합니다.
+                      </div>
+                    }
+                  />
+                )}
                 <Controller
                   name={"ageGrade"}
                   control={control}

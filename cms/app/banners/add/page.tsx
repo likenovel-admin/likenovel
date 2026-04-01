@@ -43,6 +43,7 @@ export default function Page() {
   const [url, setUrl] = useState<string>("");
   const [image, setImage] = useState<File | null>(null);
   const [mobileImage, setMobileImage] = useState<File | null>(null);
+  const [showOrder, setShowOrder] = useState<number>(1);
 
   const handleSubmit = async () => {
     if (
@@ -149,6 +150,7 @@ export default function Page() {
         division: divisionValue,
         title: title,
         url: url,
+        show_order: showOrder,
         image_id: imageId || undefined,
         mobile_image_id: mobileImageId || undefined,
       },
@@ -234,6 +236,18 @@ export default function Page() {
                       </SelectGroup>
                     </SelectContent>
                   </Select>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableHead>노출 순서</TableHead>
+                <TableCell>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={showOrder}
+                    onChange={(e) => setShowOrder(Number(e.target.value) || 1)}
+                    className="w-[100px]"
+                  />
                 </TableCell>
               </TableRow>
               <TableRow>
