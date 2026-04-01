@@ -45,6 +45,15 @@ export default function Page() {
   const [mobileImage, setMobileImage] = useState<File | null>(null);
   const [showOrder, setShowOrder] = useState<number>(1);
 
+  const getBannerSpec = (pos: string) => {
+    if (pos === "main-top" || pos === "paid" || pos === "review")
+      return { pc: "1100x400", mobile: "400x350" };
+    if (pos === "main-mid") return { pc: "840x120", mobile: "840x120" };
+    if (pos === "viewer") return { pc: "1080x347", mobile: "375x120" };
+    return null;
+  };
+  const spec = getBannerSpec(position);
+
   const { data, isLoading, isFetching } = useGetBannerDetail(bannerId || "");
   const updateBanner = useEditBanner();
   const createUpload = useCreateUpload();
@@ -287,7 +296,7 @@ export default function Page() {
                     fileName={getFileName(image || "", data?.file_name || "")}
                     onFileChange={setImage}
                   />
-                  PC: 1080x347 (1120x360), 포멧: jpg|png|gif
+                  {spec ? `PC: ${spec.pc}, 포멧: jpg|png|gif` : "포멧: jpg|png|gif"}
                 </TableCell>
               </TableRow>
               {(image || data?.file_name) && (
@@ -315,7 +324,7 @@ export default function Page() {
                     )}
                     onFileChange={setMobileImage}
                   />
-                  모바일: 375x120, 포멧: jpg|png|gif
+                  {spec ? `Mobile: ${spec.mobile}, 포멧: jpg|png|gif` : "포멧: jpg|png|gif"}
                 </TableCell>
               </TableRow>
               {(mobileImage || data?.mobile_file_name) && (
