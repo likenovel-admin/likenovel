@@ -10,6 +10,7 @@ import { INotice } from "@/types";
 import { formatKoreanNumber } from "@/utils/formatKoreanNumber";
 import { getEpisodeBadge } from "@/utils/getEpisodeBadge";
 import { getFormattingDate } from "@/utils/getFormattingDate";
+import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import { buildViewerPath } from "@/utils/viewerPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -258,9 +259,11 @@ const ProductEpisodes = ({
                           />
                         )}
                       <span className="max-w-[240px] md:max-w-[400px] 2md:max-w-[450px] lg:max-w-[500px] text-14pxr md:text-18pxr font-semibold line-clamp-2">
-                        {/* {episode.episodeNo}화.&nbsp;&nbsp;{episode.episodeTitle} */}
                         {episode.episodeTitle}
                       </span>
+                      {getIsNewEpisode(episode.createdDate) && (
+                        <SquareBadge type="up" size="small" />
+                      )}
                     </div>
                     <div className="flex items-center gap-7pxr ml-32pxr">
                       {episode.publishReserveDate && (
