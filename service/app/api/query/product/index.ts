@@ -429,7 +429,10 @@ export const useSelectInterestDropProducts = (
   });
 };
 
-export const useGetEpisodeList = (params: IGetEpisodeProductParams) => {
+export const useGetEpisodeList = (
+  params: IGetEpisodeProductParams,
+  enabled: boolean = true
+) => {
   return useQuery<IEpisodeListResponse>({
     queryKey: ["getEpisodeList", JSON.stringify(params)],
     queryFn: async () => {
@@ -447,6 +450,7 @@ export const useGetEpisodeList = (params: IGetEpisodeProductParams) => {
       const response = await instance.get(url);
       return response.data;
     },
+    enabled: enabled && !!params.product_id,
   });
 };
 

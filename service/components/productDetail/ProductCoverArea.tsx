@@ -8,6 +8,7 @@ import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import { IEvaluation, IProduct } from "@/types";
 import { formatKoreanNumber } from "@/utils/formatKoreanNumber";
+import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import {
   getLatestEpisodeDate,
   isEndDateExpired,
@@ -121,6 +122,24 @@ const ProductCoverArea = ({
     user?.userRole === "CP" ||
     user?.userRole === "editor" ||
     user?.userRole === "admin";
+  const promotionBadgeType = getPromotionBadgeType(
+    data?.badge?.waitForFreeYn || data?.badge?.waitingForFreeYn,
+    data?.badge?.freeEpisodeTicketCount,
+    data?.badge?.timepassFromTo,
+    data?.badge?.sixNinePathYn
+  );
+  const hasStateBadge =
+    data?.state?.ongoingState === "end" ||
+    data?.state?.ongoingState === "rest" ||
+    data?.state?.ongoingState === "stop" ||
+    data?.contract?.monopolyYn === "Y" ||
+    data?.badge?.newReleaseYn === "Y" ||
+    getIsNewEpisode(
+      data?.properties?.latestEpisodeDate || data?.latestEpisodeDate || ""
+    );
+  const hasPromotionBadge =
+    data?.priceType === "paid" && promotionBadgeType.length > 0;
+  const hasHeaderBadges = !!data?.priceType || hasStateBadge || hasPromotionBadge;
 
   const handleGoBack = () => {
     if (process.env.NODE_ENV === "development") {
@@ -432,10 +451,22 @@ const ProductCoverArea = ({
                 </div>
                 <div
                   className={`flex flex-col items-center md:items-start gap-4pxr md:gap-10pxr w-full mt-30pxr ${
-                    data?.badge ? "md:mt-0" : "md:mt-20pxr"
+                    hasHeaderBadges ? "md:mt-0" : "md:mt-20pxr"
                   }`}
                 >
-                  {data?.badge && <ProductStateBadge product={data} />}
+                  <div className="flex items-center gap-4pxr md:gap-6pxr flex-wrap">
+                    {data.priceType && (
+                      <SquareBadge type={data.priceType} size="large" />
+                    )}
+                    <ProductStateBadge product={data} />
+                    {hasPromotionBadge && (
+                      <SquareBadge
+                        type={promotionBadgeType}
+                        freeEpisodeNumber={data.badge?.freeEpisodeTicketCount}
+                        timePassValue={data.badge?.timepassFromTo}
+                      />
+                    )}
+                  </div>
                   <span className="text-21pxr md:text-25pxr lg:text-30pxr font-semibold md:leading-[29px] lg:leading-[35px]">
                     {data.title}
                   </span>
