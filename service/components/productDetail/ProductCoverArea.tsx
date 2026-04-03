@@ -435,7 +435,12 @@ const ProductCoverArea = ({
                     data?.badge ? "md:mt-0" : "md:mt-20pxr"
                   }`}
                 >
-                  {data?.badge && <ProductStateBadge product={data} />}
+                  <div className="flex items-center gap-4pxr md:gap-6pxr flex-wrap">
+                    {data.priceType && (
+                      <SquareBadge type={data.priceType} size="large" />
+                    )}
+                    {data?.badge && <ProductStateBadge product={data} />}
+                  </div>
                   <span className="text-21pxr md:text-25pxr lg:text-30pxr font-semibold md:leading-[29px] lg:leading-[35px]">
                     {data.title}
                   </span>
