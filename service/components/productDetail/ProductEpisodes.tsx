@@ -116,6 +116,16 @@ const ProductEpisodes = ({
     return allEpisodes.slice(0, visibleCount);
   }, [allEpisodes, visibleCount]);
 
+  const latestEpisodeId = useMemo(() => {
+    if (allEpisodes.length === 0) return null;
+    return allEpisodes.reduce((latest, current) => {
+      if (!latest) return current;
+      return (current.episodeNo || 0) > (latest.episodeNo || 0)
+        ? current
+        : latest;
+    }, null as ISelectEpisodeObject | null)?.episodeId ?? null;
+  }, [allEpisodes]);
+
   const handleLoadMore = () => {
     const newCount = visibleCount + PAGE_SIZE;
     setVisibleCount(newCount);
@@ -217,7 +227,14 @@ const ProductEpisodes = ({
           </div>
         ) : (
           <>
-            {visibleEpisodes.map((episode) => (
+            {visibleEpisodes.map((episode) => {
+                const displayDate =
+                  episode.openChangedDate || episode.createdDate || "";
+                const isLatestEpisode = episode.episodeId === latestEpisodeId;
+                const showUpBadge =
+                  isLatestEpisode && getIsNewEpisode(displayDate);
+
+                return (
               <div
                 key={episode.episodeId}
                 className="relative flex items-center border border-light-gray-400 rounded-[10px] cursor-pointer hover:shadow-md"
@@ -261,30 +278,17 @@ const ProductEpisodes = ({
                       <span className="max-w-[240px] md:max-w-[400px] 2md:max-w-[450px] lg:max-w-[500px] text-14pxr md:text-18pxr font-semibold line-clamp-2">
                         {episode.episodeTitle}
                       </span>
-                      {getIsNewEpisode(episode.createdDate) && (
+                      {showUpBadge && (
                         <SquareBadge type="up" size="small" />
                       )}
                     </div>
                     <div className="flex items-center gap-7pxr ml-32pxr">
-                      {episode.publishReserveDate && (
-                        <>
-                          <span className="text-11pxr md:text-13pxr text-dark-gray-400">
-                            {getFormattingDate(
-                              episode.publishReserveDate,
-                              "YYYY.MM.DD"
-                            )}
-                          </span>
-                          <div className="w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
-                        </>
-                      )}
-                      {/* 에피소드 정보 영역 */}
-
                       <div className="flex gap-10pxr">
                         <div className="text-11pxr md:text-13pxr text-dark-gray-300">
                           <span className="text-[#4D5159]">
-                            {episode.createdDate
+                            {displayDate
                               ? getFormattingDate(
-                                  episode.createdDate,
+                                  displayDate,
                                   "YYYY.MM.DD"
                                 )
                               : ""}
@@ -360,9 +364,10 @@ const ProductEpisodes = ({
                         : `${episode.episodeTextCount}자`}
                     </span>
                   </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+                );
+              })}
           </>
         )}
         {visibleCount < (episodeCount || 0) && (

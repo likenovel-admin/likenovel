@@ -13,6 +13,7 @@ export interface ISelectEpisodeObject {
   countHit: number;
   countRecommend: number;
   episodeOpenYn: "Y" | "N";
+  openChangedDate?: string | null;
   ownType: "rental" | "own" | string;
   createdDate: string;
   rentalRemaining: {
