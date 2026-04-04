@@ -1,22 +1,15 @@
-import { useGetFaq } from "@/app/api/query/faq";
+import { useGetFaq, useGetFaqCategories } from "@/app/api/query/faq";
 import { useMemo, useState } from "react";
 import Pagination from "../common/Pagination";
 import Spinner from "../common/Spinner";
 import Tab from "../common/Tab";
 import ArrowDown from "/public/images/arrow-down.svg";
 
-const TypeObject = {
-  member: "회원문의",
-  use: "이용문의",
-  payment: "결제 및 환불",
-  site: "사이트 이용 문의",
-  service: "서비스 이용 문의",
-};
-
 const FaqList = () => {
   const [tabName, setTabName] = useState("all");
   const [page, setPage] = useState(1);
   const countPerPage = 10;
+  const { data: categoriesData } = useGetFaqCategories();
 
   const { data, isLoading } = useGetFaq(
     tabName === "all" ? "" : tabName,
@@ -39,6 +32,18 @@ const FaqList = () => {
   const totalPages = data
     ? Math.ceil(data?.data?.totalItems / countPerPage)
     : 0;
+  const faqTabs = useMemo(
+    () => [
+      { label: "전체", value: "all" },
+      ...((categoriesData?.data?.items ?? [])
+        .filter((category) => category.code !== "common")
+        .map((category) => ({
+          label: category.name,
+          value: category.code,
+        })) as CommonSelectItem[]),
+    ],
+    [categoriesData?.data?.items]
+  );
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -56,32 +61,7 @@ const FaqList = () => {
         자주묻는 질문
         <div className="pt-3 pb-1">
           <Tab
-            tabs={[
-              {
-                label: "전체",
-                value: "all",
-              },
-              {
-                label: "회원문의",
-                value: "member",
-              },
-              {
-                label: "이용문의",
-                value: "use",
-              },
-              {
-                label: "결제 및 환불",
-                value: "payment",
-              },
-              {
-                label: "사이트 이용 문의",
-                value: "site",
-              },
-              {
-                label: "서비스 이용 문의",
-                value: "service",
-              },
-            ]}
+            tabs={faqTabs}
             style="check"
             activeTab={tabName}
             onTabChange={handleTabChange}
@@ -122,17 +102,14 @@ interface IFaqItemProps {
   question: string;
   answer: string;
   type: string;
+  typeName?: string;
   id: number;
 }
-const FaqItem = ({ question, answer, type, id }: IFaqItemProps) => {
+const FaqItem = ({ question, answer, type, typeName, id }: IFaqItemProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  let typeKor = TypeObject[type as keyof typeof TypeObject];
-  if (typeKor) {
-    typeKor = `[${typeKor}]`;
-  } else {
-    typeKor = "";
-  }
+  const typeKor =
+    type === "common" ? "" : typeName ? `[${typeName}]` : type ? `[${type}]` : "";
 
   return (
     <details
