@@ -20,6 +20,7 @@ export interface IStoryAgentSessionItem {
   updatedDate: string;
   productTitle?: string | null;
   productAuthorNickname?: string | null;
+  coverImagePath?: string | null;
   latestEpisodeNo?: number;
   contextStatus?: string | null;
   canSendMessage?: boolean;
@@ -44,12 +45,44 @@ export interface IStoryAgentMessageItem {
   role: "user" | "assistant";
   content: string;
   createdDate?: string;
+  referencedEpisodeNos?: number[] | null;
+  reasonCards?: IStoryAgentReasonCardItem[] | null;
+  actionCards?: IStoryAgentStarterActionItem[] | null;
+  ctaCards?: IStoryAgentCtaCardItem[] | null;
+}
+
+export interface IStoryAgentStarterActionItem {
+  label: string;
+  prompt: string;
+}
+
+export interface IStoryAgentReasonCardItem {
+  title: string;
+  description: string;
+}
+
+export interface IStoryAgentCtaCardItem {
+  type: "product_detail";
+  label: string;
+  productId?: number | null;
+}
+
+export interface IStoryAgentStarterItem {
+  productTitle: string;
+  scopeState?: "unknown" | "none" | "known";
+  readEpisodeNo?: number | null;
+  readEpisodeTitle?: string | null;
+  latestEpisodeNo?: number;
+  reasonCards?: IStoryAgentReasonCardItem[];
+  ctaCards?: IStoryAgentCtaCardItem[];
+  actions: IStoryAgentStarterActionItem[];
 }
 
 export interface IGetStoryAgentMessagesResponse {
   data: {
     session: IStoryAgentSessionItem;
     messages: IStoryAgentMessageItem[];
+    starter?: IStoryAgentStarterItem | null;
   };
 }
 
