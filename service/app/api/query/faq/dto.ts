@@ -1,9 +1,16 @@
 export interface IFaq {
   id: number;
-  type: "common" | "member" | "use" | "payment" | "site" | "service";
+  type: string;
+  typeName?: string;
   question: string;
   answer: string;
   postingDate: string;
+}
+
+export interface IFaqCategory {
+  code: string;
+  name: string;
+  sortOrder: number;
 }
 
 export interface SelectFaqsResponse {
@@ -12,5 +19,11 @@ export interface SelectFaqsResponse {
     page: number;
     countPerPage: number;
     items: IFaq[];
+  };
+}
+
+export interface SelectFaqCategoriesResponse {
+  data: {
+    items: IFaqCategory[];
   };
 }
