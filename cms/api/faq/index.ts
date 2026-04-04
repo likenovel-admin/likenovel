@@ -3,6 +3,8 @@
 import {
   IAddEditFaqResponse,
   IDeleteFaqResponse,
+  IFaqCategory,
+  IFaqCategoryRequest,
   IFaqRequest,
   IGetFaqDetailResponse,
   IGetFaqParams,
@@ -73,6 +75,60 @@ export const useDeleteFaq = () => {
     mutationFn: async (id: string) => {
       return await apiClient.request<IDeleteFaqResponse>({
         url: "/v1/command/admins/faq/" + id,
+        method: "DELETE",
+      });
+    },
+  });
+};
+
+// ── FAQ 카테고리 ──
+
+export const useGetFaqCategories = () => {
+  return useQuery<IFaqCategory[]>({
+    queryKey: ["GetFaqCategories"],
+    queryFn: async () => {
+      const res = await apiClient.request<IFaqCategory[]>({
+        url: "/v1/query/admins/faq-categories",
+        method: "GET",
+      });
+      return res;
+    },
+  });
+};
+
+export const useAddFaqCategory = () => {
+  return useMutation<IAddEditFaqResponse, Error, IFaqCategoryRequest>({
+    mutationFn: async (body: IFaqCategoryRequest) => {
+      return await apiClient.request<IAddEditFaqResponse>({
+        url: "/v1/command/admins/faq-categories",
+        method: "POST",
+        body,
+      });
+    },
+  });
+};
+
+export const useEditFaqCategory = () => {
+  return useMutation<
+    IAddEditFaqResponse,
+    Error,
+    { code: string; body: IFaqCategoryRequest }
+  >({
+    mutationFn: async ({ code, body }) => {
+      return await apiClient.request<IAddEditFaqResponse>({
+        url: "/v1/command/admins/faq-categories/" + code,
+        method: "PUT",
+        body,
+      });
+    },
+  });
+};
+
+export const useDeleteFaqCategory = () => {
+  return useMutation<IDeleteFaqResponse, Error, string>({
+    mutationFn: async (code: string) => {
+      return await apiClient.request<IDeleteFaqResponse>({
+        url: "/v1/command/admins/faq-categories/" + code,
         method: "DELETE",
       });
     },

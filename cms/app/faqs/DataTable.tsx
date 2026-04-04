@@ -1,6 +1,7 @@
 "use client";
 
 import { useDeleteFaq } from "@/api/faq";
+import { IFaqCategory } from "@/api/faq/dto";
 import CommonTable, { Column } from "@/components/common/CommonTable";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ interface Props {
   pageSize: number;
   totalCount: number;
   refetch: () => void;
+  categories?: IFaqCategory[];
 }
 
 export default function FaqsTable({
@@ -30,6 +32,7 @@ export default function FaqsTable({
   pageSize,
   totalCount,
   refetch,
+  categories = [],
 }: Props) {
   const router = useRouter();
   const deleteFaq = useDeleteFaq();
@@ -60,12 +63,21 @@ export default function FaqsTable({
     router.push(`/faqs/${id}`);
   };
 
+  const categoryMap: Record<string, string> = Object.fromEntries(
+    categories.map((c) => [c.code, c.name])
+  );
+
   const columns: Column[] = [
     {
       header: "No",
       key: "position",
       render: (_: unknown, __: IFaq, index?: number) =>
         totalCount - (currentPage - 1) * pageSize - (index || 0),
+    },
+    {
+      header: "카테고리",
+      key: "faq_type",
+      render: (_, row: IFaq) => categoryMap[row.faq_type] || row.faq_type,
     },
     { header: "제목", key: "subject" },
     {

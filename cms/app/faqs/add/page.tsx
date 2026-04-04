@@ -11,18 +11,33 @@ import {
   TableHead,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useAddFaq } from "@/api/faq";
+import { useEffect, useState } from "react";
+import { useAddFaq, useGetFaqCategories } from "@/api/faq";
 import { catchErrorMessage, showAlert } from "@/lib/utils";
 import FullPageLoader from "@/components/common/FullPageLoader";
 
 export default function Page() {
   // const isMobile = useIsMobile()
   const route = useRouter();
+  const { data: categories = [] } = useGetFaqCategories();
+  const [faqType, setFaqType] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const addFaq = useAddFaq();
+
+  useEffect(() => {
+    if (categories.length > 0 && !faqType) {
+      setFaqType(categories[0].code);
+    }
+  }, [categories, faqType]);
 
   const handleSubmit = () => {
     if (addFaq.isPending) return;
@@ -33,8 +48,12 @@ export default function Page() {
     if (!content.trim()) {
       return showAlert("알림", "본문을 입력해주세요.", "확인");
     }
+    if (!faqType) {
+      return showAlert("알림", "카테고리를 선택해주세요.", "확인");
+    }
     addFaq.mutate(
       {
+        faq_type: faqType,
         subject: title,
         content: content,
       },
@@ -69,6 +88,23 @@ export default function Page() {
           <hr />
           <Table>
             <TableBody>
+              <TableRow>
+                <TableHead className="require">카테고리</TableHead>
+                <TableCell>
+                  <Select value={faqType} onValueChange={setFaqType}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="카테고리 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.code} value={cat.code}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+              </TableRow>
               <TableRow>
                 <TableHead className="require">제목</TableHead>
                 <TableCell>

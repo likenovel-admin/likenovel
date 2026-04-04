@@ -107,7 +107,12 @@ export default function Home() {
         suggestTitle: directProduct?.title || "",
       })) ?? [];
     const suggestSections = suggestProducts.map((suggestProduct) => suggestProduct.sectionData);
-    return [...directSections, ...suggestSections];
+    const combined = [...directSections, ...suggestSections];
+    for (let i = combined.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [combined[i], combined[j]] = [combined[j], combined[i]];
+    }
+    return combined;
   }, [directRecommendData, suggestProducts]);
   const mainRuleSlotSections = useMemo<ISectionData[]>(
     () => mainRuleSlotsData?.data ?? [],
