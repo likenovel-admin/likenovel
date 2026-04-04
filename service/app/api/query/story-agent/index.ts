@@ -64,7 +64,13 @@ export const useCreateStoryAgentSession = () => {
   return useMutation<
     ICreateStoryAgentSessionResponse,
     unknown,
-    { product_id: number; guest_key?: string | null; title?: string | null; adult_yn?: "Y" | "N" }
+    {
+      product_id: number;
+      guest_key?: string | null;
+      title?: string | null;
+      adult_yn?: "Y" | "N";
+      game_read_episode_to?: number | null;
+    }
   >({
     mutationFn: async (body) => {
       const adultYn = body.adult_yn ?? "N";
@@ -78,7 +84,13 @@ export const usePostStoryAgentMessage = () => {
   return useMutation<
     IPostStoryAgentMessageResponse,
     unknown,
-    { sessionId: number; content: string; client_message_id: string; guest_key?: string | null }
+    {
+      sessionId: number;
+      content: string;
+      client_message_id: string;
+      guest_key?: string | null;
+      game_read_episode_to?: number | null;
+    }
   >({
     mutationFn: async ({ sessionId, ...body }) => {
       const response = await instance.post(
