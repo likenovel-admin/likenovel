@@ -35,10 +35,12 @@ const FaqList = () => {
   const faqTabs = useMemo(
     () => [
       { label: "전체", value: "all" },
-      ...((categoriesData?.data?.items ?? []).map((category) => ({
-        label: category.name,
-        value: category.code,
-      })) as CommonSelectItem[]),
+      ...((categoriesData?.data?.items ?? [])
+        .filter((category) => category.code !== "common")
+        .map((category) => ({
+          label: category.name,
+          value: category.code,
+        })) as CommonSelectItem[]),
     ],
     [categoriesData?.data?.items]
   );
@@ -106,7 +108,8 @@ interface IFaqItemProps {
 const FaqItem = ({ question, answer, type, typeName, id }: IFaqItemProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const typeKor = typeName ? `[${typeName}]` : type ? `[${type}]` : "";
+  const typeKor =
+    type === "common" ? "" : typeName ? `[${typeName}]` : type ? `[${type}]` : "";
 
   return (
     <details
