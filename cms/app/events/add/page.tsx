@@ -451,6 +451,7 @@ export default function Page() {
                   value={infoMessage}
                   setValue={setInfoMessage}
                   placeholder="안내 문구를 입력해주세요..."
+                  preservePlainTextNewlines
                 />
               </TableCell>
             </TableRow>

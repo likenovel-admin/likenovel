@@ -13,6 +13,14 @@ import {
   TableHead,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useGetFaqCategories } from "@/api/faq";
 import { catchErrorMessage, showAlert } from "@/lib/utils";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -23,14 +31,17 @@ export default function Page() {
   const params = useParams();
   const faqId = Array.isArray(params.faqId) ? params.faqId[0] : params.faqId;
 
+  const [faqType, setFaqType] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
+  const { data: categories = [] } = useGetFaqCategories();
   const { data, isLoading, isFetching } = useGetFaqDetail(faqId || "");
   const updateFaq = useEditFaq();
 
   useEffect(() => {
     if (data) {
+      setFaqType(data.faq_type || "");
       setTitle(data.subject);
       setContent(data.content);
     }
@@ -45,10 +56,14 @@ export default function Page() {
     if (!content.trim()) {
       return showAlert("알림", "본문을 입력해주세요.", "확인");
     }
+    if (!faqType) {
+      return showAlert("알림", "카테고리를 선택해주세요.", "확인");
+    }
     updateFaq.mutate(
       {
         id: faqId || "",
         body: {
+          faq_type: faqType,
           subject: title,
           content: content,
         },
@@ -84,6 +99,23 @@ export default function Page() {
           <hr />
           <Table>
             <TableBody>
+              <TableRow>
+                <TableHead className="require">카테고리</TableHead>
+                <TableCell>
+                  <Select value={faqType} onValueChange={setFaqType}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="카테고리 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.code} value={cat.code}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+              </TableRow>
               <TableRow>
                 <TableHead className="require">제목</TableHead>
                 <TableCell>
