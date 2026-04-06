@@ -101,6 +101,8 @@
 .minimal-tiptap-editor .ProseMirror {
   @apply flex max-w-full cursor-text flex-col;
   @apply z-0 outline-0 leading-6;
+  caret-color: #1F2124;
+  min-height: 200px;
 }
 
 .minimal-tiptap-editor .ProseMirror > div.editor {
@@ -110,7 +112,7 @@
 .minimal-tiptap-editor .ProseMirror .block-node:not(:last-child),
 .minimal-tiptap-editor .ProseMirror .list-node:not(:last-child),
 .minimal-tiptap-editor .ProseMirror .text-node:not(:last-child) {
-  @apply mb-2.5;
+  @apply mb-1;
 }
 
 .minimal-tiptap-editor .ProseMirror ol,
