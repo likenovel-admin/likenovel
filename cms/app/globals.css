@@ -632,3 +632,35 @@ em.caution {
 }
 
 /* ======================== End DatePicker CSS ======================== */
+
+/* ======================== TipTap Editor (유저웹 회차 에디터와 동일) ======================== */
+@layer tiptap {
+  .ProseMirror-focused {
+    outline: none !important;
+  }
+
+  .ProseMirror {
+    white-space: pre-wrap;
+    word-break: break-word;
+    tab-size: 4;
+    line-height: 24px;
+  }
+
+  .ProseMirror p {
+    margin-top: 0;
+    margin-bottom: 0;
+    line-height: 24px;
+  }
+
+  .ProseMirror li {
+    line-height: 24px;
+  }
+
+  .ProseMirror img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1rem 0;
+    border-radius: 4px;
+  }
+}
