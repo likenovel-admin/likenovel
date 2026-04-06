@@ -4,8 +4,11 @@ import {
   useSelectStoragePath,
 } from "@/api/upload";
 import { showAlert } from "@/lib/utils";
+import { CharacterCount } from "@tiptap/extension-character-count";
 import { Image as TiptapImage } from "@tiptap/extension-image";
-import { Placeholder, CharacterCount, TextAlign } from "@tiptap/extensions";
+import { TextAlign } from "@tiptap/extension-text-align";
+import { Underline } from "@tiptap/extension-underline";
+import { Placeholder } from "@tiptap/extensions";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import {
@@ -61,6 +64,7 @@ export const Editor = ({
   const editor = useEditor({
     extensions: [
       StarterKit,
+      Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TiptapImage.configure({ inline: false, allowBase64: true }),
       Placeholder.configure({ placeholder: () => placeholder || "내용을 입력해주세요..." }),
