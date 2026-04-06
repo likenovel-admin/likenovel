@@ -219,11 +219,11 @@ export const Editor = ({
         />
       </div>
 
-      {/* 에디터 본문 */}
+      {/* 에디터 본문 — 유저웹 회차 에디터와 동일 구조 */}
       <div
-        className={`w-full rounded-b-[6px] min-h-[300px] max-h-[600px] resize-y overflow-y-auto pb-10 ${
+        className={`editor-container w-full rounded-b-[6px] min-h-[300px] max-h-[600px] resize-y overflow-y-auto pb-10 ${
           isFocused
-            ? "border-2 border-[#337EFB]"
+            ? "border-[2px] border-[#337EFB]"
             : "border border-[#E7E9EE]"
         }`}
       >
