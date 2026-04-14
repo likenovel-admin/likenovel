@@ -712,6 +712,8 @@ const EpubViewer = ({
       rendition.themes.default({
         p: {
           ...(lineHeight ? { "line-height": `${lineHeight} !important` } : {}),
+          "white-space": "pre-wrap !important",
+          "tab-size": "4 !important",
           "text-indent": currentSettings.useParagraphIndent
             ? "1em !important"
             : "0 !important",
@@ -764,6 +766,7 @@ const EpubViewer = ({
         doc.documentElement.style.color = currentContentTextColor;
         doc.body.style.backgroundColor = currentBgColor;
         doc.body.style.color = currentContentTextColor;
+        doc.body.style.setProperty("tab-size", "4", "important");
         lockContentSelection(doc);
 
         if (isScroll && device === "mobile") {
@@ -785,6 +788,16 @@ const EpubViewer = ({
         }
 
         doc.querySelectorAll("p").forEach((paragraph: Element) => {
+          (paragraph as HTMLElement).style.setProperty(
+            "white-space",
+            "pre-wrap",
+            "important"
+          );
+          (paragraph as HTMLElement).style.setProperty(
+            "tab-size",
+            "4",
+            "important"
+          );
           (paragraph as HTMLElement).style.setProperty(
             "text-indent",
             currentSettings.useParagraphIndent ? "1em" : "0",

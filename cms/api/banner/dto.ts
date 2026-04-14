@@ -1,4 +1,8 @@
 import { IBanner } from "@/types/banner";
+import {
+  type BannerPositionValue,
+  type BannerSortOptionValue,
+} from "@/constants/banner";
 
 export interface IGetBannerResponse {
   total_count: number;
@@ -10,6 +14,8 @@ export interface IGetBannerResponse {
 export interface IGetBannerParams {
   page?: number;
   count_per_page?: number;
+  position?: BannerPositionValue;
+  sort_by?: BannerSortOptionValue;
 }
 
 export type IGetBannerDetailResponse = IBanner;

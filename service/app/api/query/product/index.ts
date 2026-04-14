@@ -1,4 +1,4 @@
-import { InfiniteData, useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+import { InfiniteData, queryOptions, useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { instance } from "../../axios";
 import { IUseSelectPanelsResponse } from "../banner/dto";
 import {
@@ -429,11 +429,11 @@ export const useSelectInterestDropProducts = (
   });
 };
 
-export const useGetEpisodeList = (
+export const getEpisodeListQueryOptions = (
   params: IGetEpisodeProductParams,
   enabled: boolean = true
-) => {
-  return useQuery<IEpisodeListResponse>({
+) =>
+  queryOptions<IEpisodeListResponse>({
     queryKey: ["getEpisodeList", JSON.stringify(params)],
     queryFn: async () => {
       const queryParams = new URLSearchParams();
@@ -452,6 +452,12 @@ export const useGetEpisodeList = (
     },
     enabled: enabled && !!params.product_id,
   });
+
+export const useGetEpisodeList = (
+  params: IGetEpisodeProductParams,
+  enabled: boolean = true
+) => {
+  return useQuery(getEpisodeListQueryOptions(params, enabled));
 };
 
 export const useGetInfiniteEpisodeList = (params: IGetEpisodeProductParams) => {

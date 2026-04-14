@@ -30,6 +30,7 @@ import ProductStateBadge from "../common/ProductStateBadge";
 import Spinner from "../common/Spinner";
 import SquareBadge from "../common/SquareBadge";
 import UserNickname from "../common/UserNickname";
+import WebsochatEntryCtas from "./WebsochatEntryCtas";
 import SuggestionModal from "../modal/SuggestionModal";
 import Another from "/public/images/another.svg";
 import ArrowDown from "/public/images/arrow-down.svg";
@@ -140,6 +141,8 @@ const ProductCoverArea = ({
   const hasPromotionBadge =
     data?.priceType === "paid" && promotionBadgeType.length > 0;
   const hasHeaderBadges = !!data?.priceType || hasStateBadge || hasPromotionBadge;
+  const shouldShowWebsochatEntryCta =
+    Number(data?.latestEpisodeNo || 0) > 0 && Number(data?.syncedLatestEpisodeNo || 0) > 0;
 
   const handleGoBack = () => {
     if (process.env.NODE_ENV === "development") {
@@ -564,28 +567,32 @@ const ProductCoverArea = ({
                           <div className="md:hidden w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
                         </>
                       )}
-                      <div className="flex items-center gap-5pxr">
-                        <View className="w-[16px] h-[15px] text-dark-gray-400" />
-                        <span className="text-13pxr text-dark-gray-400">
-                          {formatKoreanNumber(data.trendindex?.hitCount || 0)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-5pxr">
-                        <ThumbsUp className="w-[18px] h-[15px] mr-[-3px]" />
-                        <span className="text-13pxr text-dark-gray-400">
-                          {formatKoreanNumber(
-                            data.trendindex?.recommendCount || 0
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-5pxr">
-                        <Bookmark className="w-[13px] h-[15px] text-dark-gray-400" />
-                        <span className="text-13pxr text-dark-gray-400">
-                          {formatKoreanNumber(
-                            data.trendindex?.bookmarkCount || 0
-                          )}
-                        </span>
-                      </div>
+                      {user && (isAdminCPEditor || isAuthor) && (
+                        <>
+                          <div className="flex items-center gap-5pxr">
+                            <View className="w-[16px] h-[15px] text-dark-gray-400" />
+                            <span className="text-13pxr text-dark-gray-400">
+                              {formatKoreanNumber(data.trendindex?.hitCount || 0)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-5pxr">
+                            <ThumbsUp className="w-[18px] h-[15px] mr-[-3px]" />
+                            <span className="text-13pxr text-dark-gray-400">
+                              {formatKoreanNumber(
+                                data.trendindex?.recommendCount || 0
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-5pxr">
+                            <Bookmark className="w-[13px] h-[15px] text-dark-gray-400" />
+                            <span className="text-13pxr text-dark-gray-400">
+                              {formatKoreanNumber(
+                                data.trendindex?.bookmarkCount || 0
+                              )}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                   <div
@@ -664,25 +671,38 @@ const ProductCoverArea = ({
                   ))}
                 </div>
                 <div className="flex justify-end gap-8pxr flex-wrap">
-                  <Button
-                    variant="primary"
-                    size="xl"
-                    className="hidden md:flex w-[200px] h-auto py-10pxr"
-                    onClick={() => {
-                      handleClickFirstOrContinueRead();
-                    }}
-                  >
-                    <div className="flex flex-col items-center w-full">
-                      <span className="text-16pxr font-bold tracking-[-2%]">
-                        {latestEpisodeNo !== 0 ? "이어보기" : "첫회 보기"}
-                      </span>
-                      <span className="text-12pxr font-normal opacity-80 truncate max-w-[170px]">
-                        {latestEpisodeNo !== 0
-                          ? (latestEpisodeTitle || "")
-                          : (firstEpisodeTitle || "")}
-                      </span>
-                    </div>
-                  </Button>
+                  <div className="hidden md:flex w-[240px] flex-col gap-8pxr">
+                    <Button
+                      variant="primary"
+                      size="xl"
+                      className="w-full h-auto py-10pxr"
+                      onClick={() => {
+                        handleClickFirstOrContinueRead();
+                      }}
+                    >
+                      <div className="flex flex-col items-center w-full">
+                        <span className="text-16pxr font-bold tracking-[-2%]">
+                          {latestEpisodeNo !== 0 ? "이어보기" : "첫회 보기"}
+                        </span>
+                        <span className="text-12pxr font-normal opacity-80 truncate max-w-[170px]">
+                          {latestEpisodeNo !== 0
+                            ? (latestEpisodeTitle || "")
+                            : (firstEpisodeTitle || "")}
+                        </span>
+                      </div>
+                    </Button>
+                    {shouldShowWebsochatEntryCta ? (
+                      <WebsochatEntryCtas
+                        productId={data.productId}
+                        productTitle={data.title}
+                        authorNickname={data.authorNickname}
+                        coverImagePath={data.image?.coverImagePath}
+                        publishedLatestEpisodeNo={data.latestEpisodeNo}
+                        syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
+                        isLoggedIn={!!user?.userId}
+                      />
+                    ) : null}
+                  </div>
                   {isShowButtonProposal && (
                     <Button
                       variant="secondary"
@@ -696,25 +716,38 @@ const ProductCoverArea = ({
                 </div>
               </div>
               <div className="flex md:hidden mt-30pxr gap-5pxr">
-                <Button
-                  variant="primary"
-                  size="md"
-                  className={`${isShowButtonProposal ? "w-[70%]" : "w-full"} h-auto py-8pxr`}
-                  onClick={() => {
-                    handleClickFirstOrContinueRead();
-                  }}
-                >
-                  <div className="flex flex-col items-center w-full">
-                    <span className="text-14pxr font-bold tracking-[-2%]">
-                      {latestEpisodeNo !== 0 ? "이어보기" : "첫회 보기"}
-                    </span>
-                    <span className="text-11pxr font-normal opacity-80 truncate max-w-full">
-                      {latestEpisodeNo !== 0
-                        ? (latestEpisodeTitle || "")
-                        : (firstEpisodeTitle || "")}
-                    </span>
-                  </div>
-                </Button>
+                <div className={`${isShowButtonProposal ? "w-[70%]" : "w-full"} flex flex-col gap-5pxr`}>
+                  <Button
+                    variant="primary"
+                    size="md"
+                    className="w-full h-auto py-8pxr"
+                    onClick={() => {
+                      handleClickFirstOrContinueRead();
+                    }}
+                  >
+                    <div className="flex flex-col items-center w-full">
+                      <span className="text-14pxr font-bold tracking-[-2%]">
+                        {latestEpisodeNo !== 0 ? "이어보기" : "첫회 보기"}
+                      </span>
+                      <span className="text-11pxr font-normal opacity-80 truncate max-w-full">
+                        {latestEpisodeNo !== 0
+                          ? (latestEpisodeTitle || "")
+                          : (firstEpisodeTitle || "")}
+                      </span>
+                    </div>
+                  </Button>
+                  {shouldShowWebsochatEntryCta ? (
+                    <WebsochatEntryCtas
+                      productId={data.productId}
+                      productTitle={data.title}
+                      authorNickname={data.authorNickname}
+                      coverImagePath={data.image?.coverImagePath}
+                      publishedLatestEpisodeNo={data.latestEpisodeNo}
+                      syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
+                      isLoggedIn={!!user?.userId}
+                    />
+                  ) : null}
+                </div>
                 {isShowButtonProposal && (
                   <Button
                     variant="secondary"

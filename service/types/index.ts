@@ -219,6 +219,7 @@ export interface IProduct {
   interestStatus: ProductInterestStatus;
   bookmarkCreatedDate?: string;
   latestEpisodeNo?: number;
+  syncedLatestEpisodeNo?: number;
   firstEpisodeId?: number;
   latestEpisodeId?: number;
   // recent viewed product specific fields

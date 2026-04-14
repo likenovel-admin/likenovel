@@ -38,9 +38,12 @@ const Viewer = () => {
   const episodeId = Number(pathSegments[pathSegments.length - 1]);
   const searchParams = useSearchParams();
   const viewerType = searchParams.get("type");
+  const isNoticeViewer = viewerType === "notice";
   const viewerContextKind = viewerType === "notice" ? "notice" : "episode";
   const productId = searchParams.get("productId");
   const productTitle = searchParams.get("title");
+  const hintedProductId = Number(productId || 0) || 0;
+  const viewerEpisodeId = isNoticeViewer ? 0 : episodeId;
 
   const router = useRouter();
   const { setModal, setTypeModal } = useModalStore();
@@ -65,10 +68,10 @@ const Viewer = () => {
   const [goFirstRequest, setGoFirstRequest] = useState(0);
   const [suppressViewerClickTick, setSuppressViewerClickTick] = useState(0);
 
-  const { data } = useSelectViewerPath(episodeId);
+  const { data } = useSelectViewerPath(viewerEpisodeId);
   const { data: noticeDetailData } = useGetProductNoticeDetail(
-    viewerType === "notice" ? episodeId : "",
-    viewerType === "notice"
+    isNoticeViewer ? episodeId : "",
+    isNoticeViewer
   );
 
   // Check for notice data from store and set notice state
@@ -100,7 +103,7 @@ const Viewer = () => {
   }, [episodeId, productId, viewerContextKind]);
 
   useEffect(() => {
-    if (viewerType === "notice") return;
+    if (isNoticeViewer) return;
     if (!data?.data?.product_id) return;
 
     confirmViewerPageContext({
@@ -110,7 +113,7 @@ const Viewer = () => {
       hintProductId: productId,
     });
     syncProductDetailTransitionDecision();
-  }, [data?.data?.product_id, episodeId, productId, viewerContextKind, viewerType]);
+  }, [data?.data?.product_id, episodeId, productId, viewerContextKind, isNoticeViewer]);
 
   useEffect(() => {
     const fetchEpubFile = async () => {
@@ -273,7 +276,11 @@ const Viewer = () => {
     <div className="min-h-screen">
       {showNav && (
         <ViewerNav
-          productId={data?.data?.product_id || Number(productId || 0) || 0}
+          productId={
+            isNoticeViewer
+              ? hintedProductId
+              : data?.data?.product_id || hintedProductId
+          }
           bookmarkYn={data?.data.bookmarkYn || "N"}
           likedYN={data?.data.liked || "N"}
           episodeTitle={
@@ -313,9 +320,12 @@ const Viewer = () => {
                 )}
               </p>
             </div> */}
-            <div className="py-20pxr text-14pxr md:text-16pxr whitespace-pre-wrap">
-              {noticeDetailData?.data.content}
-            </div>
+            <div
+              className="py-20pxr text-14pxr md:text-16pxr whitespace-pre-wrap break-words [&_img]:max-w-full [&_img]:h-auto [&_p]:m-0"
+              dangerouslySetInnerHTML={{
+                __html: noticeDetailData?.data.content || "",
+              }}
+            />
           </div>
         </div>
       ) : commentState ? (

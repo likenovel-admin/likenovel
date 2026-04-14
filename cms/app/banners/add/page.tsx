@@ -25,16 +25,21 @@ import {
 import { bannerPositions } from "@/constants/banner";
 import { catchErrorMessage, getFileName, showAlert } from "@/lib/utils";
 import { format } from "date-fns";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 import ReactDatePicker from "react-datepicker";
 
 export default function Page() {
   // const isMobile = useIsMobile()
   const router = useRouter();
+  const searchParams = useSearchParams();
   const addBanner = useAddBanner();
   const createUpload = useCreateUpload();
   const updateUpload = useUpdateUpload();
+  const listHref = useMemo(() => {
+    const query = searchParams.toString();
+    return query ? `/banners?${query}` : "/banners";
+  }, [searchParams]);
 
   const [title, setTitle] = useState<string>("");
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -165,7 +170,7 @@ export default function Page() {
       },
       {
         onSuccess: () => {
-          router.push("/banners");
+          router.push(listHref);
         },
         onError: (err: any) => {
           showAlert("오류", catchErrorMessage(err), "확인");
@@ -175,7 +180,7 @@ export default function Page() {
   };
 
   const handleCancel = () => {
-    router.push("/banners");
+    router.push(listHref);
   };
 
   return (

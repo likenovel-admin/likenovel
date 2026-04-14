@@ -187,6 +187,7 @@ const ProductArea = ({ stateType }: Props) => {
                   data={product as unknown as IProduct}
                   hasInterestBadge
                   hasPromotionBadge
+                  hideStats
                   entrySource={
                     stateType === "ongoing"
                       ? PRODUCT_DETAIL_ENTRY_SOURCE.PAID_ONGOING_LIST
