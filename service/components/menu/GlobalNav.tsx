@@ -1,3 +1,4 @@
+import { WEBSOCHAT_NAV_LABEL } from "@/constants/common";
 import { useGetChatUnReadCount } from "@/app/api/query/message";
 import useAuthStore from "@/store/authStore";
 import useConfirmStore from "@/store/confirmStore";
@@ -137,11 +138,11 @@ const GlobalNav = () => {
                   dotColor="blue"
                 />
               </button>
-              <button onClick={() => router.push("/story-agent")}>
+              <button onClick={() => router.push("/websochat")}>
                 <MenuIcon
                   menu={
                     <span className="text-20pxr font-bold hover:text-dark-gray-400">
-                      스토리
+                      {WEBSOCHAT_NAV_LABEL}
                     </span>
                   }
                   dotColor="blue"

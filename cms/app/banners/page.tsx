@@ -1,61 +1,70 @@
 "use client";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+
+import { useGetBanners } from "@/api/banner";
+import BannersTable from "@/app/banners/DataTable";
+import FullPageLoader from "@/components/common/FullPageLoader";
+import PaginationControls from "@/components/common/PaginationControls";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import PageHeader from "@/components/ui/page-header";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset } from "@/components/ui/sidebar";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { ToggleRightIcon } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import PageHeader from "@/components/ui/page-header";
-import { useGetBanners } from "@/api/banner";
+  bannerPositions,
+  bannerSortOptions,
+  type BannerSortOptionValue,
+} from "@/constants/banner";
 import { item_per_page } from "@/constants/common";
-import { useEffect, useState } from "react";
-import { set } from "date-fns";
-import FullPageLoader from "@/components/common/FullPageLoader";
+import {
+  buildBannerListHref,
+  parseBannerListFilters,
+  type BannerPositionTabValue,
+} from "@/lib/bannerListNavigation";
 import { calculatePageCount } from "@/lib/utils";
-import PaginationControls from "@/components/common/PaginationControls";
-import BannersTable from "@/app/banners/DataTable";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useMemo } from "react";
+
+const tabs = [
+  {
+    label: "배너",
+    value: "/banners",
+  },
+  {
+    label: "팝업",
+    value: "/popups",
+  },
+] as const;
 
 export default function Page() {
-  // const isMobile = useIsMobile()
   const route = useRouter();
   const pathname = usePathname();
-  const [page, setPage] = useState(1);
+  const searchParams = useSearchParams();
+  const filters = useMemo(
+    () => parseBannerListFilters(searchParams),
+    [searchParams]
+  );
+  const currentQuery = searchParams.toString();
 
-  const tabs = [
-    {
-      label: "배너",
-      value: "/banners",
-    },
-    {
-      label: "팝업",
-      value: "/popups",
-    },
-  ];
+  const updateFilters = (
+    nextFilters: Partial<{
+      page: number;
+      position: BannerPositionTabValue;
+      sortBy: BannerSortOptionValue;
+    }>
+  ) => {
+    route.replace(
+      buildBannerListHref({
+        ...filters,
+        ...nextFilters,
+      }),
+      { scroll: false }
+    );
+  };
 
   const {
     data,
@@ -63,26 +72,42 @@ export default function Page() {
     isLoading: isLoadingData,
     isFetching,
   } = useGetBanners({
-    page: page,
+    page: filters.page,
     count_per_page: item_per_page,
+    position: filters.position === "all" ? undefined : filters.position,
+    sort_by: filters.sortBy,
   });
 
-  useEffect(() => {
-    refetch();
-  }, [page]);
-
   const handleChangePage = (page: number) => {
-    setPage(page);
+    updateFilters({ page });
   };
+
+  const handlePositionChange = (position: BannerPositionTabValue) => {
+    updateFilters({ position, page: 1 });
+  };
+
+  const handleSortChange = (sortBy: BannerSortOptionValue) => {
+    updateFilters({ sortBy, page: 1 });
+  };
+
+  const activePositionLabel = useMemo(() => {
+    if (filters.position === "all") {
+      return "전체 위치";
+    }
+
+    return (
+      bannerPositions.find((position) => position.value === filters.position)
+        ?.label ?? "전체 위치"
+    );
+  }, [filters.position]);
 
   return (
     <>
-      {/*{isMobile && <SidebarTrigger />}*/}
       <SidebarInset className="bg-sidebar-inset-background">
         <PageHeader title="배너 및 팝업 관리" />
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="flex items-center justify-between gap-2 px-4">
-            <div className="flex items-center gap-2 px-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4">
+            <div className="flex flex-wrap items-center gap-2 px-4">
               {tabs.map((item, index) => (
                 <Button
                   key={`tab-${index}`}
@@ -93,19 +118,78 @@ export default function Page() {
                 </Button>
               ))}
             </div>
-            <Button onClick={() => route.push("/banners/add")}>
+            <Button
+              onClick={() =>
+                route.push(
+                  currentQuery ? `/banners/add?${currentQuery}` : "/banners/add"
+                )
+              }
+            >
               + 배너 추가
             </Button>
+          </div>
+          <div className="rounded-lg border bg-background p-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={
+                    filters.position === "all" ? "default" : "outline"
+                  }
+                  onClick={() => handlePositionChange("all")}
+                >
+                  전체
+                </Button>
+                {bannerPositions.map((position) => (
+                  <Button
+                    key={position.value}
+                    variant={
+                      filters.position === position.value
+                        ? "default"
+                        : "outline"
+                    }
+                    onClick={() => handlePositionChange(position.value)}
+                  >
+                    {position.shortLabel}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3">
+                <p className="text-sm text-muted-foreground">
+                  {activePositionLabel} 배너를 보고 있습니다.
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">정렬</span>
+                  <Select
+                    value={filters.sortBy}
+                    onValueChange={(value) =>
+                      handleSortChange(value as BannerSortOptionValue)
+                    }
+                  >
+                    <SelectTrigger className="w-[220px] bg-background">
+                      <SelectValue placeholder="정렬 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bannerSortOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
           </div>
           <BannersTable
             data={data?.results ?? []}
             loading={isLoadingData || isFetching}
+            listQuery={currentQuery}
             refetch={() => {
               refetch();
             }}
           />
           <PaginationControls
-            page={page || 1}
+            page={filters.page || 1}
             setPage={handleChangePage}
             totalPages={calculatePageCount(
               data?.total_count || 0,

@@ -13,16 +13,21 @@ import {
   showAlert,
 } from "@/lib/utils";
 import { IBanner } from "@/types/banner";
-import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 
 interface Props {
   data: IBanner[];
   loading?: boolean;
+  listQuery?: string;
   refetch: () => void;
 }
 
-export default function BannersTable({ data, loading, refetch }: Props) {
+export default function BannersTable({
+  data,
+  loading,
+  listQuery,
+  refetch,
+}: Props) {
   const router = useRouter();
   const deleteBanner = useDeleteBanner();
 
@@ -49,7 +54,7 @@ export default function BannersTable({ data, loading, refetch }: Props) {
   };
 
   const handleEdit = (id: string) => {
-    router.push(`/banners/${id}`);
+    router.push(listQuery ? `/banners/${id}?${listQuery}` : `/banners/${id}`);
   };
 
   const columns: Column[] = [

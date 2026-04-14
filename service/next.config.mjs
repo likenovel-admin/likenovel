@@ -22,8 +22,21 @@ const nextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/story-agent",
+        destination: "/websochat",
+        permanent: false,
+      },
+    ];
+  },
   async rewrites() {
     return [
+      {
+        source: "/story-agent-api/:path*",
+        destination: "/websochat-api/:path*",
+      },
       {
         source: "/api/:path*",
         destination: `${process.env.NEXT_PUBLIC_API_SERVER_URI}/:path*`,

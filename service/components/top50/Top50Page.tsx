@@ -18,19 +18,14 @@ const TOP50_TABS: Array<{ label: string; value: TTop50Area; href: string }> = [
     href: "/product/top50/free-top",
   },
   {
-    label: "유료연재 TOP50",
-    value: "paidSerialTop",
-    href: "/product/top50/paid-top",
-  },
-  {
     label: "연재완결 TOP50",
     value: "paidEndTop",
     href: "/product/top50/end-top",
   },
   {
-    label: "단행본 TOP50",
-    value: "paidStandaloneTop",
-    href: "/product/top50/standalone-top",
+    label: "유료연재 TOP50",
+    value: "paidSerialTop",
+    href: "/product/top50/paid-top",
   },
 ];
 

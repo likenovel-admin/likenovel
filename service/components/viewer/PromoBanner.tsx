@@ -12,13 +12,39 @@ export default function PromoBanner() {
     return null;
   }
 
+  const resolveBannerAsset = (
+    mobilePath?: string | null,
+    pcPath?: string | null
+  ) => {
+    const normalizedMobilePath = mobilePath?.trim() || "";
+    const normalizedPcPath = pcPath?.trim() || "";
+
+    if (device === "mobile") {
+      return normalizedMobilePath || normalizedPcPath || null;
+    }
+
+    return normalizedPcPath || normalizedMobilePath || null;
+  };
+
   const handleBannerClick = () => {
     if (banner.linkPath) {
-      window.open(banner.linkPath, '_blank');
+      window.open(banner.linkPath, "_blank");
     }
   };
 
-  const imageSrc = device === "mobile" ? banner.mobileImgPath : banner.pcImgPath;
+  const imageSrc = resolveBannerAsset(banner.mobileImgPath, banner.pcImgPath);
+  const overlayImageSrc =
+    banner.overlayYn === "Y" && banner.overlayType === "img"
+      ? resolveBannerAsset(banner.mobileOverlayImgPath, banner.overlayImgPath)
+      : null;
+  const textImageSrc =
+    banner.textType === "img"
+      ? resolveBannerAsset(banner.mobileTextImgPath, banner.textImgPath)
+      : null;
+
+  if (!imageSrc) {
+    return null;
+  }
 
   return (
     <section
@@ -35,9 +61,11 @@ export default function PromoBanner() {
         {banner.overlayYn === "Y" && banner.overlayType === "gradation" && (
           <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent" />
         )}
-        {banner.overlayYn === "Y" && banner.overlayType === "img" && banner.overlayImgPath && (
+        {banner.overlayYn === "Y" &&
+          banner.overlayType === "img" &&
+          overlayImageSrc && (
           <Image
-            src={device === "mobile" ? banner.mobileOverlayImgPath : banner.overlayImgPath}
+            src={overlayImageSrc}
             alt="overlay"
             fill
             className="object-cover"
@@ -56,10 +84,10 @@ export default function PromoBanner() {
             )}
           </div>
         )}
-        {banner.textType === "img" && banner.textImgPath && (
+        {banner.textType === "img" && textImageSrc && (
           <div className={`absolute ${banner.textPosition === "leftTop" ? "top-4 left-4" : "bottom-4 left-4"}`}>
             <Image
-              src={device === "mobile" ? banner.mobileTextImgPath : banner.textImgPath}
+              src={textImageSrc}
               alt="text overlay"
               width={200}
               height={100}

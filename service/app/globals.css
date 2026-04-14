@@ -106,6 +106,16 @@ html {
     height: 400px !important;
   }
 
+  @media (max-width: 767px) {
+    .slick-list {
+      height: 350px !important;
+    }
+
+    .slick-slide {
+      height: 350px !important;
+    }
+  }
+
   @media (min-width: 1025px) {
     .slick-slide {
       padding: 0 8px;
