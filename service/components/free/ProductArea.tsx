@@ -183,6 +183,7 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
                   key={product.productId}
                   data={product as unknown as IProduct}
                   hasInterestBadge
+                  hideStats
                   entrySource={
                     pageType === "normal"
                       ? PRODUCT_DETAIL_ENTRY_SOURCE.FREE_NORMAL_LIST

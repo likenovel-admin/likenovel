@@ -67,7 +67,7 @@ const Carousel = ({ primaryPanels, contained }: Props) => {
       {
         breakpoint: 768,
         settings: {
-          centerPadding: "5%",
+          centerPadding: "15px",
         },
       },
       {
@@ -104,7 +104,7 @@ const Carousel = ({ primaryPanels, contained }: Props) => {
 
   return (
     <div className="overflow-hidden">
-    <div className={`slider-container relative h-[360px] md:h-[400px]${contained ? " slider-contained" : ""}`}>
+    <div className={`slider-container relative h-[350px] md:h-[400px]${contained ? " slider-contained" : ""}`}>
       <SliderComponent ref={sliderRef} {...settings}>
         {primaryPanels.map((panel, index) => (
           <div
@@ -127,7 +127,7 @@ const Carousel = ({ primaryPanels, contained }: Props) => {
               }
             }}
           >
-            <div className="relative h-[348px] md:h-[400px] lg:h-[400px]">
+            <div className="relative h-[350px] md:h-[400px] lg:h-[400px]">
               {/* 백그라운드 이미지 */}
               <img
                 src={isTablet ? panel.mobileImgPath : panel.pcImgPath}
@@ -286,4 +286,3 @@ const Carousel = ({ primaryPanels, contained }: Props) => {
 };
 
 export default Carousel;
-

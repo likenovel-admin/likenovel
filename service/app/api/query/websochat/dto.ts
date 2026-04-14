@@ -1,0 +1,137 @@
+export interface IWebsochatProductItem {
+  productId: number;
+  title: string;
+  authorNickname?: string | null;
+  coverImagePath?: string | null;
+  statusCode?: string | null;
+  latestEpisodeNo: number;
+  publishedLatestEpisodeNo?: number;
+  syncedLatestEpisodeNo?: number;
+  contextStatus?: string | null;
+}
+
+export interface IGetWebsochatProductsResponse {
+  data: IWebsochatProductItem[];
+}
+
+export interface IGetWebsochatBillingStatusResponse {
+  data: {
+    freeRemainingMessages: number;
+    dailyFreeMessageLimit: number;
+    cashCostPerMessage: number;
+    requiresCashForNextMessage: boolean;
+    requiresLoginForNextMessage: boolean;
+    cashBalance: number | null;
+  };
+}
+
+export interface IWebsochatSessionItem {
+  sessionId: number;
+  productId: number;
+  title: string;
+  createdDate: string;
+  updatedDate: string;
+  productTitle?: string | null;
+  productAuthorNickname?: string | null;
+  coverImagePath?: string | null;
+  readScopeState?: "unknown" | "none" | "known";
+  readEpisodeNo?: number | null;
+  readEpisodeTitle?: string | null;
+  latestEpisodeNo?: number;
+  publishedLatestEpisodeNo?: number;
+  syncedLatestEpisodeNo?: number;
+  contextStatus?: string | null;
+  canSendMessage?: boolean;
+  unavailableMessage?: string | null;
+  rpStage?: "idle" | "awaiting_character" | "chatting";
+  rpActiveCharacterLabel?: string | null;
+}
+
+export interface IGetWebsochatSessionsResponse {
+  data: IWebsochatSessionItem[];
+}
+
+export interface ICreateWebsochatSessionResponse {
+  data: {
+    sessionId: number;
+    productId: number;
+    title: string;
+    product: IWebsochatProductItem;
+  };
+}
+
+export interface IPatchWebsochatSessionReadScopeResponse {
+  data: {
+    sessionId: number;
+    readScopeState: "known";
+    readEpisodeNo: number;
+    readEpisodeTitle?: string | null;
+  };
+}
+
+export interface IPatchWebsochatSessionModeResponse {
+  data: {
+    sessionId: number;
+    modeKey: "qa" | "rp" | "ideal_worldcup";
+    pendingRpCharacterSelection: boolean;
+  };
+}
+
+export interface IWebsochatMessageItem {
+  messageId: number;
+  role: "user" | "assistant";
+  content: string;
+  createdDate?: string;
+  referencedEpisodeNos?: number[] | null;
+  reasonCards?: IWebsochatReasonCardItem[] | null;
+  actionCards?: IWebsochatStarterActionItem[] | null;
+  ctaCards?: IWebsochatCtaCardItem[] | null;
+}
+
+export interface IWebsochatStarterActionItem {
+  label: string;
+  prompt: string;
+  modeKey?: "qa" | "rp" | "ideal_worldcup" | null;
+  qaActionKey?: "predict" | "next_episode_write" | null;
+  cashCost?: number | null;
+}
+
+export interface IWebsochatReasonCardItem {
+  title: string;
+  description: string;
+}
+
+export interface IWebsochatCtaCardItem {
+  type: "product_detail";
+  label: string;
+  productId?: number | null;
+}
+
+export interface IWebsochatStarterItem {
+  productTitle: string;
+  scopeState?: "unknown" | "none" | "known";
+  readEpisodeNo?: number | null;
+  readEpisodeTitle?: string | null;
+  latestEpisodeNo?: number;
+  publishedLatestEpisodeNo?: number;
+  syncedLatestEpisodeNo?: number;
+  reasonCards?: IWebsochatReasonCardItem[];
+  ctaCards?: IWebsochatCtaCardItem[];
+  actions: IWebsochatStarterActionItem[];
+}
+
+export interface IGetWebsochatMessagesResponse {
+  data: {
+    session: IWebsochatSessionItem;
+    messages: IWebsochatMessageItem[];
+    starter?: IWebsochatStarterItem | null;
+    guideMessage?: IWebsochatMessageItem | null;
+  };
+}
+
+export interface IPostWebsochatMessageResponse {
+  data: {
+    sessionId: number;
+    messages: IWebsochatMessageItem[];
+  };
+}

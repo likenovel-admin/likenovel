@@ -47,6 +47,7 @@ interface Props {
   isAuthorPage?: boolean;
   isReviewPage?: boolean;
   isAdultFilterEnabled?: boolean;
+  hideStats?: boolean;
   refetch?: () => void;
   entrySource?: ProductDetailEntrySource;
 }
@@ -59,6 +60,7 @@ const ProductListCard = ({
   isAuthorPage = false,
   isReviewPage = false,
   isAdultFilterEnabled = false,
+  hideStats = false,
   hasGle = true,
   refetch,
   entrySource,
@@ -579,7 +581,7 @@ const ProductListCard = ({
               <>
                 <div className="hidden md:block border border-t-light-gray-400 border-b-0 border-l-0 border-r-0 mt-[8px] mb-[8px]" />
                 <div className="flex w-full gap-12pxr md:gap-24pxr">
-                  {data.trendindex && (
+                  {!hideStats && data.trendindex && (
                     <>
                       <div className="flex items-center gap-3pxr">
                         <View className="w-[14px] h-[12px] text-dark-gray-400" />

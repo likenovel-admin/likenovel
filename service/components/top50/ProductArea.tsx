@@ -76,6 +76,7 @@ const ProductArea = ({ data, pageType = "free" }: Props) => {
               hasInterestBadge
               hasPromotionBadge={pageType === "paid" ? true : false}
               isAdultFilterEnabled
+              hideStats
               entrySource={
                 pageType === "paid"
                   ? PRODUCT_DETAIL_ENTRY_SOURCE.TOP50_PAID

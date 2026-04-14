@@ -1,3 +1,4 @@
+import { WEBSOCHAT_NAV_LABEL } from "@/constants/common";
 import useConfirmStore from "@/store/confirmStore";
 import useSearchModalStore from "@/store/searchModalStore";
 import { getUser } from "@/utils/getUser";
@@ -121,11 +122,11 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
               dotColor="blue"
             />
           </button>
-          <button onClick={() => router.push("/story-agent")}>
+          <button onClick={() => router.push("/websochat")}>
             <MenuIcon
               menu={
                 <span className="text-16pxr font-bold hover:text-dark-gray-400 min-w-[45px]">
-                  스토리
+                  {WEBSOCHAT_NAV_LABEL}
                 </span>
               }
               dotColor="blue"
