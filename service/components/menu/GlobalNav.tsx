@@ -6,6 +6,7 @@ import useGiftBoxStore from "@/store/giftboxStore";
 import useSearchModalStore from "@/store/searchModalStore";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import SquareBadge from "../common/SquareBadge";
 import AdultToggle from "./AdultToggle";
 import AlarmMenu from "./AlarmMenu";
 import GlobalMenu from "./GlobalMenu";
@@ -141,8 +142,9 @@ const GlobalNav = () => {
               <button onClick={() => router.push("/websochat")}>
                 <MenuIcon
                   menu={
-                    <span className="text-20pxr font-bold hover:text-dark-gray-400">
+                    <span className="inline-flex items-center gap-6pxr text-20pxr font-bold hover:text-dark-gray-400">
                       {WEBSOCHAT_NAV_LABEL}
+                      <SquareBadge type="up" />
                     </span>
                   }
                   dotColor="blue"
