@@ -3,6 +3,7 @@ import useConfirmStore from "@/store/confirmStore";
 import useSearchModalStore from "@/store/searchModalStore";
 import { getUser } from "@/utils/getUser";
 import { usePathname, useRouter } from "next/navigation";
+import SquareBadge from "../common/SquareBadge";
 import AlarmMenu from "./AlarmMenu";
 import GlobalMenu from "./GlobalMenu";
 import MenuIcon from "./MenuIcon";
@@ -125,8 +126,9 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
           <button onClick={() => router.push("/websochat")}>
             <MenuIcon
               menu={
-                <span className="text-16pxr font-bold hover:text-dark-gray-400 min-w-[45px]">
+                <span className="inline-flex items-center gap-4pxr text-16pxr font-bold hover:text-dark-gray-400">
                   {WEBSOCHAT_NAV_LABEL}
+                  <SquareBadge type="up" />
                 </span>
               }
               dotColor="blue"
