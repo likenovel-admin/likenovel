@@ -141,8 +141,14 @@ const ProductCoverArea = ({
   const hasPromotionBadge =
     data?.priceType === "paid" && promotionBadgeType.length > 0;
   const hasHeaderBadges = !!data?.priceType || hasStateBadge || hasPromotionBadge;
+  const websochatContextStatus =
+    typeof (data as { contextStatus?: string | null } | undefined)?.contextStatus === "string"
+      ? (data as { contextStatus?: string | null }).contextStatus
+      : null;
   const shouldShowWebsochatEntryCta =
-    Number(data?.latestEpisodeNo || 0) > 0 && Number(data?.syncedLatestEpisodeNo || 0) > 0;
+    websochatContextStatus === "ready"
+    && Number(data?.latestEpisodeNo || 0) > 0
+    && Number(data?.syncedLatestEpisodeNo || 0) > 0;
 
   const handleGoBack = () => {
     if (process.env.NODE_ENV === "development") {
@@ -699,6 +705,7 @@ const ProductCoverArea = ({
                         coverImagePath={data.image?.coverImagePath}
                         publishedLatestEpisodeNo={data.latestEpisodeNo}
                         syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
+                        contextStatus={websochatContextStatus}
                         isLoggedIn={!!user?.userId}
                       />
                     ) : null}
@@ -744,6 +751,7 @@ const ProductCoverArea = ({
                       coverImagePath={data.image?.coverImagePath}
                       publishedLatestEpisodeNo={data.latestEpisodeNo}
                       syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
+                      contextStatus={websochatContextStatus}
                       isLoggedIn={!!user?.userId}
                     />
                   ) : null}

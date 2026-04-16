@@ -43,10 +43,8 @@ const GlobalNav = () => {
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 40) {
-        setIsVisible(false);
         setScrolled(true);
       } else {
-        setIsVisible(true);
         setScrolled(false);
       }
     };
