@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import Pagination from "../common/Pagination";
 import RoundBadge from "../common/RoundBadge";
+import SquareBadge from "../common/SquareBadge";
 import Spinner from "../common/Spinner";
 import Arrow from "/public/images/arrow-right-medium.svg";
 
@@ -88,7 +89,7 @@ const NoticeItem = ({
         router.push(`/product/customer-service/notice/${id}`);
       }}
     >
-      <div className="flex flex-col items-start">
+      <div className="flex flex-col items-start flex-1 min-w-0">
         <div className="text-15pxr md:text-18pxr font-medium flex gap-2 items-center w-full">
           {primary_yn === "Y" && (
             <RoundBadge
@@ -100,9 +101,9 @@ const NoticeItem = ({
           )}
           <span className="truncate min-w-0 flex-1 text-left">{subject}</span>
           {isNew && (
-            <div className="text-10pxr md:text-14pxr text-[#2f7fff] font-bold flex-shrink-0">
-              N
-            </div>
+            <span className="flex-shrink-0">
+              <SquareBadge type="up" />
+            </span>
           )}
         </div>
         <div className="text-11pxr md:text-13pxr text-gray-400 mt-2">
