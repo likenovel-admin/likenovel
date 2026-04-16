@@ -1,6 +1,6 @@
 "use client";
 
-import { useBatchBlind, useGetBlindList } from "@/api/blind";
+import { useBatchBlind, useBatchOpen, useGetBlindList } from "@/api/blind";
 import { IGetBlindListParams } from "@/api/blind/dto";
 import BlindDataTable from "@/app/products/blind/DataTable";
 import FullPageLoader from "@/components/common/FullPageLoader";
@@ -39,6 +39,7 @@ export default function BlindPage() {
   });
 
   const batchBlindMutation = useBatchBlind();
+  const batchOpenMutation = useBatchOpen();
 
   const handleSearch = () => {
     setFilters((prev) => ({ ...prev, page: 1 }));
@@ -98,6 +99,17 @@ export default function BlindPage() {
         },
         onError: (error: any) => {
           showAlert("오류", error?.message || `${label} 처리에 실패했습니다.`, "확인");
+        },
+      }
+    );
+  };
+
+  const handleToggleOpen = (productId: number, openYn: string) => {
+    batchOpenMutation.mutate(
+      { product_ids: [productId], open_yn: openYn },
+      {
+        onError: (error: any) => {
+          showAlert("오류", error?.message || "공개 상태 변경에 실패했습니다.", "확인");
         },
       }
     );
@@ -231,6 +243,7 @@ export default function BlindPage() {
           selectedIds={selectedIds}
           onToggleSelect={handleToggleSelect}
           onToggleSelectAll={handleToggleSelectAll}
+          onToggleOpen={handleToggleOpen}
           onToggleBlind={handleToggleBlind}
         />
 

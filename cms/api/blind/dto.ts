@@ -13,6 +13,7 @@ export interface IBlindProduct {
   author_name: string;
   author_email?: string;
   primary_genre: string;
+  open_yn: string;
   blind_yn: string;
   created_date: string;
   episode_count: number;
@@ -28,4 +29,9 @@ export interface IGetBlindListResponse {
 export interface IPostBatchBlindRequest {
   product_ids: number[];
   blind_yn: string;
+}
+
+export interface IPostBatchOpenRequest {
+  product_ids: number[];
+  open_yn: string;
 }
