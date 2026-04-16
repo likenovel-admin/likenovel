@@ -165,6 +165,7 @@ interface Props {
   coverImagePath?: string | null;
   publishedLatestEpisodeNo?: number | null;
   syncedLatestEpisodeNo?: number | null;
+  contextStatus?: string | null;
   isLoggedIn?: boolean;
   className?: string;
 }
@@ -176,12 +177,14 @@ export default function WebsochatEntryCtas({
   coverImagePath,
   publishedLatestEpisodeNo,
   syncedLatestEpisodeNo,
+  contextStatus,
   isLoggedIn = false,
   className = "",
 }: Props) {
   const router = useRouter();
   const resolvedPublishedLatestEpisodeNo = Math.max(Number(publishedLatestEpisodeNo || 0), 0);
   const resolvedSyncedLatestEpisodeNo = Math.max(Number(syncedLatestEpisodeNo || 0), 0);
+  const isContextReady = contextStatus === "ready";
 
   const selectedCta = useMemo(() => {
     const availablePool = WEBSOCHAT_ENTRY_CTA_POOL.filter((cta) => (
@@ -201,13 +204,14 @@ export default function WebsochatEntryCtas({
       latestEpisodeNo: publishedLatestEpisodeNo || 0,
       publishedLatestEpisodeNo: publishedLatestEpisodeNo || 0,
       syncedLatestEpisodeNo: syncedLatestEpisodeNo ?? null,
-      contextStatus: "ready",
+      contextStatus: contextStatus ?? null,
       action: cta.action,
     });
     router.push("/websochat");
   };
 
   if (!selectedCta) return null;
+  if (!isContextReady) return null;
   if (resolvedPublishedLatestEpisodeNo <= 0) return null;
   if (resolvedSyncedLatestEpisodeNo <= 0) return null;
 
