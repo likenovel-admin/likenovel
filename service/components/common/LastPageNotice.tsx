@@ -19,12 +19,12 @@ const LastPageNotice = () => {
     <>
       {notice.length > 0 ? (
         <div
-          className="w-full cursor-pointer flex items-center justify-start min-h-[60px] border-t border-light-gray-300"
+          className="w-full cursor-pointer flex items-center justify-start md:justify-center min-h-[60px] border-t border-light-gray-300"
           onClick={() => {
             router.push(`/product/customer-service/notice/${notice?.[0]?.id}`);
           }}
         >
-          <div className="w-full flex-1 flex items-center justify-start px-8pxr sm:px-16pxr lg:max-w-[1080px]">
+          <div className="w-full flex-1 flex items-center justify-start md:justify-around lg:justify-center px-8pxr sm:px-16pxr lg:max-w-[1080px]">
             <Image
               src={"/images/notice.svg"}
               width={20}
@@ -37,11 +37,13 @@ const LastPageNotice = () => {
               공지사항
             </span>
             <Arrow className="w-[6px] h-[10px] mr-[8px] sm:mr-20pxr flex-shrink-0" />
-            <span className="flex-1 ml-[4px] sm:ml-[8px] md:ml-[27px] text-12pxr sm:text-13pxr md:text-16pxr font-normal tracking-[-2%] text-[#4D5159] truncate min-w-0">
-              {notice?.[0]?.subject}
-            </span>
-            <span className="flex-shrink-0 ml-6pxr">
-              <SquareBadge type="up" />
+            <span className="flex-1 flex items-center min-w-0 ml-[4px] sm:ml-[8px] md:ml-[27px]">
+              <span className="truncate text-12pxr sm:text-13pxr md:text-16pxr font-normal tracking-[-2%] text-[#4D5159]">
+                {notice?.[0]?.subject}
+              </span>
+              <span className="flex-shrink-0 ml-4pxr">
+                <SquareBadge type="up" />
+              </span>
             </span>
             <span className="ml-[50px] lg:ml-auto text-11pxr md:text-14pxr text-[#6B6E76] tracking-[-2%] flex-shrink-0 hidden sm:block">
               {getFormattingDate(notice?.[0]?.created_date, "YYYY.MM.DD")}
