@@ -11,6 +11,7 @@ export interface IBlindProduct {
   title: string;
   user_id: number;
   author_name: string;
+  author_email?: string;
   primary_genre: string;
   blind_yn: string;
   created_date: string;
