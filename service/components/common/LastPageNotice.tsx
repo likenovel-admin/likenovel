@@ -2,6 +2,7 @@ import { useSelectRollingNotice } from "@/app/api/query/notice";
 import { getFormattingDate } from "@/utils/getFormattingDate";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import SquareBadge from "./SquareBadge";
 import Arrow from "/public/images/arrow-right-medium.svg";
 
 const LastPageNotice = () => {
@@ -38,6 +39,9 @@ const LastPageNotice = () => {
             <Arrow className="w-[6px] h-[10px] mr-[8px] sm:mr-20pxr flex-shrink-0" />
             <span className="flex-1 ml-[4px] sm:ml-[8px] md:ml-[27px] text-12pxr sm:text-13pxr md:text-16pxr font-normal tracking-[-2%] text-[#4D5159] truncate min-w-0">
               {notice?.[0]?.subject}
+            </span>
+            <span className="flex-shrink-0 ml-6pxr">
+              <SquareBadge type="up" />
             </span>
             <span className="ml-[50px] lg:ml-auto text-11pxr md:text-14pxr text-[#6B6E76] tracking-[-2%] flex-shrink-0 hidden sm:block">
               {getFormattingDate(notice?.[0]?.created_date, "YYYY.MM.DD")}
