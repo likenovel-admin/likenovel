@@ -89,18 +89,18 @@ const NoticeItem = ({
       }}
     >
       <div className="flex flex-col items-start">
-        <div className="text-15pxr md:text-18pxr font-medium flex gap-2 items-center">
+        <div className="text-15pxr md:text-18pxr font-medium flex gap-2 items-center w-full">
           {primary_yn === "Y" && (
             <RoundBadge
               type="custom"
               color="bg-[#FF5500]"
               text="중요"
-              className="w-7 h-4 md:w-8 md:h-5"
+              className="w-7 h-4 md:w-8 md:h-5 flex-shrink-0"
             />
           )}
-          {subject}
+          <span className="truncate min-w-0 flex-1 text-left">{subject}</span>
           {isNew && (
-            <div className="text-10pxr md:text-14pxr text-[#2f7fff] font-bold self-start">
+            <div className="text-10pxr md:text-14pxr text-[#2f7fff] font-bold flex-shrink-0">
               N
             </div>
           )}
