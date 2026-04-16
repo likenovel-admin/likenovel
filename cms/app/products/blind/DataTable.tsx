@@ -19,6 +19,7 @@ interface Props {
   selectedIds: Set<number>;
   onToggleSelect: (id: number) => void;
   onToggleSelectAll: () => void;
+  onToggleOpen: (productId: number, openYn: string) => void;
   onToggleBlind: (productId: number, blindYn: string) => void;
 }
 
@@ -28,6 +29,7 @@ export default function BlindDataTable({
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
+  onToggleOpen,
   onToggleBlind,
 }: Props) {
   if (loading) {
@@ -61,9 +63,11 @@ export default function BlindDataTable({
           <TableHead className="w-[80px]">작품ID</TableHead>
           <TableHead>작품명</TableHead>
           <TableHead className="w-[80px]">유저ID</TableHead>
-          <TableHead className="w-[240px]">작가명</TableHead>
+          <TableHead className="w-[180px]">작가명</TableHead>
+          <TableHead className="w-[220px]">이메일</TableHead>
           <TableHead className="w-[100px]">장르</TableHead>
           <TableHead className="w-[70px]">회차수</TableHead>
+          <TableHead className="w-[80px]">공개</TableHead>
           <TableHead className="w-[80px]">블라인드</TableHead>
           <TableHead className="w-[110px]">등록일</TableHead>
         </TableRow>
@@ -80,16 +84,19 @@ export default function BlindDataTable({
             <TableCell>{row.product_id}</TableCell>
             <TableCell className="max-w-[240px] truncate">{row.title}</TableCell>
             <TableCell>{row.user_id}</TableCell>
-            <TableCell>
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="truncate">{row.author_name || "-"}</span>
-                <span className="truncate text-xs text-muted-foreground">
-                  {row.author_email || "-"}
-                </span>
-              </div>
-            </TableCell>
+            <TableCell className="max-w-[180px] truncate">{row.author_name || "-"}</TableCell>
+            <TableCell className="max-w-[220px] truncate">{row.author_email || "-"}</TableCell>
             <TableCell>{row.primary_genre || "-"}</TableCell>
             <TableCell>{row.episode_count ?? 0}</TableCell>
+            <TableCell>
+              <Switch
+                checked={row.open_yn === "Y"}
+                disabled={row.blind_yn === "Y"}
+                onCheckedChange={(checked) =>
+                  onToggleOpen(row.product_id, checked ? "Y" : "N")
+                }
+              />
+            </TableCell>
             <TableCell>
               <Switch
                 checked={row.blind_yn === "Y"}
