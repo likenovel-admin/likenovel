@@ -102,14 +102,13 @@ const ApplyPaidModal = ({ data, onConfirm }: Props) => {
             <li className="flex items-center">
               <div className="w-3pxr h-3pxr bg-[#B2B5C3] rounded-full ml-1pxr mr-7pxr" />
               <span className="text-12pxr font-normal text-[#4D5159] leading-[18px] tracking-[-2%]">
-                계약 없이 진행하는 나홀로 유료화입니다.
+                라이크노벨 또는 타 매니지먼트/출판사와 사전 계약된 작품만 신청할 수 있습니다.
               </span>
             </li>
             <li className="flex items-center">
               <div className="w-3pxr h-3pxr bg-[#B2B5C3] rounded-full ml-1pxr mr-7pxr" />
               <span className="text-12pxr font-normal text-[#4D5159] leading-[18px] tracking-[-2%]">
-                심사에 따라 유료화 여부가 결정되며, 심사는 최대 2주가
-                소요됩니다.
+                유료화 적격심사에 따라 유료화 여부가 결정되며, 심사는 기본 1주가 소요됩니다.
               </span>
             </li>
             <li className="flex items-center">
@@ -121,13 +120,7 @@ const ApplyPaidModal = ({ data, onConfirm }: Props) => {
             <li className="flex items-center">
               <div className="w-3pxr h-3pxr bg-[#B2B5C3] rounded-full ml-1pxr mr-7pxr" />
               <span className="text-12pxr font-normal text-[#4D5159] leading-[18px] tracking-[-2%]">
-                유료화 이후에도 다른 CP와 계약이 가능하며, 권한이 이행됩니다.
-              </span>
-            </li>
-            <li className="flex items-center">
-              <div className="w-3pxr h-3pxr bg-[#B2B5C3] rounded-full ml-1pxr mr-7pxr" />
-              <span className="text-12pxr font-normal text-[#4D5159] leading-[18px] tracking-[-2%]">
-                유료화 이후에는 작품을 삭제하기 어렵습니다.
+                유료화 이후에는 작품을 비공개 또는 삭제할 경우 플랫폼과 협의 후 진행합니다.
               </span>
             </li>
           </ul>
