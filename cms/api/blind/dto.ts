@@ -35,3 +35,8 @@ export interface IPostBatchOpenRequest {
   product_ids: number[];
   open_yn: string;
 }
+
+export interface IBlindDownloadResponse {
+  data: Blob;
+  headers: Headers;
+}

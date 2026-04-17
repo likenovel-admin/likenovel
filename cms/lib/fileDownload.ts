@@ -19,9 +19,14 @@ export const downloadFile = async ({
     const contentDisposition = headers.get("content-disposition");
     let filename = defaultFileName;
 
-    const match = contentDisposition?.match(/filename="?([^"]+)"?/);
-    if (match?.[1]) {
-      filename = decodeURIComponent(match[1]);
+    const encodedMatch = contentDisposition?.match(/filename\*=UTF-8''([^;]+)/i);
+    if (encodedMatch?.[1]) {
+      filename = decodeURIComponent(encodedMatch[1]);
+    } else {
+      const match = contentDisposition?.match(/filename="?([^"]+)"?/);
+      if (match?.[1]) {
+        filename = decodeURIComponent(match[1]);
+      }
     }
 
     const url = window.URL.createObjectURL(blob);

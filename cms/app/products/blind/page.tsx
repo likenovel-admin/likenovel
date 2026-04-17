@@ -1,6 +1,6 @@
 "use client";
 
-import { useBatchBlind, useBatchOpen, useGetBlindList } from "@/api/blind";
+import { downloadBlindProductTxt, useBatchBlind, useBatchOpen, useGetBlindList } from "@/api/blind";
 import { IGetBlindListParams } from "@/api/blind/dto";
 import BlindDataTable from "@/app/products/blind/DataTable";
 import FullPageLoader from "@/components/common/FullPageLoader";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { calculatePageCount, showAlert } from "@/lib/utils";
+import { downloadFile } from "@/lib/fileDownload";
 import { useState } from "react";
 
 export default function BlindPage() {
@@ -29,6 +30,7 @@ export default function BlindPage() {
   });
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [downloadingProductId, setDownloadingProductId] = useState<number | null>(null);
 
   const { data, isLoading, isFetching } = useGetBlindList({
     page: filters.page,
@@ -113,6 +115,23 @@ export default function BlindPage() {
         },
       }
     );
+  };
+
+  const handleDownloadTxt = async (productId: number) => {
+    await downloadFile({
+      apiFunc: () => downloadBlindProductTxt(productId),
+      defaultFileName: `product-${productId}.txt`,
+      onLoading: (loading) => {
+        setDownloadingProductId(loading ? productId : null);
+      },
+      onError: (error: any) => {
+        showAlert(
+          "오류",
+          error?.message || "TXT 다운로드에 실패했습니다.",
+          "확인"
+        );
+      },
+    });
   };
 
   const totalPages = calculatePageCount(
@@ -245,6 +264,8 @@ export default function BlindPage() {
           onToggleSelectAll={handleToggleSelectAll}
           onToggleOpen={handleToggleOpen}
           onToggleBlind={handleToggleBlind}
+          onDownloadTxt={handleDownloadTxt}
+          downloadingProductId={downloadingProductId}
         />
 
         <PaginationControls
