@@ -30,7 +30,7 @@ const ApplyPaidModal = ({ data, onConfirm }: Props) => {
       <div className="bg-white w-full">
         <div className="w-full flex justify-center relative pt-[19px]">
           <span className="text-14pxr flex justify-center md:text-18pxr font-semibold">
-            일반 승급
+            유료화 신청
           </span>
           <div className="flex justify-end pb-10pxr absolute right-[14px] top-[10px]">
             <button onClick={closeModal} className="mt-4 mr-4">
