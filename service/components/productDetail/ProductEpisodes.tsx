@@ -53,7 +53,7 @@ const ProductEpisodes = ({
   }));
   const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
   const { setTypeModal } = useModalStore();
-  const [isDescSort, setIsDescSort] = useState(false);
+  const [isDescSort, setIsDescSort] = useState(true);
   const [visibleCount, setVisibleCount] = useState(10);
 
   // 기다무 대여권 수 조회 (React Query가 ButtonBottom 호출과 중복 제거)
