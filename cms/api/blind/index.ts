@@ -5,6 +5,7 @@ import {
   IGetBlindListResponse,
   IPostBatchBlindRequest,
   IPostBatchOpenRequest,
+  IBlindDownloadResponse,
 } from "@/api/blind/dto";
 import apiClient from "@/lib/apiClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -53,5 +54,13 @@ export const useBatchOpen = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [BLIND_LIST_KEY] });
     },
+  });
+};
+
+export const downloadBlindProductTxt = async (productId: number) => {
+  return await apiClient.request<IBlindDownloadResponse>({
+    url: `/v1/query/admins/products/${productId}/episodes-txt`,
+    method: "GET",
+    responseType: "blob",
   });
 };
