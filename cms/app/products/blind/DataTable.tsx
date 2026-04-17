@@ -12,6 +12,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   data: IBlindProduct[];
@@ -21,6 +22,8 @@ interface Props {
   onToggleSelectAll: () => void;
   onToggleOpen: (productId: number, openYn: string) => void;
   onToggleBlind: (productId: number, blindYn: string) => void;
+  onDownloadTxt: (productId: number) => void;
+  downloadingProductId?: number | null;
 }
 
 export default function BlindDataTable({
@@ -31,6 +34,8 @@ export default function BlindDataTable({
   onToggleSelectAll,
   onToggleOpen,
   onToggleBlind,
+  onDownloadTxt,
+  downloadingProductId,
 }: Props) {
   if (loading) {
     return (
@@ -70,6 +75,7 @@ export default function BlindDataTable({
           <TableHead className="w-[80px]">공개</TableHead>
           <TableHead className="w-[80px]">블라인드</TableHead>
           <TableHead className="w-[110px]">등록일</TableHead>
+          <TableHead className="w-[120px]">작가 전달 TXT</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -109,6 +115,16 @@ export default function BlindDataTable({
               {row.created_date
                 ? format(new Date(row.created_date), "yyyy.MM.dd")
                 : "-"}
+            </TableCell>
+            <TableCell>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDownloadTxt(row.product_id)}
+                disabled={downloadingProductId === row.product_id}
+              >
+                {downloadingProductId === row.product_id ? "다운로드 중" : "다운로드"}
+              </Button>
             </TableCell>
           </TableRow>
         ))}
