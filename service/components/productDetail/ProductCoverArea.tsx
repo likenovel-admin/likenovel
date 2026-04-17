@@ -83,6 +83,10 @@ const ProductCoverArea = ({
   const interestTooltipMessage =
     "무료작품을 최근 3일 내 1회차 이상 읽으면 관심 상태가 유지됩니다.";
 
+  const latestEpisodeDateLabel = getLatestEpisodeDate(
+    data?.properties?.latestEpisodeDate || ""
+  );
+
   useEffect(() => {
     logProductTrace(
       "product-cover-area",
@@ -486,12 +490,14 @@ const ProductCoverArea = ({
                         userNickname={data.authorNickname || ""}
                         hasGle
                       />
-                      <div className="w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
-                      <span className="text-13pxr md:text-15pxr text-dark-gray-500">
-                        {getLatestEpisodeDate(
-                          data.properties?.latestEpisodeDate || ""
-                        )}
-                      </span>
+                      {latestEpisodeDateLabel && (
+                        <>
+                          <div className="w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
+                          <span className="text-13pxr md:text-15pxr text-dark-gray-500">
+                            {latestEpisodeDateLabel}
+                          </span>
+                        </>
+                      )}
                     </div>
                     {data.trendindex && data.properties && (
                       <>
