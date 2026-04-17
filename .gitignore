@@ -51,6 +51,13 @@ likenovel-cms/
 
 # --- Claude / AI tools ---
 .claude/
+# 팀 공유 자산만 예외 (개인 설정/히스토리/hooks는 ignore 유지)
+!.claude/skills/
+!.claude/skills/**
+!.claude/commands/
+!.claude/commands/**
+!.claude/agents/
+!.claude/agents/**
 MEMORY.md
 AGENTS.md
 CURSOR_CHAT_MEMENTO_RECOVERY.md
