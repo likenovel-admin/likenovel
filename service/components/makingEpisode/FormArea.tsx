@@ -13,7 +13,6 @@ import {
   ISelectNoticeResponse,
 } from "@/app/api/query/author/episode/dto";
 import useToastStore from "@/store/toastStore";
-import { normalizeViewerContentHtml } from "@/utils/normalizeViewerContentHtml";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { useRouter } from "next/navigation";
@@ -240,7 +239,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
   ): IMakeEpisodeRequest => {
     return {
       title: formData.title,
-      content: normalizeViewerContentHtml(formData.content),
+      content: formData.content,
       author_comment: formData.authorComment,
       evaluation_open_yn:
         formData.evaluationOpen === "all" ||
@@ -271,7 +270,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
   ): IMakeNoticeRequest => {
     return {
       title: formData.title,
-      content: normalizeViewerContentHtml(formData.content),
+      content: formData.content,
       open_yn: formData.isEpisodeOpen || "Y",
       publish_reserve_yn: formData.hasPublishEpisodeDate,
       publish_reserve_date:

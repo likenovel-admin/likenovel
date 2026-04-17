@@ -713,7 +713,6 @@ const EpubViewer = ({
         p: {
           ...(lineHeight ? { "line-height": `${lineHeight} !important` } : {}),
           "tab-size": "4 !important",
-          "margin": "0 !important",
           "text-indent": currentSettings.useParagraphIndent
             ? "1em !important"
             : "0 !important",
@@ -791,11 +790,6 @@ const EpubViewer = ({
           (paragraph as HTMLElement).style.setProperty(
             "tab-size",
             "4",
-            "important"
-          );
-          (paragraph as HTMLElement).style.setProperty(
-            "margin",
-            "0",
             "important"
           );
           (paragraph as HTMLElement).style.setProperty(
