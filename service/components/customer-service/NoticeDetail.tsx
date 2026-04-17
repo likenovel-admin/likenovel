@@ -61,9 +61,9 @@ const NoticeDetail = ({ noticeId }: { noticeId: string }) => {
               </div>
             </div>
             <div
-              className="whitespace-pre-wrap mt-6 md:mt-10 md:p-4 font-medium text-gray-500"
+              className="mt-6 md:mt-10 md:p-4 font-medium text-gray-500 leading-6 break-words [&_p]:m-0 [&_p:not(:last-child)]:mb-1 [&_p:empty]:min-h-[1.5em] [&_ul]:pl-6 [&_ul]:list-disc [&_ol]:pl-6 [&_ol]:list-decimal [&_blockquote]:pl-3.5 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-200 [&_strong]:font-bold [&_em]:italic [&_u]:underline"
               dangerouslySetInnerHTML={{
-                __html: content?.replace(/\n/g, "<br />") || "",
+                __html: content || "",
               }}
             />
           </div>
