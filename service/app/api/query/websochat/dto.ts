@@ -43,6 +43,7 @@ export interface IWebsochatSessionItem {
   contextStatus?: string | null;
   canSendMessage?: boolean;
   unavailableMessage?: string | null;
+  pendingQaActionKey?: "predict" | "next_episode_write" | null;
   rpStage?: "idle" | "awaiting_character" | "chatting";
   rpActiveCharacterLabel?: string | null;
 }
@@ -82,6 +83,7 @@ export interface IWebsochatMessageItem {
   role: "user" | "assistant";
   content: string;
   createdDate?: string;
+  clientMessageId?: string | null;
   referencedEpisodeNos?: number[] | null;
   reasonCards?: IWebsochatReasonCardItem[] | null;
   actionCards?: IWebsochatStarterActionItem[] | null;

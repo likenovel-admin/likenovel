@@ -523,6 +523,7 @@ type WebsochatModeNoticeItem = {
   productId: number | null;
   content: string;
   createdAt: number;
+  anchorClientMessageId?: string | null;
   kind: "mode" | "action" | "sync_pending";
 };
 
@@ -679,7 +680,7 @@ const renderWebsochatActionCards = ({
 }) => {
   if (!actionCards?.length) return null;
   return (
-    <div className="mt-8pxr flex flex-wrap gap-6pxr">
+    <div className="mt-8pxr flex flex-nowrap overflow-x-auto gap-6pxr pb-4pxr">
       {actionCards.map((action) => (
         (() => {
           const isActive = activeStateKey === resolveWebsochatShortcutStateKey(action);
@@ -689,7 +690,7 @@ const renderWebsochatActionCards = ({
           type="button"
           onClick={() => onClick(action)}
           disabled={disabled}
-          className={`rounded-[10px] border px-10pxr py-8pxr text-12pxr font-medium ${
+          className={`shrink-0 rounded-[10px] border px-10pxr py-8pxr text-12pxr font-medium ${
             isActive
               ? "border-primary-100 bg-primary-100 text-white"
               : "border-light-gray-400 bg-white text-dark-gray-500"
@@ -888,6 +889,9 @@ export default function WebsochatPage() {
               : null,
           content: String(item?.content || "").trim(),
           createdAt: Number(item?.createdAt || 0),
+          anchorClientMessageId: item?.anchorClientMessageId
+            ? String(item.anchorClientMessageId)
+            : null,
           kind:
             item?.kind === "sync_pending"
               ? "sync_pending"
@@ -1294,6 +1298,11 @@ export default function WebsochatPage() {
     ?? activeSession?.rpActiveCharacterLabel
     ?? activeSessionMeta?.rpActiveCharacterLabel
     ?? null;
+  const serverPendingQaActionKey =
+    messagesData?.data?.session?.pendingQaActionKey
+    ?? activeSession?.pendingQaActionKey
+    ?? activeSessionMeta?.pendingQaActionKey
+    ?? null;
   const effectiveMode: WebsochatComposerMode = pendingModeSyncKey
     ? pendingModeSyncKey
     : activeSessionId
@@ -1319,8 +1328,10 @@ export default function WebsochatPage() {
     if (pendingModeSyncKey === "ideal_worldcup" || effectiveMode === "ideal_worldcup") {
       return "ideal_worldcup";
     }
+    if (serverPendingQaActionKey === "predict") return "qa_predict";
+    if (serverPendingQaActionKey === "next_episode_write") return "qa_next_episode_write";
     return resolveWebsochatShortcutStateKey(promptedShortcutAction);
-  }, [effectiveMode, pendingModeSyncKey, promptedShortcutAction]);
+  }, [effectiveMode, pendingModeSyncKey, promptedShortcutAction, serverPendingQaActionKey]);
   const scopedModeNotices = useMemo(
     () => modeNotices
       .filter((notice) => {
@@ -1391,7 +1402,7 @@ export default function WebsochatPage() {
       ? `${addKoreanPostposition(activeCharacterLabel || "인물", "과", "와")} 대화 중`
       : null;
   const messageFeedItems = useMemo(() => {
-    const orderedPersistedMessages = (messagesData?.data?.messages || [])
+      const orderedPersistedMessages = (messagesData?.data?.messages || [])
       .map((message, index) => ({
         message,
         index,
@@ -1402,11 +1413,25 @@ export default function WebsochatPage() {
           return left.index - right.index;
         }
         return left.createdAt - right.createdAt;
-      })
-      .map(({ message }) => message);
+      });
+    const messageAnchorSortAtMap = new Map<string, number>();
+    orderedPersistedMessages.forEach(({ message, createdAt }) => {
+      const clientMessageId = String(message.clientMessageId || "").trim();
+      if (!clientMessageId || message.role !== "user" || messageAnchorSortAtMap.has(clientMessageId)) return;
+      messageAnchorSortAtMap.set(clientMessageId, createdAt);
+    });
+    transientMessages.forEach((message, index) => {
+      const clientMessageId = String(message.clientMessageId || "").trim();
+      if (!clientMessageId || message.role !== "user" || messageAnchorSortAtMap.has(clientMessageId)) return;
+      messageAnchorSortAtMap.set(
+        clientMessageId,
+        parseWebsochatCreatedAt(message.createdDate) || Date.now() + index
+      );
+    });
     const sortedLocalStarterItems = visibleLocalStarters.map((item) => ({
       sortAt: item.createdAt,
       order: 2,
+      sequence: Number.MAX_SAFE_INTEGER,
       item: {
         type: "starter" as const,
         key: `local-starter-${item.starterId}`,
@@ -1422,63 +1447,87 @@ export default function WebsochatPage() {
           cardSnapshot: null,
         }]
       : [];
-    const persistedMessageItems = orderedPersistedMessages.map((message) => ({
+    const persistedMessageItems = orderedPersistedMessages.map(({ message, createdAt, index }) => ({
       type: "message" as const,
       key: `message-${message.messageId}`,
       message,
+      createdAt,
+      sequence: index,
+      order: message.role === "user" ? 30 : 32,
     }));
     const noticeItems = visibleModeNotices.map((notice) => ({
       type: "notice" as const,
       key: `notice-${notice.noticeId}`,
       notice,
+      sortAt:
+        notice.anchorClientMessageId
+        && messageAnchorSortAtMap.has(notice.anchorClientMessageId)
+          ? messageAnchorSortAtMap.get(notice.anchorClientMessageId) || notice.createdAt
+          : notice.createdAt,
+      order:
+        notice.anchorClientMessageId
+        && messageAnchorSortAtMap.has(notice.anchorClientMessageId)
+          ? 31
+          : 40,
     }));
     const guideItems = serverGuideMessage && !hasCurrentServerGuideInHistory ? [{
       type: "message" as const,
       key: `guide-${activeSessionId || "draft"}`,
       message: serverGuideMessage,
     }] : [];
-    const transientMessageItems = transientMessages.map((message) => ({
+    const transientMessageItems = transientMessages.map((message, index) => ({
       type: "message" as const,
       key: `message-${message.messageId}`,
       message,
+      createdAt: parseWebsochatCreatedAt(message.createdDate) || Date.now() + index,
+      sequence: orderedPersistedMessages.length + index,
+      order: message.role === "user" ? 30 : 32,
     }));
 
     return [
       ...fallbackStarterItems,
       ...[
         ...sortedLocalStarterItems,
-        ...persistedMessageItems.map((item, index) => ({
-          sortAt: parseWebsochatCreatedAt(item.message.createdDate) || index + 1,
-          order: 3,
+        ...persistedMessageItems.map((item) => ({
+          sortAt: item.createdAt,
+          order: item.order,
+          sequence: item.sequence,
           item,
         })),
         ...noticeItems.map((item) => ({
-          sortAt: item.notice.createdAt,
-          order: 4,
+          sortAt: item.sortAt,
+          order: item.order,
+          sequence: Number.MAX_SAFE_INTEGER,
           item,
         })),
         ...visibleStickyGuides.map((item) => ({
           sortAt: item.createdAt,
           order: 1,
+          sequence: Number.MAX_SAFE_INTEGER,
           item: {
             type: "message" as const,
             key: `sticky-guide-${item.guideId}`,
             message: item.message,
           },
         })),
-        ...transientMessageItems.map((item, index) => ({
-          sortAt: parseWebsochatCreatedAt(item.message.createdDate) || Date.now() + index,
-          order: 4,
+        ...transientMessageItems.map((item) => ({
+          sortAt: item.createdAt,
+          order: item.order,
+          sequence: item.sequence,
           item,
         })),
         ...guideItems.map((item) => ({
           sortAt: Date.now(),
           order: 5,
+          sequence: Number.MAX_SAFE_INTEGER,
           item,
         })),
       ]
         .sort((left, right) => {
           if (left.sortAt === right.sortAt) {
+            if (left.order === right.order) {
+              return (left.sequence ?? Number.MAX_SAFE_INTEGER) - (right.sequence ?? Number.MAX_SAFE_INTEGER);
+            }
             return left.order - right.order;
           }
           return left.sortAt - right.sortAt;
@@ -1778,12 +1827,14 @@ export default function WebsochatPage() {
       sessionId = activeSessionId,
       productId = effectiveProductId,
       createdAt = Date.now(),
+      anchorClientMessageId = null,
     }: {
       content: string;
       kind?: WebsochatModeNoticeItem["kind"];
       sessionId?: number | null;
       productId?: number | null;
       createdAt?: number;
+      anchorClientMessageId?: string | null;
     }) => {
       const noticeId = window.crypto.randomUUID();
       setModeNotices((current) => [
@@ -1794,6 +1845,7 @@ export default function WebsochatPage() {
           productId: productId ?? null,
           content,
           createdAt,
+          anchorClientMessageId: anchorClientMessageId ? String(anchorClientMessageId) : null,
           kind,
         },
       ]);
@@ -2716,9 +2768,9 @@ export default function WebsochatPage() {
       || isReadScopeGuardPending
       || isAssistantTurnPending
     ) return null;
-    appendWebsochatDebugLog("handle_send:start", {
-      activeSessionId,
-      effectiveProductId,
+      appendWebsochatDebugLog("handle_send:start", {
+        activeSessionId,
+        effectiveProductId,
       contentPreview: content.slice(0, 80),
       composerMode,
       rpStage,
@@ -2728,13 +2780,13 @@ export default function WebsochatPage() {
       pendingModeSyncKey,
       transientCount: transientMessages.length,
       isPostingMessage,
-      isStreamingMessage,
-      isAssistantTurnPending,
-      starterModeKey: options?.starterModeKey ?? null,
-      qaActionKey: options?.qaActionKey ?? null,
-      rpMode: options?.rpMode ?? null,
-      activeCharacterOption: options?.activeCharacter ?? null,
-    });
+        isStreamingMessage,
+        isAssistantTurnPending,
+        starterModeKey: options?.starterModeKey ?? null,
+        qaActionKey: options?.qaActionKey ?? null,
+        rpMode: options?.rpMode ?? null,
+        activeCharacterOption: options?.activeCharacter ?? null,
+      });
     const assistantTurnOwnerSeq = assistantTurnOwnerSeqRef.current + 1;
     assistantTurnOwnerSeqRef.current = assistantTurnOwnerSeq;
     const isCurrentAssistantTurnOwner = () =>
@@ -2749,7 +2801,22 @@ export default function WebsochatPage() {
       requestCanUseAccountScope = runtimeActorScope.canUseAccountScope;
       const requestGuestKey = runtimeActorScope.guestKey;
       const requestActorKey = runtimeActorScope.actorKey || websochatActorKey;
-      const blockedNotice = getBlockedQaActionNotice(options?.qaActionKey ?? null);
+      const implicitQaActionKey =
+        !options?.qaActionKey
+        && !options?.starterModeKey
+        && !options?.rpMode
+        && !options?.activeCharacter
+        && !options?.gameMode
+          ? (
+            effectiveShortcutState === "qa_predict"
+              ? "predict"
+              : effectiveShortcutState === "qa_next_episode_write"
+                ? "next_episode_write"
+                : null
+          )
+          : null;
+      const resolvedQaActionKey = options?.qaActionKey ?? implicitQaActionKey;
+      const blockedNotice = getBlockedQaActionNotice(resolvedQaActionKey);
       if (blockedNotice) {
         setActiveShortcutPrompt("");
         resetComposerUiState();
@@ -2764,7 +2831,7 @@ export default function WebsochatPage() {
         getWebsochatBillingStatusQueryOptions(
           requestActorKey,
           requestGuestKey,
-          options?.qaActionKey ?? null
+          resolvedQaActionKey
         )
       );
       const billingStatus = latestBillingStatusResponse.data;
@@ -2797,8 +2864,8 @@ export default function WebsochatPage() {
           : resolvedStarterModeKey === "rp" || resolvedRpMode === "free" || !!resolvedActiveCharacter
             ? "rp"
             : "qa";
-      const isPredictAction = options?.qaActionKey === "predict";
-      const isNextEpisodeAction = options?.qaActionKey === "next_episode_write";
+      const isPredictAction = resolvedQaActionKey === "predict";
+      const isNextEpisodeAction = resolvedQaActionKey === "next_episode_write";
       const shouldUseStreaming = !isPredictAction && !isNextEpisodeAction;
       const clientMessageId = window.crypto.randomUUID();
       const sendModeSyncRequestSeq = modeSyncRequestSeqRef.current;
@@ -2806,6 +2873,7 @@ export default function WebsochatPage() {
         activeSessionId,
         clientMessageId,
         resolvedStarterModeKey,
+        resolvedQaActionKey,
         resolvedRpMode,
         resolvedActiveCharacter,
         resolvedStreamingKind,
@@ -2943,6 +3011,8 @@ export default function WebsochatPage() {
                           resolvedSession.canSendMessage ?? item.canSendMessage ?? true,
                         unavailableMessage:
                           resolvedSession.unavailableMessage ?? item.unavailableMessage ?? null,
+                        pendingQaActionKey:
+                          resolvedSession.pendingQaActionKey ?? item.pendingQaActionKey ?? null,
                         rpStage: resolvedSession.rpStage ?? item.rpStage ?? "idle",
                         rpActiveCharacterLabel:
                           resolvedSession.rpActiveCharacterLabel ?? item.rpActiveCharacterLabel ?? null,
@@ -2964,6 +3034,7 @@ export default function WebsochatPage() {
                 messageId: userTempId,
                 role: "user",
                 content,
+                clientMessageId,
                 createdDate,
               },
               {
@@ -2979,6 +3050,7 @@ export default function WebsochatPage() {
                 messageId: userTempId,
                 role: "user",
                 content,
+                clientMessageId,
                 createdDate,
               },
             ]
@@ -3009,6 +3081,7 @@ export default function WebsochatPage() {
             sessionId: activeSessionId ?? null,
             productId: effectiveProductId,
             createdAt: tempSeed + 1,
+            anchorClientMessageId: clientMessageId,
           });
         }
       }
@@ -3020,7 +3093,7 @@ export default function WebsochatPage() {
       });
       setDraft("");
       setStreamingKind(resolvedStreamingKind);
-      setStreamingQaActionKey(options?.qaActionKey ?? null);
+      setStreamingQaActionKey(resolvedQaActionKey);
       setHasStreamingContentStarted(false);
       setStreamingStartedAt(Date.now());
       if (shouldUseStreaming) {
@@ -3106,7 +3179,7 @@ export default function WebsochatPage() {
                 client_message_id: clientMessageId,
                 guest_key: requestGuestKey || undefined,
                 starter_mode_key: resolvedStarterModeKey,
-                qa_action_key: options?.qaActionKey ?? null,
+                qa_action_key: resolvedQaActionKey,
                 rp_mode: resolvedRpMode,
                 active_character: resolvedActiveCharacter,
                 game_mode: options?.gameMode,
@@ -3119,7 +3192,7 @@ export default function WebsochatPage() {
                 client_message_id: clientMessageId,
                 guest_key: requestGuestKey || undefined,
                 starter_mode_key: resolvedStarterModeKey,
-                qa_action_key: options?.qaActionKey ?? null,
+                qa_action_key: resolvedQaActionKey,
                 rp_mode: resolvedRpMode,
                 active_character: resolvedActiveCharacter,
                 game_mode: options?.gameMode,
@@ -3151,7 +3224,7 @@ export default function WebsochatPage() {
                 client_message_id: clientMessageId,
                 guest_key: requestGuestKey || undefined,
                 starter_mode_key: resolvedStarterModeKey,
-                qa_action_key: options?.qaActionKey ?? null,
+                qa_action_key: resolvedQaActionKey,
                 rp_mode: resolvedRpMode,
                 active_character: resolvedActiveCharacter,
                 game_mode: options?.gameMode,
@@ -3217,7 +3290,7 @@ export default function WebsochatPage() {
               client_message_id: clientMessageId,
               guest_key: requestGuestKey || undefined,
               starter_mode_key: resolvedStarterModeKey,
-              qa_action_key: options?.qaActionKey ?? null,
+              qa_action_key: resolvedQaActionKey,
               rp_mode: resolvedRpMode,
               active_character: resolvedActiveCharacter,
               game_mode: options?.gameMode,
@@ -3782,7 +3855,6 @@ export default function WebsochatPage() {
 
   const handleClickSend = () => {
     if (isAssistantTurnPending || isStreamingMessage) return;
-    setActiveShortcutPrompt("");
     void handleSend();
   };
 
@@ -3882,31 +3954,12 @@ export default function WebsochatPage() {
   };
 
   return (
-    <div className="bg-gray-100 md:bg-white">
+    <div className="bg-white md:bg-white">
       <GlobalNav />
-      <div className="min-h-screen bg-gray-100 md:bg-white pt-[130px] md:pt-[115px] pb-[94px]">
-        <div className="w-full max-w-[1600px] mx-auto px-16pxr md:px-40pxr">
-          <div className="flex flex-col gap-12pxr">
-            <div className="md:hidden flex items-center justify-between rounded-[16px] border border-light-gray-400 bg-white px-12pxr py-10pxr">
-              <button
-                type="button"
-                onClick={() => setIsSessionDrawerOpen(true)}
-                className="inline-flex items-center gap-8pxr text-14pxr font-medium text-dark-gray-500"
-              >
-                <List className="w-[18px] h-[18px]" />
-                <span>세션</span>
-              </button>
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={isCreatingSession || isDeletingSession || isReadScopeGuardPending}
-                onClick={handleCreateSession}
-              >
-                새 대화
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-12pxr md:gap-16pxr h-[calc(100vh-220px)] md:h-[calc(100vh-180px)]">
+      <div className="h-[100dvh] md:h-auto overflow-hidden md:overflow-visible bg-white pt-[118px] md:pt-[115px] pb-0 md:pb-[94px]">
+        <div className="w-full max-w-[1600px] mx-auto px-8pxr md:px-40pxr">
+          <div className="flex flex-col gap-0 md:gap-12pxr">
+            <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-0 md:gap-16pxr h-[calc(100dvh-118px)] md:h-[calc(100vh-180px)]">
               <div className="hidden md:flex rounded-[16px] border border-light-gray-400 bg-white p-16pxr flex-col gap-12pxr h-full min-h-0 overflow-hidden">
                 <div className="flex items-center justify-between">
                   <div className="text-16pxr font-semibold">세션</div>
@@ -3924,9 +3977,27 @@ export default function WebsochatPage() {
                 </div>
               </div>
 
-              <div className="rounded-[16px] border border-light-gray-400 bg-white p-16pxr flex flex-col gap-12pxr h-full min-h-0 overflow-hidden">
-
-            <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-16pxr h-[calc(100vh-200px)]">
+              <div className="bg-white md:rounded-[16px] md:border md:border-light-gray-400 md:p-16pxr flex flex-col gap-12pxr h-full min-h-0 overflow-hidden">
+                <div className="md:hidden flex items-center justify-between px-16pxr h-[44px] shrink-0 border-b border-light-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setIsSessionDrawerOpen(true)}
+                    className="p-4pxr -ml-4pxr rounded-full text-dark-gray-500 hover:text-primary-100"
+                    aria-label="세션 목록"
+                  >
+                    <List className="w-[22px] h-[22px]" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isCreatingSession || isDeletingSession || isReadScopeGuardPending}
+                    onClick={handleCreateSession}
+                    className="p-4pxr -mr-4pxr rounded-full text-dark-gray-500 hover:text-primary-100 disabled:opacity-40"
+                    aria-label="새 대화"
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+                  </button>
+                </div>
+            <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-16pxr px-16pxr md:px-0">
               {shouldShowMessagesLoadingSpinner ? (
                 <Spinner size={24} />
               ) : (
@@ -4121,8 +4192,8 @@ export default function WebsochatPage() {
             ) : (
               <>
                 {composerShortcutActions.length ? (
-                  <div className="flex flex-col gap-8pxr">
-                    <div className="flex flex-wrap gap-8pxr">
+                  <div className="flex flex-col gap-8pxr px-16pxr md:px-0">
+                    <div className="flex flex-nowrap overflow-x-auto gap-8pxr [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
                     {composerShortcutActions.map((action) => {
                       const isBlockedAction = Boolean(
                         getBlockedQaActionNotice(action.qaActionKey || null)
@@ -4135,7 +4206,7 @@ export default function WebsochatPage() {
                           type="button"
                           onClick={() => handleClickStarterAction(action)}
                           disabled={areShortcutActionsDisabled || isBlockedAction}
-                          className={`rounded-full border px-12pxr py-7pxr text-12pxr font-medium ${
+                          className={`shrink-0 rounded-full border px-12pxr py-7pxr text-12pxr font-medium ${
                             isActive
                               ? "border-primary-100 bg-primary-100 text-white"
                             : "border-light-gray-400 bg-white text-dark-gray-500 hover:border-primary-100 hover:text-primary-100"
@@ -4153,7 +4224,7 @@ export default function WebsochatPage() {
                     ) : null}
                   </div>
                 ) : null}
-                <div className="flex items-center gap-8pxr">
+                <div className="flex items-center gap-8pxr px-16pxr md:px-0">
                   <button
                     type="button"
                     onClick={handleClickSessionProduct}
@@ -4212,10 +4283,15 @@ export default function WebsochatPage() {
                     ) : null}
                   </div>
                 </div>
-                <div className="flex gap-8pxr">
+                <div className="sticky bottom-0 z-30 flex gap-8pxr items-end rounded-[20px] bg-white/90 backdrop-blur-sm ring-1 ring-inset ring-light-gray-300 focus-within:ring-primary-100 shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.035),0_0_0_0.5px_rgba(0,0,0,0.06)] focus-within:shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.075),0_0_0_0.5px_rgba(0,0,0,0.1)] transition-shadow pl-16pxr pr-8pxr py-4pxr mx-16pxr md:mx-0 mb-[max(env(safe-area-inset-bottom,0px),20px)]">
                   <textarea
                     value={draft}
-                    onChange={(event) => setDraft(event.target.value)}
+                    onChange={(event) => {
+                      setDraft(event.target.value);
+                      const el = event.target;
+                      el.style.height = "0";
+                      el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+                    }}
                     onKeyDown={(event) => {
                       if (event.key !== "Enter") return;
                       if (event.shiftKey) return;
@@ -4234,18 +4310,20 @@ export default function WebsochatPage() {
                       event.preventDefault();
                       handleClickSend();
                     }}
-                    placeholder={composerPlaceholderWithShortcutHint}
+                    placeholder="작품에 관해 뭐든 말해보세요."
                     disabled={isReadScopeGuardPending || isAssistantTurnPending}
-                    className="flex-1 min-h-[96px] rounded-[16px] border border-light-gray-300 bg-white px-16pxr py-12pxr text-16pxr leading-[1.6] outline-none transition-all focus:border-primary-100 focus:ring-2 focus:ring-primary-100/10 resize-none disabled:bg-light-gray-100 disabled:text-dark-gray-300 shadow-sm"
+                    rows={1}
+                    className="flex-1 bg-transparent px-4pxr py-8pxr text-14pxr leading-[1.5] outline-none resize-none overflow-y-auto disabled:bg-light-gray-100 disabled:text-dark-gray-300"
+                    style={{ minHeight: '36px', maxHeight: '200px' }}
                   />
-                    <Button
-                      size="md"
-                      className="min-w-[88px] self-end"
-                    disabled={!selectedProductId || !draft.trim() || isStreamingMessage || isAssistantTurnPending || isCreatingSession || isDeletingSession || isReadScopeGuardPending}
+                    <button
+                      type="button"
+                      className="flex items-center justify-center w-[36px] h-[36px] shrink-0 rounded-full bg-primary-100 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary-100/90 transition-colors"
+                      disabled={!selectedProductId || !draft.trim() || isStreamingMessage || isAssistantTurnPending || isCreatingSession || isDeletingSession || isReadScopeGuardPending}
                       onClick={handleClickSend}
                     >
-                    전송
-                  </Button>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+                    </button>
                 </div>
               </>
             )}

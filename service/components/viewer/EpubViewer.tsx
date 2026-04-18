@@ -27,7 +27,7 @@ const fontSizeMap = [
 ];
 
 const letterSpacingMap = ["0px", "1px", "2px", "3px", "4px"];
-const lineHeightMap = ["1.5rem", "2.5rem", "3.5rem", "4.5rem", "5.5rem"];
+const lineHeightMap = ["1.45em", "1.7em", "1.95em", "2.2em", "2.45em"];
 const COVER_IMAGE_SELECTORS =
   'img[src*="cover"], img[alt*="cover"], img[alt*="표지"], img[class*="cover"], .cover-image, .titlepage img, .frontcover img';
 
@@ -713,6 +713,7 @@ const EpubViewer = ({
         p: {
           ...(lineHeight ? { "line-height": `${lineHeight} !important` } : {}),
           "tab-size": "4 !important",
+          "margin": "0 0 0.15em 0 !important",
           "text-indent": currentSettings.useParagraphIndent
             ? "1em !important"
             : "0 !important",
@@ -787,14 +788,25 @@ const EpubViewer = ({
         }
 
         doc.querySelectorAll("p").forEach((paragraph: Element) => {
-          (paragraph as HTMLElement).style.setProperty(
-            "tab-size",
-            "4",
+          const element = paragraph as HTMLElement;
+          const isBlankParagraph =
+            (element.textContent || "").trim() === "" &&
+            element.querySelectorAll("br").length > 0;
+
+          element.style.setProperty("tab-size", "4", "important");
+          element.style.setProperty(
+            "margin",
+            isBlankParagraph ? "0" : "0 0 0.15em 0",
             "important"
           );
-          (paragraph as HTMLElement).style.setProperty(
+          element.style.setProperty(
+            "line-height",
+            isBlankParagraph ? "0.8em" : (lineHeight || "inherit"),
+            "important"
+          );
+          element.style.setProperty(
             "text-indent",
-            currentSettings.useParagraphIndent ? "1em" : "0",
+            currentSettings.useParagraphIndent && !isBlankParagraph ? "1em" : "0",
             "important"
           );
         });
