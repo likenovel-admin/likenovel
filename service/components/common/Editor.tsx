@@ -38,10 +38,13 @@ const Editor = ({ value, onChange }: Props) => {
   const [hasShownLimitWarning, setHasShownLimitWarning] = useState(false);
 
   /**
-   * 붙여넣기 텍스트를 메모장처럼 그대로 반영합니다.
+   * 메모장(plain text) 붙여넣기에서 줄바꿈/공백이 깨져 보이는 문제를 방지합니다.
    *
-   * - 클립보드에 HTML이 있더라도 text/plain 기준으로만 넣습니다.
-   * - `\r\n`/`\n`는 모두 HardBreak로 보존해 메모장과 동일한 줄 구성을 유지합니다.
+   * - TipTap 기본 paste는 HTML/리치텍스트를 우선으로 정규화하면서 `\r\n` 개행을
+   *   문단/스타일로 재해석할 수 있습니다.
+   * - 메모장은 보통 `text/html`을 제공하지 않으므로, `text/plain`만 존재하는 경우에만
+   *   붙여넣기를 가로채서 `\r\n`/`\n`를 HardBreak로 직접 삽입합니다.
+   * - 리치텍스트(웹/워드 등)는 기본 동작을 유지합니다.
    */
   const pastePlainTextPreserveNewlines = (rawText: string) => {
     const normalized = rawText.replace(/\r\n/g, "\n");
@@ -64,15 +67,8 @@ const Editor = ({ value, onChange }: Props) => {
   };
 
   const editor = useEditor({
-    enableInputRules: false,
-    enablePasteRules: false,
     extensions: [
-      StarterKit.configure({
-        bold: false,
-        italic: false,
-        bulletList: false,
-        orderedList: false,
-      }),
+      StarterKit,
       Bold,
       Italic,
       Underline,
@@ -90,6 +86,7 @@ const Editor = ({ value, onChange }: Props) => {
     editorProps: {
       handlePaste: (_view, event) => {
         const pastedText = event.clipboardData?.getData("text/plain") || "";
+        const pastedHtml = event.clipboardData?.getData("text/html") || "";
         const currentCharCount = editor?.storage.characterCount.characters() || 0;
         const totalChars = currentCharCount + pastedText.length;
 
@@ -103,25 +100,15 @@ const Editor = ({ value, onChange }: Props) => {
           return true; // Prevent default paste behavior
         }
 
-        // HTML이 함께 있어도 plain text 기준으로만 반영해 입력 결과를 안정화
-        if (pastedText) {
+        // 메모장/단순 텍스트(HTML 없음) 붙여넣기는 개행을 HardBreak로 보존
+        // - HTML이 있는 경우(웹/문서 등)는 기본 paste 유지
+        if (pastedText && !pastedHtml) {
           event.preventDefault();
           pastePlainTextPreserveNewlines(pastedText);
           return true;
         }
 
         return false; // Allow default paste behavior
-      },
-      handleKeyDown: (_view, event) => {
-        if (event.isComposing) return false;
-
-        if (event.key === "Enter") {
-          event.preventDefault();
-          editor?.chain().focus().setHardBreak().run();
-          return true;
-        }
-
-        return false;
       },
     },
     onUpdate: ({ editor }) => {
@@ -332,7 +319,7 @@ const Editor = ({ value, onChange }: Props) => {
       >
         <EditorContent
           editor={editor}
-          className="max-w-full w-full px-4 py-2 focus:border-primary-100"
+          className="prose max-w-full w-full px-4 py-2 focus:border-primary-100"
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
         />
