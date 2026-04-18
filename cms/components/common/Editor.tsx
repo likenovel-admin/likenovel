@@ -33,6 +33,25 @@ interface PropsType {
   maxCharacters?: number;
 }
 
+const sanitizeEditorHtml = (html: string) => {
+  if (!html) return "";
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+
+  doc.querySelectorAll("br.ProseMirror-trailingBreak").forEach((node) => {
+    node.remove();
+  });
+
+  const lastElement = doc.body.lastElementChild;
+  if (lastElement?.tagName === "P") {
+    while (lastElement.lastChild?.nodeName === "BR") {
+      lastElement.removeChild(lastElement.lastChild);
+    }
+  }
+
+  return doc.body.innerHTML;
+};
+
 export const Editor = ({
   value,
   setValue,
@@ -62,8 +81,17 @@ export const Editor = ({
   };
 
   const editor = useEditor({
+    enableInputRules: false,
+    enablePasteRules: false,
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        bulletList: false,
+        orderedList: false,
+        heading: false,
+        blockquote: false,
+        codeBlock: false,
+        horizontalRule: false,
+      }),
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TiptapImage.configure({ inline: false, allowBase64: true }),
@@ -85,13 +113,18 @@ export const Editor = ({
       },
     },
     onUpdate: ({ editor: e }) => {
-      setValue?.(e.getHTML());
+      setValue?.(sanitizeEditorHtml(e.getHTML()));
     },
   });
 
   useEffect(() => {
-    if (editor && value !== undefined && value !== editor.getHTML()) {
-      editor.commands.setContent(value || "");
+    const sanitizedValue = sanitizeEditorHtml(value || "");
+    if (
+      editor &&
+      value !== undefined &&
+      sanitizedValue !== sanitizeEditorHtml(editor.getHTML())
+    ) {
+      editor.commands.setContent(sanitizedValue);
     }
   }, [value, editor]);
 
@@ -229,7 +262,7 @@ export const Editor = ({
       >
         <EditorContent
           editor={editor}
-          className="prose max-w-full w-full px-4 py-2"
+          className="max-w-full w-full px-4 py-2"
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
         />
