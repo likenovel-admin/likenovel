@@ -28,7 +28,7 @@ const PRESETS = [
 ] as const;
 type PresetKey = (typeof PRESETS)[number]["key"];
 
-const HIDDEN_PREFIXES = ["/login", "/signup", "/find-password", "/reset-password", "/viewer"];
+const HIDDEN_PREFIXES = ["/login", "/signup", "/find-password", "/reset-password", "/viewer", "/websochat"];
 
 const parsePositiveId = (value?: string) => {
   const parsed = Number(value);
