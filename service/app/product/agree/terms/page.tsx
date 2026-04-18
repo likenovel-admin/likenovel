@@ -999,7 +999,7 @@ export default function TermsPage() {
         </p>
       </div>
       <div>
-        <h2 className="text-18pxr font-bold mb-12pxr">제 30 조 환불</h2>
+        <h2 className="text-18pxr font-bold mb-12pxr">제 31 조 환불</h2>
         <p>
           ① 환불 규정은 전자상거래 등에서의 소비자 보호에 관한 법률 등 관련
           법령을 준수한다.
@@ -1113,7 +1113,7 @@ export default function TermsPage() {
       </div>
       <div>
         <h2 className="text-18pxr font-bold mb-12pxr">
-          제 31 조 미성년자의 결제
+          제 32 조 미성년자의 결제
         </h2>
         <p>
           ① 이용자가 만 14세 미만 미성년자 또는 만19세 미만 미성년자 또는
@@ -1148,7 +1148,7 @@ export default function TermsPage() {
       </div>
       <div>
         <h2 className="text-18pxr font-bold mb-12pxr">
-          제 32조 회원탈퇴 및 자격상실
+          제 33조 회원탈퇴 및 자격상실
         </h2>
         <p>
           ① 회원은 회사에 언제든지 회원탈퇴를 요청할 수 있으며, 회사는
@@ -1188,7 +1188,7 @@ export default function TermsPage() {
         </p>
       </div>
       <div>
-        <h2 className="text-18pxr font-bold mb-12pxr">제 33 조 양도금지</h2>
+        <h2 className="text-18pxr font-bold mb-12pxr">제 34 조 양도금지</h2>
         <p>
           ① 회원은 서비스의 이용권한, 기타 이용계약상의 지위를 타인에게 양도 및
           증여할 수 없으며, 이를 담보로 제공할 수 없다.
@@ -1200,7 +1200,7 @@ export default function TermsPage() {
         </p>
       </div>
       <div>
-        <h2 className="text-18pxr font-bold mb-12pxr">제 34 조 손해배상</h2>
+        <h2 className="text-18pxr font-bold mb-12pxr">제 35 조 손해배상</h2>
         <p>
           회사는 무료로 제공되는 서비스와 관련하여 회원에게 어떠한 손해가
           발생하더라도 회사가 고의로 행한 범죄행위를 제외하고 이에 대하여 책임을
@@ -1208,7 +1208,7 @@ export default function TermsPage() {
         </p>
       </div>
       <div>
-        <h2 className="text-18pxr font-bold mb-12pxr">제 35 조 분쟁해결</h2>
+        <h2 className="text-18pxr font-bold mb-12pxr">제 36 조 분쟁해결</h2>
         <p>
           ① 회사는 이용자가 제기하는 정당한 의견이나 불만을 반영하고 그 피해를
           보상처리하기 위해서 피해보상처리 절차를 마련하고 이를 이행한다.
@@ -1221,7 +1221,7 @@ export default function TermsPage() {
       </div>
       <div>
         <h2 className="text-18pxr font-bold mb-12pxr">
-          제 36 조 준거법 및 관할법원
+          제 37 조 준거법 및 관할법원
         </h2>
         <p>
           ① 서비스 이용과 관련하여 회사와 회원 간에 이견 또는 분쟁이 있는 경우,
