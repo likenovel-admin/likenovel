@@ -2867,6 +2867,7 @@ export default function WebsochatPage() {
       const isPredictAction = resolvedQaActionKey === "predict";
       const isNextEpisodeAction = resolvedQaActionKey === "next_episode_write";
       const shouldUseStreaming = !isPredictAction && !isNextEpisodeAction;
+      const shouldShowPendingAssistantPlaceholder = resolvedStreamingKind === "qa";
       const clientMessageId = window.crypto.randomUUID();
       const sendModeSyncRequestSeq = modeSyncRequestSeqRef.current;
       appendWebsochatDebugLog("handle_send:resolved", {
@@ -3028,7 +3029,7 @@ export default function WebsochatPage() {
 
       if (!isCurrentAssistantTurnOwner()) return null;
       setTransientMessages(
-        shouldUseStreaming
+        shouldUseStreaming || shouldShowPendingAssistantPlaceholder
           ? [
               {
                 messageId: userTempId,
@@ -3096,7 +3097,7 @@ export default function WebsochatPage() {
       setStreamingQaActionKey(resolvedQaActionKey);
       setHasStreamingContentStarted(false);
       setStreamingStartedAt(Date.now());
-      if (shouldUseStreaming) {
+      if (shouldUseStreaming || shouldShowPendingAssistantPlaceholder) {
         setIsStreamingMessage(true);
       }
 
@@ -4166,6 +4167,9 @@ export default function WebsochatPage() {
               {isAssistantTurnPending
                 && streamingKind === "qa"
                 && streamingQaActionKey === "next_episode_write"
+                && !transientMessages.some(
+                  (message) => message.role === "assistant" && "isStreaming" in message && Boolean(message.isStreaming)
+                )
                 && !hasStreamingContentStarted ? (
                   <div className="self-start max-w-[92%] md:max-w-[90%] rounded-[12px] border border-light-gray-300 bg-white px-12pxr py-10pxr text-dark-gray-500">
                     <div className="flex items-center justify-between gap-8pxr text-12pxr text-dark-gray-400">
