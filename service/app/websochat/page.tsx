@@ -4283,7 +4283,7 @@ export default function WebsochatPage() {
                     ) : null}
                   </div>
                 </div>
-                <div className="sticky bottom-0 z-30 flex gap-8pxr items-end rounded-[20px] bg-white/90 backdrop-blur-sm ring-1 ring-inset ring-light-gray-300 focus-within:ring-primary-100 shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.035),0_0_0_0.5px_rgba(0,0,0,0.06)] focus-within:shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.075),0_0_0_0.5px_rgba(0,0,0,0.1)] transition-shadow pl-16pxr pr-8pxr py-4pxr mx-16pxr md:mx-0 mb-[max(env(safe-area-inset-bottom,0px),12px)]">
+                <div className="sticky bottom-0 z-30 flex gap-8pxr items-end rounded-[20px] bg-white/90 backdrop-blur-sm ring-1 ring-inset ring-light-gray-300 focus-within:ring-primary-100 shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.035),0_0_0_0.5px_rgba(0,0,0,0.06)] focus-within:shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.075),0_0_0_0.5px_rgba(0,0,0,0.1)] transition-shadow pl-16pxr pr-8pxr py-4pxr mx-16pxr md:mx-0 mb-[max(env(safe-area-inset-bottom,0px),20px)]">
                   <textarea
                     value={draft}
                     onChange={(event) => {
