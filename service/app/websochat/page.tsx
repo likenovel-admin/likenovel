@@ -4313,7 +4313,7 @@ export default function WebsochatPage() {
                     placeholder="작품에 관해 뭐든 말해보세요."
                     disabled={isReadScopeGuardPending || isAssistantTurnPending}
                     rows={1}
-                    className="flex-1 bg-transparent px-4pxr py-8pxr text-14pxr leading-[1.5] outline-none resize-none overflow-y-auto disabled:bg-light-gray-100 disabled:text-dark-gray-300"
+                    className="flex-1 bg-transparent px-4pxr py-8pxr text-16pxr md:text-14pxr leading-[1.5] outline-none resize-none overflow-y-auto disabled:bg-light-gray-100 disabled:text-dark-gray-300"
                     style={{ minHeight: '36px', maxHeight: '200px' }}
                   />
                     <button

@@ -10,6 +10,7 @@ import {
   ONBOARDING_FIRST_LOGIN_SESSION_KEY,
   ONBOARDING_STATUS_CHANGED_EVENT,
 } from "@/constants/onboarding";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -162,13 +163,14 @@ const AdminPopup = () => {
             className={currentPopup.url ? "cursor-pointer" : ""}
             onClick={handleImageClick}
           >
-            <picture>
-              <img
-                src={currentPopup.imagePath}
-                alt="popup"
-                className="w-full h-auto max-h-[70vh] object-contain"
-              />
-            </picture>
+            <Image
+              src={currentPopup.imagePath}
+              alt="popup"
+              width={1200}
+              height={1200}
+              sizes="(max-width: 768px) 90vw, 600px"
+              className="w-full h-auto max-h-[70vh] object-contain"
+            />
           </div>
 
           <div className="w-full border-t border-light-gray-500 flex">
