@@ -5,10 +5,18 @@ export const getLatestEpisodeDate = (date: string) => {
   if (!date) return "";
   const now = dayjs();
   const targetDate = dayjs(date);
+  const diffInMinutes = now.diff(targetDate, "minute");
+  const diffInHours = now.diff(targetDate, "hour");
   const diffInDays = now.diff(targetDate, "day");
 
   if (diffInDays === 0) {
-    return "";
+    if (diffInHours >= 1) {
+      return `${diffInHours}시간 전`;
+    }
+    if (diffInMinutes >= 1) {
+      return `${diffInMinutes}분 전`;
+    }
+    return "방금 전";
   } else if (diffInDays < 30) {
     return `${diffInDays}일 전`;
   } else {
