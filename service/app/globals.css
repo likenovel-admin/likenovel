@@ -189,6 +189,16 @@ html {
     line-height: 24px;
   }
 
+  /*
+    회차 에디터 전용 — 빈 <p> 안에 ProseMirror가 추가하는 trailingBreak가
+    저장된 <br>와 겹쳐 48px(2줄)로 과장 렌더되는 문제를 방지한다.
+    display:none은 시각만 숨길 뿐 DOM 노드는 유지되므로 caret 동작에는 영향 없음.
+    .episode-editor 클래스가 없는 공지/FAQ/이벤트 에디터에는 적용되지 않는다.
+  */
+  .episode-editor .ProseMirror p > br.ProseMirror-trailingBreak {
+    display: none;
+  }
+
   .ProseMirror li {
     line-height: 24px;
   }

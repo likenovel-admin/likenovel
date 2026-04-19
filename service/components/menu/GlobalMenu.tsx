@@ -64,9 +64,11 @@ const GlobalMenu = () => {
       >
         <div className="hidden md:contents">
           {user?.userRole && profileImagePath ? (
-            <img
+            <Image
               src={profileImagePath}
               alt="프로필"
+              width={24}
+              height={24}
               className="w-[24px] h-[24px] rounded-full object-cover"
             />
           ) : (

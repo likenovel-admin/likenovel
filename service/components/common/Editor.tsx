@@ -319,7 +319,7 @@ const Editor = ({ value, onChange }: Props) => {
       >
         <EditorContent
           editor={editor}
-          className="prose max-w-full w-full px-4 py-2 focus:border-primary-100"
+          className="episode-editor prose max-w-full w-full px-4 py-2 focus:border-primary-100"
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
         />
