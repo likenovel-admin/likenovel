@@ -192,9 +192,14 @@ html {
   /*
     회차 에디터 전용 — 빈 <p> 안에 ProseMirror가 추가하는 trailingBreak가
     저장된 <br>와 겹쳐 48px(2줄)로 과장 렌더되는 문제를 방지한다.
-    display:none은 시각만 숨길 뿐 DOM 노드는 유지되므로 caret 동작에는 영향 없음.
+    display:none으로 trailingBreak 시각 중복을 제거하되,
+    엔터로 새 빈 문단을 만들었을 때(일반 <br> 없이 trailingBreak만 존재)
+    빈 p가 0px로 무너지지 않도록 p 자체에 min-height 1em을 강제한다.
     .episode-editor 클래스가 없는 공지/FAQ/이벤트 에디터에는 적용되지 않는다.
   */
+  .episode-editor .ProseMirror p {
+    min-height: 24px;
+  }
   .episode-editor .ProseMirror p > br.ProseMirror-trailingBreak {
     display: none;
   }
