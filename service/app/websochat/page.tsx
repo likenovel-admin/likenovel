@@ -16,7 +16,9 @@ import {
 import {
   getWebsochatBillingStatusQueryOptions,
   getWebsochatMessagesQueryOptions,
+  postWebsochatMessageOnce,
   postWebsochatMessageStream,
+  postWebsochatNextEpisodeMessageOnce,
   useCreateWebsochatSession,
   useGetWebsochatBillingStatus,
   useDeleteWebsochatSession,
@@ -25,8 +27,6 @@ import {
   useGetWebsochatSessions,
   usePatchWebsochatSessionMode,
   usePatchWebsochatSessionReadScope,
-  usePostWebsochatNextEpisodeMessage,
-  usePostWebsochatMessage,
 } from "@/app/api/query/websochat";
 import Button from "@/components/common/Button";
 import ModalContainer from "@/components/common/ModalContainer";
@@ -584,6 +584,41 @@ type WebsochatTransientMessageItem = IWebsochatMessageItem & {
 type WebsochatStreamingKind = "qa" | "rp" | "ideal_worldcup";
 type WebsochatComposerMode = "qa" | "rp" | "ideal_worldcup";
 type WebsochatRpStage = "idle" | "awaiting_character" | "chatting";
+
+const isWebsochatAbortError = (error: unknown) => {
+  if (axios.isCancel(error)) return true;
+  if (error instanceof DOMException && error.name === "AbortError") return true;
+  if (error instanceof Error) {
+    const errorCode = String((error as { code?: string }).code || "");
+    return error.name === "AbortError" || errorCode === "ERR_CANCELED";
+  }
+  return false;
+};
+
+const waitForWebsochatAbortableDelay = (
+  milliseconds: number,
+  signal?: AbortSignal
+) => new Promise<void>((resolve, reject) => {
+  const timeoutId = window.setTimeout(() => {
+    signal?.removeEventListener("abort", handleAbort);
+    resolve();
+  }, milliseconds);
+
+  const handleAbort = () => {
+    window.clearTimeout(timeoutId);
+    signal?.removeEventListener("abort", handleAbort);
+    reject(new DOMException("The operation was aborted.", "AbortError"));
+  };
+
+  if (!signal) return;
+  if (signal.aborted) {
+    handleAbort();
+    return;
+  }
+
+  signal.addEventListener("abort", handleAbort, { once: true });
+});
+
 type WebsochatShortcutStateKey =
   | "qa_default"
   | "qa_predict"
@@ -786,6 +821,12 @@ export default function WebsochatPage() {
   const assistantTurnOwnerSeqRef = useRef(0);
   const hydratedShortcutPromptSessionIdRef = useRef<number | null>(null);
   const productSelectionNoticeSeqRef = useRef(0);
+  const messageListRef = useRef<HTMLDivElement | null>(null);
+  const messageListContentRef = useRef<HTMLDivElement | null>(null);
+  const shouldStickMessageListToBottomRef = useRef(true);
+  const forceScrollToBottomRef = useRef(false);
+  const isProgrammaticMessageListScrollRef = useRef(false);
+  const activeAssistantAbortControllerRef = useRef<AbortController | null>(null);
 
   const readStoredActiveSessionId = useCallback(() => {
     if (typeof window === "undefined") return null;
@@ -1127,8 +1168,6 @@ export default function WebsochatPage() {
   const { mutateAsync: deleteSession, isPending: isDeletingSession } = useDeleteWebsochatSession();
   const { mutateAsync: patchSessionMode } = usePatchWebsochatSessionMode();
   const { mutateAsync: patchSessionReadScope } = usePatchWebsochatSessionReadScope();
-  const { mutateAsync: postMessage, isPending: isPostingMessage } = usePostWebsochatMessage();
-  const { mutateAsync: postNextEpisodeMessage } = usePostWebsochatNextEpisodeMessage();
 
   const activeSession = useMemo(
     () => sessionsData?.data?.find((item) => item.sessionId === activeSessionId) ?? null,
@@ -1546,6 +1585,8 @@ export default function WebsochatPage() {
     visibleStickyGuides,
     visibleModeNotices,
   ]);
+
+
   const shouldShowIdleGuideMessage =
     !activeSessionId
     && !effectiveStarter
@@ -2022,6 +2063,109 @@ export default function WebsochatPage() {
     setIsAssistantTurnPending(false);
   }, [resetAssistantTurnVisualState]);
 
+  const isMessageListNearBottom = useCallback(() => {
+    const container = messageListRef.current;
+    if (!container) return true;
+    const remainingDistance = container.scrollHeight - container.scrollTop - container.clientHeight;
+    return remainingDistance <= 96;
+  }, []);
+
+  const scrollMessageListToBottom = useCallback((_behavior: ScrollBehavior = "auto") => {
+    const container = messageListRef.current;
+    if (!container) return;
+    const nextScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+    if (Math.abs(container.scrollTop - nextScrollTop) <= 1) return;
+    isProgrammaticMessageListScrollRef.current = true;
+    container.scrollTop = nextScrollTop;
+  }, []);
+
+  const queueScrollMessageListToBottom = useCallback((_behavior: ScrollBehavior = "smooth") => {
+    shouldStickMessageListToBottomRef.current = true;
+    forceScrollToBottomRef.current = true;
+  }, []);
+
+  const handleMessageListScroll = useCallback(() => {
+    if (isProgrammaticMessageListScrollRef.current) {
+      isProgrammaticMessageListScrollRef.current = false;
+      return;
+    }
+
+    const isNearBottom = isMessageListNearBottom();
+    shouldStickMessageListToBottomRef.current = isNearBottom;
+    if (!isNearBottom) {
+      forceScrollToBottomRef.current = false;
+    }
+  }, [isMessageListNearBottom]);
+
+  const handlePauseAssistantTurn = useCallback(() => {
+    if (!isAssistantTurnPending && !isStreamingMessage) return;
+    assistantTurnOwnerSeqRef.current += 1;
+    activeAssistantAbortControllerRef.current?.abort();
+    activeAssistantAbortControllerRef.current = null;
+    shouldStickMessageListToBottomRef.current = false;
+    forceScrollToBottomRef.current = false;
+    setTransientMessages((current) => {
+      const nextMessages = current.map((message) => (
+        message.role === "assistant"
+          ? {
+              ...message,
+              isStreaming: false,
+            }
+          : message
+      ));
+      const hasAssistantContent = nextMessages.some((message) => (
+        message.role === "assistant" && String(message.content || "").trim().length > 0
+      ));
+      return hasAssistantContent
+        ? nextMessages
+        : nextMessages.filter((message) => message.role !== "assistant");
+    });
+    setIsAssistantTurnPending(false);
+    setIsStreamingMessage(false);
+    setStreamingStatusMessage("");
+    setStreamingQaActionKey(null);
+    setHasStreamingContentStarted(false);
+    setStreamingStartedAt(null);
+    setStreamingProgressPercent(0);
+    setIsNextEpisodeCompletionHolding(false);
+  }, [isAssistantTurnPending, isStreamingMessage]);
+
+  useBrowserLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!messageListRef.current) return;
+    if (!forceScrollToBottomRef.current && !shouldStickMessageListToBottomRef.current) return;
+    const rafId = window.requestAnimationFrame(() => {
+      scrollMessageListToBottom();
+      forceScrollToBottomRef.current = false;
+    });
+    return () => window.cancelAnimationFrame(rafId);
+  }, [
+    activeSessionId,
+    hasStreamingContentStarted,
+    isAssistantTurnPending,
+    isNextEpisodeCompletionHolding,
+    isStreamingMessage,
+    messageFeedItems,
+    scrollMessageListToBottom,
+    streamingProgressPercent,
+    streamingStatusMessage,
+  ]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const content = messageListContentRef.current;
+    if (!messageListRef.current || !content || typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(() => {
+      if (!forceScrollToBottomRef.current && !shouldStickMessageListToBottomRef.current) return;
+      scrollMessageListToBottom();
+      forceScrollToBottomRef.current = false;
+    });
+
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [scrollMessageListToBottom]);
+
   const clearSessionScopedComposerState = useCallback(() => {
     appendWebsochatDebugLog("clear_session_scoped_composer_state", {
       activeSessionId,
@@ -2032,6 +2176,8 @@ export default function WebsochatPage() {
     });
     modeSyncRequestSeqRef.current += 1;
     assistantTurnOwnerSeqRef.current += 1;
+    activeAssistantAbortControllerRef.current?.abort();
+    activeAssistantAbortControllerRef.current = null;
     setPendingModeSyncKey(null);
     setActiveShortcutPrompt("");
     resetComposerUiState();
@@ -2305,6 +2451,16 @@ export default function WebsochatPage() {
   const isSearchButtonDisabled =
     isProductSelectionLocked
     || (!normalizedKeyword.length && !normalizedSubmittedKeyword.length);
+  const isPauseButtonVisible = isAssistantTurnPending || isStreamingMessage;
+  const isSendButtonDisabled = isPauseButtonVisible
+    ? false
+    : (
+      !selectedProductId
+      || !draft.trim()
+      || isCreatingSession
+      || isDeletingSession
+      || isReadScopeGuardPending
+    );
   const unavailableMessage =
     activeSession?.unavailableMessage
     || activeSessionMeta?.unavailableMessage
@@ -2320,6 +2476,7 @@ export default function WebsochatPage() {
 
   const enterDraftSession = useCallback((openProductPicker?: boolean) => {
     writeStoredActiveSessionId(null);
+    queueScrollMessageListToBottom("auto");
     setIsPreparingNewSession(true);
     setActiveSessionId(null);
     setSelectedProductId(null);
@@ -2334,7 +2491,12 @@ export default function WebsochatPage() {
     if (openProductPicker) {
       setIsProductPickerOpen(true);
     }
-  }, [clearSessionScopedComposerState, ensureDraftPreludeSeeded, writeStoredActiveSessionId]);
+  }, [
+    clearSessionScopedComposerState,
+    ensureDraftPreludeSeeded,
+    queueScrollMessageListToBottom,
+    writeStoredActiveSessionId,
+  ]);
 
   useEffect(() => {
     const pendingLaunch = consumePendingWebsochatLaunch();
@@ -2715,11 +2877,13 @@ export default function WebsochatPage() {
 
   const handleCreateSession = async () => {
     if (isReadScopeGuardPending) return;
+    queueScrollMessageListToBottom("auto");
     setIsSessionDrawerOpen(false);
     enterDraftSession(false);
   };
 
   const handleSelectSession = (sessionId: number, productId: number | null) => {
+    queueScrollMessageListToBottom("auto");
     clearSessionScopedComposerState();
     setIsSessionDrawerOpen(false);
     setIsPreparingNewSession(false);
@@ -2779,7 +2943,6 @@ export default function WebsochatPage() {
       activeShortcutPrompt,
       pendingModeSyncKey,
       transientCount: transientMessages.length,
-      isPostingMessage,
         isStreamingMessage,
         isAssistantTurnPending,
         starterModeKey: options?.starterModeKey ?? null,
@@ -2791,7 +2954,10 @@ export default function WebsochatPage() {
     assistantTurnOwnerSeqRef.current = assistantTurnOwnerSeq;
     const isCurrentAssistantTurnOwner = () =>
       assistantTurnOwnerSeqRef.current === assistantTurnOwnerSeq;
+    queueScrollMessageListToBottom("smooth");
     setIsAssistantTurnPending(true);
+    const turnAbortController = new AbortController();
+    activeAssistantAbortControllerRef.current = turnAbortController;
     let requestCanUseAccountScope = canUseAccountScope;
 
     try {
@@ -2867,6 +3033,7 @@ export default function WebsochatPage() {
       const isPredictAction = resolvedQaActionKey === "predict";
       const isNextEpisodeAction = resolvedQaActionKey === "next_episode_write";
       const shouldUseStreaming = !isPredictAction && !isNextEpisodeAction;
+      const shouldShowPendingAssistantPlaceholder = resolvedStreamingKind === "qa";
       const clientMessageId = window.crypto.randomUUID();
       const sendModeSyncRequestSeq = modeSyncRequestSeqRef.current;
       appendWebsochatDebugLog("handle_send:resolved", {
@@ -3028,7 +3195,7 @@ export default function WebsochatPage() {
 
       if (!isCurrentAssistantTurnOwner()) return null;
       setTransientMessages(
-        shouldUseStreaming
+        shouldUseStreaming || shouldShowPendingAssistantPlaceholder
           ? [
               {
                 messageId: userTempId,
@@ -3096,7 +3263,7 @@ export default function WebsochatPage() {
       setStreamingQaActionKey(resolvedQaActionKey);
       setHasStreamingContentStarted(false);
       setStreamingStartedAt(Date.now());
-      if (shouldUseStreaming) {
+      if (shouldUseStreaming || shouldShowPendingAssistantPlaceholder) {
         setIsStreamingMessage(true);
       }
 
@@ -3173,7 +3340,7 @@ export default function WebsochatPage() {
       try {
         if (!shouldUseStreaming) {
           const response = isNextEpisodeAction
-            ? await postNextEpisodeMessage({
+            ? await postWebsochatNextEpisodeMessageOnce({
                 sessionId,
                 content,
                 client_message_id: clientMessageId,
@@ -3185,8 +3352,8 @@ export default function WebsochatPage() {
                 game_mode: options?.gameMode,
                 game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? latestAccountReadEpisodeNo : null,
                 account_read_episode_to: latestAccountReadEpisodeNo,
-              })
-            : await postMessage({
+              }, { signal: turnAbortController.signal })
+            : await postWebsochatMessageOnce({
                 sessionId,
                 content,
                 client_message_id: clientMessageId,
@@ -3198,12 +3365,12 @@ export default function WebsochatPage() {
                 game_mode: options?.gameMode,
                 game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? latestAccountReadEpisodeNo : null,
                 account_read_episode_to: latestAccountReadEpisodeNo,
-              });
+              }, { signal: turnAbortController.signal });
           if (isNextEpisodeAction && isCurrentAssistantTurnOwner()) {
             setIsNextEpisodeCompletionHolding(true);
             setStreamingProgressPercent(100);
             setStreamingStatusMessage("완성본 정리 중이에요.");
-            await new Promise((resolve) => window.setTimeout(resolve, 1500));
+            await waitForWebsochatAbortableDelay(1500, turnAbortController.signal);
           }
           await applyCompletedResponse(response.data);
           if (isCurrentAssistantTurnOwner()) {
@@ -3271,7 +3438,8 @@ export default function WebsochatPage() {
                 if (event.event === "done" && !completedData && !streamTerminalError) {
                   sawStreamDoneWithoutCompleted = true;
                 }
-              }
+              },
+              { signal: turnAbortController.signal }
             );
             if (completedData) {
               await applyCompletedResponse(completedData);
@@ -3283,8 +3451,11 @@ export default function WebsochatPage() {
               throw new Error("websochat stream completed event missing");
             }
           } catch (streamError) {
+            if (isWebsochatAbortError(streamError) || !isCurrentAssistantTurnOwner()) {
+              throw streamError;
+            }
             setStreamingStatusMessage("");
-            const response = await postMessage({
+            const response = await postWebsochatMessageOnce({
               sessionId,
               content,
               client_message_id: clientMessageId,
@@ -3296,7 +3467,7 @@ export default function WebsochatPage() {
               game_mode: options?.gameMode,
               game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? latestAccountReadEpisodeNo : null,
               account_read_episode_to: latestAccountReadEpisodeNo,
-            });
+            }, { signal: turnAbortController.signal });
             await applyCompletedResponse(response.data);
           }
         }
@@ -3367,6 +3538,10 @@ export default function WebsochatPage() {
       if (!isCurrentAssistantTurnOwner()) {
         return null;
       }
+      if (isWebsochatAbortError(error)) {
+        return null;
+      }
+
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401 && !requestCanUseAccountScope) {
           openLoginConfirm();
@@ -3388,6 +3563,9 @@ export default function WebsochatPage() {
         assistantTurnOwnerSeq,
         isCurrentAssistantTurnOwner: isCurrentAssistantTurnOwner(),
       });
+      if (activeAssistantAbortControllerRef.current === turnAbortController) {
+        activeAssistantAbortControllerRef.current = null;
+      }
       if (isCurrentAssistantTurnOwner()) {
         setIsAssistantTurnPending(false);
       }
@@ -3488,6 +3666,7 @@ export default function WebsochatPage() {
   const handleSelectProduct = (product: IWebsochatProductItem) => {
     if (product.contextStatus !== "ready") return;
     if (isProductSelectionLocked) return;
+    queueScrollMessageListToBottom("auto");
     const runtimeActorScope = resolveRuntimeWebsochatActorScope();
     const selectionNoticeSeq = productSelectionNoticeSeqRef.current + 1;
     productSelectionNoticeSeqRef.current = selectionNoticeSeq;
@@ -3640,6 +3819,7 @@ export default function WebsochatPage() {
       isStreamingMessage,
       isAssistantTurnPending,
     });
+    queueScrollMessageListToBottom("smooth");
     const resolvedModeKey = action.modeKey || null;
     const resolvedQaActionKey = action.qaActionKey || null;
     const rpModeAction = {
@@ -3854,7 +4034,10 @@ export default function WebsochatPage() {
   };
 
   const handleClickSend = () => {
-    if (isAssistantTurnPending || isStreamingMessage) return;
+    if (isAssistantTurnPending || isStreamingMessage) {
+      handlePauseAssistantTurn();
+      return;
+    }
     void handleSend();
   };
 
@@ -3997,7 +4180,12 @@ export default function WebsochatPage() {
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
                   </button>
                 </div>
-            <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-16pxr px-16pxr md:px-0">
+            <div
+              ref={messageListRef}
+              onScroll={handleMessageListScroll}
+              className="flex-1 min-h-0 overflow-y-auto px-16pxr md:px-0"
+            >
+              <div ref={messageListContentRef} className="flex min-h-full flex-col gap-16pxr">
               {shouldShowMessagesLoadingSpinner ? (
                 <Spinner size={24} />
               ) : (
@@ -4166,6 +4354,9 @@ export default function WebsochatPage() {
               {isAssistantTurnPending
                 && streamingKind === "qa"
                 && streamingQaActionKey === "next_episode_write"
+                && !transientMessages.some(
+                  (message) => message.role === "assistant" && "isStreaming" in message && Boolean(message.isStreaming)
+                )
                 && !hasStreamingContentStarted ? (
                   <div className="self-start max-w-[92%] md:max-w-[90%] rounded-[12px] border border-light-gray-300 bg-white px-12pxr py-10pxr text-dark-gray-500">
                     <div className="flex items-center justify-between gap-8pxr text-12pxr text-dark-gray-400">
@@ -4183,6 +4374,7 @@ export default function WebsochatPage() {
                     </div>
                   </div>
                 ) : null}
+              </div>
             </div>
 
             {activeSessionId && !canSendMessage ? (
@@ -4318,11 +4510,18 @@ export default function WebsochatPage() {
                   />
                     <button
                       type="button"
+                      aria-label={isPauseButtonVisible ? "답변 생성 중단" : "메시지 전송"}
                       className="flex items-center justify-center w-[36px] h-[36px] shrink-0 rounded-full bg-primary-100 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary-100/90 transition-colors"
-                      disabled={!selectedProductId || !draft.trim() || isStreamingMessage || isAssistantTurnPending || isCreatingSession || isDeletingSession || isReadScopeGuardPending}
+                      disabled={isSendButtonDisabled}
                       onClick={handleClickSend}
                     >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+                      {isPauseButtonVisible ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M8 5v14M16 5v14" />
+                        </svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+                      )}
                     </button>
                 </div>
               </>

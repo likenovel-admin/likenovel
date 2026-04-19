@@ -26,6 +26,10 @@ export type WebsochatStreamRequestBody = {
   account_read_episode_to?: number | null;
 };
 
+type WebsochatRequestOptions = {
+  signal?: AbortSignal;
+};
+
 export type WebsochatStreamEvent =
   | { event: "assistant_started"; data: { sessionId: number; clientMessageId?: string | null } }
   | { event: "assistant_delta"; data: { delta: string } }
@@ -77,7 +81,8 @@ const parseWebsochatSseEvents = (
 
 export const postWebsochatMessageStream = async (
   body: WebsochatStreamRequestBody,
-  onEvent: (event: WebsochatStreamEvent) => void
+  onEvent: (event: WebsochatStreamEvent) => void,
+  options?: WebsochatRequestOptions
 ) => {
   const { sessionId, guest_key, ...payload } = body;
   const headers: Record<string, string> = {
@@ -93,6 +98,7 @@ export const postWebsochatMessageStream = async (
     headers,
     body: JSON.stringify({ ...payload, guest_key }),
     credentials: "include",
+    signal: options?.signal,
   });
   if (!response.ok || !response.body) {
     const fallbackText = await response.text().catch(() => "");
@@ -130,6 +136,66 @@ export const postWebsochatMessageStream = async (
   if (buffer.trim()) {
     parseWebsochatSseEvents(`${buffer}\n\n`, handleEvent);
   }
+};
+
+export const postWebsochatMessageOnce = async (
+  body: WebsochatStreamRequestBody,
+  options?: WebsochatRequestOptions
+) => {
+  const { sessionId, ...payload } = body;
+  const response = await instance.post(
+    `/v1/command/websochat/sessions/${sessionId}/messages`,
+    payload,
+    {
+      skipAuthRedirectOn401: true,
+      signal: options?.signal,
+    } as any
+  );
+  return response.data as IPostWebsochatMessageResponse;
+};
+
+export const postWebsochatNextEpisodeMessageOnce = async (
+  body: WebsochatStreamRequestBody,
+  options?: WebsochatRequestOptions
+) => {
+  const { sessionId, guest_key, ...payload } = body;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    ...getWebsochatAuthHeaders(),
+  };
+  if (guest_key) {
+    headers["X-Websochat-Guest-Key"] = guest_key;
+  }
+
+  const response = await fetch(`/websochat-api/sessions/${sessionId}/next-episode`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ ...payload, guest_key }),
+    credentials: "include",
+    signal: options?.signal,
+  });
+
+  const responseText = await response.text();
+  let parsed: IPostWebsochatMessageResponse | null = null;
+  try {
+    parsed = JSON.parse(responseText);
+  } catch {
+    parsed = null;
+  }
+
+  if (!response.ok || !parsed) {
+    const error = new Error(
+      (parsed as any)?.message || responseText || "websochat next-episode failed"
+    ) as Error & { response?: { status: number; data?: any } };
+    error.response = {
+      status: response.status,
+      data: parsed || { message: responseText || "websochat next-episode failed" },
+    };
+    throw error;
+  }
+
+  return parsed;
 };
 
 export const getWebsochatBillingStatusQueryOptions = (
@@ -256,16 +322,7 @@ export const usePostWebsochatMessage = () => {
     unknown,
     WebsochatStreamRequestBody
   >({
-    mutationFn: async ({ sessionId, ...body }) => {
-      const response = await instance.post(
-        `/v1/command/websochat/sessions/${sessionId}/messages`,
-        body,
-        {
-          skipAuthRedirectOn401: true,
-        } as any
-      );
-      return response.data;
-    },
+    mutationFn: async (body) => postWebsochatMessageOnce(body),
   });
 };
 
@@ -275,44 +332,7 @@ export const usePostWebsochatNextEpisodeMessage = () => {
     unknown,
     WebsochatStreamRequestBody
   >({
-    mutationFn: async ({ sessionId, guest_key, ...body }) => {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        ...getWebsochatAuthHeaders(),
-      };
-      if (guest_key) {
-        headers["X-Websochat-Guest-Key"] = guest_key;
-      }
-
-      const response = await fetch(`/websochat-api/sessions/${sessionId}/next-episode`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ ...body, guest_key }),
-        credentials: "include",
-      });
-
-      const responseText = await response.text();
-      let parsed: IPostWebsochatMessageResponse | null = null;
-      try {
-        parsed = JSON.parse(responseText);
-      } catch {
-        parsed = null;
-      }
-
-      if (!response.ok || !parsed) {
-        const error = new Error(
-          (parsed as any)?.message || responseText || "websochat next-episode failed"
-        ) as Error & { response?: { status: number; data?: any } };
-        error.response = {
-          status: response.status,
-          data: parsed || { message: responseText || "websochat next-episode failed" },
-        };
-        throw error;
-      }
-
-      return parsed;
-    },
+    mutationFn: async (body) => postWebsochatNextEpisodeMessageOnce(body),
   });
 };
 
