@@ -38,32 +38,35 @@ const Editor = ({ value, onChange }: Props) => {
   const [hasShownLimitWarning, setHasShownLimitWarning] = useState(false);
 
   /**
-   * 메모장(plain text) 붙여넣기에서 줄바꿈/공백이 깨져 보이는 문제를 방지합니다.
+   * 메모장(plain text) ↔ 에디터 왕복에서 개행 개수가 정확히 1:1로 보존되도록 한다.
    *
-   * - TipTap 기본 paste는 HTML/리치텍스트를 우선으로 정규화하면서 `\r\n` 개행을
-   *   문단/스타일로 재해석할 수 있습니다.
-   * - 메모장은 보통 `text/html`을 제공하지 않으므로, `text/plain`만 존재하는 경우에만
-   *   붙여넣기를 가로채서 `\r\n`/`\n`를 HardBreak로 직접 삽입합니다.
-   * - 리치텍스트(웹/워드 등)는 기본 동작을 유지합니다.
+   * 매핑 규칙:
+   * - 각 라인 → 별도 paragraph (content 라인 또는 빈 줄)
+   * - 빈 줄은 <p><br></p>(hardBreak 포함)로 저장되어 뷰어에서도 실제 공백으로 보임
+   * - <p></p>(빈 content)는 뷰어에서 높이 0이므로 절대 사용 안 함
+   *
+   * 왕복 예:
+   *   메모장 "A\n\nB"        → <p>A</p><p><br></p><p>B</p>
+   *   메모장 "A\n\n\nB"      → <p>A</p><p><br></p><p><br></p><p>B</p>
+   *   clipboardTextSerializer로 역방향(copy)도 동일 규칙.
    */
   const pastePlainTextPreserveNewlines = (rawText: string) => {
     const normalized = rawText.replace(/\r\n/g, "\n");
     const lines = normalized.split("\n");
 
-    // TipTap insertContent에 넣을 노드 배열 구성
-    // - 각 줄은 텍스트 노드로 삽입
-    // - 줄 구분은 hardBreak로 삽입 (메모장 개행을 그대로 재현)
-    const contentToInsert: Array<{ type: string; text?: string }> = [];
-    lines.forEach((line, idx) => {
-      if (line.length > 0) {
-        contentToInsert.push({ type: "text", text: line });
-      }
-      if (idx < lines.length - 1) {
-        contentToInsert.push({ type: "hardBreak" });
-      }
-    });
+    const nodes = lines.map((line) =>
+      line.length > 0
+        ? {
+            type: "paragraph",
+            content: [{ type: "text", text: line }],
+          }
+        : {
+            type: "paragraph",
+            content: [{ type: "hardBreak" }],
+          }
+    );
 
-    editor?.chain().focus().insertContent(contentToInsert).run();
+    editor?.chain().focus().insertContent(nodes).run();
   };
 
   const editor = useEditor({
@@ -84,6 +87,16 @@ const Editor = ({ value, onChange }: Props) => {
     ],
     content: value,
     editorProps: {
+      // 에디터 → 메모장 복사 시 paragraph 구분을 \n 하나로 직렬화해
+      // paste(pastePlainTextPreserveNewlines)와 완전한 역함수 관계를 보장한다.
+      // 결과: 빈 줄 N개 ↔ \n N+1개 대응, 메모장 왕복 시 개행 개수 보존.
+      clipboardTextSerializer: (slice) => {
+        const lines: string[] = [];
+        slice.content.forEach((node) => {
+          lines.push(node.textContent || "");
+        });
+        return lines.join("\n");
+      },
       handlePaste: (_view, event) => {
         const pastedText = event.clipboardData?.getData("text/plain") || "";
         const pastedHtml = event.clipboardData?.getData("text/html") || "";
