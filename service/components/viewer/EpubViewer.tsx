@@ -801,7 +801,7 @@ const EpubViewer = ({
           );
           element.style.setProperty(
             "line-height",
-            isBlankParagraph ? "0.8em" : (lineHeight || "inherit"),
+            lineHeight || "inherit",
             "important"
           );
           element.style.setProperty(

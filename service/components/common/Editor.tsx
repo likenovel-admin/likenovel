@@ -123,6 +123,33 @@ const Editor = ({ value, onChange }: Props) => {
 
         return false; // Allow default paste behavior
       },
+      handleKeyDown: (view, event) => {
+        if (event.key !== "Backspace") {
+          return false;
+        }
+
+        const { selection } = view.state;
+        if (!selection.empty) {
+          return false;
+        }
+
+        const { $from } = selection;
+        const parent = $from.parent;
+        const isBlankParagraph =
+          parent.type.name === "paragraph" &&
+          parent.textContent === "" &&
+          parent.childCount === 1 &&
+          parent.firstChild?.type.name === "hardBreak";
+
+        if (!isBlankParagraph) {
+          return false;
+        }
+
+        event.preventDefault();
+        const tr = view.state.tr.deleteRange($from.before(), $from.after());
+        view.dispatch(tr);
+        return true;
+      },
     },
     onUpdate: ({ editor }) => {
       const content = editor.getHTML();
