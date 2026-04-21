@@ -36,7 +36,7 @@ import Input from "../form/input";
 import SelectBox from "../form/selectbox";
 import Toggle from "../form/toggle";
 import TextArea from "../form/textarea";
-import OperationPolicyModal from "../modal/OperationPolicyModal";
+import TermsOfUseModal from "../modal/TermsOfUseModal";
 import BaseSearchTag from "./BaseSearchTag";
 import BottomButton from "./BottomButton";
 import PhotoArea from "./PhotoArea";
@@ -561,7 +561,7 @@ const FormArea = ({ productId }: Props) => {
     const errorKeys = Object.keys(errors);
     if (errorKeys.length === 1 && errorKeys.includes("agree")) {
       setConfirm({
-        content: "운영정책에 동의해주세요.",
+        content: "이용약관에 동의해주세요.",
         buttonCount: 1,
       });
     } else {
@@ -648,8 +648,8 @@ const FormArea = ({ productId }: Props) => {
     return requestData;
   };
 
-  const handleOpenOperationPolicy = () => {
-    setModal(<OperationPolicyModal />);
+  const handleOpenTermsOfUse = () => {
+    setModal(<TermsOfUseModal />);
   };
 
   const labelClassName =
@@ -1266,7 +1266,7 @@ const FormArea = ({ productId }: Props) => {
                   name="agree"
                   control={control}
                   rules={{
-                    required: "운영정책에 동의해주세요.",
+                    required: "이용약관에 동의해주세요.",
                   }}
                   render={({ field }) => (
                     <Checkbox
@@ -1275,9 +1275,9 @@ const FormArea = ({ productId }: Props) => {
                           <span>라이크노벨&nbsp;</span>
                           <span
                             className="underline font-semibold"
-                            onClick={handleOpenOperationPolicy}
+                            onClick={handleOpenTermsOfUse}
                           >
-                            운영정책
+                            이용약관
                           </span>
                           <span>에 동의합니다.</span>
                         </div>
