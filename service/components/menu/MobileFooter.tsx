@@ -29,7 +29,6 @@ const MobileFooter = () => {
               </span>
             </div>
             <div className="flex justify-center text-dark-gray-200 text-12pxr">
-              <span className="mr-[15px]">대표전화 : 070-5157-3000</span>
               <span className="">이메일 : admin@likenovel.net</span>
             </div>
             <div className="flex flex-col items-center">
@@ -41,7 +40,7 @@ const MobileFooter = () => {
               </p>
             </div>
             <div className="flex justify-center mt-[10px] text-dark-gray-200 text-12pxr">
-              © 2024 LikeNovel
+              © 2026 라이크노벨
             </div>
           </div>
         )}
@@ -65,14 +64,6 @@ const MobileFooter = () => {
           <button
             className="text-white text-12pxr hover:underline"
             onClick={() => {
-              router.push("/product/agree/operate");
-            }}
-          >
-            운영정책
-          </button>
-          <button
-            className="text-white text-12pxr hover:underline"
-            onClick={() => {
               router.push("/product/customer-service/notice");
             }}
           >
@@ -81,7 +72,7 @@ const MobileFooter = () => {
         </div>
         <div className="w-full border-b-[#27282E] border-b-2 border-t-0 border-r-0 border-l-0 my-[20px]" />
         <div className="flex justify-center text-white font-semibold">
-          070-5157-3000
+          admin@likenovel.net
         </div>
         <div className="flex justify-center gap-[15px] text-dark-gray-400 text-12pxr mt-[8px]">
           <span>상담가능시간</span>
