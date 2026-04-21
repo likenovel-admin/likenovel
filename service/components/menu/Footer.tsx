@@ -54,15 +54,6 @@ const Footer = () => {
                 <button
                   className="text-white text-15pxr hover:underline"
                   onClick={() => {
-                    router.push("/product/agree/operate");
-                  }}
-                >
-                  운영정책
-                </button>
-                <div className="h-[10px] border-l-dark-gray-500 border-l-2 border-t-0 border-r-0 border-b-0" />
-                <button
-                  className="text-white text-15pxr hover:underline"
-                  onClick={() => {
                     router.push("/product/customer-service/notice");
                   }}
                 >
@@ -77,7 +68,6 @@ const Footer = () => {
                 <span className="mr-[15px]">
                   통신판매업신고 : 2020-성남분당C-0039
                 </span>
-                <span className="mr-[15px]">대표전화 : 070-5157-3000</span>
                 <span className="min-w-[200px]">
                   이메일 : admin@likenovel.net
                 </span>
@@ -87,13 +77,13 @@ const Footer = () => {
                 든)
               </span>
               <div className="mt-[17px] text-dark-gray-200 text-14pxr">
-                © 2024 LikeNovel
+                © 2026 라이크노벨
               </div>
             </div>
             <div className="flex flex-col mt-[40px]">
               <span className="text-white">고객센터</span>
               <div className="text-white mt-[19px] text-28pxr">
-                070-5157-3000
+                admin@likenovel.net
               </div>
               <div className="flex gap-[15px] text-dark-gray-400 text-13pxr mt-[12px]">
                 <span>상담가능시간</span>
