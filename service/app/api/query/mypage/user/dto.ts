@@ -145,6 +145,7 @@ export interface ContractBlock {
 export interface StateBlock {
   ongoingState: OngoingState;
   convertToPaidState: ConvertToPaidState;
+  canApplyForNormal: boolean;
   canApplyForPaid: boolean;
 }
 

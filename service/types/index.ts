@@ -183,6 +183,7 @@ export interface IContract {
 export interface IState {
   ongoingState: "ongoing" | "rest" | "end" | "stop"; // 연재 상태
   convertToPaidState: "review" | "approval" | "rejected" | "not_applied"; // 유료 전환 상태
+  canApplyForNormal: boolean;
   canApplyForPaid: boolean;
 }
 
