@@ -17,8 +17,8 @@ interface Props {
   onConfirm?: () => void;
 }
 
-const CONDITION_COUNT_CHARACTER = 75000;
-const CONDITION_COUNT_EPISODE = 15;
+const CONDITION_COUNT_CHARACTER = 20000;
+const CONDITION_COUNT_EPISODE = 5;
 
 const GeneralPromotionModal = ({ data, onConfirm }: Props) => {
   const [agreeToTerms, setAgreeToTerms] = useState<boolean>(false);

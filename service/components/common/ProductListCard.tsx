@@ -497,7 +497,8 @@ const ProductListCard = ({
                 )}
 
                 {data.priceType === "free" &&
-                (data?.productType === "free" ? (
+                (data?.productType === "free" &&
+                data.state?.canApplyForNormal === true ? (
                   <div className="md:hidden flex gap-12pxr items-center">
                     {/* TODO: api 연결 */}
                     <Button
@@ -627,7 +628,8 @@ const ProductListCard = ({
         </div>
         {isAuthorPage &&
           data.priceType === "free" &&
-          (data?.productType === "free" ? (
+          (data?.productType === "free" &&
+          data.state?.canApplyForNormal === true ? (
             <div className="hidden md:flex absolute bottom-[30px] right-[230px] gap-12pxr items-center">
               <button
                 className={`flex justify-center items-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
