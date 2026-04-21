@@ -262,7 +262,7 @@ const Carousel = ({ primaryPanels, contained }: Props) => {
     </div>
     {/* 인디케이터 — 배너 아래 */}
     {primaryPanels.length > 1 && (
-      <div className="relative z-50 flex justify-center gap-[8px] items-center py-[10px]">
+      <div className="relative flex justify-center gap-[8px] items-center py-[10px]">
         {primaryPanels.map((_, index) => (
           <button
             key={index}
