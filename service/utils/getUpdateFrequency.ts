@@ -8,7 +8,23 @@ const DAYS_MAPPING: Record<string, string> = {
   SUN: "일",
 };
 
-export const getUpdateFrequency = (jsonString: string): string => {
+interface UpdateFrequencyOptions {
+  publishRegularYn?: string;
+  ongoingState?: string;
+}
+
+export const getUpdateFrequency = (
+  jsonString: string,
+  options?: UpdateFrequencyOptions
+): string => {
+  // 완결 우선 (연재 상태가 "end")
+  if (options?.ongoingState === "end") {
+    return "완결";
+  }
+  // 비정기 연재
+  if (options?.publishRegularYn === "N") {
+    return "비정기 연재";
+  }
   try {
     const dayData = JSON.parse(jsonString);
     const activeDays = Object.keys(dayData)

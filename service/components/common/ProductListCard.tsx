@@ -405,12 +405,18 @@ const ProductListCard = ({
               {!isAuthorPage && !!data.properties?.updateFrequency && (
                 <>
                   <span className="text-12pxr md:text-14pxr text-dark-gray-500">
-                    {getUpdateFrequency(data.properties?.updateFrequency || "")}
+                    {getUpdateFrequency(data.properties?.updateFrequency || "", {
+                publishRegularYn: data.publishRegularYn,
+                ongoingState: data.state?.ongoingState,
+              })}
                   </span>
                 </>
               )}
               {!isAuthorPage &&
-                getUpdateFrequency(data.properties?.updateFrequency || "") &&
+                getUpdateFrequency(data.properties?.updateFrequency || "", {
+                publishRegularYn: data.publishRegularYn,
+                ongoingState: data.state?.ongoingState,
+              }) &&
                 data.genre.length > 0 && (
                   <div className="md:hidden w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
                 )}

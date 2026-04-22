@@ -85,7 +85,10 @@ const ApplyPaidModal = ({ data, onConfirm }: Props) => {
             </span>
             <div className="w-3pxr h-3pxr bg-[#B2B5C3] rounded-full mx-11pxr" />
             <span className="text-14pxr text-[#4D5159]">
-              {getUpdateFrequency(data.properties?.updateFrequency || "")}
+              {getUpdateFrequency(data.properties?.updateFrequency || "", {
+                publishRegularYn: data.publishRegularYn,
+                ongoingState: data.state?.ongoingState,
+              })}
             </span>
           </div>
         </div>
