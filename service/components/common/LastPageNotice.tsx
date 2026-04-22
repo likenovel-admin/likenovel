@@ -34,29 +34,42 @@ const LastPageNotice = () => {
   const current = notice[idx] ?? notice[0];
   if (!current) return null;
 
-  return (
-    <div
-      className="w-full cursor-pointer flex items-center justify-start md:justify-center min-h-[60px] border-t border-light-gray-300"
-      onClick={() => {
-        router.push(`/product/customer-service/notice/${current.id}`);
-      }}
-    >
-      <div className="w-full flex-1 flex items-center justify-start md:justify-around lg:justify-center px-8pxr sm:px-16pxr lg:max-w-[1080px]">
-        <Image
-          src={"/images/notice.svg"}
-          width={20}
-          height={22}
-          alt="공지사항"
-          className="flex-shrink-0"
-        />
+  const goToList = () => {
+    router.push("/product/customer-service/notice");
+  };
 
-        <span className="ml-[6px] sm:ml-[10px] md:ml-[16px] mr-[10px] md:mr-[27px] text-12pxr sm:text-13pxr md:text-18pxr font-semibold tracking-[-2%] text-[#191A1F] flex-shrink-0">
-          공지사항
-        </span>
-        <Arrow className="w-[6px] h-[10px] mr-[8px] sm:mr-20pxr flex-shrink-0" />
-        <span
+  const goToDetail = () => {
+    router.push(`/product/customer-service/notice/${current.id}`);
+  };
+
+  return (
+    <div className="w-full flex items-center justify-start md:justify-center min-h-[60px] border-t border-light-gray-300">
+      <div className="w-full flex-1 flex items-center justify-start md:justify-around lg:justify-center px-8pxr sm:px-16pxr lg:max-w-[1080px]">
+        <button
+          type="button"
+          onClick={goToList}
+          className="flex items-center cursor-pointer hover:underline"
+          aria-label="공지사항 목록으로 이동"
+        >
+          <Image
+            src={"/images/notice.svg"}
+            width={20}
+            height={22}
+            alt="공지사항"
+            className="flex-shrink-0"
+          />
+
+          <span className="ml-[6px] sm:ml-[10px] md:ml-[16px] mr-[10px] md:mr-[27px] text-12pxr sm:text-13pxr md:text-18pxr font-semibold tracking-[-2%] text-[#191A1F] flex-shrink-0">
+            공지사항
+          </span>
+          <Arrow className="w-[6px] h-[10px] mr-[8px] sm:mr-20pxr flex-shrink-0" />
+        </button>
+        <button
+          type="button"
           key={current.id}
-          className="flex-1 flex items-center min-w-0 ml-[4px] sm:ml-[8px] md:ml-[27px] animate-fadeUp"
+          onClick={goToDetail}
+          className="flex-1 flex items-center min-w-0 ml-[4px] sm:ml-[8px] md:ml-[27px] animate-fadeUp cursor-pointer hover:underline text-left"
+          aria-label={`공지 상세로 이동: ${current.subject}`}
         >
           <span className="truncate text-12pxr sm:text-13pxr md:text-16pxr font-normal tracking-[-2%] text-[#4D5159]">
             {current.subject}
@@ -64,10 +77,15 @@ const LastPageNotice = () => {
           <span className="flex-shrink-0 ml-4pxr">
             <SquareBadge type="up" />
           </span>
-        </span>
-        <span className="ml-[50px] lg:ml-auto text-11pxr md:text-14pxr text-[#6B6E76] tracking-[-2%] flex-shrink-0 hidden sm:block">
+        </button>
+        <button
+          type="button"
+          onClick={goToDetail}
+          className="ml-[50px] lg:ml-auto text-11pxr md:text-14pxr text-[#6B6E76] tracking-[-2%] flex-shrink-0 hidden sm:block cursor-pointer"
+          aria-label="공지 상세로 이동"
+        >
           {getFormattingDate(current.created_date, "YYYY.MM.DD")}
-        </span>
+        </button>
       </div>
     </div>
   );
