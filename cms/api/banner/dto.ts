@@ -43,3 +43,22 @@ export interface IDeleteBannerResponse {
     message: string;
   };
 }
+
+export interface IReorderBannerItem {
+  id: number;
+  show_order: number;
+}
+
+export interface IReorderBannersRequest {
+  position: string;
+  division?: string | null;
+  items: IReorderBannerItem[];
+}
+
+export interface IReorderBannersResponse {
+  data: {
+    result: {
+      updated: number;
+    };
+  };
+}

@@ -7,6 +7,8 @@ import {
   IGetBannerDetailResponse,
   IGetBannerParams,
   IGetBannerResponse,
+  IReorderBannersRequest,
+  IReorderBannersResponse,
 } from "@/api/banner/dto";
 import apiClient from "@/lib/apiClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -74,6 +76,18 @@ export const useDeleteBanner = () => {
       return await apiClient.request<IDeleteBannerResponse>({
         url: "/v1/command/admins/banners/" + id,
         method: "DELETE",
+      });
+    },
+  });
+};
+
+export const useReorderBanners = () => {
+  return useMutation<IReorderBannersResponse, Error, IReorderBannersRequest>({
+    mutationFn: async (body: IReorderBannersRequest) => {
+      return await apiClient.request<IReorderBannersResponse>({
+        url: "/v1/command/admins/banners/reorder",
+        method: "POST",
+        body,
       });
     },
   });
