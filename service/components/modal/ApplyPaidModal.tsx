@@ -81,7 +81,7 @@ const ApplyPaidModal = ({ data, onConfirm }: Props) => {
           </div>
           <div className="flex items-center flex-wrap">
             <span className="text-14pxr text-[#4D5159]">
-              총 {data.trendindex?.hasEpisodeCount}{data.publishRegularYn === "N" ? "권" : "화"}
+              총 {data.trendindex?.hasEpisodeCount}화
             </span>
             <div className="w-3pxr h-3pxr bg-[#B2B5C3] rounded-full mx-11pxr" />
             <span className="text-14pxr text-[#4D5159]">

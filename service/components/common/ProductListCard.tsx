@@ -397,7 +397,7 @@ const ProductListCard = ({
                   <div className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
                 )} */}
               <span className="text-12pxr md:text-14pxr text-dark-gray-500">
-                총 {data.totalOpenEpisodeCount}{data.publishRegularYn === "N" ? "권" : "화"}
+                총 {data.totalOpenEpisodeCount}화
               </span>
               {!isAuthorPage && !!data.properties?.updateFrequency && (
                 <div className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
