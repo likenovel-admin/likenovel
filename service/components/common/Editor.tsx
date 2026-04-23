@@ -14,6 +14,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor } from "@tiptap/react";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
 import axios from "axios";
 import NextImage from "next/image";
@@ -91,9 +92,24 @@ const Editor = ({ value, onChange }: Props) => {
       // paste(pastePlainTextPreserveNewlines)와 완전한 역함수 관계를 보장한다.
       // 결과: 빈 줄 N개 ↔ \n N+1개 대응, 메모장 왕복 시 개행 개수 보존.
       clipboardTextSerializer: (slice) => {
+        const serializeNodeText = (node: ProseMirrorNode): string => {
+          if (node.type.name === "hardBreak") {
+            return "\n";
+          }
+          if (node.isText) {
+            return node.text || "";
+          }
+
+          const parts: string[] = [];
+          node.forEach((child) => {
+            parts.push(serializeNodeText(child));
+          });
+          return parts.join("");
+        };
+
         const lines: string[] = [];
         slice.content.forEach((node) => {
-          lines.push(node.textContent || "");
+          lines.push(serializeNodeText(node));
         });
         return lines.join("\n");
       },
