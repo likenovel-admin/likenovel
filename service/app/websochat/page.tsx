@@ -3479,7 +3479,7 @@ export default function WebsochatPage() {
           assistantTurnOwnerSeq,
           isCurrentAssistantTurnOwner: isCurrentAssistantTurnOwner(),
         });
-        if (isCurrentAssistantTurnOwner()) {
+        if (activeAssistantAbortControllerRef.current === turnAbortController) {
           resetAssistantTurnVisualState();
         }
       }
@@ -3565,8 +3565,6 @@ export default function WebsochatPage() {
       });
       if (activeAssistantAbortControllerRef.current === turnAbortController) {
         activeAssistantAbortControllerRef.current = null;
-      }
-      if (isCurrentAssistantTurnOwner()) {
         setIsAssistantTurnPending(false);
       }
     }
