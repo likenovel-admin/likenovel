@@ -88,10 +88,18 @@ const Editor = ({ value, onChange }: Props) => {
     ],
     content: value,
     editorProps: {
-      // 에디터 → 메모장 복사 시 paragraph 구분을 \n 하나로 직렬화해
-      // paste(pastePlainTextPreserveNewlines)와 완전한 역함수 관계를 보장한다.
-      // 결과: 빈 줄 N개 ↔ \n N+1개 대응, 메모장 왕복 시 개행 개수 보존.
+      // 에디터 → 메모장 복사 시 top-level paragraph 구분을 \n 하나로 직렬화한다.
+      // 빈 줄 paragraph의 hardBreak는 화면 높이 확보용이므로 별도 \n으로 세지 않는다.
       clipboardTextSerializer: (slice) => {
+        const isBlankLineParagraph = (node: ProseMirrorNode): boolean => {
+          return (
+            node.type.name === "paragraph" &&
+            node.textContent === "" &&
+            node.childCount === 1 &&
+            node.firstChild?.type.name === "hardBreak"
+          );
+        };
+
         const serializeNodeText = (node: ProseMirrorNode): string => {
           if (node.type.name === "hardBreak") {
             return "\n";
@@ -109,7 +117,7 @@ const Editor = ({ value, onChange }: Props) => {
 
         const lines: string[] = [];
         slice.content.forEach((node) => {
-          lines.push(serializeNodeText(node));
+          lines.push(isBlankLineParagraph(node) ? "" : serializeNodeText(node));
         });
         return lines.join("\n");
       },
