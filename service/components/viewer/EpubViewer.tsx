@@ -804,6 +804,15 @@ const EpubViewer = ({
             lineHeight || "inherit",
             "important"
           );
+          if (isBlankParagraph) {
+            element.style.setProperty(
+              "min-height",
+              lineHeight || "1.7em",
+              "important"
+            );
+          } else {
+            element.style.removeProperty("min-height");
+          }
           element.style.setProperty(
             "text-indent",
             currentSettings.useParagraphIndent && !isBlankParagraph ? "1em" : "0",

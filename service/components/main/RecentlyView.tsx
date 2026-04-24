@@ -68,7 +68,8 @@ const RecentlyView = () => {
   const tabs = useMemo(() => {
     const allTabs = [
       { label: "최근 본 작품", value: "recentlyView" },
-      { label: "본 작품 기반 추천", value: "suggest" },
+      // 2026-04-23 hotfix: 유저웹 메인에서 비노출 (로직 유지, 주석 해제 시 즉시 복귀)
+      // { label: "본 작품 기반 추천", value: "suggest" },
     ];
 
     // Hide "recentlyView" tab if not authenticated
