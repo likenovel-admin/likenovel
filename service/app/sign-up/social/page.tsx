@@ -69,7 +69,7 @@ const SocialAddInform = () => {
       );
       const updatedState = getUpdatedState(state, formattedBirthDate, gender);
       const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-      window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${updatedState}&scope=email%20profile`;
+      window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${updatedState}&scope=email%20profile&prompt=select_account`;
     } else if (provider === "apple") {
       const isKeepSignIn = getBooleanValue(keepSignInValue);
       const { state, redirectUri } = getStateAndReDirectUri(

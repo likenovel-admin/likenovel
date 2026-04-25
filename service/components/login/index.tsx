@@ -163,7 +163,7 @@ const Login = ({ pageType, setIsOpen }: Props) => {
     );
     const updatedState = getUpdatedState(state, "1900-01-01", "M");
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${updatedState}&scope=email%20profile`;
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${updatedState}&scope=email%20profile&prompt=select_account`;
   };
 
   // const onAppleLogin = async () => {
