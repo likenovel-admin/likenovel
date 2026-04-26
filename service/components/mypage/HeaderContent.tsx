@@ -4,6 +4,7 @@ import {
   useUserUpdateProfiles,
 } from "@/app/api/query/mypage/user";
 import { useUpdateUpload } from "@/app/api/query/upload";
+import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import { getFileName } from "@/utils/common";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,8 +14,10 @@ import { ChangeEvent, useCallback, useRef, useState } from "react";
 import Button from "../common/Button";
 import Modal from "../common/Modal";
 import RoundBadge from "../common/RoundBadge";
+import ProfileAddModal from "./ProfileAddModal";
 const HeaderContent = () => {
   const { setToast } = useToastStore();
+  const { setModal } = useModalStore();
   const queryClient = useQueryClient();
   const selectProfileFile = useSelectProfileFile();
   const updateUpload = useUpdateUpload();
@@ -112,6 +115,16 @@ const HeaderContent = () => {
     ]
   );
 
+  const handleOpenNicknameChange = () => {
+    const profileId = userInfo?.data?.profileId;
+    if (!profileId) {
+      router.push("/product/mypage/profile");
+      return;
+    }
+
+    setModal(<ProfileAddModal profileId={profileId} />);
+  };
+
   return (
     <div className="pt-[33px] md:pt-[45px] px-4 pb-4 flex justify-between items-center">
       <div className="flex gap-14pxr items-center">
@@ -192,7 +205,7 @@ const HeaderContent = () => {
               variant="secondary"
               size="sm"
               className="ml-2 h-[28px] px-10pxr text-11pxr md:text-12pxr font-medium whitespace-nowrap"
-              onClick={() => router.push("/product/mypage/profile")}
+              onClick={handleOpenNicknameChange}
             >
               닉네임 변경
             </Button>
