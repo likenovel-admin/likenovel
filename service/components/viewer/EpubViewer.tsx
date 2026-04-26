@@ -789,9 +789,14 @@ const EpubViewer = ({
 
         doc.querySelectorAll("p").forEach((paragraph: Element) => {
           const element = paragraph as HTMLElement;
+          const normalizedText = (element.textContent || "")
+            .replace(/\uFEFF/g, "")
+            .trim();
+          const hasNonBrChild = Array.from(element.children).some(
+            (child) => child.tagName !== "BR"
+          );
           const isBlankParagraph =
-            (element.textContent || "").trim() === "" &&
-            element.querySelectorAll("br").length > 0;
+            normalizedText === "" && !hasNonBrChild;
 
           element.style.setProperty("tab-size", "4", "important");
           element.style.setProperty(
