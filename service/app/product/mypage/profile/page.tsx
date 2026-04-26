@@ -5,7 +5,6 @@ import {
   useUserDeleteProfile,
 } from "@/app/api/query/mypage/user";
 import RoundBadge from "@/components/common/RoundBadge";
-import SimpleMenu from "@/components/common/SimpleMenu";
 import Spinner from "@/components/common/Spinner";
 // import AddProfileButton from "@/components/mypage/AddProfileButton";
 import ProfileAddModal from "@/components/mypage/ProfileAddModal";
@@ -152,22 +151,22 @@ const Page = () => {
                 ),
               ].filter(Boolean)}
               rightContent={
-                <SimpleMenu
-                  menuList={[
-                    {
-                      title: "수정",
-                      onClick: () => {
-                        setModal(
-                          <ProfileAddModal profileId={profile.profileId} />
-                        );
-                      },
-                    },
-                    // {
-                    //   title: "삭제",
-                    //   onClick: () => handleDeleteProfile(profile.profileId),
-                    // },
-                  ]}
-                />
+                <button
+                  className="p-2"
+                  aria-label="프로필 수정"
+                  onClick={() =>
+                    setModal(
+                      <ProfileAddModal profileId={profile.profileId} />
+                    )
+                  }
+                >
+                  <Image
+                    src="/images/edit.png"
+                    width={18}
+                    height={18}
+                    alt="프로필 수정"
+                  />
+                </button>
               }
             />
           </li>

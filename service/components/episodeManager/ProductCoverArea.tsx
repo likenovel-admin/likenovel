@@ -14,7 +14,6 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import Button from "../common/Button";
 import ProductStateBadge from "../common/ProductStateBadge";
-import SimpleMenu from "../common/SimpleMenu";
 import Spinner from "../common/Spinner";
 import SquareBadge from "../common/SquareBadge";
 import UserNickname from "../common/UserNickname";
@@ -89,31 +88,34 @@ const ProductCoverArea = ({
             <Bookmark className="w-[13px] h-[15px] text-dark-gray-400" />
           </div> */}
           <div className="md:contents">
-            <SimpleMenu
-              menuList={[
-                {
-                  title: "작품 정보 수정",
-                  onClick() {
-                    if (isCpUser) {
-                      setModal(
-                        <WarningModal
-                          content={
-                            <span className="text-17pxr font-bold">
-                              파트너사이트에서 작품수정을 해주세요.
-                            </span>
-                          }
-                        />
-                      );
-                      return;
-                    }
-
-                    router.push(
-                      `/product/author/making-product/${data.productId}`
-                    );
-                  },
-                },
-              ]}
-            />
+            <button
+              className="p-2"
+              aria-label="작품 정보 수정"
+              onClick={() => {
+                if (isCpUser) {
+                  setModal(
+                    <WarningModal
+                      content={
+                        <span className="text-17pxr font-bold">
+                          파트너사이트에서 작품수정을 해주세요.
+                        </span>
+                      }
+                    />
+                  );
+                  return;
+                }
+                router.push(
+                  `/product/author/making-product/${data.productId}`
+                );
+              }}
+            >
+              <Image
+                src="/images/edit.png"
+                width={18}
+                height={18}
+                alt="작품 정보 수정"
+              />
+            </button>
           </div>
         </div>
         <div className="contents md:block">
