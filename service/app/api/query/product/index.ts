@@ -17,6 +17,9 @@ import {
   IUseSelectWaitForFreeProductsResponse,
 } from "./dto";
 
+export const PUBLIC_PRODUCT_STALE_TIME_MS = 5 * 60 * 1000;
+export const PUBLIC_PRODUCT_GC_TIME_MS = 30 * 60 * 1000;
+
 export const useSelectProducts = (adult_yn?: string): any => {
   /**
    * 메인 TOP 구좌에서 노출 가능한 최대치(모바일 40개 요구사항)를 만족하기 위해
@@ -34,6 +37,8 @@ export const useSelectProducts = (adult_yn?: string): any => {
       const response = await instance.get(`/v1/query/banners/main`);
       return response.data;
     },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 
   const freeTopsProducts = useQuery<IUseSelectProductsResponse, unknown>({
@@ -44,6 +49,8 @@ export const useSelectProducts = (adult_yn?: string): any => {
       );
       return response.data;
     },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 
   const publisherPromotionProducts = useQuery<
@@ -57,6 +64,8 @@ export const useSelectProducts = (adult_yn?: string): any => {
       );
       return response.data;
     },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 
   const paidTopsProducts = useQuery<IUseSelectProductsResponse, unknown>({
@@ -67,6 +76,8 @@ export const useSelectProducts = (adult_yn?: string): any => {
       );
       return response.data;
     },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 
   return {
@@ -148,6 +159,8 @@ export const useSelectProductDetail = (productId: number) => {
       return response.data;
     },
     enabled: !!productId,
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 };
 
@@ -161,6 +174,8 @@ export const useSelectMainSuggestProducts = (adult_yn?: string) => {
       );
       return response.data;
     },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 };
 
@@ -207,6 +222,8 @@ export const useSelectLatestUpdateProducts = (adult_yn?: string) => {
       );
       return response.data;
     },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 };
 
@@ -220,6 +237,8 @@ export const useSelectMainRuleSlots = (adult_yn?: string) => {
       );
       return response.data;
     },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 };
 
@@ -242,6 +261,8 @@ export const useSelectInterestDropSoonUpdateProducts = (
       return response.data;
     },
     enabled,
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 };
 
@@ -271,6 +292,8 @@ export const useSelectFreeAllProducts = (
       const response = await instance.get(finalUrl);
       return response.data;
     },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 
 export const useSelectFreeAllProductsInfinite = (
@@ -327,6 +350,8 @@ export const useSelectFreeAllProductsInfinite = (
       if (lastCount < itemsPerPage) return undefined;
       return allPages.length + 1;
     },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 };
 
@@ -356,6 +381,8 @@ export const useSelectPaidAllProducts = (
       const response = await instance.get(finalUrl);
       return response.data;
     },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 
 export const useSelectPaidAllProductsInfinite = (
@@ -410,6 +437,8 @@ export const useSelectPaidAllProductsInfinite = (
       if (lastCount < itemsPerPage) return undefined;
       return allPages.length + 1;
     },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 };
 
@@ -426,6 +455,8 @@ export const useSelectInterestDropProducts = (
       return response.data;
     },
     enabled,
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 };
 
