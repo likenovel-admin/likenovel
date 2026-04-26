@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChangeEvent, useCallback, useRef, useState } from "react";
+import Button from "../common/Button";
 import Modal from "../common/Modal";
 import RoundBadge from "../common/RoundBadge";
 const HeaderContent = () => {
@@ -164,8 +165,7 @@ const HeaderContent = () => {
         </div>
         <div className="flex flex-col">
           <div
-            className="flex items-center gap-1 text-18pxr md:text-22pxr font-semibold max-w-[500px] cursor-pointer"
-            onClick={() => ""}
+            className="flex items-center gap-1 text-18pxr md:text-22pxr font-semibold max-w-[500px]"
           >
             {userInfo?.data.userNickname ? userInfo?.data.userNickname : ""}
             {["author", "CP", "editor"].includes(
@@ -187,6 +187,15 @@ const HeaderContent = () => {
                 본인인증
               </div>
             )}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="ml-2 h-[28px] px-10pxr text-11pxr md:text-12pxr font-medium whitespace-nowrap"
+              onClick={() => router.push("/product/mypage/profile")}
+            >
+              닉네임 변경
+            </Button>
           </div>
           <span className="text-11pxr md:text-13pxr text-dark-gray-300 flex gap-[2px] mt-1">
             {"회원등급"}
