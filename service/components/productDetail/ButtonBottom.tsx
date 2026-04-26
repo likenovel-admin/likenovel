@@ -224,7 +224,7 @@ const ButtonBottom = ({
             <Button className="flex gap-3pxr md:gap-7pxr items-center justify-center flex-1 md:flex-none md:w-[176px] md:h-[52px] h-[48px] !bg-[#F7F7F8] border-none rounded-10px md:rounded-14px text-12pxr md:text-14pxr !text-dark-gray-500 hover:!bg-white hover:opacity-70 px-8pxr md:px-16pxr whitespace-nowrap">
               <Image
                 src="/images/test/fire.svg"
-                alt="관심 끊김"
+                alt="관심 유지중"
                 width={16}
                 height={21}
                 className="w-[16px] h-[21px] md:w-[20px] md:h-[26px]"
