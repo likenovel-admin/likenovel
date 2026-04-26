@@ -1,5 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { instance } from "../../axios";
+import {
+  PUBLIC_PRODUCT_GC_TIME_MS,
+  PUBLIC_PRODUCT_STALE_TIME_MS,
+} from "../product";
 import { IUseSelectProductsResponse } from "../product/dto";
 
 export type TTop50Area =
@@ -19,5 +23,7 @@ export const useSelectTop50Products = (
       );
       return response.data;
     },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });
 };
