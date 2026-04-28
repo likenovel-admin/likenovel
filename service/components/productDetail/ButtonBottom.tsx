@@ -12,8 +12,10 @@ import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import { ProductInterestStatus } from "@/types";
 import { isEndDateExpired } from "@/utils/getLatestEpisodeDate";
+import { savePendingWebsochatLaunch } from "@/utils/websochatLaunch";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 
 interface Props {
@@ -28,6 +30,10 @@ interface Props {
   authorId: number;
   authorName?: string;
   productName?: string;
+  coverImagePath?: string | null;
+  publishedLatestEpisodeNo?: number | null;
+  syncedLatestEpisodeNo?: number | null;
+  contextStatus?: string | null;
 }
 
 const ButtonBottom = ({
@@ -42,7 +48,12 @@ const ButtonBottom = ({
   authorId,
   authorName,
   productName,
+  coverImagePath,
+  publishedLatestEpisodeNo,
+  syncedLatestEpisodeNo,
+  contextStatus,
 }: Props) => {
+  const router = useRouter();
   const { setTypeModal } = useModalStore();
   const { withLoginRequired } = useAuthWrapper();
   const { setToast } = useToastStore();
@@ -53,6 +64,41 @@ const ButtonBottom = ({
     accessToken: state.accessToken,
   }));
   const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
+  const resolvedPublishedLatestEpisodeNo = Math.max(
+    Number(publishedLatestEpisodeNo || 0),
+    0
+  );
+  const resolvedSyncedLatestEpisodeNo = Math.max(
+    Number(syncedLatestEpisodeNo || 0),
+    0
+  );
+  const shouldShowWebsochatButton =
+    contextStatus === "ready" &&
+    !!productId &&
+    !!productName &&
+    resolvedPublishedLatestEpisodeNo > 0 &&
+    resolvedSyncedLatestEpisodeNo > 0;
+
+  const handleWebsochatClick = () => {
+    if (!shouldShowWebsochatButton || !productId || !productName) return;
+    savePendingWebsochatLaunch({
+      productId,
+      title: productName,
+      authorNickname: authorName || null,
+      coverImagePath: coverImagePath || null,
+      latestEpisodeNo: resolvedPublishedLatestEpisodeNo,
+      publishedLatestEpisodeNo: resolvedPublishedLatestEpisodeNo,
+      syncedLatestEpisodeNo: resolvedSyncedLatestEpisodeNo,
+      contextStatus: contextStatus || null,
+      action: {
+        label: "작품 대화",
+        prompt: "이 작품에 대해 뭐든 편하게 이야기해줘",
+        modeKey: "qa",
+        qaActionKey: null,
+      },
+    });
+    router.push("/websochat");
+  };
 
   // Fetch available tickets for paid products
   const { data: ticketsData } = useGetAvailableTickets({
@@ -245,6 +291,15 @@ const ButtonBottom = ({
             />
             후원하기
           </Button>
+          {shouldShowWebsochatButton ? (
+            <Button
+              onClick={handleWebsochatClick}
+              className="flex items-center justify-center flex-1 md:flex-none md:w-[176px] md:h-[52px] h-[48px] bg-primary-200 rounded-10px md:rounded-14px text-12pxr md:text-14pxr !text-white hover:opacity-70 px-8pxr md:px-16pxr whitespace-nowrap"
+            >
+              <span className="md:hidden">웹소챗</span>
+              <span className="hidden md:inline">웹소챗 하러가기</span>
+            </Button>
+          ) : null}
         </div>
         <div className="flex gap-4pxr md:gap-8pxr items-center flex-1 md:flex-none">
           {isPaidProduct && (
