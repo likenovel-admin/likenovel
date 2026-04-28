@@ -523,6 +523,15 @@ export default function ProductDetail() {
       interestStatus={productData?.interestStatus}
       interestEndDate={productData?.badge?.interestEndDate}
       productName={productData?.title}
+      coverImagePath={productData?.image?.coverImagePath ?? null}
+      publishedLatestEpisodeNo={productData?.latestEpisodeNo ?? null}
+      syncedLatestEpisodeNo={productData?.syncedLatestEpisodeNo ?? null}
+      contextStatus={
+        typeof (productData as { contextStatus?: string | null } | undefined)
+          ?.contextStatus === "string"
+          ? (productData as { contextStatus?: string | null }).contextStatus
+          : null
+      }
     >
       <div className="flex flex-col items-center">
         <div className="w-full bg-light-gray-100 mt-[-50px] md:pb-66pxr">

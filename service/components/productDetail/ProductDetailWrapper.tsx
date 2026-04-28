@@ -18,6 +18,10 @@ interface ProductDetailWrapperProps {
   authorId: number;
   authorName?: string;
   productName?: string;
+  coverImagePath?: string | null;
+  publishedLatestEpisodeNo?: number | null;
+  syncedLatestEpisodeNo?: number | null;
+  contextStatus?: string | null;
 }
 
 export default function ProductDetailWrapper({
@@ -33,6 +37,10 @@ export default function ProductDetailWrapper({
   authorId,
   authorName,
   productName,
+  coverImagePath,
+  publishedLatestEpisodeNo,
+  syncedLatestEpisodeNo,
+  contextStatus,
 }: ProductDetailWrapperProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -57,6 +65,10 @@ export default function ProductDetailWrapper({
             authorId={authorId}
             authorName={authorName}
             productName={productName}
+            coverImagePath={coverImagePath}
+            publishedLatestEpisodeNo={publishedLatestEpisodeNo}
+            syncedLatestEpisodeNo={syncedLatestEpisodeNo}
+            contextStatus={contextStatus}
           />,
           document.body // Render at end of body, after everything
         )}
