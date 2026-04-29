@@ -100,9 +100,11 @@ const ProductReaction = ({ evaluations, emojiPosition = "inside" }: Props) => {
                 {messages[index]}
               </span>
             </div>
-            <span className="text-[#0079A0] text-12pxr font-semibold px-3">
-              {count}
-            </span>
+            {count > 0 && (
+              <span className="text-[#0079A0] text-12pxr font-semibold px-3">
+                {count}
+              </span>
+            )}
           </div>
         );
       })}
