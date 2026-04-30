@@ -593,6 +593,7 @@ export default function ProductDetail() {
             <ProductEpisodes
               productId={productId}
               productTitle={productData?.title}
+              authorId={productData?.authorId}
               notices={noticeData || []}
               priceType={productData?.priceType}
               episodeCount={episodeCount}
