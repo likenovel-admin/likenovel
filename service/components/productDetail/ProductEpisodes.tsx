@@ -32,6 +32,7 @@ interface Props {
   episodeCount?: number;
   productId: number;
   productTitle?: string;
+  authorId?: number;
   notices: INotice[];
   waitForFreeYn?: "Y" | "N";
 }
@@ -41,6 +42,7 @@ const ProductEpisodes = ({
   priceType,
   productId,
   productTitle,
+  authorId,
   notices,
   waitForFreeYn,
 }: Props) => {
@@ -52,6 +54,13 @@ const ProductEpisodes = ({
     isAuthenticated: state.isAuthenticated,
   }));
   const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
+  const isAuthor =
+    !!user?.userId && !!authorId && user.userId === authorId;
+  const isAdminCPEditor =
+    user?.userRole === "CP" ||
+    user?.userRole === "editor" ||
+    user?.userRole === "admin";
+  const canSeeEpisodeStats = !!user && (isAuthor || isAdminCPEditor);
   const { setTypeModal } = useModalStore();
   const [isDescSort, setIsDescSort] = useState(true);
   const [visibleCount, setVisibleCount] = useState(10);
@@ -295,35 +304,39 @@ const ProductEpisodes = ({
                           </span>
                           <span className="ml-2 text-gray-300">|</span>
                         </div>
-                        <div className="flex items-center gap-3pxr">
-                          <View className="w-[14px] h-[12px] text-dark-gray-300" />
-                          <span className="text-11pxr md:text-13pxr text-dark-gray-400">
-                            {formatKoreanNumber(episode.countHit)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3pxr">
-                          <ThumbsUp className="w-[15px] h-[12px]" />
-                          <span className="text-11pxr md:text-13pxr text-dark-gray-400">
-                            {formatKoreanNumber(episode.countRecommend)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3pxr">
-                          <Image
-                            src={"/images/message-gray.svg"}
-                            width={14}
-                            height={14}
-                            alt="comment"
-                          />
-                          <span className="text-11pxr md:text-13pxr text-dark-gray-400">
-                            {formatKoreanNumber(episode.countComment)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3pxr">
-                          <Rating className="w-[14px] h-[14px] text-dark-gray-300" />
-                          <span className="text-11pxr md:text-13pxr text-dark-gray-400">
-                            {formatKoreanNumber(episode.countEvaluation)}
-                          </span>
-                        </div>
+                        {canSeeEpisodeStats && (
+                          <>
+                            <div className="flex items-center gap-3pxr">
+                              <View className="w-[14px] h-[12px] text-dark-gray-300" />
+                              <span className="text-11pxr md:text-13pxr text-dark-gray-400">
+                                {formatKoreanNumber(episode.countHit)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3pxr">
+                              <ThumbsUp className="w-[15px] h-[12px]" />
+                              <span className="text-11pxr md:text-13pxr text-dark-gray-400">
+                                {formatKoreanNumber(episode.countRecommend)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3pxr">
+                              <Image
+                                src={"/images/message-gray.svg"}
+                                width={14}
+                                height={14}
+                                alt="comment"
+                              />
+                              <span className="text-11pxr md:text-13pxr text-dark-gray-400">
+                                {formatKoreanNumber(episode.countComment)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3pxr">
+                              <Rating className="w-[14px] h-[14px] text-dark-gray-300" />
+                              <span className="text-11pxr md:text-13pxr text-dark-gray-400">
+                                {formatKoreanNumber(episode.countEvaluation)}
+                              </span>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                     {/* TODO: 대여 및 소장 데이터가 확립되면 주석 제거 */}
