@@ -790,6 +790,8 @@ const EpubViewer = ({
         doc.querySelectorAll("p").forEach((paragraph: Element) => {
           const element = paragraph as HTMLElement;
           const normalizedText = (element.textContent || "")
+            .replace(/\u00A0/g, "")
+            .replace(/\u200B/g, "")
             .replace(/\uFEFF/g, "")
             .trim();
           const hasNonBrChild = Array.from(element.children).some(
