@@ -10,13 +10,16 @@ export const normalizeViewerContentHtml = (html: string): string => {
     const text = (paragraph.textContent || "")
       .replace(/\u00a0/g, "")
       .replace(/\u200b/g, "")
+      .replace(/\uFEFF/g, "")
       .trim();
-    const hasElement = Array.from(paragraph.childNodes).some(
-      (node) => node.nodeType === Node.ELEMENT_NODE
+    const hasNonBrElement = Array.from(paragraph.childNodes).some(
+      (node) =>
+        node.nodeType === Node.ELEMENT_NODE &&
+        (node as Element).tagName !== "BR"
     );
 
-    if (text.length === 0 && !paragraph.querySelector("br") && !hasElement) {
-      paragraph.appendChild(doc.createElement("br"));
+    if (text.length === 0 && !hasNonBrElement) {
+      paragraph.replaceChildren(doc.createElement("br"));
     }
   });
 
