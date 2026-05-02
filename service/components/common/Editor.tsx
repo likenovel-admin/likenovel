@@ -32,40 +32,46 @@ const MAX_CHARACTERS = 20000;
 interface Props {
   value: string;
   onChange: (value: string) => void;
+  preferPlainTextPaste?: boolean;
 }
 
-const Editor = ({ value, onChange }: Props) => {
+const Editor = ({ value, onChange, preferPlainTextPaste = false }: Props) => {
   const { setToast } = useToastStore();
   const [hasShownLimitWarning, setHasShownLimitWarning] = useState(false);
 
-  /**
-   * 메모장(plain text) ↔ 에디터 왕복에서 개행 개수가 정확히 1:1로 보존되도록 한다.
-   *
-   * 매핑 규칙:
-   * - 각 라인 → 별도 paragraph (content 라인 또는 빈 줄)
-   * - 빈 줄은 <p><br></p>(hardBreak 포함)로 저장되어 뷰어에서도 실제 공백으로 보임
-   * - <p></p>(빈 content)는 뷰어에서 높이 0이므로 절대 사용 안 함
-   *
-   * 왕복 예:
-   *   메모장 "A\n\nB"        → <p>A</p><p><br></p><p>B</p>
-   *   메모장 "A\n\n\nB"      → <p>A</p><p><br></p><p><br></p><p>B</p>
-   *   clipboardTextSerializer로 역방향(copy)도 동일 규칙.
-   */
   const pastePlainTextPreserveNewlines = (rawText: string) => {
     const normalized = rawText.replace(/\r\n/g, "\n");
     const lines = normalized.split("\n");
+    const nodes: Array<{
+      type: "paragraph";
+      content?: Array<{ type: "text"; text: string } | { type: "hardBreak" }>;
+    }> = [];
+    let currentParagraph: Array<
+      { type: "text"; text: string } | { type: "hardBreak" }
+    > = [];
 
-    const nodes = lines.map((line) =>
-      line.length > 0
-        ? {
-            type: "paragraph",
-            content: [{ type: "text", text: line }],
-          }
-        : {
-            type: "paragraph",
-            content: [{ type: "hardBreak" }],
-          }
-    );
+    const flushParagraph = () => {
+      if (currentParagraph.length === 0) return;
+      nodes.push({ type: "paragraph", content: currentParagraph });
+      currentParagraph = [];
+    };
+
+    lines.forEach((line) => {
+      if (line.trim().length === 0) {
+        flushParagraph();
+        nodes.push({
+          type: "paragraph",
+          content: [{ type: "hardBreak" }],
+        });
+        return;
+      }
+
+      if (currentParagraph.length > 0) {
+        currentParagraph.push({ type: "hardBreak" });
+      }
+      currentParagraph.push({ type: "text", text: line });
+    });
+    flushParagraph();
 
     editor?.chain().focus().insertContent(nodes).run();
   };
@@ -137,9 +143,9 @@ const Editor = ({ value, onChange }: Props) => {
           return true; // Prevent default paste behavior
         }
 
-        // 메모장/단순 텍스트(HTML 없음) 붙여넣기는 개행을 HardBreak로 보존
-        // - HTML이 있는 경우(웹/문서 등)는 기본 paste 유지
-        if (pastedText && !pastedHtml) {
+        // 회차 원고는 문서/웹에서 복사해도 plain text 개행을 SSOT로 삼는다.
+        // Word/Docs/브라우저는 text/html을 함께 넣어 기본 paste가 빈 줄을 접을 수 있다.
+        if (pastedText && (!pastedHtml || preferPlainTextPaste)) {
           event.preventDefault();
           pastePlainTextPreserveNewlines(pastedText);
           return true;
