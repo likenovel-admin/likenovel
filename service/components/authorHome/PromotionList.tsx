@@ -3,6 +3,7 @@ import type {
   DirectPromotion as DirectPromotionType,
   IUserProductsWithPromotion,
 } from "@/app/api/query/mypage/user/dto";
+import { resolveProductCoverImage } from "@/constants/common";
 import DirectPromotion from "@/components/authorHome/DirectPromotion";
 import RequestPromotion from "@/components/authorHome/RequestPromotion";
 import MessageBubble from "@/components/common/MessageBubble";
@@ -127,10 +128,7 @@ const PromotionItem = ({
       )}
       <div className="w-[66px] h-[100px] md:w-[80px] md:h-[120px] relative">
         <Image
-          src={
-            bookCoverImage ||
-            "https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-          }
+          src={resolveProductCoverImage(bookCoverImage)}
           objectFit="contain"
           fill
           className="rounded-md overflow-hidden"

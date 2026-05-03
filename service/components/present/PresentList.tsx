@@ -6,12 +6,14 @@ import {
 } from "@/app/api/query/giftbook";
 import { IGiftBookItem } from "@/app/api/query/giftbook/dto";
 import Spinner from "@/components/common/Spinner";
+import { resolveProductCoverImage } from "@/constants/common";
 import useToastStore from "@/store/toastStore";
 import { getGiftTicketLabel } from "@/utils/giftTicketLabel";
 import { getFormattingDate } from "@/utils/getFormattingDate";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import AdultAgeBadge from "../common/AdultAgeBadge";
 import SquareBadge from "../common/SquareBadge";
 import UserNickname from "../common/UserNickname";
 
@@ -25,6 +27,7 @@ interface IPresentItem {
   freeEpisodeNumber: number;
   timePassValue: string;
   coverImagePath: string;
+  adultYn: "Y" | "N";
   waitForFreeYn: "Y" | "N";
   newReleaseYn: "Y" | "N";
   monopolyYn: "Y" | "N";
@@ -57,6 +60,7 @@ const PresentList = () => {
       freeEpisodeNumber: gift.product?.badge?.freeEpisodeTicketCount || 0,
       timePassValue: gift.product?.badge?.timepassFromTo || "",
       coverImagePath: gift.product?.thumbnail_url || "",
+      adultYn: gift.product?.ratings_code === "adult" ? "Y" : "N",
       waitForFreeYn:
         gift.product?.badge?.waitForFreeYn ||
         gift.product?.badge?.waitingForFreeYn ||
@@ -162,14 +166,12 @@ const PresentItem = (props: IPresentItem) => {
         {props.hasProduct && (
           <div className="relative w-[100px] h-[140px]">
             <Image
-              src={
-                props.coverImagePath ||
-                "https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-              }
+              src={resolveProductCoverImage(props.coverImagePath)}
               alt="작품 표지"
               fill
               className="rounded-lg object-cover"
             />
+            <AdultAgeBadge product={{ adultYn: props.adultYn }} />
             {badgeTypes.length > 0 && (
               <div className="absolute top-1 left-1 md:align-end">
                 <SquareBadge

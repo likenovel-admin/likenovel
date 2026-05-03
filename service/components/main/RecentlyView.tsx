@@ -3,6 +3,7 @@ import {
   useGetRecentProduct,
   useGetSuggestByRecentViewed,
 } from "@/app/api/query/product";
+import { resolveProductCoverImage } from "@/constants/common";
 import { IProduct } from "@/types";
 import { getUser } from "@/utils/getUser";
 import {
@@ -135,28 +136,16 @@ const RecentlyView = () => {
                         router.push(buildProductDetailPath(product.productId));
                       }}
                     >
-                      {(product.image && product.image.coverImagePath) ||
-                      product.coverImagePath ? (
-                        <Image
-                          src={
-                            product?.image?.coverImagePath ||
-                            product.coverImagePath ||
-                            "https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-                          }
-                          alt={product.title}
-                          width={97}
-                          height={146}
-                          className="object-cover w-[67px] md:w-[97px] h-[100px] md:h-[146px] rounded-[10px]"
-                        />
-                      ) : (
-                        <Image
-                          src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-                          alt={product.title}
-                          width={97}
-                          height={146}
-                          className={`object-cover w-[67px] md:w-[97px] h-[100px] md:h-[146px] rounded-[10px]`}
-                        />
-                      )}
+                      <Image
+                        src={resolveProductCoverImage(
+                          product?.image?.coverImagePath ||
+                            product.coverImagePath
+                        )}
+                        alt={product.title}
+                        width={97}
+                        height={146}
+                        className="object-cover w-[67px] md:w-[97px] h-[100px] md:h-[146px] rounded-[10px]"
+                      />
                       <span className="w-[67px] md:w-[92px] text-13pxr md:text-14pxr font-medium line-clamp-1 leading-[16px]">
                         {product.title}
                       </span>

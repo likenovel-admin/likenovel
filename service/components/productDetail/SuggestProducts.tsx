@@ -1,4 +1,5 @@
 import useMediaDevice from "@/hooks/useMediaDevice";
+import { resolveProductCoverImage } from "@/constants/common";
 import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
@@ -68,23 +69,13 @@ const SuggestProducts = ({ products, title, entrySource }: Props) => {
               }}
             >
               <div className="relative">
-                {product.image && product.image.coverImagePath ? (
-                  <Image
-                    src={product.image?.coverImagePath ?? ""}
-                    alt={product.title}
-                    width={120}
-                    height={170}
-                    className={`object-cover min-w-[120px] h-[170px] rounded-[10px]`}
-                  />
-                ) : (
-                  <Image
-                    src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-                    alt={product.title}
-                    width={120}
-                    height={170}
-                    className={`object-cover min-w-[120px] h-[170px] rounded-[10px]`}
-                  />
-                )}
+                <Image
+                  src={resolveProductCoverImage(product.image?.coverImagePath)}
+                  alt={product.title}
+                  width={120}
+                  height={170}
+                  className={`object-cover min-w-[120px] h-[170px] rounded-[10px]`}
+                />
                 <div className="absolute flex gap-[2px] bottom-[5px] left-[5px]">
                   {product.priceType === "paid" && product.badge && (
                     <SquareBadge

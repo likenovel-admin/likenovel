@@ -1,4 +1,8 @@
 import { useUpdateConversionProduct } from "@/app/api/query/author/product";
+import {
+  DEFAULT_PRODUCT_IMAGE,
+  resolveProductCoverImage,
+} from "@/constants/common";
 import ApplyPaidModal from "@/components/modal/ApplyPaidModal";
 import { useAdultCoverImage } from "@/hooks/useAdultCoverImage";
 import useMediaDevice from "@/hooks/useMediaDevice";
@@ -19,6 +23,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import GeneralPromotionModal from "../modal/GeneralPromotionModal";
+import AdultAgeBadge from "./AdultAgeBadge";
 import BookmarkButton from "./BookmarkButton";
 import Button from "./Button";
 import InterestBadge from "./InterestBadge";
@@ -80,6 +85,7 @@ const ProductListCard = ({
   const [daysAgo, setDaysAgo] = useState<number | null>(null);
   const [isActiveBookmark, setIsActiveBookmark] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
+  const coverImagePath = resolveProductCoverImage(data.image?.coverImagePath);
   const [isOpenHelper, setIsOpenHelper] = useState<{
     type: "normal" | "paid";
     isOpen: boolean;
@@ -256,36 +262,17 @@ const ProductListCard = ({
                   }`
                 )}
               </>
-            ) : data.image && data.image.coverImagePath ? (
-              <>
-                <Image
-                  src={data.image.coverImagePath}
-                  alt={data.title}
-                  width={110}
-                  height={166}
-                  className={`hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px]`}
-                />
-                <Image
-                  src={data.image.coverImagePath}
-                  alt={data.title}
-                  width={110}
-                  height={166}
-                  className={`md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] ${
-                    isClicked ? "opacity-0" : "opacity-100"
-                  }`}
-                />
-              </>
             ) : (
               <>
                 <Image
-                  src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
+                  src={coverImagePath}
                   alt={data.title}
                   width={110}
                   height={166}
                   className={`hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px]`}
                 />
                 <Image
-                  src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
+                  src={coverImagePath}
                   alt={data.title}
                   width={110}
                   height={166}
@@ -295,6 +282,11 @@ const ProductListCard = ({
                 />
               </>
             )}
+            <AdultAgeBadge
+              product={data}
+              className={isClicked ? "opacity-0 md:opacity-100" : ""}
+              forceVisible={isAuthorPage}
+            />
             {isClicked ? (
               <div
                 className={`md:hidden absolute w-[75px] top-[5px] left-[5px] flex flex-wrap`}

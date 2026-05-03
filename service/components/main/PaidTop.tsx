@@ -1,3 +1,4 @@
+import AdultAgeBadge from "@/components/common/AdultAgeBadge";
 import { useAdultCoverImage } from "@/hooks/useAdultCoverImage";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import { IProduct } from "@/types";
@@ -93,6 +94,7 @@ const PaidTop = ({ data }: Props) => {
                   255,
                   "object-cover w-[108px] md:w-[167px] h-[164px] md:h-[255px] rounded-[10px]"
                 )}
+                <AdultAgeBadge product={product} />
                 <div className="absolute top-[-5px] left-[10px] hidden md:block">
                   <RankingBadge rank={product.rank?.currentRank || 0} />
                 </div>

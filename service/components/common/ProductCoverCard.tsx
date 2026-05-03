@@ -1,3 +1,4 @@
+import { resolveProductCoverImage } from "@/constants/common";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
@@ -11,6 +12,7 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import AdultAgeBadge from "./AdultAgeBadge";
 import InterestBadge from "./InterestBadge";
 import SquareBadge from "./SquareBadge";
 import UserNickname from "./UserNickname";
@@ -30,6 +32,7 @@ const ProductCoverCard = ({
   const router = useRouter();
   const device = useMediaDevice();
   const [isHovered, setIsHovered] = useState(false);
+  const coverImagePath = resolveProductCoverImage(data.image?.coverImagePath);
   const navigateToProductDetail = () => {
     if (entrySource) {
       setPendingProductDetailEntrySource(data.productId, entrySource);
@@ -52,27 +55,19 @@ const ProductCoverCard = ({
         onMouseLeave={() => setIsHovered(false)}
       >
         <div className="relative">
-          {data.image && data.image.coverImagePath ? (
-            <Image
-              src={data.image?.coverImagePath ?? ""}
-              alt={data.title}
-              width={142}
-              height={217}
-              className={`object-cover w-[108px] md:w-[142px] h-[164px] md:h-[217px] rounded-[10px] transition duration-300 ease-in-out ${
-                isHovered ? "opacity-0" : "opacity-100"
-              }`}
-            />
-          ) : (
-            <Image
-              src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-              alt={data.title}
-              width={142}
-              height={217}
-              className={`object-cover w-[108px] md:w-[142px] h-[164px] md:h-[217px] rounded-[10px] transition duration-300 ease-in-out ${
-                isHovered ? "opacity-0" : "opacity-100"
-              }`}
-            />
-          )}
+          <Image
+            src={coverImagePath}
+            alt={data.title}
+            width={142}
+            height={217}
+            className={`object-cover w-[108px] md:w-[142px] h-[164px] md:h-[217px] rounded-[10px] transition duration-300 ease-in-out ${
+              isHovered ? "opacity-0" : "opacity-100"
+            }`}
+          />
+          <AdultAgeBadge
+            product={data}
+            className={isHovered ? "opacity-0" : "opacity-100"}
+          />
           {isHovered ? (
             <>
               <div
