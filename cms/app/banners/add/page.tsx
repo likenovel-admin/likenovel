@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { bannerPositions } from "@/constants/banner";
+import { prepareBannerImageForUpload } from "@/lib/imageOptimize";
 import { catchErrorMessage, getFileName, showAlert } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -98,52 +99,51 @@ export default function Page() {
     let mobileImageId = null;
 
     if (image) {
+      const uploadImage = await prepareBannerImageForUpload(image);
       const res = await createUpload.mutateAsync(
         {
           group_type: "user",
-          file_name: getFileName(image),
+          file_name: uploadImage.fileName,
         },
         {
           onError: (err) => showAlert("오류", catchErrorMessage(err), "확인"),
-        }
+        },
       );
       console.log("res", res);
-      const formData = new FormData();
-      formData.append("file", image);
       await updateUpload.mutateAsync(
         {
           url: res.data.uploadPath,
-          // file: formData,
-          file: image,
-          file_type: image.type,
+          file: uploadImage.file,
+          file_type: uploadImage.contentType,
         },
         {
           onError: (err) => showAlert("오류", catchErrorMessage(err), "확인"),
-        }
+        },
       );
       imageId = res.data.fileId;
     }
 
     if (mobileImage) {
+      const uploadMobileImage = await prepareBannerImageForUpload(mobileImage);
       const res = await createUpload.mutateAsync(
         {
           group_type: "user",
-          file_name: getFileName(mobileImage),
+          file_name: uploadMobileImage.fileName,
         },
         {
           onError: (err) => showAlert("오류", catchErrorMessage(err), "확인"),
-        }
+        },
       );
       console.log("mobile res", res);
       await updateUpload.mutateAsync(
         {
           url: res.data.uploadPath,
-          file: mobileImage,
-          file_type: mobileImage.type,
+          file: uploadMobileImage.file,
+          file_type: uploadMobileImage.contentType,
         },
         {
           onError: (err) => showAlert("오류", catchErrorMessage(err), "확인"),
-        }
+        },
       );
       mobileImageId = res.data.fileId;
     }
@@ -175,7 +175,7 @@ export default function Page() {
         onError: (err: any) => {
           showAlert("오류", catchErrorMessage(err), "확인");
         },
-      }
+      },
     );
   };
 
@@ -280,9 +280,12 @@ export default function Page() {
                   <FileUpload
                     fileName={getFileName(image || "", "")}
                     onFileChange={setImage}
+                    accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
                   />
                   <br />
-                  {spec ? `PC: ${spec.pc}, 포멧: jpg|png|gif` : "포멧: jpg|png|gif"}
+                  {spec
+                    ? `PC: ${spec.pc}, 포멧: jpg|png|gif|webp`
+                    : "포멧: jpg|png|gif|webp"}
                 </TableCell>
               </TableRow>
               {image && (
@@ -302,13 +305,14 @@ export default function Page() {
                   <FileUpload
                     fileName={getFileName(mobileImage || "", "")}
                     onFileChange={setMobileImage}
+                    accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
                   />
                   <br />
                   {spec
                     ? spec.mobile
-                      ? `Mobile: ${spec.mobile}, 포멧: jpg|png|gif`
+                      ? `Mobile: ${spec.mobile}, 포멧: jpg|png|gif|webp`
                       : "이 위치는 모바일 이미지를 사용하지 않습니다"
-                    : "포멧: jpg|png|gif"}
+                    : "포멧: jpg|png|gif|webp"}
                 </TableCell>
               </TableRow>
 
