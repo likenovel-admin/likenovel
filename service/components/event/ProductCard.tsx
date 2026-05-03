@@ -1,4 +1,5 @@
 import { useUpdateConversionProduct } from "@/app/api/query/author/product";
+import { DEFAULT_PRODUCT_IMAGE } from "@/constants/common";
 import ProductStateBadge from "@/components/common/ProductStateBadge";
 import RankingBadge from "@/components/common/RankingBadge";
 import SquareBadge from "@/components/common/SquareBadge";
@@ -22,6 +23,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import GeneralPromotionModal from "../modal/GeneralPromotionModal";
+import AdultAgeBadge from "../common/AdultAgeBadge";
 import Bookmark from "/public/images/bookmark.svg";
 import ThumbsUp from "/public/images/thumbs-up-gray.svg";
 import View from "/public/images/view.svg";
@@ -242,14 +244,14 @@ const ProductListCard = ({
             ) : (
               <>
                 <Image
-                  src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
+                  src={DEFAULT_PRODUCT_IMAGE}
                   alt={data.title}
                   width={80}
                   height={120}
                   className={`hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px]`}
                 />
                 <Image
-                  src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
+                  src={DEFAULT_PRODUCT_IMAGE}
                   alt={data.title}
                   width={80}
                   height={120}
@@ -259,6 +261,10 @@ const ProductListCard = ({
                 />
               </>
             )}
+            <AdultAgeBadge
+              product={data}
+              className={isClicked ? "opacity-0 md:opacity-100" : ""}
+            />
             {isClicked ? (
               <div
                 className={`md:hidden absolute w-[75px] top-[5px] left-[5px] flex flex-wrap`}

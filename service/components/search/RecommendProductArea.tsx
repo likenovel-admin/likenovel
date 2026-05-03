@@ -1,5 +1,6 @@
 import { useGetSuggestByRecentViewed } from "@/app/api/query/product";
 import { useSelectWeeklyMostSearched } from "@/app/api/query/search";
+import { resolveProductCoverImage } from "@/constants/common";
 // import {
 //   useSelectProductSuggestByRecentViewed,
 // } from "@/app/api/query/search";
@@ -145,10 +146,9 @@ const RecommendProductArea = ({ type }: Props) => {
               >
                 <div className="relative">
                   <img
-                    src={
-                      product.image.coverImagePath ??
-                      "https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-                    }
+                    src={resolveProductCoverImage(
+                      product.image.coverImagePath
+                    )}
                     alt="작품표지"
                     width={97}
                     height={146}

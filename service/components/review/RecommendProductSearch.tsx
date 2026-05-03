@@ -1,5 +1,5 @@
 import Button from "@/components/common/Button";
-import { DEFAULT_PRODUCT_IMAGE } from "@/constants/common";
+import { resolveProductCoverImage } from "@/constants/common";
 import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
@@ -68,7 +68,7 @@ const RecommendProduct = ({
       <div className="flex gap-2">
         <div className="flex relative w-81pxr h-auto aspect-[81/120] rounded-[5px] overflow-hidden">
           <Image
-            src={product.image?.coverImagePath || DEFAULT_PRODUCT_IMAGE}
+            src={resolveProductCoverImage(product.image?.coverImagePath)}
             fill
             alt="책"
             className="rounded-[5px]"

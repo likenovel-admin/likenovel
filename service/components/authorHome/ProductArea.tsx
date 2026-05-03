@@ -1,4 +1,5 @@
 import { useGetMyProducts } from "@/app/api/query/author/product";
+import { resolveProductCoverImage } from "@/constants/common";
 import { useMemo, useState } from "react";
 import ProductListCard from "../common/ProductListCard";
 import Tab from "../common/Tab";
@@ -47,17 +48,29 @@ const ProductArea = () => {
         />
       </div>
       <div className="flex flex-col gap-10pxr">
-        {sortedData.map((product) => (
-          <ProductListCard
-            key={product.productId}
-            data={product}
-            isAuthorPage
-            hasPromotionBadge
-            refetch={() => {
-              refetch();
-            }}
-          />
-        ))}
+        {sortedData.map((product) => {
+          const productForAuthorHome = {
+            ...product,
+            image: {
+              ...(product.image ?? {}),
+              coverImagePath: resolveProductCoverImage(
+                product.image?.coverImagePath
+              ),
+            },
+          };
+
+          return (
+            <ProductListCard
+              key={product.productId}
+              data={productForAuthorHome}
+              isAuthorPage
+              hasPromotionBadge
+              refetch={() => {
+                refetch();
+              }}
+            />
+          );
+        })}
       </div>
     </div>
   );

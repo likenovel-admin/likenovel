@@ -6,6 +6,7 @@ import { useDeleteRecentProduct } from "@/app/api/query/product";
 import useConfirmStore from "@/store/confirmStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
+import { resolveProductCoverImage } from "@/constants/common";
 import { IProduct } from "@/types";
 import {
   getInterestEndDate,
@@ -21,6 +22,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import AdultAgeBadge from "../common/AdultAgeBadge";
 import Button from "../common/Button";
 import ProductStateBadge from "../common/ProductStateBadge";
 import SquareBadge from "../common/SquareBadge";
@@ -64,6 +66,9 @@ const ProductListCard = ({ pageType, data, hasGle = true }: Props) => {
   const { data: selectBookmarks, refetch } = useSelectBookmarks();
   const { mutateAsync: deleteRecentProduct, isPending: isDeletingOne } =
     useDeleteRecentProduct();
+  const coverImagePath = resolveProductCoverImage(
+    data?.image?.coverImagePath || data?.coverImagePath
+  );
 
   // 작품 제목의 마지막 글자 받침 유무 및 숫자/기호 체크 함수
   const getProperParticle = (title: string) => {
@@ -346,28 +351,16 @@ const ProductListCard = ({ pageType, data, hasGle = true }: Props) => {
           router.push(buildProductDetailPath(data.productId));
         }}
       >
-        {(data?.image && data?.image?.coverImagePath) ||
-        data?.coverImagePath ? (
+        <div className="relative min-w-[90px] h-[130px]">
           <Image
-            src={
-              data?.image?.coverImagePath ||
-              data?.coverImagePath ||
-              "https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-            }
+            src={coverImagePath}
             alt={data.title}
             width={90}
             height={130}
             className={`object-cover min-w-[90px] h-[130px] rounded-[10px]`}
           />
-        ) : (
-          <Image
-            src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-            alt={data.title}
-            width={90}
-            height={130}
-            className={`object-cover min-w-[90px] h-[130px] rounded-[10px]`}
-          />
-        )}
+          <AdultAgeBadge product={data} />
+        </div>
 
         {data.priceType === "paid" && (
           <div className="absolute flex gap-[2px] top-[5px] left-[5px]">

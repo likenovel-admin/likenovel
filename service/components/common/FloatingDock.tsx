@@ -3,6 +3,7 @@
 import { useGetRecentProduct } from "@/app/api/query/product";
 import Modal from "@/components/common/Modal";
 import RecentlyViewedProductModal from "@/components/main/RecentlyViewedProductModal";
+import { resolveProductCoverImage } from "@/constants/common";
 import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
 import { IProduct } from "@/types";
@@ -66,10 +67,9 @@ export default function FloatingDock({
       ? String(recentProducts.length)
       : null;
 
-  const avatarUrl =
-    recentProducts[0]?.image?.coverImagePath ||
-    recentProducts[0]?.coverImagePath ||
-    "https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp";
+  const avatarUrl = resolveProductCoverImage(
+    recentProducts[0]?.image?.coverImagePath || recentProducts[0]?.coverImagePath
+  );
 
   const handleProductsChange = (updatedProducts: IProduct[]) => {
     setRecentProducts(updatedProducts);

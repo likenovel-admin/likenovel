@@ -4,6 +4,7 @@ import {
   useUserRejectOffer,
 } from "@/app/api/query/mypage/user";
 import { IUserContractOffer } from "@/app/api/query/mypage/user/dto";
+import { resolveProductCoverImage } from "@/constants/common";
 import useConfirmStore from "@/store/confirmStore";
 import useToastStore from "@/store/toastStore";
 import { getFormattingDate } from "@/utils/getFormattingDate";
@@ -181,9 +182,7 @@ const OfferList = ({ data, sortType }: OfferListProps) => {
           authorProfit: offer.author_profit,
           offerAt: getFormattingDate(offer.updated_date, "YYYY.MM.DD HH:mm:ss"),
           title: offer.title,
-          bookCoverImage:
-            offer.cover_image_path ||
-            "https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp",
+          bookCoverImage: resolveProductCoverImage(offer.cover_image_path),
           // message: "작가님 작품 잘보고 있습니다. 진지하게 이야기 나눠보고.",
           isMessage: offer.author_accept_yn === "Y",
           isDecided: offer.author_accept_yn !== null,

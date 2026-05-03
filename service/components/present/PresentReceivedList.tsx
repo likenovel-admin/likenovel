@@ -2,12 +2,13 @@
 
 import { useSelectUserGiftBookHistory } from "@/app/api/query/giftbook";
 import { IUserGiftBookHistoryItem } from "@/app/api/query/giftbook/dto";
-import { DEFAULT_PRODUCT_IMAGE } from "@/constants/common";
+import { resolveProductCoverImage } from "@/constants/common";
 import { getGiftTicketLabel } from "@/utils/giftTicketLabel";
 import { getFormattingDate } from "@/utils/getFormattingDate";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import AdultAgeBadge from "../common/AdultAgeBadge";
 import Spinner from "../common/Spinner";
 import Tab from "../common/Tab";
 import UserNickname from "../common/UserNickname";
@@ -21,6 +22,7 @@ interface IPresentReceivedItem {
   illustratorNickname?: string;
   hasGle: boolean;
   coverImagePath?: string;
+  adultYn?: "Y" | "N";
   amount: number;
   updatedDate: string;
   expirationDate?: string;
@@ -105,6 +107,7 @@ const PresentReceived = () => {
       illustratorNickname: "",
       hasGle: true,
       coverImagePath: item.product?.thumbnail_url || "",
+      adultYn: item.product?.ratings_code === "adult" ? "Y" : "N",
       amount: item.amount,
       updatedDate: item.product?.updated_date || "",
       expirationDate: item.rental_expired_date || "",
@@ -208,11 +211,12 @@ const PresentReceivedItem = (
         {props.hasProduct && (
           <div className="relative w-[100px] h-[140px]">
             <Image
-              src={props.coverImagePath || DEFAULT_PRODUCT_IMAGE}
+              src={resolveProductCoverImage(props.coverImagePath)}
               alt="작품 표지"
               fill
               className="rounded-lg object-cover"
             />
+            <AdultAgeBadge product={{ adultYn: props.adultYn || "N" }} />
           </div>
         )}
         <div className="flex flex-col flex-1">

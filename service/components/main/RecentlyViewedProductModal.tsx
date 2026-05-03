@@ -4,6 +4,7 @@ import {
   useDeleteRecentProduct,
 } from "@/app/api/query/product";
 import BookmarkButton from "@/components/common/BookmarkButton";
+import { resolveProductCoverImage } from "@/constants/common";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import { IProduct } from "@/types";
@@ -132,28 +133,15 @@ const RecentlyViewedProductModal = ({
             >
               <div className="relative rounded-[8px] flex-shrink-0">
                 <div className="w-[70px] h-[98px] rounded-[8px] overflow-hidden">
-                  {(product.image && product?.image?.coverImagePath) ||
-                  product?.coverImagePath ? (
-                    <Image
-                      src={
-                        product?.image?.coverImagePath ||
-                        product?.coverImagePath ||
-                        "https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-                      }
-                      alt={product.title}
-                      width={70}
-                      height={98}
-                      className="w-full h-full rounded-[8px] object-cover"
-                    />
-                  ) : (
-                    <Image
-                      src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-                      alt={product.title}
-                      width={70}
-                      height={98}
-                      className="w-full h-full rounded-[8px] object-cover"
-                    />
-                  )}
+                  <Image
+                    src={resolveProductCoverImage(
+                      product?.image?.coverImagePath || product?.coverImagePath
+                    )}
+                    alt={product.title}
+                    width={70}
+                    height={98}
+                    className="w-full h-full rounded-[8px] object-cover"
+                  />
                 </div>
               </div>
 

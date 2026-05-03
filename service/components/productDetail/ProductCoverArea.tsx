@@ -1,4 +1,6 @@
 import { useReportProduct } from "@/app/api/query/product";
+import AdultAgeBadge from "@/components/common/AdultAgeBadge";
+import { resolveProductCoverImage } from "@/constants/common";
 import Modal from "@/components/common/Modal";
 import ReportModal from "@/components/modal/ReportModal";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
@@ -76,6 +78,7 @@ const ProductCoverArea = ({
   const [isExtraOpen, setIsExtraOpen] = useState(false);
   const [isActiveBookmark, setIsActiveBookmark] = useState(false);
   const [showReadMore, setShowReadMore] = useState(false);
+  const coverImagePath = resolveProductCoverImage(data?.image?.coverImagePath);
   const [isInterestTooltipOpen, setIsInterestTooltipOpen] = useState(false);
   const extraMenuRef = useRef<HTMLDivElement | null>(null);
   const synopsisRef = useRef<HTMLDivElement | null>(null);
@@ -380,23 +383,14 @@ const ProductCoverArea = ({
       <div className="md:hidden relative h-[230px] z-20">
         {!isLoading && data && (
           <>
-            {data.image && data.image.coverImagePath ? (
-              <img
-                src={data.image.coverImagePath}
-                alt={data.title}
-                width={150}
-                height={230}
-                className={`object-cover min-w-[150px] h-[230px] rounded-[10px]`}
-              />
-            ) : (
-              <img
-                src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-                alt={data.title}
-                width={150}
-                height={230}
-                className={`object-cover min-w-[150px] h-[230px] rounded-[10px]`}
-              />
-            )}
+            <img
+              src={coverImagePath}
+              alt={data.title}
+              width={150}
+              height={230}
+              className={`object-cover min-w-[150px] h-[230px] rounded-[10px]`}
+            />
+            <AdultAgeBadge product={data} />
             {data.priceType === "paid" && data.badge && (
               <div
                 className={`absolute flex bottom-[5px] left-[5px] gap-[2px]`}
@@ -427,23 +421,14 @@ const ProductCoverArea = ({
             <>
               <div className="flex gap-30pxr">
                 <div className="hidden md:block relative md:h-[220px] lg:h-[300px]">
-                  {data.image && data.image.coverImagePath ? (
-                    <img
-                      src={data.image.coverImagePath}
-                      alt={data.title}
-                      width={210}
-                      height={300}
-                      className={`object-cover md:min-w-[150px] lg:min-w-[210px] md:h-[220px] lg:h-[300px] rounded-[10px]`}
-                    />
-                  ) : (
-                    <img
-                      src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-                      alt={data.title}
-                      width={210}
-                      height={300}
-                      className={`object-cover md:min-w-[150px] lg:min-w-[210px] md:h-[220px] lg:h-[300px] rounded-[10px]`}
-                    />
-                  )}
+                  <img
+                    src={coverImagePath}
+                    alt={data.title}
+                    width={210}
+                    height={300}
+                    className={`object-cover md:min-w-[150px] lg:min-w-[210px] md:h-[220px] lg:h-[300px] rounded-[10px]`}
+                  />
+                  <AdultAgeBadge product={data} />
                   {data.priceType === "paid" && data.badge && (
                     <div
                       className={`absolute flex bottom-[10px] left-[10px] gap-[2px]`}
@@ -708,7 +693,7 @@ const ProductCoverArea = ({
                         productId={data.productId}
                         productTitle={data.title}
                         authorNickname={data.authorNickname}
-                        coverImagePath={data.image?.coverImagePath}
+                        coverImagePath={coverImagePath}
                         publishedLatestEpisodeNo={data.latestEpisodeNo}
                         syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
                         contextStatus={websochatContextStatus}
@@ -754,7 +739,7 @@ const ProductCoverArea = ({
                       productId={data.productId}
                       productTitle={data.title}
                       authorNickname={data.authorNickname}
-                      coverImagePath={data.image?.coverImagePath}
+                      coverImagePath={coverImagePath}
                       publishedLatestEpisodeNo={data.latestEpisodeNo}
                       syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
                       contextStatus={websochatContextStatus}

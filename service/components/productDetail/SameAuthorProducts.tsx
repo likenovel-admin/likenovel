@@ -1,3 +1,4 @@
+import { resolveProductCoverImage } from "@/constants/common";
 import { IProduct } from "@/types";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
 import {
@@ -37,23 +38,13 @@ const SameAuthorProducts = ({ products, entrySource }: Props) => {
             }}
           >
             <div className="relative">
-              {product.image && product.image.coverImagePath ? (
-                <Image
-                  src={product.image?.coverImagePath ?? ""}
-                  alt={product.title}
-                  width={90}
-                  height={120}
-                  className={`object-cover min-w-[90px] h-[120px] rounded-[10px]`}
-                />
-              ) : (
-                <Image
-                  src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-                  alt={product.title}
-                  width={90}
-                  height={120}
-                  className={`object-cover min-w-[90px] h-[120px] rounded-[10px]`}
-                />
-              )}
+              <Image
+                src={resolveProductCoverImage(product.image?.coverImagePath)}
+                alt={product.title}
+                width={90}
+                height={120}
+                className={`object-cover min-w-[90px] h-[120px] rounded-[10px]`}
+              />
               {product.priceType === "paid" && (
                 <div
                   className={`absolute flex bottom-[5px] left-[5px] gap-[2px]`}

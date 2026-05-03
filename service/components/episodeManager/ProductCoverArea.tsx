@@ -1,6 +1,8 @@
 import { useSelectUserInfo } from "@/app/api/query/mypage/user";
+import AdultAgeBadge from "@/components/common/AdultAgeBadge";
 import { IComment } from "@/components/common/CommentArea";
 import ProductReaction from "@/components/common/ProductReaction";
+import { resolveProductCoverImage } from "@/constants/common";
 import { AlarmContents } from "@/components/modal/SendAlarmModal";
 import WarningModal from "@/components/modal/WarningModal";
 import useModalStore from "@/store/modalStore";
@@ -47,6 +49,7 @@ const ProductCoverArea = ({
   const { setModal } = useModalStore();
   const { data: userInfo } = useSelectUserInfo();
   const isCpUser = userInfo?.data?.userRole === "CP";
+  const coverImagePath = resolveProductCoverImage(data?.image?.coverImagePath);
   const handleGoBack = () => {
     // router.back();
     router.push("/product/author");
@@ -123,14 +126,12 @@ const ProductCoverArea = ({
             <div className="relative h-[190px] w-[100vw] md:h-auto md:w-auto z-20 bg-light-gray-100 md:bg-white mb-16 md:mb-0 flex justify-center">
               <div className="relative w-[150px] h-[190px] md:w-[210px] md:h-[294px] bottom-[-30px] md:bottom-0">
                 <Image
-                  src={
-                    data?.image?.coverImagePath ||
-                    "/images/test/temp-cover.jpeg"
-                  }
+                  src={coverImagePath}
                   alt={data.title || "책표지"}
                   fill
                   className={`object-cover min-w-[150px] h-[190px] md:min-w-[210px] md:h-[294px] rounded-[10px]`}
                 />
+                <AdultAgeBadge product={data} forceVisible />
                 <div
                   className={`absolute flex bottom-[5px] left-[5px] gap-[2px]`}
                 >

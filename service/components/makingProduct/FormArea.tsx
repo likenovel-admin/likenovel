@@ -996,7 +996,7 @@ const FormArea = ({ productId }: Props) => {
                           value: "all",
                         },
                         {
-                          label: "18세 미만 이용불가",
+                          label: "19세 이용가",
                           value: "under18",
                         },
                       ]}
