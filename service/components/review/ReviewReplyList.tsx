@@ -1,5 +1,5 @@
 import { useSelectProductReview } from "@/app/api/query/product-review";
-import { DEFAULT_PRODUCT_IMAGE } from "@/constants/common";
+import { resolveProductCoverImage } from "@/constants/common";
 import { useGenre } from "@/contexts/GenreContext";
 import useBottomSheetStore from "@/store/bottomSheetStore";
 import useModalStore from "@/store/modalStore";
@@ -129,7 +129,7 @@ const ReviewReplyList = () => {
                     "/images/message-default-picture.svg"
                   }
                   bookCoverImage={
-                    item.product.image?.coverImagePath || DEFAULT_PRODUCT_IMAGE
+                    resolveProductCoverImage(item.product.image?.coverImagePath)
                   }
                   likeAmount={item.review.likesCount || 0}
                   messageAmount={item.review.commentsCount || 0}
@@ -206,7 +206,7 @@ const ReviewReplyItem = ({
 
   return (
     <div
-      className="md:border border-0 rounded-xl overflow-hidden"
+      className="md:border border-0 rounded-xl overflow-hidden cursor-pointer"
       onClick={handleClick}
     >
       <div className="flex pt-7 md:pl-5 pb-4">

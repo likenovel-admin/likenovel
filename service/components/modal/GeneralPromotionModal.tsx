@@ -2,6 +2,7 @@
 import { useSelectProductDetail } from "@/app/api/query/product";
 import CheckBox from "@/components/common/CheckBox";
 import UserNickname from "@/components/common/UserNickname";
+import { resolveProductCoverImage } from "@/constants/common";
 import useModalStore from "@/store/modalStore";
 import { IProduct } from "@/types";
 import { getLatestEpisodeDate } from "@/utils/getLatestEpisodeDate";
@@ -91,10 +92,7 @@ const GeneralPromotionModal = ({ data, onConfirm }: Props) => {
       <div className="bg-white flex items-center gap-4 w-full px-21pxr py-25pxr">
         <div className="relative w-60pxr h-90pxr flex-shrink-0">
           <Image
-            src={
-              data.image.coverImagePath ||
-              "https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-            }
+            src={resolveProductCoverImage(data.image.coverImagePath)}
             alt="Product cover"
             fill
             className="object-cover rounded"

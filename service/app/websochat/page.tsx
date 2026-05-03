@@ -1,6 +1,9 @@
 "use client";
 
-import { DEFAULT_PRODUCT_IMAGE } from "@/constants/common";
+import {
+  DEFAULT_PRODUCT_IMAGE,
+  resolveProductCoverImage,
+} from "@/constants/common";
 import { getEpisodeListQueryOptions, useGetEpisodeList } from "@/app/api/query/product";
 import {
   IWebsochatCtaCardItem,
@@ -501,7 +504,7 @@ const buildWebsochatProductSnapshot = ({
   productId,
   title,
   authorNickname: authorNickname || null,
-  coverImagePath: coverImagePath || null,
+  coverImagePath: resolveProductCoverImage(coverImagePath),
   latestEpisodeNo: latestEpisodeNo || 0,
   publishedLatestEpisodeNo: resolveWebsochatPublishedLatestEpisodeNo(
     publishedLatestEpisodeNo,
@@ -513,8 +516,15 @@ const buildWebsochatProductSnapshot = ({
       : resolveWebsochatSyncedLatestEpisodeNo(
         resolveWebsochatPublishedLatestEpisodeNo(publishedLatestEpisodeNo, latestEpisodeNo),
         syncedLatestEpisodeNo
-      ),
+  ),
   contextStatus: contextStatus || "ready",
+});
+
+const normalizeWebsochatProductCover = <T extends { coverImagePath?: string | null }>(
+  product: T
+): T => ({
+  ...product,
+  coverImagePath: resolveProductCoverImage(product.coverImagePath),
 });
 
 type WebsochatModeNoticeItem = {
@@ -2267,7 +2277,7 @@ export default function WebsochatPage() {
 
   useEffect(() => {
     if (!selectedProduct) return;
-    setSelectedProductSnapshot(selectedProduct);
+    setSelectedProductSnapshot(normalizeWebsochatProductCover(selectedProduct));
   }, [selectedProduct]);
 
   useEffect(() => {
@@ -2345,12 +2355,13 @@ export default function WebsochatPage() {
         || activeSession?.productAuthorNickname
         || activeSessionMeta?.productAuthorNickname
         || "작가명 없음",
-      coverImagePath:
+      coverImagePath: resolveProductCoverImage(
         selectedProduct?.coverImagePath
         || selectedProductSnapshot?.coverImagePath
         || activeSession?.coverImagePath
         || activeSessionMeta?.coverImagePath
-        || DEFAULT_PRODUCT_IMAGE,
+        || DEFAULT_PRODUCT_IMAGE
+      ),
       latestEpisodeNo:
         selectedProduct?.latestEpisodeNo
         || selectedProductSnapshot?.latestEpisodeNo
@@ -2526,7 +2537,7 @@ export default function WebsochatPage() {
         productId: pendingLaunch.productId,
         productTitle: pendingLaunch.title,
         authorNickname: pendingLaunch.authorNickname || null,
-        coverImagePath: pendingLaunch.coverImagePath || null,
+        coverImagePath: resolveProductCoverImage(pendingLaunch.coverImagePath),
         publishedLatestEpisodeNo: resolveWebsochatPublishedLatestEpisodeNo(
           pendingLaunch.publishedLatestEpisodeNo,
           pendingLaunch.latestEpisodeNo
@@ -2634,7 +2645,7 @@ export default function WebsochatPage() {
     setActiveSessionId(sessionId);
     writeStoredActiveSessionId(sessionId);
     bindDraftPreludeToSession(sessionId, effectiveProductId);
-    setSelectedProductSnapshot(created.data.product);
+    setSelectedProductSnapshot(normalizeWebsochatProductCover(created.data.product));
     setPendingSessionPreview({
       sessionId,
       productId: effectiveProductId,
@@ -2647,11 +2658,12 @@ export default function WebsochatPage() {
         || selectedProduct?.authorNickname
         || selectedProductSnapshot?.authorNickname
         || null,
-      coverImagePath:
+      coverImagePath: resolveProductCoverImage(
         created.data.product.coverImagePath
         || selectedProduct?.coverImagePath
         || selectedProductSnapshot?.coverImagePath
-        || null,
+        || null
+      ),
       readScopeState:
         (latestAccountReadEpisodeNo || effectiveReadEpisodeNo) ? "known" : "unknown",
       readEpisodeNo: resolvedReadEpisodeNo,
@@ -3108,8 +3120,9 @@ export default function WebsochatPage() {
               productTitle: selectedProduct?.title || activeSessionMeta?.productTitle || null,
               productAuthorNickname:
                 selectedProduct?.authorNickname || activeSessionMeta?.productAuthorNickname || null,
-              coverImagePath:
-                selectedProduct?.coverImagePath || activeSessionMeta?.coverImagePath || null,
+              coverImagePath: resolveProductCoverImage(
+                selectedProduct?.coverImagePath || activeSessionMeta?.coverImagePath
+              ),
               readScopeState:
                 activeSessionMeta?.readScopeState ?? activeSession?.readScopeState ?? "unknown",
               readEpisodeNo:
@@ -3160,7 +3173,9 @@ export default function WebsochatPage() {
                         productTitle: resolvedSession.productTitle || item.productTitle,
                         productAuthorNickname:
                           resolvedSession.productAuthorNickname || item.productAuthorNickname,
-                        coverImagePath: resolvedSession.coverImagePath || item.coverImagePath,
+                        coverImagePath: resolveProductCoverImage(
+                          resolvedSession.coverImagePath || item.coverImagePath
+                        ),
                         readScopeState:
                           resolvedSession.readScopeState ?? item.readScopeState ?? "unknown",
                         readEpisodeNo:
@@ -3279,7 +3294,7 @@ export default function WebsochatPage() {
         setIsPreparingNewSession(false);
         setActiveSessionId(sessionId);
         bindDraftPreludeToSession(sessionId, effectiveProductId);
-        setSelectedProductSnapshot(created.data.product);
+        setSelectedProductSnapshot(normalizeWebsochatProductCover(created.data.product));
         setPendingSessionPreview({
           sessionId,
           productId: effectiveProductId,
@@ -3292,11 +3307,12 @@ export default function WebsochatPage() {
             || selectedProduct?.authorNickname
             || selectedProductSnapshot?.authorNickname
             || null,
-          coverImagePath:
+          coverImagePath: resolveProductCoverImage(
             created.data.product.coverImagePath
             || selectedProduct?.coverImagePath
             || selectedProductSnapshot?.coverImagePath
-            || null,
+            || null
+          ),
           readScopeState:
             (latestAccountReadEpisodeNo || effectiveReadEpisodeNo) ? "known" : "unknown",
           readEpisodeNo:
@@ -3707,7 +3723,8 @@ export default function WebsochatPage() {
 
     setIsPreparingNewSession(true);
     setStickyStarter(selectedStarter);
-    setSelectedProductSnapshot(product);
+    const normalizedProduct = normalizeWebsochatProductCover(product);
+    setSelectedProductSnapshot(normalizedProduct);
     setSelectedProductId(product.productId);
     setIsProductPickerOpen(false);
     appendLocalStarter({
@@ -3719,7 +3736,7 @@ export default function WebsochatPage() {
         productId: product.productId,
         productTitle: product.title,
         authorNickname: product.authorNickname || null,
-        coverImagePath: product.coverImagePath || null,
+        coverImagePath: normalizedProduct.coverImagePath || null,
         publishedLatestEpisodeNo: resolveWebsochatPublishedLatestEpisodeNo(
           product.publishedLatestEpisodeNo,
           product.latestEpisodeNo
@@ -4045,6 +4062,22 @@ export default function WebsochatPage() {
     )),
     [canUseAccountScope, effectiveStarter?.actions]
   );
+  const [isShortcutMenuOpen, setIsShortcutMenuOpen] = useState(false);
+  const shortcutMenuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!isShortcutMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (shortcutMenuRef.current && !shortcutMenuRef.current.contains(e.target as Node)) {
+        setIsShortcutMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [isShortcutMenuOpen]);
+  const activeShortcutAction = composerShortcutActions.find(
+    (action) => effectiveShortcutState === resolveWebsochatShortcutStateKey(action)
+  );
+  const shortcutMenuLabel = activeShortcutAction?.label || "모드";
 
   const renderSessionListContent = () => {
     if (isSessionsLoading && !hasSessionItems) {
@@ -4137,10 +4170,10 @@ export default function WebsochatPage() {
   return (
     <div className="bg-white md:bg-white">
       <GlobalNav />
-      <div className="h-[100dvh] md:h-auto overflow-hidden md:overflow-visible bg-white pt-[118px] md:pt-[115px] pb-0 md:pb-[94px]">
+      <div className="h-[100dvh] md:h-auto overflow-hidden md:overflow-visible bg-white pt-[118px] md:pt-[75px] pb-0 md:pb-[16px]">
         <div className="w-full max-w-[1600px] mx-auto px-8pxr md:px-40pxr">
           <div className="flex flex-col gap-0 md:gap-12pxr">
-            <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-0 md:gap-16pxr h-[calc(100dvh-118px)] md:h-[calc(100vh-180px)]">
+            <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-0 md:gap-16pxr h-[calc(100dvh-118px)] md:h-[calc(100dvh-91px)]">
               <div className="hidden md:flex rounded-[16px] border border-light-gray-400 bg-white p-16pxr flex-col gap-12pxr h-full min-h-0 overflow-hidden">
                 <div className="flex items-center justify-between">
                   <div className="text-16pxr font-semibold">세션</div>
@@ -4158,7 +4191,7 @@ export default function WebsochatPage() {
                 </div>
               </div>
 
-              <div className="bg-white md:rounded-[16px] md:border md:border-light-gray-400 md:p-16pxr flex flex-col gap-12pxr h-full min-h-0 overflow-hidden">
+              <div className="bg-white flex flex-col gap-12pxr h-full min-h-0 overflow-hidden">
                 <div className="md:hidden flex items-center justify-between px-16pxr h-[44px] shrink-0 border-b border-light-gray-200">
                   <button
                     type="button"
@@ -4381,39 +4414,6 @@ export default function WebsochatPage() {
               </div>
             ) : (
               <>
-                {composerShortcutActions.length ? (
-                  <div className="flex flex-col gap-8pxr px-16pxr md:px-0">
-                    <div className="flex flex-nowrap overflow-x-auto gap-8pxr [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
-                    {composerShortcutActions.map((action) => {
-                      const isBlockedAction = Boolean(
-                        getBlockedQaActionNotice(action.qaActionKey || null)
-                      );
-                      const isActive = !isBlockedAction
-                        && effectiveShortcutState === resolveWebsochatShortcutStateKey(action);
-                      return (
-                        <button
-                          key={`composer-${action.label}`}
-                          type="button"
-                          onClick={() => handleClickStarterAction(action)}
-                          disabled={areShortcutActionsDisabled || isBlockedAction}
-                          className={`shrink-0 rounded-full border px-12pxr py-7pxr text-12pxr font-medium ${
-                            isActive
-                              ? "border-primary-100 bg-primary-100 text-white"
-                            : "border-light-gray-400 bg-white text-dark-gray-500 hover:border-primary-100 hover:text-primary-100"
-                          } ${(areShortcutActionsDisabled || isBlockedAction) ? "cursor-not-allowed opacity-50 hover:border-light-gray-400 hover:text-dark-gray-500" : ""}`}
-                        >
-                          {action.label}
-                        </button>
-                      );
-                    })}
-                    </div>
-                    {composerModeDetail ? (
-                      <div className="px-4pxr text-12pxr text-dark-gray-300">
-                        {composerModeDetail}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
                 <div className="flex items-center gap-8pxr px-16pxr md:px-0">
                   <button
                     type="button"
@@ -4474,7 +4474,7 @@ export default function WebsochatPage() {
                   </div>
                 </div>
                 <div className="sticky bottom-0 z-30 mx-16pxr md:mx-0 mb-[max(env(safe-area-inset-bottom,0px),20px)]">
-                  <div className="flex gap-8pxr items-end rounded-[20px] bg-white/90 backdrop-blur-sm ring-1 ring-inset ring-light-gray-300 focus-within:ring-primary-100 shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.035),0_0_0_0.5px_rgba(0,0,0,0.06)] focus-within:shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.075),0_0_0_0.5px_rgba(0,0,0,0.1)] transition-shadow pl-16pxr pr-8pxr py-4pxr">
+                  <div className="flex gap-8pxr items-center rounded-[20px] bg-white/90 backdrop-blur-sm ring-1 ring-inset ring-light-gray-300 focus-within:ring-primary-100 shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.035),0_0_0_0.5px_rgba(0,0,0,0.06)] focus-within:shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.075),0_0_0_0.5px_rgba(0,0,0,0.1)] transition-shadow pl-16pxr pr-8pxr py-4pxr">
                     <textarea
                       value={draft}
                       onChange={(event) => {
@@ -4504,9 +4504,61 @@ export default function WebsochatPage() {
                       placeholder="작품에 관해 뭐든 말해보세요."
                       disabled={isReadScopeGuardPending || isAssistantTurnPending}
                       rows={1}
-                      className="flex-1 bg-transparent px-4pxr py-8pxr text-16pxr md:text-14pxr leading-[1.5] outline-none resize-none overflow-y-auto disabled:bg-light-gray-100 disabled:text-dark-gray-300"
+                      className="flex-1 bg-transparent px-4pxr py-8pxr text-16pxr md:text-14pxr leading-[1.5] outline-none resize-none overflow-y-auto placeholder:text-13pxr md:placeholder:text-14pxr disabled:bg-light-gray-100 disabled:text-dark-gray-300"
                       style={{ minHeight: '36px', maxHeight: '200px' }}
                     />
+                    {composerShortcutActions.length ? (
+                      <div className="relative shrink-0" ref={shortcutMenuRef}>
+                        <button
+                          type="button"
+                          onClick={() => setIsShortcutMenuOpen((v) => !v)}
+                          disabled={areShortcutActionsDisabled}
+                          aria-label="모드 선택"
+                          className="flex items-center gap-4pxr rounded-full border border-light-gray-400 bg-white px-10pxr py-6pxr text-12pxr font-medium text-dark-gray-500 hover:border-primary-100 hover:text-primary-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <span className="max-w-[100px] truncate">{shortcutMenuLabel}</span>
+                          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 8l3-4 3 4" />
+                          </svg>
+                        </button>
+                        {isShortcutMenuOpen ? (
+                          <div className="absolute bottom-full right-0 mb-8pxr w-[220px] rounded-[12px] border border-light-gray-300 bg-white py-4pxr shadow-lg z-40">
+                            {composerShortcutActions.map((action) => {
+                              const isBlockedAction = Boolean(
+                                getBlockedQaActionNotice(action.qaActionKey || null)
+                              );
+                              const isActive = !isBlockedAction
+                                && effectiveShortcutState === resolveWebsochatShortcutStateKey(action);
+                              const isDisabled = areShortcutActionsDisabled || isBlockedAction;
+                              return (
+                                <button
+                                  key={`shortcut-menu-${action.label}`}
+                                  type="button"
+                                  onClick={() => {
+                                    if (isDisabled) return;
+                                    handleClickStarterAction(action);
+                                    setIsShortcutMenuOpen(false);
+                                  }}
+                                  disabled={isDisabled}
+                                  className={`block w-full px-12pxr py-8pxr text-left text-13pxr ${
+                                    isActive
+                                      ? "bg-light-gray-100 font-semibold text-primary-100"
+                                      : "text-dark-gray-500 hover:bg-light-gray-100"
+                                  } ${isDisabled ? "cursor-not-allowed opacity-50 hover:bg-white" : ""}`}
+                                >
+                                  <div className="truncate">{action.label}</div>
+                                  {isActive && composerModeDetail ? (
+                                    <div className="mt-2pxr text-11pxr text-dark-gray-300 truncate">
+                                      {composerModeDetail}
+                                    </div>
+                                  ) : null}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                     <button
                       type="button"
                       aria-label={isPauseButtonVisible ? "답변 생성 중단" : "메시지 전송"}

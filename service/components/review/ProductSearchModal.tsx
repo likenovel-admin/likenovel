@@ -1,4 +1,5 @@
 import { useSelectSearchProductReview } from "@/app/api/query/search";
+import { resolveProductCoverImage } from "@/constants/common";
 import useAuthStore from "@/store/authStore";
 import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
@@ -174,9 +175,9 @@ const ProductSearchModal = ({
                   >
                     <div className="w-full h-auto rounded-[10px] relative aspect-[140/215] overflow-hidden">
                       <Image
-                        src={
-                          item.image?.coverImagePath || "/images/test/book.svg"
-                        }
+                        src={resolveProductCoverImage(
+                          item.image?.coverImagePath
+                        )}
                         className="rounded-[10px]"
                         alt="product"
                         fill

@@ -8,6 +8,7 @@ import {
   setPendingProductDetailEntrySource,
 } from "@/utils/productPath";
 import { useRouter } from "next/navigation";
+import AdultAgeBadge from "./AdultAgeBadge";
 import RankingBadge from "../common/RankingBadge";
 import SquareBadge from "../common/SquareBadge";
 import InterestBadge from "./InterestBadge";
@@ -50,11 +51,14 @@ const BoxProductList = ({
                 215,
                 "object-cover min-w-[95px] md:min-w-[148px] min-h-[150px] md:h-[215px] rounded-[10px]"
               )}
+              <AdultAgeBadge product={product} />
               <InterestBadge
                 product={product as unknown as IProduct}
                 width={10}
                 height={14}
-                style="absolute top-[5px] right-[5px] md:hidden"
+                style={`absolute ${
+                  product.adultYn === "Y" ? "top-[33px]" : "top-[5px]"
+                } right-[5px] md:hidden`}
               />
               {hasLank && (
                 <div className="absolute top-[-5px] left-[10px] hidden md:block">

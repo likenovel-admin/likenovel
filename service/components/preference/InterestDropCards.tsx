@@ -1,4 +1,5 @@
 import { useSelectInterestDropProducts } from "@/app/api/query/product";
+import { resolveProductCoverImage } from "@/constants/common";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useAuthStore from "@/store/authStore";
 import { IProduct } from "@/types";
@@ -13,6 +14,7 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import AdultAgeBadge from "../common/AdultAgeBadge";
 import BookmarkButton from "../common/BookmarkButton";
 import CircleArrow from "../common/CircleArrow";
 import InterestBadge from "../common/InterestBadge";
@@ -122,23 +124,16 @@ const InterestDropCards = () => {
                 navigateToProductDetail(product.productId);
               }}
             >
-              {product.image && product.image.coverImagePath ? (
+              <div className="relative w-[110px] h-[166px] shrink-0">
                 <Image
-                  src={product.image.coverImagePath}
+                  src={resolveProductCoverImage(product.image?.coverImagePath)}
                   alt={product.title}
                   width={110}
                   height={166}
                   className="object-cover rounded-lg md:rounded-l-lg md:rounded-r-none"
                 />
-              ) : (
-                <Image
-                  src="https://cdn.likenovel.net/cover/ESokN0lzSgG0um4rn4tBeg.webp"
-                  alt={product.title}
-                  width={110}
-                  height={166}
-                  className={`object-cover rounded-lg md:rounded-l-lg md:rounded-r-none`}
-                />
-              )}
+                <AdultAgeBadge product={product as IProduct} />
+              </div>
 
               {product.priceType === "paid" && (
                 <div className="absolute flex gap-[2px] bottom-[5px] left-[5px]">
