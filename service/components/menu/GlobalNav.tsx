@@ -1,4 +1,4 @@
-import { WEBSOCHAT_NAV_LABEL } from "@/constants/common";
+import { WEBSOCHAT_NAV_LABEL, WEBSOCHAT_PREPARE_NAV_EVENT } from "@/constants/common";
 import { useGetChatUnReadCount } from "@/app/api/query/message";
 import useAuthStore from "@/store/authStore";
 import useConfirmStore from "@/store/confirmStore";
@@ -28,6 +28,16 @@ const GlobalNav = () => {
   const { hasNew, setHasNew } = useGiftBoxStore();
 
   const { data: unreadCountData } = useGetChatUnReadCount(!!user?.userId);
+
+  const navigate = (href: string) => {
+    if (href === pathname) return;
+    if (pathname === "/websochat") {
+      window.dispatchEvent(new Event(WEBSOCHAT_PREPARE_NAV_EVENT));
+      window.requestAnimationFrame(() => router.push(href));
+      return;
+    }
+    router.push(href);
+  };
 
   const handleLoginNeeded = () => {
     setConfirm({
@@ -78,7 +88,7 @@ const GlobalNav = () => {
           <div className="flex lg:gap-67pxr md:gap-35pxr">
             <button
               className="flex items-center gap-13pxr"
-              onClick={() => router.push("/")}
+              onClick={() => navigate("/")}
             >
               <div className="mb-[16px]">
                 <LogoIcon alt="likenovel icon" className="w-28pxr h-33pxr" />
@@ -88,7 +98,7 @@ const GlobalNav = () => {
               </div>
             </button>
             <div className="flex gap-30pxr">
-              <button onClick={() => router.push("/product/top50/free-top")}>
+              <button onClick={() => navigate("/product/top50/free-top")}>
                 <MenuIcon
                   menu={
                     <span className="text-20pxr font-bold  hover:text-dark-gray-400">
@@ -99,7 +109,7 @@ const GlobalNav = () => {
                   isDotActive
                 />
               </button>
-              <button onClick={() => router.push("/product/free/normal")}>
+              <button onClick={() => navigate("/product/free/normal")}>
                 <MenuIcon
                   menu={
                     <span className="text-20pxr font-bold hover:text-dark-gray-400">
@@ -109,7 +119,7 @@ const GlobalNav = () => {
                   dotColor="blue"
                 />
               </button>
-              <button onClick={() => router.push("/product/paid")}>
+              <button onClick={() => navigate("/product/paid")}>
                 <MenuIcon
                   menu={
                     <span className="text-20pxr font-bold hover:text-dark-gray-400">
@@ -125,7 +135,7 @@ const GlobalNav = () => {
                     handleLoginNeeded();
                     return;
                   }
-                  router.push("/product/preference");
+                  navigate("/product/preference");
                 }}
               >
                 <MenuIcon
@@ -137,7 +147,7 @@ const GlobalNav = () => {
                   dotColor="blue"
                 />
               </button>
-              <button onClick={() => router.push("/websochat")}>
+              <button onClick={() => navigate("/websochat")}>
                 <MenuIcon
                   menu={
                     <span className="inline-flex items-center gap-6pxr text-20pxr font-bold hover:text-dark-gray-400">
@@ -174,7 +184,7 @@ const GlobalNav = () => {
                     handleLoginNeeded();
                     return;
                   }
-                  router.push("/product/message");
+                  navigate("/product/message");
                 }}
               >
                 <MenuIcon
@@ -193,7 +203,7 @@ const GlobalNav = () => {
                     handleLoginNeeded();
                     return;
                   }
-                  router.push("/product/present");
+                  navigate("/product/present");
                   setHasNew(false);
                 }}
               >
@@ -209,7 +219,7 @@ const GlobalNav = () => {
                     handleLoginNeeded();
                     return;
                   }
-                  router.push("/product/author");
+                  navigate("/product/author");
                 }}
               >
                 <Pen />

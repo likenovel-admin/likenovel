@@ -1,4 +1,4 @@
-import { WEBSOCHAT_NAV_LABEL } from "@/constants/common";
+import { WEBSOCHAT_NAV_LABEL, WEBSOCHAT_PREPARE_NAV_EVENT } from "@/constants/common";
 import useConfirmStore from "@/store/confirmStore";
 import useSearchModalStore from "@/store/searchModalStore";
 import { getUser } from "@/utils/getUser";
@@ -19,6 +19,16 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
   const pathname = usePathname();
   const { setConfirm } = useConfirmStore();
   const { isOpen, setIsOpen } = useSearchModalStore();
+
+  const navigate = (href: string) => {
+    if (href === pathname) return;
+    if (pathname === "/websochat") {
+      window.dispatchEvent(new Event(WEBSOCHAT_PREPARE_NAV_EVENT));
+      window.requestAnimationFrame(() => router.push(href));
+      return;
+    }
+    router.push(href);
+  };
 
   const handleLoginNeeded = () => {
     setConfirm({
@@ -42,7 +52,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
           <button
             className="flex items-center gap-7pxr"
             onClick={() => {
-              router.push("/");
+              navigate("/");
             }}
           >
             <div className="mb-[8px]">
@@ -72,7 +82,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
         <div className={`flex gap-20pxr`}>
           <button
             onClick={() => {
-              router.push("/product/top50/free-top");
+              navigate("/product/top50/free-top");
             }}
           >
             <MenuIcon
@@ -85,7 +95,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
               isDotActive
             />
           </button>
-          <button onClick={() => router.push("/product/free/normal")}>
+          <button onClick={() => navigate("/product/free/normal")}>
             <MenuIcon
               menu={
                 <span className="text-16pxr font-bold hover:text-dark-gray-400 min-w-[30px]">
@@ -95,7 +105,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
               dotColor="blue"
             />
           </button>
-          <button onClick={() => router.push("/product/paid")}>
+          <button onClick={() => navigate("/product/paid")}>
             <MenuIcon
               menu={
                 <span className="text-16pxr font-bold hover:text-dark-gray-400 min-w-[30px]">
@@ -111,7 +121,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
                 handleLoginNeeded();
                 return;
               }
-              router.push("/product/preference");
+              navigate("/product/preference");
             }}
           >
             <MenuIcon
@@ -123,7 +133,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
               dotColor="blue"
             />
           </button>
-          <button onClick={() => router.push("/websochat")}>
+          <button onClick={() => navigate("/websochat")}>
             <MenuIcon
               menu={
                 <span className="inline-flex items-center gap-4pxr text-16pxr font-bold hover:text-dark-gray-400">

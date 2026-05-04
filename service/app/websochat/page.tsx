@@ -3,6 +3,7 @@
 import {
   DEFAULT_PRODUCT_IMAGE,
   resolveProductCoverImage,
+  WEBSOCHAT_PREPARE_NAV_EVENT,
 } from "@/constants/common";
 import { getEpisodeListQueryOptions, useGetEpisodeList } from "@/app/api/query/product";
 import {
@@ -546,6 +547,23 @@ type WebsochatStickyGuideItem = {
   message: IWebsochatMessageItem;
 };
 
+const dedupeWebsochatStickyGuides = (
+  items: WebsochatStickyGuideItem[]
+) => {
+  const seenKeys = new Set<string>();
+  return items.filter((item) => {
+    const key = [
+      item.sessionId ?? "draft",
+      item.productId ?? "none",
+      item.message.role,
+      item.message.content.trim(),
+    ].join("|");
+    if (seenKeys.has(key)) return false;
+    seenKeys.add(key);
+    return true;
+  });
+};
+
 type WebsochatLocalStarterItem = {
   starterId: string;
   sessionId: number | null;
@@ -977,7 +995,7 @@ export default function WebsochatPage() {
     try {
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [] as WebsochatStickyGuideItem[];
-      return parsed
+      const normalizedGuides = parsed
         .map((item): WebsochatStickyGuideItem => ({
           guideId: String(item?.guideId || ""),
           sessionId:
@@ -1011,6 +1029,7 @@ export default function WebsochatPage() {
         }))
         .filter((item) => item.guideId && item.createdAt > 0 && item.message.content)
         .slice(-200);
+      return dedupeWebsochatStickyGuides(normalizedGuides);
     } catch {
       window.sessionStorage.removeItem(WEBSOCHAT_STICKY_GUIDES_STORAGE_KEY);
       return [] as WebsochatStickyGuideItem[];
@@ -1023,9 +1042,10 @@ export default function WebsochatPage() {
       window.sessionStorage.removeItem(WEBSOCHAT_STICKY_GUIDES_STORAGE_KEY);
       return;
     }
+    const dedupedItems = dedupeWebsochatStickyGuides(items).slice(-200);
     window.sessionStorage.setItem(
       WEBSOCHAT_STICKY_GUIDES_STORAGE_KEY,
-      JSON.stringify(items.slice(-200))
+      JSON.stringify(dedupedItems)
     );
   }, []);
 
@@ -1184,6 +1204,8 @@ export default function WebsochatPage() {
     [sessionsData, activeSessionId]
   );
   const activeSessionMeta = messagesData?.data?.session ?? null;
+  const canSendMessage =
+    activeSession?.canSendMessage ?? activeSessionMeta?.canSendMessage ?? true;
   const visibleSessionItems = useMemo(() => {
     const currentSessionItems = sessionsData?.data ?? [];
     if (!pendingSessionPreview) return currentSessionItems;
@@ -1403,6 +1425,7 @@ export default function WebsochatPage() {
     || effectiveShortcutState === "ideal_worldcup";
   const serverGuideMessage =
     activeSessionId
+    && canSendMessage
     && !shouldSuppressServerGuideMessage
       ? messagesData?.data?.guideMessage ?? null
       : null;
@@ -1606,7 +1629,7 @@ export default function WebsochatPage() {
     && visibleStickyGuides.length === 0
     && transientMessages.length === 0;
   useEffect(() => {
-    if (!activeSessionId || !serverGuideMessage?.content || hasCurrentServerGuideInHistory) return;
+    if (!activeSessionId || !canSendMessage || !serverGuideMessage?.content || hasCurrentServerGuideInHistory) return;
     const nextCreatedAt = Date.now();
     setStickyGuides((current) => {
       const alreadyExists = current.some((guide) => (
@@ -1633,6 +1656,7 @@ export default function WebsochatPage() {
     });
   }, [
     activeSessionId,
+    canSendMessage,
     effectiveProductId,
     hasCurrentServerGuideInHistory,
     latestScopedModeNotice?.noticeId,
@@ -1887,20 +1911,36 @@ export default function WebsochatPage() {
       createdAt?: number;
       anchorClientMessageId?: string | null;
     }) => {
-      const noticeId = window.crypto.randomUUID();
-      setModeNotices((current) => [
-        ...current.slice(-199),
-        {
-          noticeId,
-          sessionId: sessionId ?? null,
-          productId: productId ?? null,
-          content,
-          createdAt,
-          anchorClientMessageId: anchorClientMessageId ? String(anchorClientMessageId) : null,
-          kind,
-        },
-      ]);
-      return noticeId;
+      const sid = sessionId ?? null;
+      const pid = productId ?? null;
+      const trimmed = content.trim();
+      let resultNoticeId = "";
+      setModeNotices((current) => {
+        const existing = current.find((n) => (
+          n.sessionId === sid
+          && n.productId === pid
+          && n.kind === kind
+          && n.content.trim() === trimmed
+        ));
+        if (existing) {
+          resultNoticeId = existing.noticeId;
+          return current;
+        }
+        resultNoticeId = window.crypto.randomUUID();
+        return [
+          ...current.slice(-199),
+          {
+            noticeId: resultNoticeId,
+            sessionId: sid,
+            productId: pid,
+            content,
+            createdAt,
+            anchorClientMessageId: anchorClientMessageId ? String(anchorClientMessageId) : null,
+            kind,
+          },
+        ];
+      });
+      return resultNoticeId;
     },
     [activeSessionId, effectiveProductId]
   );
@@ -1915,25 +1955,40 @@ export default function WebsochatPage() {
       sessionId?: number | null;
       productId?: number | null;
     }) => {
-      const createdAt = Date.now();
-      const guideId = window.crypto.randomUUID();
-      setStickyGuides((current) => [
-        ...current.slice(-199),
-        {
-          guideId,
-          sessionId: sessionId ?? null,
-          productId: productId ?? null,
-          originNoticeId: null,
-          createdAt,
-          message: {
-            messageId: createdAt,
-            role: "assistant",
-            content,
-            createdDate: new Date(createdAt).toISOString(),
+      const sid = sessionId ?? null;
+      const pid = productId ?? null;
+      const trimmed = content.trim();
+      let resultGuideId = "";
+      setStickyGuides((current) => {
+        const existing = current.find((g) => (
+          g.sessionId === sid
+          && g.productId === pid
+          && g.message.content.trim() === trimmed
+        ));
+        if (existing) {
+          resultGuideId = existing.guideId;
+          return current;
+        }
+        const createdAt = Date.now();
+        resultGuideId = window.crypto.randomUUID();
+        return [
+          ...current.slice(-199),
+          {
+            guideId: resultGuideId,
+            sessionId: sid,
+            productId: pid,
+            originNoticeId: null,
+            createdAt,
+            message: {
+              messageId: createdAt,
+              role: "assistant",
+              content,
+              createdDate: new Date(createdAt).toISOString(),
+            },
           },
-        },
-      ]);
-      return guideId;
+        ];
+      });
+      return resultGuideId;
     },
     [activeSessionId, effectiveProductId]
   );
@@ -2205,7 +2260,8 @@ export default function WebsochatPage() {
 
   useEffect(() => {
     const hasSyncGap =
-      !!effectiveProductId
+      canSendMessage
+      && !!effectiveProductId
       && syncedLatestEpisodeNo != null
       && syncedLatestEpisodeNo > 0
       && publishedLatestEpisodeNo > syncedLatestEpisodeNo;
@@ -2254,6 +2310,7 @@ export default function WebsochatPage() {
   }, [
     activeSessionId,
     appendModeNotice,
+    canSendMessage,
     effectiveProductId,
     publishedLatestEpisodeNo,
     scopedModeNotices,
@@ -2436,7 +2493,6 @@ export default function WebsochatPage() {
           ? "아직 읽기 전"
           : "로그인 후 자동 감지";
   const isReadScopeGuardPending = !isAuthInitialized && canUseAccountReadScope;
-  const canSendMessage = activeSession?.canSendMessage ?? activeSessionMeta?.canSendMessage ?? true;
   const isDraftSession = isPreparingNewSession || !activeSessionId;
   const isWaitingForInitialStarter =
     !!activeSessionId
@@ -2508,6 +2564,21 @@ export default function WebsochatPage() {
     queueScrollMessageListToBottom,
     writeStoredActiveSessionId,
   ]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handlePrepareNav = () => {
+      writeStoredActiveSessionId(null);
+      setIsPreparingNewSession(true);
+      setActiveSessionId(null);
+      setSelectedProductId(null);
+      setSelectedProductSnapshot(null);
+    };
+    window.addEventListener(WEBSOCHAT_PREPARE_NAV_EVENT, handlePrepareNav);
+    return () => {
+      window.removeEventListener(WEBSOCHAT_PREPARE_NAV_EVENT, handlePrepareNav);
+    };
+  }, [writeStoredActiveSessionId]);
 
   useEffect(() => {
     const pendingLaunch = consumePendingWebsochatLaunch();
