@@ -9,6 +9,7 @@ export const resolveProductCoverImage = (imagePath?: string | null) =>
     : imagePath;
 export const ADMIN_EMAIL = "mailto:admin@likenovel.net";
 export const WEBSOCHAT_NAV_LABEL = "웹소챗";
+export const WEBSOCHAT_PREPARE_NAV_EVENT = "likenovel:websochat:prepare-nav";
 export const TYPE_MODAL = {
   CASH_USE: "CASH_USE", // modal CacheUseModal
   DONATE: "DONATE", // modal DonateModal
