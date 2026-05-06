@@ -14,6 +14,7 @@ const CashUseItem = ({
   const resolvedProductTitle = productTitle ?? product_title ?? "";
   const resolvedEpisodeTitle = episodeTitle ?? episode_title ?? "";
   const resolvedCreatedDate = createdDate ?? created_date ?? "";
+  const isWebsochatUse = resolvedEpisodeTitle.startsWith("웹소챗 · ");
   const formattedCreatedDate = resolvedCreatedDate
     ? getFormattingDate(resolvedCreatedDate, "YYYY.MM.DD HH:mm")
     : "";
@@ -43,7 +44,7 @@ const CashUseItem = ({
           ) : null}
           {formattedCreatedDate ? (
             <div className="text-dark-gray-400 font-normal text-11pxr md:text-12pxr">
-              {formattedCreatedDate}
+              {isWebsochatUse ? `마지막 사용 ${formattedCreatedDate}` : formattedCreatedDate}
             </div>
           ) : null}
         </div>
