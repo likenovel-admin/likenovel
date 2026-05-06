@@ -256,6 +256,16 @@ export interface IProfileRequest {
 
 export interface ISelectUserCashResponse {
   data: ICash[];
+  page?: number;
+  pageSize?: number;
+  totalCount?: number;
+  hasNext?: boolean;
+}
+
+export interface ISelectUserCashParams {
+  category?: "all" | "charge" | "used";
+  page?: number;
+  pageSize?: number;
 }
 
 export interface ISelectUserCommentResponse {

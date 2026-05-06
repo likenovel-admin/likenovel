@@ -2,6 +2,7 @@ import { instance } from "@/app/api/axios";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   IProfileRequest,
+  ISelectUserCashParams,
   ISelectProfileFileResponse,
   ISelectUserCashResponse,
   ISelectUserCommentBlockResponse,
@@ -85,11 +86,11 @@ export const useSelectUserProductsWithPromotions = () => {
   });
 };
 
-export const useSelectUserCash = () => {
+export const useSelectUserCash = (params?: ISelectUserCashParams) => {
   return useQuery<ISelectUserCashResponse>({
-    queryKey: ["selectUserCash"],
+    queryKey: ["selectUserCash", params],
     queryFn: async () => {
-      const response = await instance.get("/v1/query/user/cash");
+      const response = await instance.get("/v1/query/user/cash", { params });
       return response.data;
     },
   });
