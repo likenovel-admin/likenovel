@@ -10,6 +10,8 @@ import {
   IGetStatisticPaymentByUserParams,
   IGetStatisticPaymentByUserResponse,
   IGetStatisticPaymentByUserAllResponse,
+  IGetStatisticWebsochatUsageParams,
+  IGetStatisticWebsochatUsageResponse,
 } from "@/api/statistic/dto";
 import apiClient from "@/lib/apiClient";
 import { useQuery } from "@tanstack/react-query";
@@ -96,6 +98,23 @@ export const getStatisticPaymentByUserDownload = async (
     queryParams: params,
   });
   return res;
+};
+
+export const useGetStatisticWebsochatUsage = (
+  params: IGetStatisticWebsochatUsageParams
+) => {
+  return useQuery<IGetStatisticWebsochatUsageResponse>({
+    queryKey: ["GetStatisticWebsochatUsage", JSON.stringify(params)],
+
+    queryFn: async () => {
+      const res = await apiClient.request<IGetStatisticWebsochatUsageResponse>({
+        url: "/v1/query/statistics/websochat-usage",
+        method: "GET",
+        queryParams: params,
+      });
+      return res;
+    },
+  });
 };
 
 export const cancelCashOrderByOrderId = async (
