@@ -61,6 +61,10 @@ const data = {
           title: "회원별 소비 내역",
           url: "/statistics/consumption-by-user",
         },
+        {
+          title: "웹소챗 사용량",
+          url: "/statistics/websochat",
+        },
       ],
     },
     {
