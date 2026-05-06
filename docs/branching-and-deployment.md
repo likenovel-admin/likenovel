@@ -287,6 +287,83 @@ git checkout main
 cd ../..
 ```
 
+### 히스토리/서브모듈 복구 절차
+
+main/dev/prod 히스토리나 backend submodule pointer가 꼬였을 때는 아래 절차를 따른다.
+이 절차의 목적은 중복 cherry-pick, stale submodule pointer, force-push로 repo를 더 망가뜨리는 일을 막는 것이다.
+
+#### 절대 금지
+
+- `git cherry-pick`으로 `main`/`dev`/`prod`를 맞추지 않는다.
+- `git worktree`로 우회 작업하지 않는다.
+- public branch에 force-push하지 않는다.
+- `git add .` / `git add -A`를 쓰지 않는다.
+- submodule pointer를 브랜치명 감으로 stage하지 않는다. 항상 fetch 후 명시 SHA를 확인한다.
+
+#### 정상화 순서
+
+1. backend repo `main -> dev`를 `--no-ff` merge commit으로 연결한다.
+2. backend repo `dev -> prod`를 `--no-ff` merge commit으로 연결한다.
+3. root repo `main -> dev`를 `--no-ff` merge commit으로 연결한다.
+4. root repo `dev -> prod`를 `--no-ff` merge commit으로 연결한다.
+5. 각 단계는 하나씩 끊고, push 전후로 Actions와 모니터링을 확인한다.
+
+#### 각 단계 시작 전 lock
+
+```bash
+git fetch origin --quiet
+git branch --show-current
+git status --short --branch
+git rev-parse --short origin/main origin/dev origin/prod
+for f in CHERRY_PICK_HEAD REBASE_HEAD MERGE_HEAD; do test -e .git/$f && echo $f; done
+git merge-base --is-ancestor origin/main origin/dev; echo main_to_dev=$?
+git merge-base --is-ancestor origin/dev origin/prod; echo dev_to_prod=$?
+```
+
+원격 SHA가 작업 중 바뀌면 push하지 말고 다시 lock부터 시작한다.
+
+#### submodule conflict resolve
+
+root merge에서 backend submodule conflict가 나면 Git의 자동 제안을 그대로 믿지 않는다.
+특히 submodule local `prod` branch가 stale일 수 있으므로 브랜치명으로 resolve하지 않는다.
+
+```bash
+git -C likenovel-service-api/likenovel-service-api fetch origin --quiet
+git -C likenovel-service-api/likenovel-service-api merge-base --is-ancestor <old-root-pointer> <target-backend-sha>
+git -C likenovel-service-api/likenovel-service-api merge-base --is-ancestor <incoming-root-pointer> <target-backend-sha>
+git -C likenovel-service-api/likenovel-service-api checkout --detach <target-backend-sha>
+git add likenovel-service-api/likenovel-service-api
+```
+
+의도된 pointer commit은 아래처럼 의도를 명시한다.
+
+```bash
+ALLOW_SUBMODULE_POINTER_COMMIT=1 git commit --no-edit
+```
+
+#### push 전 gate
+
+```bash
+git diff --cached --name-status
+git diff --cached --submodule=log -- likenovel-service-api/likenovel-service-api
+git diff --cached --check
+git diff --name-only --diff-filter=U
+git show -s --format='%H%nparents: %P%nsubject: %s' HEAD
+```
+
+- 허용 파일 외 diff가 있으면 push하지 않는다.
+- stale backend SHA나 downgrade SHA가 보이면 push하지 않는다.
+- service 변경이 포함되면 `corepack yarn --cwd service build`를 통과해야 한다.
+- push 전 레드팀이 critical/high blocker 없음을 확인한다.
+
+#### 이미 꼬였을 때 조치
+
+- merge 중이고 commit 전이면 `git merge --abort` 후 lock부터 다시 시작한다.
+- local commit만 있고 push 전이면 push하지 않는다. diff/parents를 보고 사용자 승인 후 되돌리거나 새 merge commit을 만든다.
+- 이미 잘못 push했다면 force-push로 지우지 않는다. 현재 원격 SHA를 새 lock으로 잡고, 올바른 SHA로 forward-fix merge/align commit을 추가한다.
+- backend prod 배포가 CodeDeploy version update commit을 추가했으면 root prod pointer는 그 최신 backend prod SHA로 align한다. dev bridge SHA로 내리면 downgrade다.
+- 완료 판정은 root/backend 모두에서 `main -> dev`, `dev -> prod` ancestry가 `0`일 때만 한다.
+
 ---
 
 ## 9. 서버 컨테이너/프로세스 구성
