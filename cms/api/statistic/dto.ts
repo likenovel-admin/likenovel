@@ -2,6 +2,11 @@ import {
   IStatisticSite,
   IStatisticPayment,
   IStatisticPaymentByUser,
+  IStatisticWebsochatModelSummary,
+  IStatisticWebsochatProductSummary,
+  IStatisticWebsochatRouteSummary,
+  IStatisticWebsochatUsage,
+  IStatisticWebsochatUsageSummary,
 } from "@/types/statistic";
 
 export interface IGetStatisticSiteResponse {
@@ -58,4 +63,28 @@ export interface IGetStatisticPaymentByUserParams {
   end_date?: string;
   search_target?: string;
   search_word?: string;
+}
+
+export interface IGetStatisticWebsochatUsageResponse {
+  total_count: number;
+  page: number;
+  count_per_page: number;
+  summary: IStatisticWebsochatUsageSummary;
+  model_summary: IStatisticWebsochatModelSummary[];
+  route_summary: IStatisticWebsochatRouteSummary[];
+  product_summary: IStatisticWebsochatProductSummary[];
+  results: IStatisticWebsochatUsage[];
+}
+
+export interface IGetStatisticWebsochatUsageParams {
+  page?: number;
+  count_per_page?: number;
+  start_date?: string;
+  end_date?: string;
+  search_target?: string;
+  search_word?: string;
+  product_id?: number;
+  model_used?: string;
+  route_mode?: string;
+  fallback_used?: string;
 }
