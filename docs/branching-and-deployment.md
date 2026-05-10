@@ -344,7 +344,7 @@ ALLOW_SUBMODULE_POINTER_COMMIT=1 git commit --no-edit
 #### push 전 gate
 
 ```bash
-devtools/git-pre-push-safety-check.sh
+bash devtools/git-pre-push-safety-check.sh
 git diff --cached --name-status
 git diff --cached --submodule=log -- likenovel-service-api/likenovel-service-api
 git diff --cached --check
@@ -356,7 +356,7 @@ git show -s --format='%H%nparents: %P%nsubject: %s' HEAD
 - stale backend SHA나 downgrade SHA가 보이면 push하지 않는다.
 - service 변경이 포함되면 `corepack yarn --cwd service build`를 통과해야 한다.
 - push 전 레드팀이 critical/high blocker 없음을 확인한다.
-- 로컬 pre-push hook은 `devtools/git-pre-push-safety-check.sh`를 호출해야 한다.
+- 로컬 pre-push hook은 `bash devtools/git-pre-push-safety-check.sh`를 호출해야 한다.
 - 의도된 submodule pointer push는 `ALLOW_SUBMODULE_POINTER_PUSH=1 git push ...`처럼 해당 명령에만 제한적으로 허용한다.
 - 원격 계보 경고는 readback이다. 실제 blocker는 이번에 push하는 `dev`가 `origin/main`, `prod`가 `origin/dev`를 포함하지 않는 경우다.
 
