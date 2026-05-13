@@ -302,41 +302,125 @@ const buildWebsochatModeSwitchNotice = ({
   return buildWebsochatModeStartNotice(toAction, readScopeText);
 };
 
-const buildWebsochatErrorNotice = (error: unknown) => {
-  if (!axios.isAxiosError(error)) {
-    return "지금은 접속이 원활하지 않아요. 잠시 후 다시 시도해 주세요.";
+type WebsochatHttpErrorInfo = {
+  status?: number;
+  code?: string;
+  message?: string;
+};
+
+const readWebsochatErrorStringField = (
+  source: unknown,
+  field: "code" | "message"
+) => {
+  if (!source || typeof source !== "object") return "";
+  const value = (source as Record<string, unknown>)[field];
+  return typeof value === "string" ? value.trim() : "";
+};
+
+const getWebsochatHttpErrorInfo = (error: unknown): WebsochatHttpErrorInfo => {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data;
+    return {
+      status: error.response?.status,
+      code: readWebsochatErrorStringField(data, "code"),
+      message: readWebsochatErrorStringField(data, "message"),
+    };
   }
 
-  const status = error.response?.status;
-  const message = String(error.response?.data?.message || "").trim();
+  const response = (error as { response?: { status?: number; data?: unknown } } | null)?.response;
+  const data = response?.data;
+  return {
+    status: response?.status,
+    code: readWebsochatErrorStringField(data, "code"),
+    message:
+      readWebsochatErrorStringField(data, "message")
+      || (error instanceof Error ? error.message.trim() : ""),
+  };
+};
+
+const isWebsochatAiProviderError = (errorInfo: WebsochatHttpErrorInfo) => {
+  const code = String(errorInfo.code || "");
+  const message = String(errorInfo.message || "");
+  return (
+    code.startsWith("AI_PROVIDER_")
+    || message === "AI 서비스 호출에 실패했습니다."
+    || message === "Gemini AI 서비스가 설정되지 않았습니다."
+  );
+};
+
+const buildWebsochatErrorNotice = (
+  error: unknown,
+  options?: { qaActionKey?: IWebsochatStarterActionItem["qaActionKey"] | null }
+) => {
+  const errorInfo = getWebsochatHttpErrorInfo(error);
+  const message = String(errorInfo.message || "").trim();
+
+  if (isWebsochatAiProviderError(errorInfo)) {
+    if (options?.qaActionKey === "next_episode_write") {
+      return "다음 회차 생성이 중간에 멈췄어요. 잠시 후 다시 시도해 주세요.";
+    }
+    if (errorInfo.code === "AI_PROVIDER_LIMITED") {
+      return "지금은 AI 생성 요청이 많아 답변을 완성하지 못했어요. 잠시 후 다시 시도해 주세요.";
+    }
+    if (errorInfo.code === "AI_PROVIDER_AUTH_FAILED" || errorInfo.code === "AI_PROVIDER_NOT_CONFIGURED") {
+      return "AI 생성 설정을 확인하는 중이에요. 잠시 후 다시 시도해 주세요.";
+    }
+    if (errorInfo.code === "AI_PROVIDER_TIMEOUT") {
+      return "생성 시간이 길어져 답변을 마치지 못했어요. 조금 뒤 다시 시도해 주세요.";
+    }
+    return "AI 답변을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.";
+  }
 
   if (message && message !== "캐시 잔액이 부족합니다.") {
     return message;
   }
 
-  switch (status) {
+  switch (errorInfo.status) {
     case 400:
-      return "지금은 요청을 바로 처리하지 못했어요. 한 번만 다시 시도해 주세요. (400)";
+      return "지금은 요청을 바로 처리하지 못했어요. 한 번만 다시 시도해 주세요.";
     case 401:
-      return "지금은 로그인 상태를 다시 확인해야 해요. 로그인 후 다시 시도해 주세요. (401)";
+      return "로그인 상태를 다시 확인해야 해요. 로그인 후 다시 시도해 주세요.";
     case 403:
-      return "지금은 이 요청을 진행할 수 없어요. 잠시 후 다시 시도해 주세요. (403)";
+      return "지금은 이 요청을 진행할 수 없어요. 잠시 후 다시 시도해 주세요.";
     case 404:
-      return "지금 필요한 정보를 찾지 못했어요. 잠시 후 다시 시도해 주세요. (404)";
+      return "필요한 정보를 찾지 못했어요. 잠시 후 다시 시도해 주세요.";
     case 409:
-      return "방금 요청과 겹쳤어요. 잠시만 기다렸다가 다시 시도해 주세요. (409)";
+      return "방금 요청과 겹쳤어요. 잠시만 기다렸다가 다시 시도해 주세요.";
     case 429:
-      return "요청이 잠깐 몰렸어요. 조금만 쉬었다가 다시 시도해 주세요. (429)";
+      return "요청이 잠깐 몰렸어요. 조금만 쉬었다가 다시 시도해 주세요.";
     case 500:
     case 502:
     case 503:
     case 504:
-      return `지금은 접속이 원활하지 않아요. 잠시 후 다시 시도해 주세요. (${status})`;
     default:
-      return status
-        ? `지금은 접속이 원활하지 않아요. 잠시 후 다시 시도해 주세요. (${status})`
-        : "지금은 접속이 원활하지 않아요. 잠시 후 다시 시도해 주세요.";
+      return "지금은 접속이 원활하지 않아요. 잠시 후 다시 시도해 주세요.";
   }
+};
+
+const buildWebsochatAssistantFailureMessage = (
+  error: unknown,
+  options?: { qaActionKey?: IWebsochatStarterActionItem["qaActionKey"] | null }
+) => {
+  const notice = buildWebsochatErrorNotice(error, options);
+  if (options?.qaActionKey === "next_episode_write") {
+    return `${notice}\n\n요청 내용을 확인한 뒤 잠시 후 다시 시도해 주세요.`;
+  }
+  return notice;
+};
+
+const createWebsochatStreamTerminalError = (errorInfo: WebsochatHttpErrorInfo) => {
+  const message = errorInfo.message || "AI 답변을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.";
+  const error = new Error(message) as Error & {
+    response?: { status?: number; data?: { message?: string; code?: string } };
+  };
+  error.response = {
+    status: errorInfo.status,
+    data: {
+      message,
+      code: errorInfo.code,
+    },
+  };
+  return error;
 };
 
 const formatWebsochatCitationLabel = (
@@ -1676,6 +1760,7 @@ export default function WebsochatPage() {
       if (pendingSessionPreview?.sessionId) {
         return;
       }
+      writeStoredActiveSessionId(null);
       setActiveSessionId(null);
       return;
     }
@@ -1872,7 +1957,7 @@ export default function WebsochatPage() {
       return;
     }
 
-    const expectedFirstDeltaMs = 58000;
+    const expectedFirstDeltaMs = 170000;
     const updateProgress = () => {
       const elapsed = Date.now() - Number(streamingStartedAt);
       const rawProgress = (elapsed / expectedFirstDeltaMs) * 95;
@@ -3042,6 +3127,8 @@ export default function WebsochatPage() {
     const turnAbortController = new AbortController();
     activeAssistantAbortControllerRef.current = turnAbortController;
     let requestCanUseAccountScope = canUseAccountScope;
+    let failureQaActionKey: IWebsochatStarterActionItem["qaActionKey"] | null = null;
+    let failureTransientMessages: WebsochatTransientMessageItem[] | null = null;
 
     try {
       await waitForPendingModeSync();
@@ -3280,33 +3367,28 @@ export default function WebsochatPage() {
       };
 
       if (!isCurrentAssistantTurnOwner()) return null;
+      const optimisticUserMessage: WebsochatTransientMessageItem = {
+        messageId: userTempId,
+        role: "user",
+        content,
+        clientMessageId,
+        createdDate,
+      };
+      const optimisticAssistantMessage: WebsochatTransientMessageItem = {
+        messageId: assistantTempId,
+        role: "assistant",
+        content: "",
+        createdDate: assistantCreatedDate,
+        isStreaming: true,
+      };
+      failureQaActionKey = resolvedQaActionKey;
+      failureTransientMessages = shouldUseStreaming || shouldShowPendingAssistantPlaceholder
+        ? [optimisticUserMessage, optimisticAssistantMessage]
+        : [optimisticUserMessage];
       setTransientMessages(
         shouldUseStreaming || shouldShowPendingAssistantPlaceholder
-          ? [
-              {
-                messageId: userTempId,
-                role: "user",
-                content,
-                clientMessageId,
-                createdDate,
-              },
-              {
-                messageId: assistantTempId,
-                role: "assistant",
-                content: "",
-                createdDate: assistantCreatedDate,
-                isStreaming: true,
-              },
-            ]
-          : [
-              {
-                messageId: userTempId,
-                role: "user",
-                content,
-                clientMessageId,
-                createdDate,
-              },
-            ]
+          ? [optimisticUserMessage, optimisticAssistantMessage]
+          : [optimisticUserMessage]
       );
       const requestedReadScopeEpisodeNo = extractWebsochatReadScopeEpisodeNo(content);
       if (requestedReadScopeEpisodeNo) {
@@ -3423,6 +3505,7 @@ export default function WebsochatPage() {
 
       let completedData: { sessionId: number; messages: IWebsochatMessageItem[] } | null = null;
       let streamTerminalError: string | null = null;
+      let streamTerminalErrorInfo: WebsochatHttpErrorInfo | null = null;
       let sawStreamDoneWithoutCompleted = false;
       try {
         if (!shouldUseStreaming) {
@@ -3520,6 +3603,11 @@ export default function WebsochatPage() {
                     typeof event.data?.detail === "string" && event.data.detail.trim()
                       ? event.data.detail.trim()
                       : "websochat stream failed";
+                  streamTerminalErrorInfo = {
+                    status: typeof event.data?.status === "number" ? event.data.status : 502,
+                    code: typeof event.data?.code === "string" ? event.data.code.trim() : "",
+                    message: streamTerminalError,
+                  };
                   return;
                 }
                 if (event.event === "done" && !completedData && !streamTerminalError) {
@@ -3531,7 +3619,9 @@ export default function WebsochatPage() {
             if (completedData) {
               await applyCompletedResponse(completedData);
             } else if (streamTerminalError) {
-              throw new Error(streamTerminalError);
+              throw createWebsochatStreamTerminalError(
+                streamTerminalErrorInfo || { status: 502, message: streamTerminalError }
+              );
             } else if (sawStreamDoneWithoutCompleted) {
               throw new Error("websochat stream done event arrived without assistant_completed");
             } else {
@@ -3539,6 +3629,9 @@ export default function WebsochatPage() {
             }
           } catch (streamError) {
             if (isWebsochatAbortError(streamError) || !isCurrentAssistantTurnOwner()) {
+              throw streamError;
+            }
+            if (streamTerminalError) {
               throw streamError;
             }
             setStreamingStatusMessage("");
@@ -3616,9 +3709,12 @@ export default function WebsochatPage() {
       });
       return sessionId;
     } catch (error) {
+      const errorInfo = getWebsochatHttpErrorInfo(error);
       appendWebsochatDebugLog("handle_send:error", {
         activeSessionId,
         error: error instanceof Error ? error.message : String(error),
+        errorStatus: errorInfo.status ?? null,
+        errorCode: errorInfo.code || null,
         assistantTurnOwnerSeq,
         isCurrentAssistantTurnOwner: isCurrentAssistantTurnOwner(),
       });
@@ -3629,20 +3725,39 @@ export default function WebsochatPage() {
         return null;
       }
 
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 401 && !requestCanUseAccountScope) {
-          openLoginConfirm();
-          return null;
-        }
-
-        const message = error.response?.data?.message;
-        if (message === "캐시 잔액이 부족합니다.") {
-          moveToCashChargePage();
-          return null;
-        }
+      if (errorInfo.status === 401 && !requestCanUseAccountScope) {
+        openLoginConfirm();
+        return null;
       }
 
-      appendModeNotice(buildWebsochatErrorNotice(error));
+      if (errorInfo.message === "캐시 잔액이 부족합니다.") {
+        moveToCashChargePage();
+        return null;
+      }
+
+      if (failureTransientMessages?.length) {
+        const failureAssistantMessage: WebsochatTransientMessageItem = {
+          messageId: failureTransientMessages.find((message) => message.role === "assistant")?.messageId ?? -Date.now(),
+          role: "assistant",
+          content: buildWebsochatAssistantFailureMessage(error, { qaActionKey: failureQaActionKey }),
+          createdDate: new Date().toISOString(),
+          isStreaming: false,
+        };
+        setTransientMessages([
+          ...failureTransientMessages.filter((message) => message.role === "user"),
+          failureAssistantMessage,
+        ]);
+        setStreamingStatusMessage("");
+        setStreamingQaActionKey(null);
+        setHasStreamingContentStarted(false);
+        setStreamingStartedAt(null);
+        setStreamingProgressPercent(0);
+        setIsNextEpisodeCompletionHolding(false);
+        queueScrollMessageListToBottom("smooth");
+        return null;
+      }
+
+      appendModeNotice(buildWebsochatErrorNotice(error, { qaActionKey: failureQaActionKey }));
       return null;
     } finally {
       appendWebsochatDebugLog("handle_send:outer_finally_unlock", {
@@ -4387,7 +4502,7 @@ export default function WebsochatPage() {
                             />
                           </div>
                           <div className="mt-6pxr text-11pxr text-dark-gray-300">
-                            보통 1분 안쪽으로 첫 문장이 시작돼요.
+                            길면 2~3분 정도 걸릴 수 있어요.
                           </div>
                         </div>
                       ) : null}
@@ -4472,7 +4587,7 @@ export default function WebsochatPage() {
                       />
                     </div>
                     <div className="mt-6pxr text-11pxr text-dark-gray-300">
-                      {streamingStatusMessage || "보통 1분 안쪽으로 첫 문장이 시작돼요."}
+                      {streamingStatusMessage || "길면 2~3분 정도 걸릴 수 있어요."}
                     </div>
                   </div>
                 ) : null}
