@@ -34,7 +34,7 @@ export type WebsochatStreamEvent =
   | { event: "assistant_started"; data: { sessionId: number; clientMessageId?: string | null } }
   | { event: "assistant_delta"; data: { delta: string } }
   | { event: "assistant_completed"; data: IPostWebsochatMessageResponse["data"] }
-  | { event: "assistant_error"; data: { detail?: string | null } }
+  | { event: "assistant_error"; data: { detail?: string | null; code?: string | null; status?: number | null } }
   | { event: "done"; data: Record<string, never> };
 
 const getWebsochatAuthHeaders = () => {
