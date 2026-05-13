@@ -220,6 +220,26 @@ submodule dev/prod push → GitHub Actions
 - `likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml` (dev)
 - `likenovel-service-api/.github/workflows/deploy_be_actions.yml` (prod)
 
+#### 새/변경 API 배포 완료 게이트
+
+GitHub Actions 성공과 `/docs` 200은 배포 완료의 충분조건이 아니다. 특히 새 command route를 추가하거나 CMS/partner/service 프론트가 새 API를 호출하는 배포는 live OpenAPI와 실제 route 응답을 확인해야 완료로 본다.
+
+필수 확인:
+- 새 route가 live `/openapi.json`에 존재해야 한다.
+- 인증이 필요한 command API는 무토큰 호출에서 `400/401/403/422`처럼 route가 잡힌 응답이어야 한다.
+- `404`는 배포 실패로 본다.
+- CMS가 호출하는 API면 direct API와 CMS proxy 경로를 모두 확인한다.
+
+검증 명령:
+
+```bash
+devtools/verify-live-api-route.sh prod \
+  /v1/command/admins/products/batch-monopoly \
+  POST '{"product_ids":[1133],"monopoly_yn":"Y"}'
+```
+
+dev 검증은 `prod` 대신 `dev`를 사용한다.
+
 prod만 자동 `poetry version patch` + commit + push.
 
 ---
