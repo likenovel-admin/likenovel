@@ -2,6 +2,7 @@
 
 import { IRecommendSection } from "@/app/api/query/recommendation/dto";
 import { usePostAiSignalEvent } from "@/app/api/query/recommendation";
+import { DEFAULT_PRODUCT_IMAGE } from "@/constants/common";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useAuthStore from "@/store/authStore";
 import {
@@ -108,7 +109,7 @@ const TasteSection = ({ section }: Props) => {
                   />
                 ) : (
                   <Image
-                    src="/images/default_cover.png"
+                    src={DEFAULT_PRODUCT_IMAGE}
                     alt={product.title}
                     width={142}
                     height={217}

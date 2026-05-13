@@ -295,6 +295,16 @@ export default function ProductUploadPage() {
     return effectiveOpenYn === "Y" && effectiveUseYn === "Y";
   }).length;
   const isFreeProduct = isDetailMode && productDetail?.price_type === "free";
+  const paidApplyStatus =
+    productDetail?.paid_apply_status ?? productDetail?.paidApplyStatus ?? null;
+  const normalizedPaidApplyStatus = String(paidApplyStatus ?? "").toLowerCase();
+  const isPaidApplyMonopolyLocked = Boolean(
+    isDetailMode &&
+      productDetail?.price_type !== "paid" &&
+      (normalizedPaidApplyStatus === "review" ||
+        normalizedPaidApplyStatus === "accepted")
+  );
+  const hasExistingCpLink = Boolean(productDetail?.cp_company_name?.trim());
   const productType =
     productDetail?.product_type ?? productDetail?.productType ?? null;
 
@@ -1122,18 +1132,29 @@ export default function ProductUploadPage() {
                   <Button
                     type="button"
                     variant={form.monopolyYn ? "default" : "outline"}
-                    onClick={() => setField("monopolyYn", true)}
+                    disabled={isPaidApplyMonopolyLocked}
+                    onClick={() => {
+                      if (!isPaidApplyMonopolyLocked) setField("monopolyYn", true);
+                    }}
                   >
                     독점
                   </Button>
                   <Button
                     type="button"
                     variant={!form.monopolyYn ? "default" : "outline"}
-                    onClick={() => setField("monopolyYn", false)}
+                    disabled={isPaidApplyMonopolyLocked}
+                    onClick={() => {
+                      if (!isPaidApplyMonopolyLocked) setField("monopolyYn", false);
+                    }}
                   >
                     비독점
                   </Button>
                 </div>
+                {isPaidApplyMonopolyLocked && (
+                  <p className="mt-1 text-xs text-[#8A909C]">
+                    유료전환 심사중 또는 승인된 작품은 독점 여부를 변경할 수 없습니다.
+                  </p>
+                )}
               </div>
 
               {!isFreeProduct && (
@@ -1237,13 +1258,21 @@ export default function ProductUploadPage() {
                   <label className="mb-1 block text-sm font-semibold text-[#1F2124]">CP명</label>
                   <Select
                     value={form.cpCompanyName || "none"}
-                    onValueChange={(value) => setField("cpCompanyName", value === "none" ? "" : value)}
+                    onValueChange={(value) => {
+                      if (value === "none") {
+                        if (!hasExistingCpLink) setField("cpCompanyName", "");
+                        return;
+                      }
+                      setField("cpCompanyName", value);
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="선택 안함" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">선택 안함</SelectItem>
+                      {!hasExistingCpLink && (
+                        <SelectItem value="none">선택 안함</SelectItem>
+                      )}
                       {cpCompanies?.map((cp) => (
                         <SelectItem key={cp.company_name} value={cp.company_name}>
                           {cp.company_name}
@@ -1251,6 +1280,11 @@ export default function ProductUploadPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {hasExistingCpLink && (
+                    <p className="mt-1 text-xs text-[#8A909C]">
+                      기존 CP 연계는 해제할 수 없습니다.
+                    </p>
+                  )}
                 </div>
               )}
 

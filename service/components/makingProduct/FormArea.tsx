@@ -44,6 +44,7 @@ import StoppedTooltip from "./StoppedTooltip";
 dayjs.extend(utc);
 
 const NEXT_PAID_START_CHAPTER_VALUE = -1;
+const SHOW_STORY_AGENT_SETTING = false;
 
 export interface IMakeProductForm {
   ongoingState: "ongoing" | "end" | "stop" | "rest";
@@ -185,9 +186,13 @@ const FormArea = ({ productId }: Props) => {
         data?.data.paidApprovedYn === "Y" ||
         data?.data.paidApplyStatus === "accepted")
   );
+  const hasExistingCpLink = Boolean(
+    productId && data?.data.cpContractYn === "Y"
+  );
   const isContractLocked = Boolean(
     productId &&
-      (data?.data.priceType === "paid" ||
+      (hasExistingCpLink ||
+        data?.data.priceType === "paid" ||
         data?.data.paidApplyStatus === "review" ||
         data?.data.paidApplyStatus === "accepted")
   );
@@ -201,7 +206,13 @@ const FormArea = ({ productId }: Props) => {
   const subGenreOptions = genreOptions.filter(
     (genre) => genre !== primaryGenreValue
   );
-  const isMonopolyLocked = Boolean(productId);
+  const isMonopolyLocked = Boolean(
+    productId &&
+      (data?.data.priceType === "paid" ||
+        data?.data.paidApplyStatus === "review" ||
+        data?.data.paidApplyStatus === "accepted" ||
+        data?.data.paidApprovedYn === "Y")
+  );
   const episodeTotalCount = episodeCount?.data?.hasEpisodeCount ?? 0;
   const nextPaidStartChapterNo = episodeTotalCount + 1;
   const selectPaidStartChapterValue =
@@ -270,21 +281,6 @@ const FormArea = ({ productId }: Props) => {
       setUsePaidStartDate(Boolean(data.data.paidSettingDate));
     }
   }, [productId, data?.data?.paidSettingDate]);
-
-  useEffect(() => {
-    if (monopolyValue !== "Y") {
-      setValue("contract", "N", {
-        shouldDirty: false,
-        shouldTouch: false,
-      });
-      setValue("cpNickname", "", {
-        shouldDirty: false,
-        shouldTouch: false,
-      });
-      clearErrors("cpNickname");
-      setCpValidation({ valid: null, message: "" });
-    }
-  }, [clearErrors, monopolyValue, setValue]);
 
   useEffect(() => {
     if (contractValue !== "Y") {
@@ -478,7 +474,7 @@ const FormArea = ({ productId }: Props) => {
     if (!data.agree) {
       return;
     }
-    if (data.monopoly === "Y" && data.contract === "Y" && !isContractLocked) {
+    if (data.contract === "Y" && !isContractLocked) {
       const isValidCpNickname = await validateLinkedCpNickname(data.cpNickname);
       if (!isValidCpNickname) {
         setIsSubmitting(false);
@@ -610,9 +606,9 @@ const FormArea = ({ productId }: Props) => {
       open_yn:
         data?.data.blindYn === "Y" ? (data?.data.openYn ?? "N") : formData.open,
       monopoly_yn: formData.monopoly,
-      cp_contract_yn: formData.monopoly === "Y" ? formData.contract : "N",
+      cp_contract_yn: formData.contract,
       cp_nickname:
-        formData.monopoly === "Y" && formData.contract === "Y"
+        formData.contract === "Y"
           ? formData.cpNickname.trim() || null
           : null,
       product_type: formData.productType === "normal" ? "normal" : null,
@@ -955,7 +951,9 @@ const FormArea = ({ productId }: Props) => {
                     </div>
                   }
                 />
-                {productId && data?.data.priceType === "free" && (
+                {SHOW_STORY_AGENT_SETTING &&
+                  productId &&
+                  data?.data.priceType === "free" && (
                   <TextArea
                     {...register("storyAgentSetting")}
                     label="스토리 에이전트 보조 설정"
@@ -1063,7 +1061,7 @@ const FormArea = ({ productId }: Props) => {
                             독점 여부
                           </span>
                           <ClickExclamationTooltip
-                            message="독점으로 등록한 작품만 CP 유료화 대상이 됩니다. 독점/비독점 설정은 최초 생성 시에만 가능하며, 이후 변경할 수 없습니다."
+                            message="독점은 출판사 계약/연계와 별도로 관리됩니다. 유료전환을 하기 위해서는 독점 상태로 변경해야 합니다."
                             id="monopoly-tooltip"
                           />
                         </div>
@@ -1092,58 +1090,62 @@ const FormArea = ({ productId }: Props) => {
                   )}
                 />
                 <p className="mt-[-16px] text-[13px] text-dark-gray-300">
-                  독점/비독점 설정은 최초 생성 시에만 가능하니, 신중하게 선택해주세요.
-                  라이크노벨은 독점작만 CP(출판사, 매니지먼트) 유료화가 가능합니다.
+                  독점은 출판사 계약/연계와 별도로 관리됩니다. 유료전환을 하기 위해서는 독점 상태로 변경해야 합니다.
                 </p>
-                {monopolyValue === "Y" && (
-                  <Controller
-                    name={"contract"}
-                    control={control}
-                    rules={{
-                      required: "계약 여부를 선택해주세요.",
-                    }}
-                    render={({ field }) => (
-                      <Input
-                        label={
-                          <div className="flex gap-1 mb-2 items-center">
-                            <span
-                              className={
-                                "text-13pxr md:text-16pxr text-dark-gray-500 after:content-['*'] after:text-red-100 font-semibold"
-                              }
-                            >
-                              계약 여부
-                            </span>
-                            <ClickExclamationTooltip
-                              message="계약 여부는 독점 작품에서만 설정할 수 있습니다. 계약 상태로 저장한 작품만 유료전환 신청이 가능하며, CP 닉네임을 정확히 입력해야 합니다."
-                              id="contract-tooltip"
-                            />
-                          </div>
-                        }
-                        labelStyle={labelClassName}
-                        optionsStyle={`peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md ${
-                          isContractLocked
-                            ? "cursor-not-allowed opacity-60"
-                            : "cursor-pointer"
-                        }`}
-                        activeOptionStyle="border-primary-100"
-                        options={[
-                          {
-                            label: "계약 안됨",
-                            value: "N",
-                          },
-                          {
-                            label: "계약",
-                            value: "Y",
-                          },
-                        ]}
-                        disabled={isContractLocked}
-                        {...field}
-                        checkedValue={field.value}
-                      />
-                    )}
-                  />
+                {(monopolyValue === "Y" || contractValue === "Y") && (
+                  <>
+                    <Controller
+                      name={"contract"}
+                      control={control}
+                      rules={{
+                        required: "계약 여부를 선택해주세요.",
+                      }}
+                      render={({ field }) => (
+                        <Input
+                          label={
+                            <div className="flex gap-1 mb-2 items-center">
+                              <span
+                                className={
+                                  "text-13pxr md:text-16pxr text-dark-gray-500 after:content-['*'] after:text-red-100 font-semibold"
+                                }
+                              >
+                                계약 여부
+                              </span>
+                              <ClickExclamationTooltip
+                                message="계약 상태로 저장한 작품만 유료전환 신청이 가능하며, 출판사와 연결된 작품은 독점 여부와 관계없이 계약 상태로 유지됩니다."
+                                id="contract-tooltip"
+                              />
+                            </div>
+                          }
+                          labelStyle={labelClassName}
+                          optionsStyle={`peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md ${
+                            isContractLocked
+                              ? "cursor-not-allowed opacity-60"
+                              : "cursor-pointer"
+                          }`}
+                          activeOptionStyle="border-primary-100"
+                          options={[
+                            {
+                              label: "계약 안됨",
+                              value: "N",
+                            },
+                            {
+                              label: "계약",
+                              value: "Y",
+                            },
+                          ]}
+                          disabled={isContractLocked}
+                          {...field}
+                          checkedValue={field.value}
+                        />
+                      )}
+                    />
+                    <p className="mt-[-16px] text-[13px] text-dark-gray-300">
+                      유료전환을 위해서는 출판사/매니지먼트와 협의 후 계약됨으로 표시해주세요.
+                    </p>
+                  </>
                 )}
-                {monopolyValue === "Y" && contractValue === "Y" && (
+                {contractValue === "Y" && (
                   <Input
                     label="CP 닉네임"
                     labelStyle={requiredLabelClassName}
