@@ -34,6 +34,14 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: "/story-agent-api/sessions/:sessionId/next-episode",
+        destination: `${process.env.NEXT_PUBLIC_API_SERVER_URI}/v1/command/websochat/sessions/:sessionId/next-episode`,
+      },
+      {
+        source: "/websochat-api/sessions/:sessionId/next-episode",
+        destination: `${process.env.NEXT_PUBLIC_API_SERVER_URI}/v1/command/websochat/sessions/:sessionId/next-episode`,
+      },
+      {
         source: "/story-agent-api/:path*",
         destination: "/websochat-api/:path*",
       },
