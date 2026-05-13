@@ -195,7 +195,7 @@ export default function Page() {
   const [productIdInput, setProductIdInput] = useState("");
   const [productId, setProductId] = useState<number | undefined>(undefined);
   const [scheduleDateInput, setScheduleDateInput] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [bootstrapPrefix, setBootstrapPrefix] = useState("prod-ai-reader-");
+  const [bootstrapPrefix, setBootstrapPrefix] = useState("ai-reader-");
   const [bootstrapCount, setBootstrapCount] = useState("100");
   const [resumeCount, setResumeCount] = useState("100");
   const [selectedPresetId, setSelectedPresetId] = useState("default-medium");
@@ -409,7 +409,7 @@ export default function Page() {
       }
       if (
         apply
-          && !window.confirm("기존 유저 계정을 AI 독자로 연결하고 스케줄을 생성합니다. 진행할까요?")
+          && !window.confirm("AI 전용 계정을 AI 독자로 등록하고 스케줄을 생성합니다. 진행할까요?")
       ) {
         return;
       }
@@ -775,7 +775,7 @@ export default function Page() {
           <div className="mb-4">
             <h2 className="text-sm font-semibold">신규 AI 독자 일괄 투입</h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              기존 유저 계정을 AI 독자로 연결하고, 선택한 날짜의 미사용 ready 스케줄을 생성합니다.
+              AI 전용 계정을 AI 독자로 등록하고, 선택한 날짜의 활동 스케줄을 생성합니다.
             </p>
           </div>
 
@@ -840,7 +840,7 @@ export default function Page() {
             </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
               <Input
-                placeholder="이메일 prefix"
+                placeholder="ai-reader-"
                 value={bootstrapPrefix}
                 onChange={(e) => {
                   setBootstrapPrefix(e.target.value);
