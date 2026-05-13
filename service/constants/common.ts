@@ -1,12 +1,22 @@
 export const DEFAULT_PRODUCT_IMAGE = "/images/default-cover.png";
 export const ADULT_19_ICON_IMAGE = "/images/adult-19-icon.png";
 export const LEGACY_DEFAULT_PRODUCT_IMAGE_KEY = "ESokN0lzSgG0um4rn4tBeg";
-export const isLegacyDefaultProductImage = (imagePath?: string | null) =>
-  Boolean(imagePath?.includes(LEGACY_DEFAULT_PRODUCT_IMAGE_KEY));
-export const resolveProductCoverImage = (imagePath?: string | null) =>
-  !imagePath || isLegacyDefaultProductImage(imagePath)
+export const LEGACY_LOCAL_DEFAULT_PRODUCT_IMAGE = "/images/default_cover.png";
+export const isLegacyDefaultProductImage = (imagePath?: string | null) => {
+  const normalizedImagePath = imagePath?.trim();
+  return Boolean(
+    normalizedImagePath?.includes(LEGACY_DEFAULT_PRODUCT_IMAGE_KEY) ||
+      normalizedImagePath === LEGACY_LOCAL_DEFAULT_PRODUCT_IMAGE ||
+      normalizedImagePath?.endsWith(LEGACY_LOCAL_DEFAULT_PRODUCT_IMAGE)
+  );
+};
+export const resolveProductCoverImage = (imagePath?: string | null) => {
+  const normalizedImagePath = imagePath?.trim();
+  return !normalizedImagePath ||
+    isLegacyDefaultProductImage(normalizedImagePath)
     ? DEFAULT_PRODUCT_IMAGE
-    : imagePath;
+    : normalizedImagePath;
+};
 export const ADMIN_EMAIL = "mailto:admin@likenovel.net";
 export const WEBSOCHAT_NAV_LABEL = "웹소챗";
 export const WEBSOCHAT_PREPARE_NAV_EVENT = "likenovel:websochat:prepare-nav";
