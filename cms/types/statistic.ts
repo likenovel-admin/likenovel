@@ -93,3 +93,91 @@ export interface IStatisticWebsochatUsage {
   charged_cash: number;
   created_date: string;
 }
+
+export interface IStatisticAiReaderSummary {
+  total_agent_count: number;
+  active_agent_count: number;
+  created_agent_count: number;
+  today_schedule_count: number;
+  open_schedule_count: number;
+  failed_schedule_count: number;
+  decision_count: number;
+  success_decision_count: number;
+  failed_decision_count: number;
+  pending_decision_count: number;
+  queued_action_count: number;
+  running_action_count: number;
+  failed_action_count: number;
+  applied_action_count: number;
+  ai_view_count: number;
+  ai_bookmark_count: number;
+  ai_unbookmark_count: number;
+  ai_recommend_count: number;
+  ai_unrecommend_count: number;
+  ai_evaluation_count: number;
+  drop_count: number;
+}
+
+export interface IStatisticAiReaderProduct {
+  product_id: number;
+  product_title: string;
+  ai_view_count: number;
+  ai_bookmark_count: number;
+  ai_unbookmark_count: number;
+  ai_recommend_count: number;
+  ai_unrecommend_count: number;
+  ai_evaluation_count: number;
+  drop_count: number;
+  public_view_count: number;
+  public_bookmark_count: number;
+  public_recommend_count: number;
+  public_evaluation_count: number;
+  ai_popularity_score: number;
+}
+
+export interface IStatisticAiReaderHourly {
+  hour: number;
+  read_count: number;
+  bookmark_count: number;
+  unbookmark_count: number;
+  recommend_count: number;
+  unrecommend_count: number;
+  evaluation_count: number;
+  drop_count: number;
+}
+
+export interface IStatisticAiReaderCohort {
+  age_group: string;
+  gender: string;
+  read_count: number;
+  bookmark_count: number;
+  unbookmark_count: number;
+  recommend_count: number;
+  unrecommend_count: number;
+  evaluation_count: number;
+  drop_count: number;
+}
+
+export interface IStatisticAiReaderAgentAction {
+  ai_reader_action_id: number;
+  ai_reader_agent_id: number;
+  product_id: number;
+  episode_id: number | null;
+  action_type: string;
+  target_value: string | null;
+  status: string;
+  applied_at: string | null;
+  created_date: string;
+  updated_date: string;
+  error_message: string | null;
+}
+
+export interface IStatisticAiReaderError {
+  event_time: string;
+  source: string;
+  ai_reader_agent_id?: number | null;
+  product_id?: number | null;
+  action_type?: string | null;
+  model_name?: string | null;
+  error_message?: string | null;
+}

@@ -12,6 +12,10 @@ import {
   IGetStatisticPaymentByUserAllResponse,
   IGetStatisticWebsochatUsageParams,
   IGetStatisticWebsochatUsageResponse,
+  IGetStatisticAiReaderEngagementParams,
+  IGetStatisticAiReaderEngagementResponse,
+  IGetStatisticAiReaderAgentActionsParams,
+  IGetStatisticAiReaderAgentActionsResponse,
 } from "@/api/statistic/dto";
 import apiClient from "@/lib/apiClient";
 import { useQuery } from "@tanstack/react-query";
@@ -111,6 +115,46 @@ export const useGetStatisticWebsochatUsage = (
         url: "/v1/query/statistics/websochat-usage",
         method: "GET",
         queryParams: params,
+      });
+      return res;
+    },
+  });
+};
+
+export const useGetStatisticAiReaderEngagement = (
+  params: IGetStatisticAiReaderEngagementParams,
+  refetchInterval = 60000
+) => {
+  return useQuery<IGetStatisticAiReaderEngagementResponse>({
+    queryKey: ["GetStatisticAiReaderEngagement", JSON.stringify(params)],
+    refetchInterval,
+    refetchIntervalInBackground: false,
+
+    queryFn: async () => {
+      const res = await apiClient.request<IGetStatisticAiReaderEngagementResponse>({
+        url: "/v1/query/statistics/ai-reader-engagement",
+        method: "GET",
+        queryParams: params,
+      });
+      return res;
+    },
+  });
+};
+
+export const useGetStatisticAiReaderAgentActions = (
+  params: IGetStatisticAiReaderAgentActionsParams,
+  enabled = true
+) => {
+  const { agent_id, ...queryParams } = params;
+  return useQuery<IGetStatisticAiReaderAgentActionsResponse>({
+    queryKey: ["GetStatisticAiReaderAgentActions", agent_id, JSON.stringify(queryParams)],
+    enabled: enabled && Number.isFinite(agent_id) && agent_id > 0,
+
+    queryFn: async () => {
+      const res = await apiClient.request<IGetStatisticAiReaderAgentActionsResponse>({
+        url: `/v1/query/statistics/ai-reader-engagement/agents/${agent_id}/actions`,
+        method: "GET",
+        queryParams,
       });
       return res;
     },

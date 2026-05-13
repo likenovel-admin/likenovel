@@ -7,6 +7,12 @@ import {
   IStatisticWebsochatRouteSummary,
   IStatisticWebsochatUsage,
   IStatisticWebsochatUsageSummary,
+  IStatisticAiReaderAgentAction,
+  IStatisticAiReaderCohort,
+  IStatisticAiReaderError,
+  IStatisticAiReaderHourly,
+  IStatisticAiReaderProduct,
+  IStatisticAiReaderSummary,
 } from "@/types/statistic";
 
 export interface IGetStatisticSiteResponse {
@@ -87,4 +93,38 @@ export interface IGetStatisticWebsochatUsageParams {
   model_used?: string;
   route_mode?: string;
   fallback_used?: string;
+}
+
+export interface IGetStatisticAiReaderEngagementResponse {
+  total_count: number;
+  page: number;
+  count_per_page: number;
+  summary: IStatisticAiReaderSummary;
+  hourly_summary: IStatisticAiReaderHourly[];
+  cohort_summary: IStatisticAiReaderCohort[];
+  recent_errors: IStatisticAiReaderError[];
+  results: IStatisticAiReaderProduct[];
+}
+
+export interface IGetStatisticAiReaderEngagementParams {
+  page?: number;
+  count_per_page?: number;
+  start_date?: string;
+  end_date?: string;
+  product_id?: number;
+}
+
+export interface IGetStatisticAiReaderAgentActionsParams {
+  agent_id: number;
+  page?: number;
+  count_per_page?: number;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface IGetStatisticAiReaderAgentActionsResponse {
+  total_count: number;
+  page: number;
+  count_per_page: number;
+  items: IStatisticAiReaderAgentAction[];
 }

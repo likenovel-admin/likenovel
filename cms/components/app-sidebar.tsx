@@ -65,6 +65,10 @@ const data = {
           title: "웹소챗 사용량",
           url: "/statistics/websochat",
         },
+        {
+          title: "AI 유저 인게이지먼트",
+          url: "/statistics/ai-reader",
+        },
       ],
     },
     {
