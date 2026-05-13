@@ -108,7 +108,7 @@ const data = {
           url: "/products/distribution",
         },
         {
-          title: "작품 블라인드",
+          title: "작품 독점/블라인드",
           url: "/products/blind",
         },
         {

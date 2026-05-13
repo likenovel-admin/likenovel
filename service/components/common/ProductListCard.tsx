@@ -93,6 +93,18 @@ const ProductListCard = ({
     type: "normal",
     isOpen: false,
   });
+  const canShowApplyNormalButton =
+    data.priceType === "free" &&
+    data.productType === "free" &&
+    data.state?.canApplyForNormal === true;
+  const canShowApplyPaidButton =
+    data.priceType === "free" &&
+    data.productType === "normal" &&
+    data.contract?.monopolyYn === "Y" &&
+    data.state &&
+    data.state.convertToPaidState !== "review" &&
+    data.state.convertToPaidState !== "approval" &&
+    data.state.canApplyForPaid === true;
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
   const navigateToProductDetail = () => {
     if (entrySource) {
@@ -155,6 +167,15 @@ const ProductListCard = ({
   };
 
   const handleOpenApplyPaid = () => {
+    if (data.contract?.monopolyYn !== "Y") {
+      setConfirm({
+        content:
+          "유료전환을 하기 위해서는 독점 상태로 변경해야 합니다.",
+        buttonCount: 1,
+      });
+      return;
+    }
+
     if (data.contract?.cpContractYn !== "Y") {
       setConfirm({
         content:
@@ -494,11 +515,8 @@ const ProductListCard = ({
                   </div>
                 )}
 
-                {data.priceType === "free" &&
-                (data?.productType === "free" &&
-                data.state?.canApplyForNormal === true ? (
+                {canShowApplyNormalButton ? (
                   <div className="md:hidden flex gap-12pxr items-center">
-                    {/* TODO: api 연결 */}
                     <Button
                       variant="secondary"
                       size="sm"
@@ -530,15 +548,8 @@ const ProductListCard = ({
                       />
                     </button>
                   </div>
-                ) : (
-                  data?.productType === "normal" &&
-                  data.state &&
-                  data.state?.convertToPaidState !== "review" &&
-                  data.state?.convertToPaidState !== "approval" &&
-                  data.state?.canApplyForPaid === true
-                )) ? (
+                ) : canShowApplyPaidButton ? (
                   <div className="md:hidden flex gap-12pxr items-center">
-                    {/* TODO: api 연결 */}
                     <Button
                       variant="secondary"
                       size="sm"
@@ -625,9 +636,7 @@ const ProductListCard = ({
           </div>
         </div>
         {isAuthorPage &&
-          data.priceType === "free" &&
-          (data?.productType === "free" &&
-          data.state?.canApplyForNormal === true ? (
+          (canShowApplyNormalButton ? (
             <div className="hidden md:flex absolute bottom-[30px] right-[230px] gap-12pxr items-center">
               <button
                 className={`flex justify-center items-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
@@ -648,7 +657,6 @@ const ProductListCard = ({
                   }`}
                 />
               </button>
-              {/* TODO: api 연결 */}
               <Button
                 variant="secondary"
                 className="flex w-[130px] gap-5pxr text-14pxr font-normal"
@@ -658,11 +666,7 @@ const ProductListCard = ({
                 일반 승급 신청
               </Button>
             </div>
-          ) : data?.productType === "normal" &&
-            data.state &&
-            data.state?.convertToPaidState !== "review" &&
-            data.state?.convertToPaidState !== "approval" &&
-            data.state?.canApplyForPaid === true ? (
+          ) : canShowApplyPaidButton ? (
             <div className="hidden md:flex absolute bottom-[30px] right-[230px] gap-12pxr items-center">
               <button
                 className={`flex justify-center items-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
@@ -683,7 +687,6 @@ const ProductListCard = ({
                   }`}
                 />
               </button>
-              {/* TODO: api 연결 */}
               <Button
                 variant="secondary"
                 className="flex w-[135px] gap-5pxr text-14pxr font-normal"

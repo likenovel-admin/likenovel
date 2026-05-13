@@ -22,6 +22,8 @@ export interface IProduct {
   single_rental_price: number;
   series_regular_price: number;
   price_type: string;
+  paid_apply_status?: string | null;
+  paidApplyStatus?: string | null;
   monopoly_yn: "Y" | "N";
   blind_yn: "Y" | "N";
   cp_author_profit: number;

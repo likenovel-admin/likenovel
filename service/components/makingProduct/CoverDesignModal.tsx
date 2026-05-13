@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { DEFAULT_PRODUCT_IMAGE } from "@/constants/common";
 import ReactCrop, {
   type Crop,
   centerCrop,
@@ -24,7 +25,7 @@ const FONTS = [
 ];
 
 // Tab 1: 기본 표지 1장
-const BASIC_COVERS = [{ id: 0, src: "/images/default_cover.png" }];
+const BASIC_COVERS = [{ id: 0, src: DEFAULT_PRODUCT_IMAGE }];
 
 // Tab 2: 배경 이미지 (로고추가 표지 → 로고있는 표지 → 단색/스포츠 표지)
 const BG_TEMPLATES = [

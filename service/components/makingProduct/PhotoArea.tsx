@@ -1,4 +1,5 @@
 import { useSelectPresignedFilePath } from "@/app/api/query/author/product";
+import { resolveProductCoverImage } from "@/constants/common";
 import useToastStore from "@/store/toastStore";
 import { prepareWebpUpload } from "@/utils/webpUpload";
 import axios from "axios";
@@ -22,6 +23,7 @@ const PhotoArea = ({ onFileId, imagePath, onUploadingChange }: Props) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isCoverDesignOpen, setIsCoverDesignOpen] = useState(false);
+  const resolvedImagePath = resolveProductCoverImage(imagePath);
 
   useEffect(() => {
     if (selectedFile) {
@@ -122,20 +124,13 @@ const PhotoArea = ({ onFileId, imagePath, onUploadingChange }: Props) => {
                 fill
                 className="object-cover"
               />
-            ) : imagePath ? (
+            ) : (
               <Image
-                src={imagePath}
+                src={resolvedImagePath}
                 alt={"\uc791\ud488 \ud45c\uc9c0"}
                 fill
                 className="object-cover"
                 unoptimized
-              />
-            ) : (
-              <Image
-                src="/images/default_cover.png"
-                alt="기본 표지"
-                fill
-                className="object-cover"
               />
             )}
           </div>

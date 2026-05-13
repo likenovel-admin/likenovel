@@ -1,6 +1,6 @@
 "use client";
 
-import { downloadBlindProductTxt, useBatchBlind, useBatchOpen, useGetBlindList } from "@/api/blind";
+import { downloadBlindProductTxt, useBatchBlind, useBatchMonopoly, useBatchOpen, useGetBlindList } from "@/api/blind";
 import { IGetBlindListParams } from "@/api/blind/dto";
 import BlindDataTable from "@/app/products/blind/DataTable";
 import FullPageLoader from "@/components/common/FullPageLoader";
@@ -42,6 +42,7 @@ export default function BlindPage() {
 
   const batchBlindMutation = useBatchBlind();
   const batchOpenMutation = useBatchOpen();
+  const batchMonopolyMutation = useBatchMonopoly();
 
   const handleSearch = () => {
     setFilters((prev) => ({ ...prev, page: 1 }));
@@ -84,6 +85,17 @@ export default function BlindPage() {
       {
         onError: (error: any) => {
           showAlert("오류", error?.message || "블라인드 처리에 실패했습니다.", "확인");
+        },
+      }
+    );
+  };
+
+  const handleToggleMonopoly = (productId: number, monopolyYn: string) => {
+    batchMonopolyMutation.mutate(
+      { product_ids: [productId], monopoly_yn: monopolyYn },
+      {
+        onError: (error: any) => {
+          showAlert("오류", error?.message || "독점 상태 변경에 실패했습니다.", "확인");
         },
       }
     );
@@ -141,7 +153,7 @@ export default function BlindPage() {
 
   return (
     <SidebarInset className="bg-sidebar-inset-background">
-      <PageHeader title="작품 블라인드" />
+      <PageHeader title="작품 독점/블라인드" />
 
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
         {/* Filters */}
@@ -264,6 +276,7 @@ export default function BlindPage() {
           onToggleSelectAll={handleToggleSelectAll}
           onToggleOpen={handleToggleOpen}
           onToggleBlind={handleToggleBlind}
+          onToggleMonopoly={handleToggleMonopoly}
           onDownloadTxt={handleDownloadTxt}
           downloadingProductId={downloadingProductId}
         />

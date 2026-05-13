@@ -4,6 +4,7 @@ import {
   IGetBlindListParams,
   IGetBlindListResponse,
   IPostBatchBlindRequest,
+  IPostBatchMonopolyRequest,
   IPostBatchOpenRequest,
   IBlindDownloadResponse,
 } from "@/api/blind/dto";
@@ -47,6 +48,22 @@ export const useBatchOpen = () => {
     mutationFn: async (body: IPostBatchOpenRequest) => {
       return await apiClient.request({
         url: "/v1/command/admins/products/batch-open",
+        method: "POST",
+        body,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [BLIND_LIST_KEY] });
+    },
+  });
+};
+
+export const useBatchMonopoly = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: IPostBatchMonopolyRequest) => {
+      return await apiClient.request({
+        url: "/v1/command/admins/products/batch-monopoly",
         method: "POST",
         body,
       });

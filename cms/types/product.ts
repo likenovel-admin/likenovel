@@ -24,6 +24,8 @@ export interface IProduct {
   free_episode_start_no?: number | null;
   free_episode_end_no?: number | null;
   price_type: string;
+  paid_apply_status?: string | null;
+  paidApplyStatus?: string | null;
   product_type?: string | null;
   productType?: string | null;
   openYn?: "Y" | "N";

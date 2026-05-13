@@ -15,6 +15,8 @@ export interface IBlindProduct {
   primary_genre: string;
   open_yn: string;
   blind_yn: string;
+  monopoly_yn: string;
+  price_type?: string;
   created_date: string;
   episode_count: number;
 }
@@ -29,6 +31,11 @@ export interface IGetBlindListResponse {
 export interface IPostBatchBlindRequest {
   product_ids: number[];
   blind_yn: string;
+}
+
+export interface IPostBatchMonopolyRequest {
+  product_ids: number[];
+  monopoly_yn: string;
 }
 
 export interface IPostBatchOpenRequest {

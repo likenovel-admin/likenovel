@@ -364,12 +364,24 @@ export default function ProductUploadPage() {
   }).length;
 
   const isFreeProduct = isDetailMode && productDetail?.price_type === "free";
+  const isPaidProduct = isDetailMode && productDetail?.price_type === "paid";
+  const paidApplyStatus =
+    productDetail?.paid_apply_status ?? productDetail?.paidApplyStatus ?? null;
+  const normalizedPaidApplyStatus = String(paidApplyStatus ?? "").toLowerCase();
+  const isPaidApplyMonopolyLocked = Boolean(
+    isDetailMode &&
+      productDetail?.price_type !== "paid" &&
+      (normalizedPaidApplyStatus === "review" ||
+        normalizedPaidApplyStatus === "accepted")
+  );
   const productType = productDetail?.product_type ?? productDetail?.productType ?? null;
+  const hasExistingCpLink = Boolean(productDetail?.cp_company_name?.trim());
 
   const canManage =
     userProfile?.role_type === "admin" || userProfile?.role_type === "CP";
   const isAdmin = userProfile?.role_type === "admin";
   const isCpUser = userProfile?.role_type === "CP";
+  const isPaidMonopolyLocked = isPaidApplyMonopolyLocked || (isPaidProduct && !isAdmin);
   const autoAssignedCpCompanyName =
     isCpUser && cpCompanies && cpCompanies.length === 1
       ? cpCompanies[0].company_name
@@ -1657,18 +1669,31 @@ export default function ProductUploadPage() {
                   <Button
                     type="button"
                     variant={form.monopolyYn ? "default" : "outline"}
-                    onClick={() => setField("monopolyYn", true)}
+                    disabled={isPaidMonopolyLocked}
+                    onClick={() => {
+                      if (!isPaidMonopolyLocked) setField("monopolyYn", true);
+                    }}
                   >
                     독점
                   </Button>
                   <Button
                     type="button"
                     variant={!form.monopolyYn ? "default" : "outline"}
-                    onClick={() => setField("monopolyYn", false)}
+                    disabled={isPaidMonopolyLocked}
+                    onClick={() => {
+                      if (!isPaidMonopolyLocked) setField("monopolyYn", false);
+                    }}
                   >
                     비독점
                   </Button>
                 </div>
+                {isPaidMonopolyLocked && (
+                  <p className="mt-1 text-xs text-[#8A909C]">
+                    {isPaidApplyMonopolyLocked
+                      ? "유료전환 심사중 또는 승인된 작품은 독점 여부를 변경할 수 없습니다."
+                      : "유료작품의 독점 여부는 관리자만 변경할 수 있습니다."}
+                  </p>
+                )}
               </div>
 
               {!isFreeProduct && (
@@ -1776,14 +1801,22 @@ export default function ProductUploadPage() {
                 <label className="mb-1 block text-sm font-semibold text-[#1F2124]">CP명</label>
                 <Select
                   value={form.cpCompanyName || "none"}
-                  onValueChange={(value) => setField("cpCompanyName", value === "none" ? "" : value)}
+                  onValueChange={(value) => {
+                    if (value === "none") {
+                      if (!hasExistingCpLink) setField("cpCompanyName", "");
+                      return;
+                    }
+                    setField("cpCompanyName", value);
+                  }}
                   disabled={isCpUser}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="선택 안함" />
                   </SelectTrigger>
                   <SelectContent>
-                    {!isCpUser && <SelectItem value="none">선택 안함</SelectItem>}
+                    {!isCpUser && !hasExistingCpLink && (
+                      <SelectItem value="none">선택 안함</SelectItem>
+                    )}
                     {cpCompanies?.map((cp) => (
                       <SelectItem key={cp.company_name} value={cp.company_name}>
                         {cp.company_name}
@@ -1791,6 +1824,11 @@ export default function ProductUploadPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {hasExistingCpLink && (
+                  <p className="mt-1 text-xs text-[#8A909C]">
+                    기존 CP 연계는 해제할 수 없습니다.
+                  </p>
+                )}
               </div>
               )}
 
