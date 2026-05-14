@@ -40,11 +40,23 @@ class ApiClient {
 
       if (!res.ok) return null;
       const json = await res.json();
-      return (
-        json?.data?.auth?.accessToken ||
-        json?.data?.token?.accessToken ||
+      const auth = json?.data?.auth;
+      const token = json?.data?.token ?? json?.token;
+      const newAccessToken =
+        auth?.accessToken ||
+        token?.accessToken ||
+        token?.access_token ||
         null
-      );
+      if (!newAccessToken) return null;
+
+      return {
+        accessToken: newAccessToken,
+        refreshToken:
+          auth?.refreshToken ||
+          token?.refreshToken ||
+          token?.refresh_token ||
+          null,
+      };
     } catch {
       return null;
     }
@@ -124,9 +136,12 @@ class ApiClient {
           if (!refreshToken) {
             clearLocalStorage();
           } else {
-            const newToken = await this.reissueToken(accessToken, refreshToken);
-            if (newToken) {
-              localStorage.setItem("token", newToken);
+            const auth = await this.reissueToken(accessToken, refreshToken);
+            if (auth?.accessToken) {
+              localStorage.setItem("token", auth.accessToken);
+              if (auth.refreshToken) {
+                localStorage.setItem("refreshToken", auth.refreshToken);
+              }
               response = await this.fetchWithAuth(url, options);
             } else {
               clearLocalStorage();

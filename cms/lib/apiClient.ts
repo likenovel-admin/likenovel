@@ -1,4 +1,5 @@
 import { clearLocalStorage } from "@/lib/utils";
+import { Mutex } from "async-mutex";
 import queryString from "query-string";
 
 export interface IRequest {
@@ -18,9 +19,50 @@ export interface IRequest {
 const API_URL = '/api';
 
 class ApiClient {
+  private mutex = new Mutex();
+
   private getStoredToken() {
     if (typeof window === "undefined") return null;
     return localStorage.getItem("token");
+  }
+
+  private async reissueToken(accessToken: string, refreshToken: string) {
+    try {
+      const res = await fetch(`${API_URL}/v1/command/auth/token/reissue`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        }),
+      });
+
+      if (!res.ok) return null;
+
+      const json = await res.json();
+      const auth = json?.data?.auth;
+      const token = json?.data?.token ?? json?.token;
+      const newAccessToken =
+        auth?.accessToken ||
+        token?.accessToken ||
+        token?.access_token ||
+        null;
+
+      if (!newAccessToken) return null;
+
+      return {
+        accessToken: newAccessToken,
+        refreshToken:
+          auth?.refreshToken ||
+          token?.refreshToken ||
+          token?.refresh_token ||
+          null,
+      };
+    } catch {
+      return null;
+    }
   }
 
   private async getErrorCode(response: Response): Promise<string> {
@@ -106,10 +148,42 @@ class ApiClient {
     if (
       (response.status === 401 || response.status === 403) &&
       !url.includes("/login") &&
+      !notAuth &&
       shouldHandleAuthError
     ) {
       if (errorCode === "E4011") {
         clearLocalStorage();
+      } else {
+        await this.mutex.waitForUnlock();
+
+        if (!this.mutex.isLocked()) {
+          const release = await this.mutex.acquire();
+          try {
+            const refreshToken = localStorage.getItem("refreshToken");
+            const accessToken = this.getStoredToken() || "";
+
+            if (!refreshToken) {
+              clearLocalStorage();
+            } else {
+              const auth = await this.reissueToken(accessToken, refreshToken);
+
+              if (auth?.accessToken) {
+                localStorage.setItem("token", auth.accessToken);
+                if (auth.refreshToken) {
+                  localStorage.setItem("refreshToken", auth.refreshToken);
+                }
+                response = await this.fetchWithAuth(url, options, notAuth);
+              } else {
+                clearLocalStorage();
+              }
+            }
+          } finally {
+            release();
+          }
+        } else {
+          await this.mutex.waitForUnlock();
+          response = await this.fetchWithAuth(url, options, notAuth);
+        }
       }
     }
 
