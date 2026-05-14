@@ -26,9 +26,7 @@ export const moveToPartnerSettlementWithRelay = async (
   const refreshToken =
     options?.refreshToken ||
     localStorage.getItem("refresh_token") ||
-    sessionStorage.getItem("refresh_token") ||
-    localStorage.getItem("refreshToken") ||
-    sessionStorage.getItem("refreshToken");
+    sessionStorage.getItem("refresh_token");
 
   if (!refreshToken) {
     window.open(`${partnerBase}/login`, "_blank");
