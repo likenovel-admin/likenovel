@@ -1,0 +1,20 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["__APPLE_TEAM_ID__.com.likenovel.app"],
+        "components": [
+          { "/": "/product/*" },
+          { "/": "/viewer/*" },
+          { "/": "/product/event/*" },
+          { "/": "/product/customer-service/notice/*" },
+          { "/": "/review/*" },
+          { "/": "/auth/*" },
+          { "/": "/order/payment/complete*" },
+          { "/": "/sign-in" },
+          { "/": "/sign-up" }
+        ]
+      }
+    ]
+  }
+}
