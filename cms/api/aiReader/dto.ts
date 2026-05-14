@@ -53,6 +53,7 @@ export interface IAiReaderBootstrapRequest {
   schedule_duration_days?: number;
   apply: boolean;
   allow_partial?: boolean;
+  auto_provision_missing_users?: boolean;
   agent_index_offset?: number;
   daily_llm_budget?: number;
   active_hours?: number[];
@@ -74,6 +75,7 @@ export interface IAiReaderBootstrapResponse {
   requested_count: number;
   available_user_count?: number;
   missing_user_count?: number;
+  provisioned_user_count?: number;
   dry_run_token?: string;
   applied_count?: number;
   schedule_count?: number;
