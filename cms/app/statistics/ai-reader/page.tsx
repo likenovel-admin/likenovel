@@ -466,10 +466,14 @@ export default function Page() {
     ]
   );
   const lastDryRunRepeatingScheduleCount = lastDryRun
-    ? lastDryRun.availableUserCount * lastDryRun.dailySessionTarget * lastDryRun.scheduleDurationDays
+    ? lastDryRun.agentCount * lastDryRun.dailySessionTarget * lastDryRun.scheduleDurationDays
     : 0;
   const lastDryRunImmediateScheduleCount = lastDryRun
-    ? countImmediateScheduleRows(lastDryRun.immediateSchedulePreview)
+    ? countImmediateScheduleRows(
+        lastDryRun.immediateSchedulePreview.length > 0
+          ? lastDryRun.immediateSchedulePreview
+          : estimatedImmediateSchedulePreview
+      )
     : 0;
   const lastDryRunEstimatedScheduleCount =
     lastDryRunRepeatingScheduleCount + lastDryRunImmediateScheduleCount;
@@ -501,15 +505,17 @@ export default function Page() {
   const hasMatchingDryRun = Boolean(
     hasSameBootstrapDryRunInput
       && lastDryRun?.token
-      && lastDryRun.missingUserCount === 0
   );
   const bootstrapDryRunBlockMessage = lastDryRun && !hasMatchingDryRun
-    ? lastDryRun.missingUserCount > 0
-      ? `AI 전용 ready 계정이 ${numberFormat(lastDryRun.missingUserCount)}명 부족합니다. 이메일 prefix 또는 투입 수를 조정하거나, 먼저 전용 계정을 발급하세요.`
-      : !hasSameBootstrapDryRunInput
+    ? !hasSameBootstrapDryRunInput
         ? "현재 입력과 사전 확인 결과가 다릅니다."
         : "사전 확인 토큰이 없습니다. 사전 확인을 다시 눌러주세요."
     : null;
+  const bootstrapAutoProvisionMessage = lastDryRun
+    && hasMatchingDryRun
+    && lastDryRun.missingUserCount > 0
+      ? `투입 적용 시 AI 전용 계정 ${numberFormat(lastDryRun.missingUserCount)}명을 자동 발급한 뒤 등록합니다.`
+      : null;
   const hasMatchingResumeDryRun = Boolean(
     lastResumeDryRun
       && lastResumeDryRun.source === "resume"
@@ -701,7 +707,11 @@ export default function Page() {
       }
       if (
         apply
-          && !window.confirm("AI 전용 계정을 AI 독자로 등록하고 스케줄을 생성합니다. 진행할까요?")
+          && !window.confirm(
+            lastDryRun?.missingUserCount
+              ? `AI 전용 계정 ${numberFormat(lastDryRun.missingUserCount)}명을 자동 발급한 뒤 AI 독자로 등록하고 스케줄을 생성합니다. 진행할까요?`
+              : "AI 전용 계정을 AI 독자로 등록하고 스케줄을 생성합니다. 진행할까요?"
+          )
       ) {
         return;
       }
@@ -711,6 +721,7 @@ export default function Page() {
         schedule_date: scheduleDateInput,
         schedule_duration_days: scheduleDurationDaysValue,
         apply,
+        auto_provision_missing_users: apply,
         daily_llm_budget: dailyLlmBudgetValue,
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
@@ -723,6 +734,10 @@ export default function Page() {
         dry_run_token: apply ? lastDryRun?.token : undefined,
       });
       const immediateScheduleRows = countImmediateScheduleRows(result.immediate_schedule_preview);
+      const displayedImmediateScheduleRows = immediateScheduleRows > 0
+        ? immediateScheduleRows
+        : countImmediateScheduleRows(estimatedImmediateSchedulePreview);
+      const provisionedUserCount = Number(result.provisioned_user_count || 0);
       if (!apply) {
         setLastDryRun({
           emailPrefix: bootstrapPrefix,
@@ -748,8 +763,8 @@ export default function Page() {
       }
       setOperationMessage(
         apply
-          ? `투입 완료: ${numberFormat(result.applied_count)}명 / ${scheduleDateInput}~${result.schedule_end_date || scheduleEndDateInput} 스케줄 ${numberFormat(result.schedule_count)}개`
-          : `사전 확인: 사용 가능 ${numberFormat(result.available_user_count)}명 / 부족 ${numberFormat(result.missing_user_count)}명 / 기간 ${scheduleDateInput}~${result.schedule_end_date || scheduleEndDateInput} / 오늘 즉시 ${numberFormat(immediateScheduleRows)}명`
+          ? `투입 완료: ${numberFormat(result.applied_count)}명${provisionedUserCount > 0 ? ` / 전용 계정 ${numberFormat(provisionedUserCount)}명 발급` : ""} / ${scheduleDateInput}~${result.schedule_end_date || scheduleEndDateInput} 스케줄 ${numberFormat(result.schedule_count)}개`
+          : `사전 확인: 사용 가능 ${numberFormat(result.available_user_count)}명 / 부족 ${numberFormat(result.missing_user_count)}명 / 기간 ${scheduleDateInput}~${result.schedule_end_date || scheduleEndDateInput} / 오늘 즉시 ${numberFormat(displayedImmediateScheduleRows)}명`
       );
       await refreshAiReaderState();
     } catch (error) {
@@ -2299,7 +2314,7 @@ export default function Page() {
               <div>
                 <div className="text-xs font-medium">신규 AI 독자 생성</div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
-                  이미 발급된 AI 전용 ready 계정을 AI 독자로 등록하고, 위 활동 방식으로 스케줄을 생성합니다. 계정이 부족하면 먼저 전용 계정을 발급해야 합니다.
+                  AI 전용 계정이 부족하면 투입 적용 시 부족분을 자동 발급하고, 위 활동 방식으로 AI 독자와 스케줄을 생성합니다.
                 </div>
               </div>
               <div className="flex gap-2">
@@ -2344,11 +2359,13 @@ export default function Page() {
                   </div>
                 )}
                 {bootstrapDryRunBlockMessage && (
-                  <div className={cn(
-                    "mt-1",
-                    lastDryRun.missingUserCount > 0 ? "text-amber-700" : "text-destructive"
-                  )}>
+                  <div className="mt-1 text-destructive">
                     {bootstrapDryRunBlockMessage}
+                  </div>
+                )}
+                {bootstrapAutoProvisionMessage && (
+                  <div className="mt-1 text-amber-700">
+                    {bootstrapAutoProvisionMessage}
                   </div>
                 )}
               </div>
