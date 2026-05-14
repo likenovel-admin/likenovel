@@ -7,6 +7,14 @@ import {
   IStatisticWebsochatRouteSummary,
   IStatisticWebsochatUsage,
   IStatisticWebsochatUsageSummary,
+  IStatisticAiReaderAgentAction,
+  IStatisticAiReaderCohort,
+  IStatisticAiReaderError,
+  IStatisticAiReaderHourly,
+  IStatisticAiReaderProduct,
+  IStatisticAiReaderRecentAction,
+  IStatisticAiReaderSummary,
+  IStatisticAiReaderTimelineAction,
 } from "@/types/statistic";
 
 export interface IGetStatisticSiteResponse {
@@ -87,4 +95,53 @@ export interface IGetStatisticWebsochatUsageParams {
   model_used?: string;
   route_mode?: string;
   fallback_used?: string;
+}
+
+export interface IGetStatisticAiReaderEngagementResponse {
+  total_count: number;
+  page: number;
+  count_per_page: number;
+  summary: IStatisticAiReaderSummary;
+  hourly_summary: IStatisticAiReaderHourly[];
+  cohort_summary: IStatisticAiReaderCohort[];
+  recent_errors: IStatisticAiReaderError[];
+  recent_actions: IStatisticAiReaderRecentAction[];
+  results: IStatisticAiReaderProduct[];
+}
+
+export interface IGetStatisticAiReaderEngagementParams {
+  page?: number;
+  count_per_page?: number;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface IGetStatisticAiReaderAgentActionsParams {
+  agent_id: number;
+  page?: number;
+  count_per_page?: number;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface IGetStatisticAiReaderAgentActionsResponse {
+  total_count: number;
+  page: number;
+  count_per_page: number;
+  items: IStatisticAiReaderAgentAction[];
+}
+
+export interface IGetStatisticAiReaderTimelineParams {
+  page?: number;
+  count_per_page?: number;
+  start_date?: string;
+  end_date?: string;
+  status_filter?: "applied" | "pending" | "skipped" | "failed" | "all";
+}
+
+export interface IGetStatisticAiReaderTimelineResponse {
+  total_count: number;
+  page: number;
+  count_per_page: number;
+  items: IStatisticAiReaderTimelineAction[];
 }

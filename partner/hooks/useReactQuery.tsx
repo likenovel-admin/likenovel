@@ -12,6 +12,7 @@ const ReactQueryProvider = ({ children }: PropsWithChildren) => {
       defaultOptions: {
         queries: {
           staleTime: 5000,
+          refetchOnWindowFocus: false,
           throwOnError: true,
         },
         mutations: {
