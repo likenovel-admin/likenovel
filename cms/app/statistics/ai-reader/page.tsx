@@ -442,7 +442,7 @@ export default function Page() {
   const scheduleSettingSummary = `${numberFormat(normalizedScheduleDurationDays)}일 · ${
     startImmediately && isImmediateScheduleDate
       ? `바로 시작 ${numberFormat(immediateBatchSizeValue)}명씩`
-      : "일일 스케줄만"
+      : "예약 시간부터 시작"
   } · 활동시간 ${activeHoursCompactLabel}`;
   const ageGroupRatioTotal = sumRatios(ageGroupRatios);
   const genderRatioTotal = sumRatios(genderRatios);
@@ -920,14 +920,14 @@ export default function Page() {
 
     if (Number(dryRunResult.missing_agent_count || 0) > 0) {
       setOperationMessage(
-        `스케줄 없는 활성 AI가 ${numberFormat(dryRunResult.missing_agent_count)}명 부족합니다. 현재 가능한 ${numberFormat(dryRunResult.available_agent_count)}명까지만 다시 투입할 수 있습니다.`
+        `스케줄 없는 활성 AI가 ${numberFormat(dryRunResult.missing_agent_count)}명 부족합니다. 현재 가능한 ${numberFormat(dryRunResult.available_agent_count)}명까지만 다시 시작할 수 있습니다.`
       );
       return false;
     }
 
     if (
       !window.confirm(
-        `스케줄 없는 활성 AI ${agentCount.toLocaleString()}명에게 ${scheduleDateInput}~${dryRunResult.schedule_end_date || scheduleEndDateInput} 스케줄을 생성합니다. 오늘 즉시 ${immediateScheduleRows.toLocaleString()}명이 시작됩니다. 진행할까요?`
+        `스케줄 없는 활성 AI ${agentCount.toLocaleString()}명을 ${scheduleDateInput}~${dryRunResult.schedule_end_date || scheduleEndDateInput} 설정으로 다시 시작합니다. 오늘 즉시 ${immediateScheduleRows.toLocaleString()}명이 시작됩니다. 진행할까요?`
       )
     ) {
       setOperationMessage(
@@ -951,7 +951,7 @@ export default function Page() {
       dry_run_token: dryRunResult.dry_run_token,
     });
     setOperationMessage(
-      `지금 투입 완료: 독자 ${numberFormat(applyResult.refreshed_agent_count)}명 / ${scheduleDateInput}~${applyResult.schedule_end_date || scheduleEndDateInput} 스케줄 ${numberFormat(applyResult.schedule_count)}개`
+      `운영 다시 시작 완료: 독자 ${numberFormat(applyResult.refreshed_agent_count)}명 / ${scheduleDateInput}~${applyResult.schedule_end_date || scheduleEndDateInput} 스케줄 ${numberFormat(applyResult.schedule_count)}개`
     );
     await refreshAiReaderState();
     return true;
@@ -963,14 +963,14 @@ export default function Page() {
       if (refreshableIdleActiveAgentCount < 1) {
         setOperationMessage(
           idleActiveAgentCount > 0
-            ? "스케줄 없는 활성 AI는 있지만 지금 투입 가능한 계정이 없습니다. 계정 상태, 도메인, SNS 여부를 확인하세요."
+            ? "스케줄 없는 활성 AI는 있지만 운영 다시 시작 가능한 계정이 없습니다. 계정 상태, 도메인, SNS 여부를 확인하세요."
             : "스케줄 없는 활성 AI가 없습니다."
         );
         return;
       }
       await runRefreshActiveSchedulesOperation(refreshableIdleActiveAgentCount);
     } catch (error) {
-      setOperationMessage(error instanceof Error ? error.message : "활동 재가동에 실패했습니다.");
+      setOperationMessage(error instanceof Error ? error.message : "운영 다시 시작에 실패했습니다.");
     }
   };
 
@@ -1013,7 +1013,7 @@ export default function Page() {
         `활성 ${numberFormat(operation.targetCount)}명 맞추기 완료`
       );
     } catch (error) {
-      setOperationMessage(error instanceof Error ? error.message : "활성 인원 맞추기에 실패했습니다.");
+      setOperationMessage(error instanceof Error ? error.message : "인원 맞추기에 실패했습니다.");
     }
   };
 
@@ -1081,7 +1081,7 @@ export default function Page() {
 
       if (Number(dryRunResult.missing_agent_count || 0) > 0) {
         setOperationMessage(
-          `전체 정지는 실행하지 않았습니다. 재투입 가능한 AI가 ${numberFormat(dryRunResult.missing_agent_count)}명 부족합니다.`
+          `예약 교체는 실행하지 않았습니다. 시작 가능한 AI가 ${numberFormat(dryRunResult.missing_agent_count)}명 부족합니다.`
         );
         setAgentSetupOpen(true);
         setBootstrapCount(String(dryRunResult.missing_agent_count || targetCount));
@@ -1089,11 +1089,11 @@ export default function Page() {
       }
       if (
         !window.confirm(
-          `재투입 가능 여부를 확인했습니다. 현재 AI 독자의 남은 스케줄과 대기 액션을 정리한 뒤 ${targetCount.toLocaleString()}명을 새 스케줄로 재투입합니다. 오늘 즉시 ${immediateScheduleRows.toLocaleString()}명이 시작됩니다. 진행할까요?`
+          `시작 가능 여부를 확인했습니다. 현재 AI 독자의 남은 예약과 대기 액션을 새 설정으로 교체한 뒤 ${targetCount.toLocaleString()}명을 시작합니다. 오늘 즉시 ${immediateScheduleRows.toLocaleString()}명이 시작됩니다. 진행할까요?`
         )
       ) {
         setOperationMessage(
-          `사전 확인 완료: 가능 ${numberFormat(dryRunResult.available_agent_count)}명 / 기간 ${scheduleDateInput}~${dryRunResult.schedule_end_date || scheduleEndDateInput} / 오늘 즉시 ${numberFormat(immediateScheduleRows)}명. 전체 정지는 실행하지 않았습니다.`
+          `사전 확인 완료: 가능 ${numberFormat(dryRunResult.available_agent_count)}명 / 기간 ${scheduleDateInput}~${dryRunResult.schedule_end_date || scheduleEndDateInput} / 오늘 즉시 ${numberFormat(immediateScheduleRows)}명. 예약 교체는 실행하지 않았습니다.`
         );
         return;
       }
@@ -1113,14 +1113,14 @@ export default function Page() {
       });
       resetResumeDryRun();
       setOperationMessage(
-        `전체 정지 후 재투입 완료: 재투입 ${numberFormat(applyResult.restarted_agent_count)}명 / 일시정지 ${numberFormat(applyResult.paused_agent_count)}명 / 스케줄 정리 ${numberFormat(applyResult.retired_schedule_count)}개 / 액션 정리 ${numberFormat(applyResult.cancelled_action_count)}개 / 새 스케줄 ${numberFormat(applyResult.schedule_count)}개`
+        `기존 예약 교체 후 시작 완료: 시작 ${numberFormat(applyResult.restarted_agent_count)}명 / 일시정지 ${numberFormat(applyResult.paused_agent_count)}명 / 스케줄 정리 ${numberFormat(applyResult.retired_schedule_count)}개 / 액션 정리 ${numberFormat(applyResult.cancelled_action_count)}개 / 새 스케줄 ${numberFormat(applyResult.schedule_count)}개`
       );
       await refreshAiReaderState();
     } catch (error) {
       setOperationMessage(
         error instanceof Error
-          ? `전체 정지 후 재투입에 실패했습니다. 변경은 적용되지 않았습니다: ${error.message}`
-          : "전체 정지 후 재투입에 실패했습니다. 변경은 적용되지 않았습니다."
+          ? `기존 예약 교체 후 시작에 실패했습니다. 변경은 적용되지 않았습니다: ${error.message}`
+          : "기존 예약 교체 후 시작에 실패했습니다. 변경은 적용되지 않았습니다."
       );
     }
   };
@@ -1230,15 +1230,12 @@ export default function Page() {
   });
   const targetOperationMessage = targetOperation.kind === "no_change" && idleActiveAgentCount > 0
     ? refreshableIdleActiveAgentCount > 0
-      ? "활성 인원은 이미 맞지만 스케줄 없는 활성 AI가 있습니다. 지금 투입을 누르세요."
-      : "활성 인원은 이미 맞지만 스케줄 없는 활성 AI 중 지금 투입 가능한 계정이 없습니다."
+      ? "활성 인원은 이미 맞지만 스케줄 없는 활성 AI가 있습니다. 다음 작업에서 운영을 다시 시작하세요."
+      : "활성 인원은 이미 맞지만 스케줄 없는 활성 AI 중 운영 다시 시작 가능한 계정이 없습니다."
     : targetOperation.message;
   const pendingOperation = bootstrapMutation.isPending || pauseAllMutation.isPending || resumePausedMutation.isPending || refreshSchedulesMutation.isPending || restartMutation.isPending;
   const canRefreshIdleActiveSchedules = refreshableIdleActiveAgentCount > 0;
-  const shouldPromoteRestartAction = !canRefreshIdleActiveSchedules && activeAgentCount > 0 && targetActiveCountValue > 0;
-  const plannedRunDurationLabel = normalizedScheduleDurationDays === 1
-    ? "24시간"
-    : `${numberFormat(normalizedScheduleDurationDays)}일`;
+  const plannedRunDurationLabel = `${numberFormat(normalizedScheduleDurationDays)}일`;
   const nextRunMode = (() => {
     if (!Number.isInteger(targetActiveCountValue) || targetActiveCountValue < 1 || targetActiveCountValue > MAX_AI_READER_AGENT_COUNT) {
       return "invalid";
@@ -1257,28 +1254,31 @@ export default function Page() {
     }
     return "setup";
   })();
+  const canRunSecondaryRefresh = nextRunMode !== "refresh" && canRefreshIdleActiveSchedules;
+  const showSecondaryOperations = canRunSecondaryRefresh;
   const operationStateLabel = (() => {
-    if (scheduledActiveAgentCount > 0) return "예약 운영 중";
-    if (canRefreshIdleActiveSchedules) return "활성 대기 중";
-    if (activeAgentCount > 0) return "활성 상태 확인 필요";
-    if (availablePausedAgentCount > 0) return "대기 AI 준비됨";
-    return "신규 생성 필요";
+    if (scheduledActiveAgentCount > 0) return "운영 중";
+    if (canRefreshIdleActiveSchedules) return "운영 종료됨";
+    if (activeAgentCount > 0) return "설정 확인 필요";
+    if (availablePausedAgentCount > 0) return "시작 가능";
+    return "AI 부족";
   })();
   const nextRunActionLabel = (() => {
-    if (nextRunMode === "replace") return "설정 적용 후 재투입";
-    if (nextRunMode === "refresh" || nextRunMode === "resume") return "설정 적용 후 운영 시작";
+    if (nextRunMode === "replace") return "기존 예약 교체 후 시작";
+    if (nextRunMode === "refresh") return "운영 다시 시작";
+    if (nextRunMode === "resume") return "운영 시작";
     if (nextRunMode === "setup") return "신규 AI 독자 생성 열기";
     return "목표 인원 확인 필요";
   })();
   const nextRunHelpText = (() => {
     if (nextRunMode === "replace") {
-      return "이미 남은 예약이 있어 새 설정을 적용하려면 기존 예약과 대기 액션을 정리한 뒤 다시 투입합니다. 실행 전 확인창이 뜹니다.";
+      return "이미 남은 예약이 있어 새 설정을 적용하려면 기존 예약과 대기 액션을 새 설정으로 교체합니다. 실행 전 확인창이 뜹니다.";
     }
     if (nextRunMode === "refresh") {
-      return "스케줄 없는 활성 AI에게 현재 설정으로 새 스케줄을 붙입니다.";
+      return "운영이 끝난 활성 AI를 현재 설정으로 다시 시작합니다.";
     }
     if (nextRunMode === "resume") {
-      return "꺼져 있는 AI를 목표 인원만큼 켜고 현재 설정으로 스케줄을 만듭니다.";
+      return "멈춰 있는 AI를 목표 인원만큼 켜고 현재 설정으로 운영을 시작합니다.";
     }
     if (nextRunMode === "setup") {
       return "투입 가능한 AI가 부족합니다. 먼저 신규 AI 독자를 생성하거나 목표 인원을 낮춰야 합니다.";
@@ -1307,7 +1307,7 @@ export default function Page() {
         setResumeCount(String(targetActiveCountValue));
         await runResumePausedAgentOperation(
           targetActiveCountValue,
-          "설정 적용 후 운영 시작 완료"
+          "운영 시작 완료"
         );
         return;
       }
@@ -1485,17 +1485,17 @@ export default function Page() {
               <div>
                 <h2 className="text-sm font-semibold">AI 독자 운영</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  현재 상태를 기준으로 다음 운영 작업을 하나로 고릅니다. 설정 변경은 [상세 설정 보기]에서 먼저 조정하세요.
+                  설정값을 조정한 뒤 운영을 시작·재개하고, 독자 로그로 반응을 확인합니다.
                 </p>
               </div>
               <Button
-                variant="destructive"
+                variant="outline"
                 onClick={handlePauseAllAgents}
                 disabled={pendingOperation}
-                className="font-semibold"
+                className="text-destructive hover:text-destructive"
               >
                 <CirclePause className="mr-2 h-4 w-4" />
-                잠시 멈추기
+                운영 멈추기
               </Button>
             </div>
 
@@ -1539,13 +1539,13 @@ export default function Page() {
               <div className="space-y-3">
                 {idleActiveAgentCount > 0 && (
                   <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                    스케줄 없는 활성 AI {numberFormat(idleActiveAgentCount)}명 중 지금 투입 가능{" "}
+                    스케줄 없는 활성 AI {numberFormat(idleActiveAgentCount)}명 중 운영 다시 시작 가능{" "}
                     {numberFormat(refreshableIdleActiveAgentCount)}명입니다.
                     {excludedIdleActiveAgentCount > 0 && (
                       <> 제외 {numberFormat(excludedIdleActiveAgentCount)}명은 계정 상태, 도메인, SNS 조건을 확인하세요.</>
                     )}
                     {refreshableIdleActiveAgentCount > 0 && (
-                      <> 같은 운영 설정으로 바로 넣으려면 [지금 투입]을 누르세요.</>
+                      <> 현재 설정으로 이어서 실험하려면 [운영 다시 시작]을 누르세요.</>
                     )}
                   </div>
                 )}
@@ -1555,24 +1555,26 @@ export default function Page() {
                       <div className="text-xs font-medium">다음 작업</div>
                       <div className="mt-1 text-xs text-muted-foreground">
                         {operationStateLabel} · 목표 {numberFormat(targetActiveCountValue)}명 · {plannedRunDurationLabel} ·{" "}
-                        {startImmediately ? "바로 시작" : "일일 스케줄만"}
+                        {startImmediately ? "바로 시작" : "예약 시간부터 시작"}
                       </div>
                       <div className="mt-1 text-xs text-muted-foreground">
                         {nextRunHelpText}
                       </div>
                     </div>
-                    <Button
-                      variant={nextRunMode === "replace" || nextRunMode === "invalid" ? "outline" : "default"}
-                      onClick={handleStartConfiguredRun}
-                      disabled={pendingOperation}
-                    >
-                      {nextRunMode === "replace" ? (
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                      ) : (
-                        <Play className="mr-2 h-4 w-4" />
-                      )}
-                      {nextRunActionLabel}
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant={nextRunMode === "replace" || nextRunMode === "invalid" ? "outline" : "default"}
+                        onClick={handleStartConfiguredRun}
+                        disabled={pendingOperation}
+                      >
+                        {nextRunMode === "replace" ? (
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                        ) : (
+                          <Play className="mr-2 h-4 w-4" />
+                        )}
+                        {nextRunActionLabel}
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 <div className="rounded-md border bg-muted/10 px-3 py-2">
@@ -1629,7 +1631,7 @@ export default function Page() {
                         onClick={() => applyStartMode(false)}
                         disabled={pendingOperation}
                       >
-                        일일 스케줄만
+                        예약 시간부터 시작
                       </Button>
                       <Button
                         type="button"
@@ -1643,38 +1645,26 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs text-muted-foreground">직접 실행</span>
-                  {shouldPromoteRestartAction && (
-                    <Button variant="outline" onClick={handleCleanRestart} disabled={pendingOperation}>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      {startImmediately ? "전체 정지 후 바로 재투입" : "전체 정지 후 재투입"}
+                {showSecondaryOperations && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-muted-foreground">예외 작업</span>
+                    <Button
+                      variant="outline"
+                      onClick={handleRefreshIdleActiveSchedules}
+                      disabled={pendingOperation || !canRefreshIdleActiveSchedules}
+                    >
+                      <Play className="mr-2 h-4 w-4" />
+                      운영 다시 시작 {refreshableIdleActiveAgentCount > 0 ? numberFormat(refreshableIdleActiveAgentCount) : ""}
                     </Button>
-                  )}
-                  <Button
-                    variant={canRefreshIdleActiveSchedules ? "default" : "outline"}
-                    onClick={handleRefreshIdleActiveSchedules}
-                    disabled={pendingOperation || !canRefreshIdleActiveSchedules}
-                  >
-                    <Play className="mr-2 h-4 w-4" />
-                    지금 투입 {refreshableIdleActiveAgentCount > 0 ? numberFormat(refreshableIdleActiveAgentCount) : ""}
-                  </Button>
-                  {!shouldPromoteRestartAction && (
-                    <Button variant="outline" onClick={handleCleanRestart} disabled={pendingOperation}>
-                      전체 정지 후 재투입
-                    </Button>
-                  )}
-                  <Button variant="outline" onClick={handleApplyTargetActiveCount} disabled={pendingOperation}>
-                    활성 인원 맞추기
-                  </Button>
-                </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {lastResumeDryRun && (
               <div className="mt-3 rounded-md border bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
-                {isRestartDryRun ? "전체 정지 후 재투입 확인" : "최근 확인"}:{" "}
-                {isRestartDryRun ? "재투입 가능 AI" : "추가 투입 가능한 대기 AI"}{" "}
+                {isRestartDryRun ? "기존 예약 교체 확인" : "최근 확인"}:{" "}
+                {isRestartDryRun ? "시작 가능 AI" : "추가 투입 가능한 대기 AI"}{" "}
                 {numberFormat(lastResumeDryRun.availableAgentCount)}명 / 부족{" "}
                 {numberFormat(lastResumeDryRun.missingAgentCount)}명 / 선택{" "}
                 {numberFormat(lastResumeDryRun.preview.length)}명 / 기간 {lastResumeDryRun.scheduleDate}~
@@ -1711,7 +1701,7 @@ export default function Page() {
                 </p>
               </div>
               <Button asChild variant="outline" size="sm">
-                <Link href={actionTimelineHref}>최근활동 상세보기</Link>
+                <Link href={actionTimelineHref}>독자 로그 보기</Link>
               </Button>
             </div>
             <div className="max-h-[340px] overflow-y-auto -mx-4 px-4">
@@ -1841,7 +1831,7 @@ export default function Page() {
           <div className="mb-4">
             <h2 className="text-sm font-semibold">활동 방식 설정 (상세)</h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              운영 순서: 프리셋 선택 → 지금 투입 또는 활성 인원 맞추기 → 부족하면 하단 [신규 AI 독자 생성]에서 추가.
+              운영 순서: 프리셋 선택 → 설정 조정 → 운영 시작 또는 다시 시작 → 부족하면 하단 [신규 AI 독자 생성]에서 추가.
             </p>
             <div className="mt-2 rounded-md border bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
               <span className="font-medium text-foreground">현재 활동값</span>: {activitySettingSummary}
@@ -2107,7 +2097,7 @@ export default function Page() {
                     size="sm"
                     onClick={() => applyStartMode(false)}
                   >
-                    일일 스케줄만
+                    예약 시간부터 시작
                   </Button>
                   <Button
                     type="button"
@@ -2210,7 +2200,7 @@ export default function Page() {
                   </div>
                 ) : (
                   <div className="text-[11px] text-muted-foreground">
-                    즉시 배치 없음. 매일 반복 활동 시간 기준으로 일일 스케줄만 생성됩니다.
+                    즉시 배치 없음. 선택한 활동 시간 기준으로 예약 스케줄만 생성됩니다.
                   </div>
                 )}
               </div>
