@@ -40,16 +40,27 @@ export interface IGetAiReaderAgentsResponse {
   items: IAiReaderAgent[];
 }
 
+export interface IAiReaderImmediateSchedulePreview {
+  active_start_at: string;
+  active_end_at: string;
+  agent_count: number;
+}
+
 export interface IAiReaderBootstrapRequest {
   email_prefix: string;
   agent_count: number;
   schedule_date?: string;
+  schedule_duration_days?: number;
   apply: boolean;
   allow_partial?: boolean;
   agent_index_offset?: number;
   daily_llm_budget?: number;
   active_hours?: number[];
   daily_session_target?: number;
+  start_immediately?: boolean;
+  immediate_batch_size?: number;
+  immediate_batch_interval_minutes?: number;
+  immediate_schedule_start_at?: string;
   age_group_ratios?: Record<string, number>;
   gender_ratios?: Record<string, number>;
   dry_run_token?: string;
@@ -58,12 +69,16 @@ export interface IAiReaderBootstrapRequest {
 export interface IAiReaderBootstrapResponse {
   applied: boolean;
   schedule_date: string;
+  schedule_duration_days?: number;
+  schedule_end_date?: string;
   requested_count: number;
   available_user_count?: number;
   missing_user_count?: number;
   dry_run_token?: string;
   applied_count?: number;
   schedule_count?: number;
+  immediate_schedule_preview?: IAiReaderImmediateSchedulePreview[];
+  immediate_schedule_start_at?: string | null;
   preview?: Array<{
     user_id: number;
     email: string;
@@ -101,13 +116,23 @@ export interface IAiReaderPauseAllResponse {
 export interface IAiReaderResumePausedRequest {
   agent_count: number;
   schedule_date?: string;
+  schedule_duration_days?: number;
   apply: boolean;
+  start_immediately?: boolean;
+  immediate_batch_size?: number;
+  immediate_batch_interval_minutes?: number;
+  immediate_schedule_start_at?: string;
+  active_hours?: number[];
+  daily_session_target?: number;
+  daily_llm_budget?: number;
   dry_run_token?: string;
 }
 
 export interface IAiReaderResumePausedResponse {
   applied: boolean;
   schedule_date: string;
+  schedule_duration_days?: number;
+  schedule_end_date?: string;
   requested_count: number;
   available_agent_count: number;
   missing_agent_count?: number;
@@ -116,6 +141,8 @@ export interface IAiReaderResumePausedResponse {
   retired_schedule_count?: number;
   deleted_schedule_count?: number;
   schedule_count?: number;
+  immediate_schedule_preview?: IAiReaderImmediateSchedulePreview[];
+  immediate_schedule_start_at?: string | null;
   preview?: Array<{
     ai_reader_agent_id: number;
     user_id: number;
@@ -125,4 +152,24 @@ export interface IAiReaderResumePausedResponse {
     daily_llm_budget: number;
     activity_pattern?: Record<string, unknown>;
   }>;
+}
+
+export interface IAiReaderRefreshSchedulesRequest extends IAiReaderResumePausedRequest {}
+
+export interface IAiReaderRefreshSchedulesResponse extends Omit<
+  IAiReaderResumePausedResponse,
+  "reactivated_agent_count"
+> {
+  refreshed_agent_count?: number;
+}
+
+export interface IAiReaderRestartRequest extends IAiReaderResumePausedRequest {}
+
+export interface IAiReaderRestartResponse extends Omit<
+  IAiReaderResumePausedResponse,
+  "reactivated_agent_count"
+> {
+  restarted_agent_count?: number;
+  paused_agent_count?: number;
+  cancelled_action_count?: number;
 }

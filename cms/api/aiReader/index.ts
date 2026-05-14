@@ -4,8 +4,12 @@ import {
   IAiReaderBootstrapRequest,
   IAiReaderBootstrapResponse,
   IAiReaderPauseAllResponse,
+  IAiReaderRefreshSchedulesRequest,
+  IAiReaderRefreshSchedulesResponse,
   IAiReaderResumePausedRequest,
   IAiReaderResumePausedResponse,
+  IAiReaderRestartRequest,
+  IAiReaderRestartResponse,
   IAiReaderScheduleRequest,
   IAiReaderScheduleResponse,
   IGetAiReaderAgentsParams,
@@ -71,6 +75,30 @@ export const useResumePausedAiReaderAgents = () => {
     mutationFn: async (body: IAiReaderResumePausedRequest) => {
       return await apiClient.request<IAiReaderResumePausedResponse>({
         url: "/v1/command/admins/ai-readers/resume-paused",
+        method: "POST",
+        body,
+      });
+    },
+  });
+};
+
+export const useRefreshAiReaderSchedules = () => {
+  return useMutation<IAiReaderRefreshSchedulesResponse, Error, IAiReaderRefreshSchedulesRequest>({
+    mutationFn: async (body: IAiReaderRefreshSchedulesRequest) => {
+      return await apiClient.request<IAiReaderRefreshSchedulesResponse>({
+        url: "/v1/command/admins/ai-readers/refresh-schedules",
+        method: "POST",
+        body,
+      });
+    },
+  });
+};
+
+export const useRestartAiReaderAgents = () => {
+  return useMutation<IAiReaderRestartResponse, Error, IAiReaderRestartRequest>({
+    mutationFn: async (body: IAiReaderRestartRequest) => {
+      return await apiClient.request<IAiReaderRestartResponse>({
+        url: "/v1/command/admins/ai-readers/restart",
         method: "POST",
         body,
       });

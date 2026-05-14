@@ -97,6 +97,11 @@ export interface IStatisticWebsochatUsage {
 export interface IStatisticAiReaderSummary {
   total_agent_count: number;
   active_agent_count: number;
+  paused_agent_count: number;
+  available_paused_agent_count: number;
+  scheduled_active_agent_count: number;
+  idle_active_agent_count: number;
+  available_idle_active_agent_count: number;
   created_agent_count: number;
   today_schedule_count: number;
   open_schedule_count: number;
@@ -108,6 +113,7 @@ export interface IStatisticAiReaderSummary {
   queued_action_count: number;
   running_action_count: number;
   failed_action_count: number;
+  skipped_action_count: number;
   applied_action_count: number;
   ai_view_count: number;
   ai_bookmark_count: number;
@@ -127,6 +133,15 @@ export interface IStatisticAiReaderProduct {
   ai_recommend_count: number;
   ai_unrecommend_count: number;
   ai_evaluation_count: number;
+  ai_view_action_count: number;
+  ai_bookmark_add_action_count: number;
+  ai_bookmark_remove_action_count: number;
+  ai_bookmark_net_action_count: number;
+  ai_recommend_add_action_count: number;
+  ai_recommend_remove_action_count: number;
+  ai_recommend_net_action_count: number;
+  ai_evaluation_action_count: number;
+  last_ai_action_at: string | null;
   drop_count: number;
   public_view_count: number;
   public_bookmark_count: number;
@@ -170,6 +185,41 @@ export interface IStatisticAiReaderAgentAction {
   created_date: string;
   updated_date: string;
   error_message: string | null;
+}
+
+export interface IStatisticAiReaderTimelineAction {
+  ai_reader_action_id: number;
+  ai_reader_agent_id: number;
+  agent_key: string;
+  age_group: string | null;
+  gender: string | null;
+  product_id: number;
+  product_title: string | null;
+  episode_id: number | null;
+  action_type: string;
+  target_value: string | null;
+  status: string;
+  event_time: string;
+  applied_at: string | null;
+  created_date: string;
+  updated_date: string;
+  error_message: string | null;
+}
+
+export interface IStatisticAiReaderRecentAction {
+  ai_reader_action_id: number;
+  ai_reader_agent_id: number;
+  agent_key: string;
+  age_group: string | null;
+  gender: string | null;
+  product_id: number;
+  product_title: string | null;
+  episode_id: number | null;
+  action_type: string;
+  target_value: string | null;
+  status: string;
+  applied_at: string | null;
+  created_date: string;
 }
 
 export interface IStatisticAiReaderError {

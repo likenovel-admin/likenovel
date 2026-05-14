@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
@@ -22,6 +23,11 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import { item_per_page } from "@/constants/common";
 import { formatAiReaderDisplayName } from "@/lib/ai-reader-display-name";
 import { calculatePageCount } from "@/lib/utils";
+import {
+  aiReaderActionToneClassName,
+  formatAiReaderActionScoreLabel,
+  formatAiReaderActionStatusLabel,
+} from "../_lib";
 
 const numberFormat = (value: unknown) => Number(value || 0).toLocaleString();
 
@@ -58,12 +64,18 @@ const genderLabel: Record<string, string> = {
 };
 
 export default function Page() {
+  const searchParams = useSearchParams();
+  const initialAgentId = (() => {
+    const raw = searchParams.get("agent_id");
+    const parsed = raw ? Number(raw) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  })();
   const [page, setPage] = useState(1);
   const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(new Date());
   const [scheduleDateInput, setScheduleDateInput] = useState(format(new Date(), "yyyy-MM-dd"));
   const [agentPage, setAgentPage] = useState(1);
-  const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
+  const [selectedAgentId, setSelectedAgentId] = useState<number | null>(initialAgentId);
   const [scheduleActiveHoursInput, setScheduleActiveHoursInput] = useState("6,7,12,20,21,22");
   const [scheduleDailySessionTargetInput, setScheduleDailySessionTargetInput] = useState("2");
   const [scheduleDailyLlmBudgetInput, setScheduleDailyLlmBudgetInput] = useState("8");
@@ -116,13 +128,6 @@ export default function Page() {
     if (type === "evaluate") return "평가";
     if (type === "drop") return "드롭";
     return type || "-";
-  };
-
-  const statusBadgeClass = (status: string) => {
-    if (status === "applied") return "text-emerald-600";
-    if (status === "failed") return "text-destructive";
-    if (status === "queued" || status === "running") return "text-amber-600";
-    return "text-muted-foreground";
   };
 
   const refreshAll = async () => {
@@ -252,13 +257,24 @@ export default function Page() {
         <span className="font-medium">{formatActionLabel(String(value || ""), row.target_value)}</span>
       ),
     },
+    {
+      header: "활동점수",
+      key: "action_score",
+      render: (_value, row) => (
+        <span className={aiReaderActionToneClassName(row.status, row.action_type, row.target_value)}>
+          {formatAiReaderActionScoreLabel(row.action_type, row.target_value, row.status)}
+        </span>
+      ),
+    },
     { header: "작품 ID", key: "product_id" },
     { header: "회차", key: "episode_id", render: (value) => value || "-" },
     {
       header: "상태",
       key: "status",
       render: (value) => (
-        <span className={statusBadgeClass(String(value || ""))}>{value || "-"}</span>
+        <span className={aiReaderActionToneClassName(String(value || ""), undefined, undefined)}>
+          {formatAiReaderActionStatusLabel(String(value || ""))}
+        </span>
       ),
     },
     { header: "적용 시각", key: "applied_at", render: formatDateTime },

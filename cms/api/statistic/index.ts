@@ -16,6 +16,8 @@ import {
   IGetStatisticAiReaderEngagementResponse,
   IGetStatisticAiReaderAgentActionsParams,
   IGetStatisticAiReaderAgentActionsResponse,
+  IGetStatisticAiReaderTimelineParams,
+  IGetStatisticAiReaderTimelineResponse,
 } from "@/api/statistic/dto";
 import apiClient from "@/lib/apiClient";
 import { useQuery } from "@tanstack/react-query";
@@ -155,6 +157,26 @@ export const useGetStatisticAiReaderAgentActions = (
         url: `/v1/query/statistics/ai-reader-engagement/agents/${agent_id}/actions`,
         method: "GET",
         queryParams,
+      });
+      return res;
+    },
+  });
+};
+
+export const useGetStatisticAiReaderTimeline = (
+  params: IGetStatisticAiReaderTimelineParams,
+  refetchInterval = 30000
+) => {
+  return useQuery<IGetStatisticAiReaderTimelineResponse>({
+    queryKey: ["GetStatisticAiReaderTimeline", JSON.stringify(params)],
+    refetchInterval,
+    refetchIntervalInBackground: false,
+
+    queryFn: async () => {
+      const res = await apiClient.request<IGetStatisticAiReaderTimelineResponse>({
+        url: "/v1/query/statistics/ai-reader-engagement/actions",
+        method: "GET",
+        queryParams: params,
       });
       return res;
     },
