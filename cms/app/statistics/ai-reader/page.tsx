@@ -339,7 +339,7 @@ export default function Page() {
   const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(new Date());
   const [scheduleDateInput, setScheduleDateInput] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [scheduleDurationDays, setScheduleDurationDays] = useState("30");
+  const [scheduleDurationDays, setScheduleDurationDays] = useState("1");
   const [bootstrapPrefix, setBootstrapPrefix] = useState("ai-reader-");
   const [bootstrapCount, setBootstrapCount] = useState("100");
   const [resumeCount, setResumeCount] = useState("100");
@@ -1236,10 +1236,90 @@ export default function Page() {
   const pendingOperation = bootstrapMutation.isPending || pauseAllMutation.isPending || resumePausedMutation.isPending || refreshSchedulesMutation.isPending || restartMutation.isPending;
   const canRefreshIdleActiveSchedules = refreshableIdleActiveAgentCount > 0;
   const shouldPromoteRestartAction = !canRefreshIdleActiveSchedules && activeAgentCount > 0 && targetActiveCountValue > 0;
+  const plannedRunDurationLabel = normalizedScheduleDurationDays === 1
+    ? "24시간"
+    : `${numberFormat(normalizedScheduleDurationDays)}일`;
+  const nextRunMode = (() => {
+    if (!Number.isInteger(targetActiveCountValue) || targetActiveCountValue < 1 || targetActiveCountValue > MAX_AI_READER_AGENT_COUNT) {
+      return "invalid";
+    }
+    if (activeAgentCount > 0 && scheduledActiveAgentCount > 0) {
+      return "replace";
+    }
+    if (activeAgentCount > 0 && canRefreshIdleActiveSchedules && activeAgentCount === targetActiveCountValue) {
+      return "refresh";
+    }
+    if (activeAgentCount > 0) {
+      return "replace";
+    }
+    if (availablePausedAgentCount >= targetActiveCountValue) {
+      return "resume";
+    }
+    return "setup";
+  })();
+  const operationStateLabel = (() => {
+    if (scheduledActiveAgentCount > 0) return "예약 운영 중";
+    if (canRefreshIdleActiveSchedules) return "활성 대기 중";
+    if (activeAgentCount > 0) return "활성 상태 확인 필요";
+    if (availablePausedAgentCount > 0) return "대기 AI 준비됨";
+    return "신규 생성 필요";
+  })();
+  const nextRunActionLabel = (() => {
+    if (nextRunMode === "replace") return "설정 적용 후 재투입";
+    if (nextRunMode === "refresh" || nextRunMode === "resume") return "설정 적용 후 운영 시작";
+    if (nextRunMode === "setup") return "신규 AI 독자 생성 열기";
+    return "목표 인원 확인 필요";
+  })();
+  const nextRunHelpText = (() => {
+    if (nextRunMode === "replace") {
+      return "이미 남은 예약이 있어 새 설정을 적용하려면 기존 예약과 대기 액션을 정리한 뒤 다시 투입합니다. 실행 전 확인창이 뜹니다.";
+    }
+    if (nextRunMode === "refresh") {
+      return "스케줄 없는 활성 AI에게 현재 설정으로 새 스케줄을 붙입니다.";
+    }
+    if (nextRunMode === "resume") {
+      return "꺼져 있는 AI를 목표 인원만큼 켜고 현재 설정으로 스케줄을 만듭니다.";
+    }
+    if (nextRunMode === "setup") {
+      return "투입 가능한 AI가 부족합니다. 먼저 신규 AI 독자를 생성하거나 목표 인원을 낮춰야 합니다.";
+    }
+    return "목표 활동 인원은 1~100명 사이로 입력하세요.";
+  })();
   const llmSuccessRate = percentFormat(
     summary?.success_decision_count,
     summary?.decision_count
   );
+
+  const handleStartConfiguredRun = async () => {
+    try {
+      setOperationMessage(null);
+      if (nextRunMode === "invalid") {
+        setOperationMessage(`목표 인원은 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+        return;
+      }
+      if (nextRunMode === "setup") {
+        setBootstrapCount(String(targetActiveCountValue || MAX_AI_READER_AGENT_COUNT));
+        setAgentSetupOpen(true);
+        setOperationMessage("신규 AI 독자 생성 영역을 열었습니다. 사전 확인 후 투입 적용을 진행하세요.");
+        return;
+      }
+      if (nextRunMode === "resume") {
+        setResumeCount(String(targetActiveCountValue));
+        await runResumePausedAgentOperation(
+          targetActiveCountValue,
+          "설정 적용 후 운영 시작 완료"
+        );
+        return;
+      }
+      if (nextRunMode === "refresh") {
+        await runRefreshActiveSchedulesOperation(targetActiveCountValue);
+        return;
+      }
+      await handleCleanRestart();
+    } catch (error) {
+      setOperationMessage(error instanceof Error ? error.message : "운영 시작에 실패했습니다.");
+    }
+  };
 
   const productColumns: Column[] = [
     { header: "작품 ID", key: "product_id" },
@@ -1363,7 +1443,7 @@ export default function Page() {
               </div>
 
               <div className="flex flex-col">
-                <div className="text-[11px] text-muted-foreground">오늘 스케줄</div>
+                <div className="text-[11px] text-muted-foreground">선택 기간 스케줄</div>
                 <div className="mt-1 flex items-baseline gap-1.5">
                   <span className="text-2xl font-semibold tabular-nums leading-none">
                     {numberFormat(summary?.today_schedule_count)}
@@ -1405,10 +1485,7 @@ export default function Page() {
               <div>
                 <h2 className="text-sm font-semibold">AI 독자 운영</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  active {numberFormat(activeAgentCount)}명 중 스케줄 있음{" "}
-                  {numberFormat(scheduledActiveAgentCount)}명, 스케줄 없음{" "}
-                  {numberFormat(idleActiveAgentCount)}명, 지금 투입 가능{" "}
-                  {numberFormat(refreshableIdleActiveAgentCount)}명입니다. 목표를 늘리면 부족한 수만큼 대기 AI를 켭니다.
+                  현재 상태를 기준으로 다음 운영 작업을 하나로 고릅니다. 설정 변경은 [상세 설정 보기]에서 먼저 조정하세요.
                 </p>
               </div>
               <Button
@@ -1472,14 +1549,67 @@ export default function Page() {
                     )}
                   </div>
                 )}
+                <div className="rounded-md border bg-white px-3 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-medium">다음 작업</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {operationStateLabel} · 목표 {numberFormat(targetActiveCountValue)}명 · {plannedRunDurationLabel} ·{" "}
+                        {startImmediately ? "바로 시작" : "일일 스케줄만"}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {nextRunHelpText}
+                      </div>
+                    </div>
+                    <Button
+                      variant={nextRunMode === "replace" || nextRunMode === "invalid" ? "outline" : "default"}
+                      onClick={handleStartConfiguredRun}
+                      disabled={pendingOperation}
+                    >
+                      {nextRunMode === "replace" ? (
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                      ) : (
+                        <Play className="mr-2 h-4 w-4" />
+                      )}
+                      {nextRunActionLabel}
+                    </Button>
+                  </div>
+                </div>
                 <div className="rounded-md border bg-muted/10 px-3 py-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">운영 설정</span>
-                      <span className="ml-2">
-                        기간 <span className="font-medium text-foreground">{scheduleDateInput}~{scheduleEndDateInput}</span>
-                        {" · "}기간 종료 후 남은 스케줄이 없으면 자동 일시정지
-                      </span>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-2">
+                      <div className="text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">운영 설정</span>
+                        <span className="ml-2">
+                          기간 <span className="font-medium text-foreground">{scheduleDateInput}~{scheduleEndDateInput}</span>
+                          {" · "}기간 종료 후 남은 스케줄이 없으면 자동 일시정지
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {AI_READER_DURATION_OPTIONS.map((option) => (
+                          <Button
+                            key={option.days}
+                            type="button"
+                            variant={scheduleDurationDaysValue === option.days ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => applyScheduleDuration(option.days)}
+                            disabled={pendingOperation}
+                          >
+                            {option.label}
+                          </Button>
+                        ))}
+                        <Input
+                          inputMode="numeric"
+                          value={scheduleDurationDays}
+                          onChange={(e) => {
+                            setScheduleDurationDays(e.target.value.replace(/\D/g, ""));
+                            resetDryRun();
+                            resetResumeDryRun();
+                          }}
+                          className="h-8 w-[72px]"
+                          disabled={pendingOperation}
+                        />
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       <Button
@@ -1513,7 +1643,8 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-muted-foreground">직접 실행</span>
                   {shouldPromoteRestartAction && (
                     <Button variant="outline" onClick={handleCleanRestart} disabled={pendingOperation}>
                       <RefreshCw className="mr-2 h-4 w-4" />
