@@ -46,6 +46,13 @@ export interface IAiReaderImmediateSchedulePreview {
   agent_count: number;
 }
 
+export interface IAiReaderTimeBlock {
+  label?: string;
+  start_hour: number;
+  end_hour: number;
+  sessions_per_agent?: number;
+}
+
 export interface IAiReaderBootstrapRequest {
   email_prefix: string;
   agent_count: number;
@@ -58,6 +65,7 @@ export interface IAiReaderBootstrapRequest {
   daily_llm_budget?: number;
   active_hours?: number[];
   daily_session_target?: number;
+  time_blocks?: IAiReaderTimeBlock[];
   start_immediately?: boolean;
   immediate_batch_size?: number;
   immediate_batch_interval_minutes?: number;
@@ -95,6 +103,7 @@ export interface IAiReaderScheduleRequest {
   schedule_date?: string;
   active_hours: number[];
   daily_session_target: number;
+  time_blocks?: IAiReaderTimeBlock[];
   daily_llm_budget?: number;
   status?: "active" | "paused";
   replace_running?: boolean;
@@ -126,6 +135,7 @@ export interface IAiReaderResumePausedRequest {
   immediate_schedule_start_at?: string;
   active_hours?: number[];
   daily_session_target?: number;
+  time_blocks?: IAiReaderTimeBlock[];
   daily_llm_budget?: number;
   dry_run_token?: string;
 }

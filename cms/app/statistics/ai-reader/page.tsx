@@ -14,7 +14,7 @@ import {
   useResumePausedAiReaderAgents,
   useRestartAiReaderAgents,
 } from "@/api/aiReader";
-import { IAiReaderBootstrapResponse, IAiReaderResumePausedResponse } from "@/api/aiReader/dto";
+import { IAiReaderBootstrapResponse, IAiReaderResumePausedResponse, IAiReaderTimeBlock } from "@/api/aiReader/dto";
 import { useGetStatisticAiReaderEngagement } from "@/api/statistic";
 import { IGetStatisticAiReaderEngagementParams } from "@/api/statistic/dto";
 import CommonTable, { Column } from "@/components/common/CommonTable";
@@ -93,6 +93,52 @@ const toHoursInput = (hours: number[]) => [...new Set(hours)]
   .filter((hour) => Number.isInteger(hour) && hour >= 0 && hour <= 23)
   .sort((a, b) => a - b)
   .join(",");
+
+const normalizeTimeBlocks = (blocks: AiReaderTimeBlockInput[]) =>
+  blocks
+    .map((block) => ({
+      label: block.label.trim(),
+      startHour: Math.max(0, Math.min(23, Math.floor(Number(block.startHour)))),
+      endHour: Math.max(1, Math.min(24, Math.floor(Number(block.endHour)))),
+      sessionsPerAgent: Math.max(1, Math.min(8, Math.floor(Number(block.sessionsPerAgent || 1)))),
+    }))
+    .filter((block) => block.endHour > block.startHour);
+
+const timeBlocksToHours = (blocks: AiReaderTimeBlockInput[]) =>
+  normalizeTimeBlocks(blocks).flatMap((block) => rangeHours(block.startHour, block.endHour));
+
+const timeBlocksToApiPayload = (blocks: AiReaderTimeBlockInput[]): IAiReaderTimeBlock[] =>
+  normalizeTimeBlocks(blocks).map((block) => ({
+    label: block.label || undefined,
+    start_hour: block.startHour,
+    end_hour: block.endHour,
+    sessions_per_agent: block.sessionsPerAgent || 1,
+  }));
+
+const timeBlockSessionCount = (blocks: AiReaderTimeBlockInput[]) =>
+  normalizeTimeBlocks(blocks).reduce((sum, block) => sum + Number(block.sessionsPerAgent || 1), 0);
+
+const formatHourRange = (block: AiReaderTimeBlockInput) =>
+  `${String(block.startHour).padStart(2, "0")}:00~${String(block.endHour).padStart(2, "0")}:00`;
+
+const formatTimeBlockSummary = (blocks: AiReaderTimeBlockInput[]) => {
+  const normalized = normalizeTimeBlocks(blocks);
+  if (!normalized.length) return "-";
+  return normalized
+    .map((block) => `${block.label ? `${block.label} ` : ""}${formatHourRange(block)}`)
+    .join(" · ");
+};
+
+const blocksFromSingleHours = (hours: number[]) =>
+  [...new Set(hours)]
+    .filter((hour) => Number.isInteger(hour) && hour >= 0 && hour <= 23)
+    .sort((a, b) => a - b)
+    .map((hour) => ({
+      label: `${hour}시`,
+      startHour: hour,
+      endHour: hour + 1,
+      sessionsPerAgent: 1,
+    }));
 
 const getRecommendedImmediateBatchSize = (agentCount: number) => {
   if (agentCount <= 20) return Math.max(1, agentCount || 1);
@@ -182,6 +228,12 @@ const AI_READER_DURATION_OPTIONS = [
 
 type AiReaderIntensity = "LOW" | "MEDIUM" | "HIGH";
 type RatioMap = Record<string, number>;
+type AiReaderTimeBlockInput = {
+  label: string;
+  startHour: number;
+  endHour: number;
+  sessionsPerAgent?: number;
+};
 
 type AiReaderPreset = {
   id: string;
@@ -191,6 +243,7 @@ type AiReaderPreset = {
   agentCount: number;
   activeHours: number[];
   dailySessionTarget: number;
+  timeBlocks: AiReaderTimeBlockInput[];
   dailyLlmBudget: number;
   ageGroupRatios: RatioMap;
   genderRatios: RatioMap;
@@ -225,15 +278,64 @@ const defaultGenderRatios: RatioMap = {
   F: 48,
 };
 
+const commuteMealEveningBlocks: AiReaderTimeBlockInput[] = [
+  { label: "출근", startHour: 7, endHour: 9, sessionsPerAgent: 1 },
+  { label: "점심", startHour: 12, endHour: 13, sessionsPerAgent: 1 },
+  { label: "저녁", startHour: 18, endHour: 23, sessionsPerAgent: 1 },
+];
+
+const eveningFocusedBlocks: AiReaderTimeBlockInput[] = [
+  { label: "초저녁", startHour: 18, endHour: 20, sessionsPerAgent: 1 },
+  { label: "밤", startHour: 20, endHour: 23, sessionsPerAgent: 1 },
+];
+
+const daytimeBlocks: AiReaderTimeBlockInput[] = [
+  { label: "낮", startHour: 12, endHour: 18, sessionsPerAgent: 1 },
+];
+
+const allDayDistributedBlocks: AiReaderTimeBlockInput[] = [
+  { label: "새벽", startHour: 0, endHour: 6, sessionsPerAgent: 1 },
+  { label: "오전", startHour: 6, endHour: 12, sessionsPerAgent: 1 },
+  { label: "오후", startHour: 12, endHour: 18, sessionsPerAgent: 1 },
+  { label: "저녁", startHour: 18, endHour: 24, sessionsPerAgent: 1 },
+];
+
+const dawnBlocks: AiReaderTimeBlockInput[] = [
+  { label: "새벽", startHour: 0, endHour: 6, sessionsPerAgent: 1 },
+];
+
+const morningBlocks: AiReaderTimeBlockInput[] = [
+  { label: "아침", startHour: 6, endHour: 11, sessionsPerAgent: 1 },
+];
+
+const afternoonBlocks: AiReaderTimeBlockInput[] = [
+  { label: "오후", startHour: 12, endHour: 18, sessionsPerAgent: 1 },
+];
+
+const nightBlocks: AiReaderTimeBlockInput[] = [
+  { label: "저녁", startHour: 18, endHour: 24, sessionsPerAgent: 1 },
+];
+
 const intensityDefaults: Record<
   AiReaderIntensity,
-  Pick<AiReaderPreset, "activeHours" | "dailySessionTarget" | "dailyLlmBudget">
+  Pick<AiReaderPreset, "activeHours" | "dailySessionTarget" | "timeBlocks" | "dailyLlmBudget">
 > = {
-  LOW: { activeHours: [7, 12, 20, 21], dailySessionTarget: 1, dailyLlmBudget: 4 },
-  MEDIUM: { activeHours: [6, 7, 12, 20, 21, 22], dailySessionTarget: 2, dailyLlmBudget: 8 },
+  LOW: {
+    activeHours: timeBlocksToHours(eveningFocusedBlocks),
+    dailySessionTarget: timeBlockSessionCount(eveningFocusedBlocks),
+    timeBlocks: eveningFocusedBlocks,
+    dailyLlmBudget: 4,
+  },
+  MEDIUM: {
+    activeHours: timeBlocksToHours(commuteMealEveningBlocks),
+    dailySessionTarget: timeBlockSessionCount(commuteMealEveningBlocks),
+    timeBlocks: commuteMealEveningBlocks,
+    dailyLlmBudget: 8,
+  },
   HIGH: {
-    activeHours: [6, 7, 8, 12, 18, 19, 20, 21, 22, 23],
-    dailySessionTarget: 4,
+    activeHours: timeBlocksToHours(allDayDistributedBlocks),
+    dailySessionTarget: timeBlockSessionCount(allDayDistributedBlocks),
+    timeBlocks: allDayDistributedBlocks,
     dailyLlmBudget: 12,
   },
 };
@@ -300,6 +402,7 @@ type LastDryRun = {
   dailyLlmBudget: number;
   activeHours: number[];
   dailySessionTarget: number;
+  timeBlocks: IAiReaderTimeBlock[];
   startImmediately: boolean;
   immediateBatchSize: number;
   immediateBatchIntervalMinutes: number;
@@ -321,6 +424,7 @@ type LastResumeDryRun = {
   scheduleEndDate: string;
   activeHours: number[];
   dailySessionTarget: number;
+  timeBlocks: IAiReaderTimeBlock[];
   dailyLlmBudget: number;
   startImmediately: boolean;
   immediateBatchSize: number;
@@ -348,8 +452,9 @@ export default function Page() {
   const [customPresets, setCustomPresets] = useState<AiReaderPreset[]>([]);
   const [presetNameInput, setPresetNameInput] = useState("");
   const [intensity, setIntensity] = useState<AiReaderIntensity>("MEDIUM");
-  const [activeHoursInput, setActiveHoursInput] = useState("6,7,12,20,21,22");
-  const [dailySessionTargetInput, setDailySessionTargetInput] = useState("2");
+  const [timeBlocks, setTimeBlocks] = useState<AiReaderTimeBlockInput[]>(commuteMealEveningBlocks);
+  const [activeHoursInput, setActiveHoursInput] = useState(toHoursInput(timeBlocksToHours(commuteMealEveningBlocks)));
+  const [dailySessionTargetInput, setDailySessionTargetInput] = useState(String(timeBlockSessionCount(commuteMealEveningBlocks)));
   const [dailyLlmBudgetInput, setDailyLlmBudgetInput] = useState("8");
   const [startImmediately, setStartImmediately] = useState(true);
   const [immediateBatchSizeMode, setImmediateBatchSizeMode] = useState("auto");
@@ -409,7 +514,9 @@ export default function Page() {
   const normalizedScheduleDurationDays = Math.max(1, scheduleDurationDaysValue || 1);
   const scheduleEndDateInput = getScheduleEndDateInput(scheduleDateInput, normalizedScheduleDurationDays);
   const dailyLlmBudgetValue = Number(dailyLlmBudgetInput || 8);
-  const dailySessionTargetValue = Number(dailySessionTargetInput || 1);
+  const normalizedTimeBlocks = useMemo(() => normalizeTimeBlocks(timeBlocks), [timeBlocks]);
+  const apiTimeBlocks = useMemo(() => timeBlocksToApiPayload(normalizedTimeBlocks), [normalizedTimeBlocks]);
+  const dailySessionTargetValue = timeBlockSessionCount(normalizedTimeBlocks) || Number(dailySessionTargetInput || 1);
   const immediateBatchSizeValue = immediateBatchSizeMode === "auto"
     ? getRecommendedImmediateBatchSize(bootstrapCountValue)
     : Number(immediateBatchSizeInput || 0);
@@ -419,7 +526,15 @@ export default function Page() {
   const immediateBatchIntervalValue = Number(immediateBatchIntervalInput || 10);
   const todayDateInput = format(new Date(), "yyyy-MM-dd");
   const isImmediateScheduleDate = scheduleDateInput === todayDateInput;
-  const allPresets = useMemo(() => [...defaultPresets, ...customPresets], [customPresets]);
+  const allPresets = useMemo(
+    () => [...defaultPresets, ...customPresets].map((preset) => ({
+      ...preset,
+      timeBlocks: normalizeTimeBlocks(
+        preset.timeBlocks?.length ? preset.timeBlocks : blocksFromSingleHours(preset.activeHours)
+      ),
+    })),
+    [customPresets]
+  );
   const activeHoursValue = useMemo(() => {
     try {
       return parseHoursInput(activeHoursInput);
@@ -431,19 +546,14 @@ export default function Page() {
     () => allPresets.find((preset) => preset.id === selectedPresetId),
     [allPresets, selectedPresetId]
   );
-  const activeHoursCompactLabel = activeHoursValue.length
-    ? activeHoursValue.length > 8
-      ? `${activeHoursValue.slice(0, 8).join(", ")} 외 ${activeHoursValue.length - 8}개`
-      : activeHoursValue.join(", ")
-    : "-";
   const activitySettingSummary = `${selectedPreset?.name ?? "사용자 설정"} · ${intensity} · ${numberFormat(
     dailySessionTargetValue
-  )}회/일 · LLM ${numberFormat(dailyLlmBudgetValue)}회/일`;
+  )}개 시간표 · LLM ${numberFormat(dailyLlmBudgetValue)}회/일`;
   const scheduleSettingSummary = `${numberFormat(normalizedScheduleDurationDays)}일 · ${
     startImmediately && isImmediateScheduleDate
       ? `바로 시작 ${numberFormat(immediateBatchSizeValue)}명씩`
       : "예약 시간부터 시작"
-  } · 활동시간 ${activeHoursCompactLabel}`;
+  } · ${formatTimeBlockSummary(normalizedTimeBlocks)}`;
   const ageGroupRatioTotal = sumRatios(ageGroupRatios);
   const genderRatioTotal = sumRatios(genderRatios);
   const estimatedDailySessions = bootstrapCountValue * dailySessionTargetValue;
@@ -499,6 +609,7 @@ export default function Page() {
       && lastDryRun.immediateBatchSize === immediateBatchSizeValue
       && lastDryRun.immediateBatchIntervalMinutes === immediateBatchIntervalValue
       && JSON.stringify(lastDryRun.activeHours) === JSON.stringify(activeHoursValue)
+      && JSON.stringify(lastDryRun.timeBlocks) === JSON.stringify(apiTimeBlocks)
       && JSON.stringify(lastDryRun.ageGroupRatios) === JSON.stringify(ageGroupRatios)
       && JSON.stringify(lastDryRun.genderRatios) === JSON.stringify(genderRatios)
   );
@@ -523,6 +634,7 @@ export default function Page() {
       && lastResumeDryRun.scheduleDate === scheduleDateInput
       && lastResumeDryRun.scheduleDurationDays === scheduleDurationDaysValue
       && JSON.stringify(lastResumeDryRun.activeHours) === JSON.stringify(activeHoursValue)
+      && JSON.stringify(lastResumeDryRun.timeBlocks) === JSON.stringify(apiTimeBlocks)
       && lastResumeDryRun.dailySessionTarget === dailySessionTargetValue
       && lastResumeDryRun.dailyLlmBudget === dailyLlmBudgetValue
       && lastResumeDryRun.startImmediately === startImmediately
@@ -556,9 +668,54 @@ export default function Page() {
     resetResumeDryRun();
   };
 
-  const applyActiveHours = (hours: number[]) => {
-    setActiveHoursInput(toHoursInput(hours));
+  const isTimeBlocksSelected = (blocks: AiReaderTimeBlockInput[]) =>
+    JSON.stringify(timeBlocksToApiPayload(blocks)) === JSON.stringify(apiTimeBlocks);
+
+  const applyTimeBlocks = (
+    blocks: AiReaderTimeBlockInput[],
+    options?: { keepPresetSelection?: boolean }
+  ) => {
+    const nextBlocks = normalizeTimeBlocks(blocks);
+    const nextHours = timeBlocksToHours(nextBlocks);
+    if (!nextBlocks.length || !nextHours.length) {
+      setOperationMessage("활동 시간표는 최소 1개 이상 필요합니다.");
+      return;
+    }
+    const nextSessionTarget = timeBlockSessionCount(nextBlocks);
+    setTimeBlocks(nextBlocks);
+    setActiveHoursInput(toHoursInput(nextHours));
+    setDailySessionTargetInput(String(nextSessionTarget));
+    if (dailyLlmBudgetValue < nextSessionTarget) {
+      setDailyLlmBudgetInput(String(Math.min(20, nextSessionTarget)));
+    }
+    if (!options?.keepPresetSelection) {
+      setSelectedPresetId("custom");
+    }
     resetDryRun();
+    resetResumeDryRun();
+  };
+
+  const applyActiveHours = (hours: number[], options?: { dailySessionTarget?: number }) => {
+    const nextBlocks = blocksFromSingleHours(hours);
+    setActiveHoursInput(toHoursInput(hours));
+    setTimeBlocks(nextBlocks);
+    setDailySessionTargetInput(String(options?.dailySessionTarget || timeBlockSessionCount(nextBlocks)));
+    setSelectedPresetId("custom");
+    resetDryRun();
+    resetResumeDryRun();
+  };
+
+  const getActivityScheduleValidationMessage = () => {
+    if (dailySessionTargetValue < 1 || dailySessionTargetValue > 8) {
+      return "활동 시간표는 명당 하루 1~8회까지 설정할 수 있습니다. 프리셋을 쓰거나 시간칩을 8개 이하로 줄이세요.";
+    }
+    if (dailyLlmBudgetValue < 1 || dailyLlmBudgetValue > 20) {
+      return "LLM 예산은 1~20 사이로 입력하세요.";
+    }
+    if (dailyLlmBudgetValue < dailySessionTargetValue) {
+      return `LLM 예산은 시간표 블록 수(${numberFormat(dailySessionTargetValue)}회) 이상이어야 합니다. 예산이 더 낮으면 뒤 시간대 활동이 남습니다.`;
+    }
+    return null;
   };
 
   const toggleActiveHour = (hour: number) => {
@@ -581,8 +738,7 @@ export default function Page() {
     setSelectedPresetId(preset.id);
     setIntensity(preset.intensity);
     setBootstrapCount(String(preset.agentCount));
-    setActiveHoursInput(preset.activeHours.join(","));
-    setDailySessionTargetInput(String(preset.dailySessionTarget));
+    applyTimeBlocks(preset.timeBlocks, { keepPresetSelection: true });
     setDailyLlmBudgetInput(String(preset.dailyLlmBudget));
     setAgeGroupRatios({ ...preset.ageGroupRatios });
     setGenderRatios({ ...preset.genderRatios });
@@ -593,8 +749,7 @@ export default function Page() {
   const handleIntensityChange = (nextIntensity: AiReaderIntensity) => {
     const defaults = intensityDefaults[nextIntensity];
     setIntensity(nextIntensity);
-    setActiveHoursInput(defaults.activeHours.join(","));
-    setDailySessionTargetInput(String(defaults.dailySessionTarget));
+    applyTimeBlocks(defaults.timeBlocks);
     setDailyLlmBudgetInput(String(defaults.dailyLlmBudget));
     resetDryRun();
   };
@@ -618,6 +773,7 @@ export default function Page() {
         agentCount: bootstrapCountValue,
         activeHours,
         dailySessionTarget: dailySessionTargetValue,
+        timeBlocks: normalizedTimeBlocks,
         dailyLlmBudget: dailyLlmBudgetValue,
         ageGroupRatios: { ...ageGroupRatios },
         genderRatios: { ...genderRatios },
@@ -678,12 +834,9 @@ export default function Page() {
         setOperationMessage("스케줄 기간은 1~90일 사이로 입력하세요.");
         return;
       }
-      if (dailySessionTargetValue < 1 || dailySessionTargetValue > 8) {
-        setOperationMessage("세션 목표는 1~8 사이로 입력하세요.");
-        return;
-      }
-      if (dailyLlmBudgetValue < 1 || dailyLlmBudgetValue > 20) {
-        setOperationMessage("LLM 예산은 1~20 사이로 입력하세요.");
+      const activityScheduleError = getActivityScheduleValidationMessage();
+      if (activityScheduleError) {
+        setOperationMessage(activityScheduleError);
         return;
       }
       if (immediateBatchSizeValue < 1 || immediateBatchSizeValue > MAX_AI_READER_AGENT_COUNT) {
@@ -725,6 +878,7 @@ export default function Page() {
         daily_llm_budget: dailyLlmBudgetValue,
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
+        time_blocks: apiTimeBlocks,
         start_immediately: startImmediately,
         immediate_batch_size: immediateBatchSizeValue,
         immediate_batch_interval_minutes: immediateBatchIntervalValue,
@@ -748,6 +902,7 @@ export default function Page() {
           dailyLlmBudget: dailyLlmBudgetValue,
           activeHours,
           dailySessionTarget: dailySessionTargetValue,
+          timeBlocks: apiTimeBlocks,
           startImmediately,
           immediateBatchSize: immediateBatchSizeValue,
           immediateBatchIntervalMinutes: immediateBatchIntervalValue,
@@ -811,6 +966,11 @@ export default function Page() {
       setOperationMessage("스케줄 기간은 1~90일 사이로 입력하세요.");
       return false;
     }
+    const activityScheduleError = getActivityScheduleValidationMessage();
+    if (activityScheduleError) {
+      setOperationMessage(activityScheduleError);
+      return false;
+    }
     if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_AGENT_COUNT) {
       setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
       return false;
@@ -830,6 +990,7 @@ export default function Page() {
       immediate_batch_interval_minutes: immediateBatchIntervalValue,
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
+      time_blocks: apiTimeBlocks,
       daily_llm_budget: dailyLlmBudgetValue,
     });
     const immediateScheduleRows = countImmediateScheduleRows(dryRunResult.immediate_schedule_preview);
@@ -841,6 +1002,7 @@ export default function Page() {
       scheduleEndDate: dryRunResult.schedule_end_date || scheduleEndDateInput,
       activeHours,
       dailySessionTarget: dailySessionTargetValue,
+      timeBlocks: apiTimeBlocks,
       dailyLlmBudget: dailyLlmBudgetValue,
       startImmediately,
       immediateBatchSize,
@@ -885,6 +1047,7 @@ export default function Page() {
       immediate_schedule_start_at: dryRunResult.immediate_schedule_start_at || undefined,
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
+      time_blocks: apiTimeBlocks,
       daily_llm_budget: dailyLlmBudgetValue,
       dry_run_token: dryRunResult.dry_run_token,
     });
@@ -910,6 +1073,11 @@ export default function Page() {
       setOperationMessage("스케줄 기간은 1~90일 사이로 입력하세요.");
       return false;
     }
+    const activityScheduleError = getActivityScheduleValidationMessage();
+    if (activityScheduleError) {
+      setOperationMessage(activityScheduleError);
+      return false;
+    }
     if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_AGENT_COUNT) {
       setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
       return false;
@@ -929,6 +1097,7 @@ export default function Page() {
       immediate_batch_interval_minutes: immediateBatchIntervalValue,
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
+      time_blocks: apiTimeBlocks,
       daily_llm_budget: dailyLlmBudgetValue,
     });
     const immediateScheduleRows = countImmediateScheduleRows(dryRunResult.immediate_schedule_preview);
@@ -962,6 +1131,7 @@ export default function Page() {
       immediate_schedule_start_at: dryRunResult.immediate_schedule_start_at || undefined,
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
+      time_blocks: apiTimeBlocks,
       daily_llm_budget: dailyLlmBudgetValue,
       dry_run_token: dryRunResult.dry_run_token,
     });
@@ -1052,6 +1222,11 @@ export default function Page() {
         setOperationMessage("스케줄 기간은 1~90일 사이로 입력하세요.");
         return;
       }
+      const activityScheduleError = getActivityScheduleValidationMessage();
+      if (activityScheduleError) {
+        setOperationMessage(activityScheduleError);
+        return;
+      }
       if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_AGENT_COUNT) {
         setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
         return;
@@ -1071,6 +1246,7 @@ export default function Page() {
         immediate_batch_interval_minutes: immediateBatchIntervalValue,
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
+        time_blocks: apiTimeBlocks,
         daily_llm_budget: dailyLlmBudgetValue,
       });
       const immediateScheduleRows = countImmediateScheduleRows(dryRunResult.immediate_schedule_preview);
@@ -1082,6 +1258,7 @@ export default function Page() {
         scheduleEndDate: dryRunResult.schedule_end_date || scheduleEndDateInput,
         activeHours,
         dailySessionTarget: dailySessionTargetValue,
+        timeBlocks: apiTimeBlocks,
         dailyLlmBudget: dailyLlmBudgetValue,
         startImmediately,
         immediateBatchSize,
@@ -1123,6 +1300,7 @@ export default function Page() {
         immediate_schedule_start_at: dryRunResult.immediate_schedule_start_at || undefined,
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
+        time_blocks: apiTimeBlocks,
         daily_llm_budget: dailyLlmBudgetValue,
         dry_run_token: dryRunResult.dry_run_token,
       });
@@ -1150,6 +1328,11 @@ export default function Page() {
       }
       if (scheduleDurationDaysValue < 1 || scheduleDurationDaysValue > 90) {
         setOperationMessage("스케줄 기간은 1~90일 사이로 입력하세요.");
+        return;
+      }
+      const activityScheduleError = getActivityScheduleValidationMessage();
+      if (activityScheduleError) {
+        setOperationMessage(activityScheduleError);
         return;
       }
       if (resumeImmediateBatchSizeValue < 1 || resumeImmediateBatchSizeValue > MAX_AI_READER_AGENT_COUNT) {
@@ -1181,6 +1364,7 @@ export default function Page() {
         immediate_schedule_start_at: apply ? lastResumeDryRun?.immediateScheduleStartAt || undefined : undefined,
         active_hours: parseHoursInput(activeHoursInput),
         daily_session_target: dailySessionTargetValue,
+        time_blocks: apiTimeBlocks,
         daily_llm_budget: dailyLlmBudgetValue,
         dry_run_token: apply ? lastResumeDryRun?.token : undefined,
       });
@@ -1194,6 +1378,7 @@ export default function Page() {
           scheduleEndDate: result.schedule_end_date || scheduleEndDateInput,
           activeHours: parseHoursInput(activeHoursInput),
           dailySessionTarget: dailySessionTargetValue,
+          timeBlocks: apiTimeBlocks,
           dailyLlmBudget: dailyLlmBudgetValue,
           startImmediately,
           immediateBatchSize: resumeImmediateBatchSizeValue,
@@ -1896,12 +2081,8 @@ export default function Page() {
                       <div key={preset.id} className="relative">
                         <Button
                           type="button"
-                          variant="outline"
-                          className={`h-auto min-h-10 w-full whitespace-normal px-2 py-2 text-xs ${
-                            isSelected
-                              ? "border-foreground ring-1 ring-foreground/40 bg-muted/40"
-                              : ""
-                          }`}
+                          variant={isSelected ? "default" : "outline"}
+                          className="h-auto min-h-10 w-full whitespace-normal px-2 py-2 text-xs"
                           onClick={() => applyPreset(preset)}
                         >
                           {preset.name}
@@ -1969,15 +2150,10 @@ export default function Page() {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-[11px] text-muted-foreground">세션 목표 (회/일·명당)</span>
+                <span className="text-[11px] text-muted-foreground">시간표 블록 수 (명당)</span>
                 <Input
-                  inputMode="numeric"
-                  placeholder="2"
-                  value={dailySessionTargetInput}
-                  onChange={(e) => {
-                    setDailySessionTargetInput(e.target.value.replace(/\D/g, ""));
-                    resetDryRun();
-                  }}
+                  value={String(dailySessionTargetValue)}
+                  readOnly
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -2031,54 +2207,120 @@ export default function Page() {
             <div className="mt-4 rounded-md border bg-white p-3">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <div className="text-xs font-medium">매일 반복 활동 시간</div>
+                  <div className="text-xs font-medium">매일 반복 활동 시간표</div>
                   <div className="mt-0.5 text-[11px] text-muted-foreground">
-                    반복 시간: {activeHoursValue.length ? activeHoursValue.join(", ") : "-"}
+                    {formatTimeBlockSummary(normalizedTimeBlocks)}
                   </div>
                 </div>
                 <Input
-                  placeholder="6,7,12,20,21,22"
+                  placeholder="7,8,12,18,19,20,21,22"
                   value={activeHoursInput}
                   onChange={(e) => {
-                    setActiveHoursInput(e.target.value);
+                    const nextValue = e.target.value;
+                    setActiveHoursInput(nextValue);
+                    setSelectedPresetId("custom");
+                    try {
+                      const nextBlocks = blocksFromSingleHours(parseHoursInput(nextValue));
+                      setTimeBlocks(nextBlocks);
+                      setDailySessionTargetInput(String(timeBlockSessionCount(nextBlocks)));
+                    } catch {
+                      // 입력 중에는 검증 메시지를 즉시 띄우지 않는다. 실행 시 기존 검증이 처리한다.
+                    }
                     resetDryRun();
+                    resetResumeDryRun();
                   }}
                   className="w-[220px]"
                 />
               </div>
               <div className="mb-2 flex flex-wrap gap-1.5">
-                <Button type="button" variant="outline" size="sm" onClick={() => applyActiveHours([7, 8, 12, 18, 19, 20, 21, 22])}>
+                <Button
+                  type="button"
+                  variant={isTimeBlocksSelected(commuteMealEveningBlocks) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => applyTimeBlocks(commuteMealEveningBlocks)}
+                >
                   출퇴근+점심+저녁
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => applyActiveHours(rangeHours(0, 24))}>
-                  하루 전체
+                <Button
+                  type="button"
+                  variant={isTimeBlocksSelected(eveningFocusedBlocks) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => applyTimeBlocks(eveningFocusedBlocks)}
+                >
+                  저녁 집중
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => applyActiveHours(rangeHours(0, 6))}>
+                <Button
+                  type="button"
+                  variant={isTimeBlocksSelected(daytimeBlocks) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => applyTimeBlocks(daytimeBlocks)}
+                >
+                  낮 시간
+                </Button>
+                <Button
+                  type="button"
+                  variant={isTimeBlocksSelected(allDayDistributedBlocks) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => applyTimeBlocks(allDayDistributedBlocks)}
+                >
+                  하루 전체 분산
+                </Button>
+                <Button
+                  type="button"
+                  variant={isTimeBlocksSelected(dawnBlocks) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => applyTimeBlocks(dawnBlocks)}
+                >
                   새벽 0~6
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => applyActiveHours(rangeHours(6, 11))}>
+                <Button
+                  type="button"
+                  variant={isTimeBlocksSelected(morningBlocks) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => applyTimeBlocks(morningBlocks)}
+                >
                   아침 6~11
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => applyActiveHours(rangeHours(12, 18))}>
+                <Button
+                  type="button"
+                  variant={isTimeBlocksSelected(afternoonBlocks) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => applyTimeBlocks(afternoonBlocks)}
+                >
                   오후 12~18
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => applyActiveHours(rangeHours(18, 24))}>
+                <Button
+                  type="button"
+                  variant={isTimeBlocksSelected(nightBlocks) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => applyTimeBlocks(nightBlocks)}
+                >
                   저녁 18~24
                 </Button>
               </div>
               <div className="mb-3 flex flex-wrap gap-1.5">
-                {[1, 2, 3, 4, 6].map((intervalHour) => (
-                  <Button
-                    key={intervalHour}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      applyActiveHours(rangeHours(0, 24).filter((hour) => hour % intervalHour === 0))
-                    }
-                  >
-                    {intervalHour}시간 단위
-                  </Button>
+                {[3, 4, 6].map((intervalHour) => {
+                  const intervalHours = rangeHours(0, 24).filter((hour) => hour % intervalHour === 0);
+                  const intervalBlocks = blocksFromSingleHours(intervalHours);
+                  return (
+                    <Button
+                      key={intervalHour}
+                      type="button"
+                      variant={isTimeBlocksSelected(intervalBlocks) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => applyActiveHours(intervalHours)}
+                    >
+                      {intervalHour}시간마다 1회
+                    </Button>
+                  );
+                })}
+              </div>
+              <div className="mb-3 grid grid-cols-1 gap-1.5 md:grid-cols-2">
+                {normalizedTimeBlocks.map((block, index) => (
+                  <div key={`${block.label}-${block.startHour}-${block.endHour}-${index}`} className="rounded-md border bg-muted/10 px-3 py-2 text-xs">
+                    <span className="font-medium text-foreground">{block.label || `블록 ${index + 1}`}</span>
+                    <span className="ml-2 text-muted-foreground">{formatHourRange(block)} · {numberFormat(bootstrapCountValue)}명 분산</span>
+                  </div>
                 ))}
               </div>
               <div className="grid grid-cols-12 gap-1">
@@ -2199,7 +2441,7 @@ export default function Page() {
                 </div>
               </div>
               <div className="mt-3 rounded-md border bg-muted/20 p-2">
-                <div className="mb-1 text-[11px] font-medium text-muted-foreground">예상 활동 일정</div>
+                <div className="mb-1 text-[11px] font-medium text-muted-foreground">바로 시작 배치 예정</div>
                 {visibleImmediateSchedulePreview.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5 text-[11px]">
                     {visibleImmediateSchedulePreview.slice(0, 10).map((item, index) => (
