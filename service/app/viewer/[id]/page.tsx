@@ -29,6 +29,7 @@ import {
   postNextEpisodeClickSignalBestEffort,
 } from "@/utils/nextEpisodeClickSignal";
 import { buildViewerPath } from "@/utils/viewerPath";
+import { savePendingWebsochatLaunch } from "@/utils/websochatLaunch";
 import axios from "axios";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -272,6 +273,34 @@ const Viewer = () => {
     setShowNav(true);
   };
 
+  const handleOpenWebsochat = useCallback(() => {
+    const episode = data?.data;
+    if (!episode?.websochatEligible || !episode.episodeNo) return;
+
+    const publishedLatestEpisodeNo =
+      episode.websochatPublishedLatestEpisodeNo || episode.episodeNo;
+
+    savePendingWebsochatLaunch({
+      productId: episode.product_id,
+      title: episode.title,
+      coverImagePath: episode.coverImagePath || null,
+      latestEpisodeNo: publishedLatestEpisodeNo,
+      publishedLatestEpisodeNo,
+      syncedLatestEpisodeNo: episode.websochatSyncedLatestEpisodeNo || null,
+      contextStatus: episode.websochatContextStatus || null,
+      readEpisodeNo: episode.episodeNo,
+      readEpisodeTitle: episode.episodeTitle || null,
+      launchSource: "viewer_bottom_nav",
+      action: {
+        label: "이번 회차 대화",
+        prompt: `${episode.episodeNo}화까지 읽었고, 이번 회차 기준으로 같이 이야기해줘`,
+        modeKey: "qa",
+        qaActionKey: null,
+      },
+    });
+    router.push("/websochat");
+  }, [data?.data, router]);
+
   return (
     <div className="min-h-screen">
       {showNav && (
@@ -381,6 +410,8 @@ const Viewer = () => {
               bookmarkYn={data?.data.bookmarkYn}
               likedYN={data?.data.liked}
               handleCommentState={handleCommentState}
+              showWebsochatButton={!!data?.data?.websochatEligible}
+              handleWebsochatClick={handleOpenWebsochat}
             />
           )}
         </>

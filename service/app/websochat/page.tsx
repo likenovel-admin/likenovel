@@ -233,7 +233,9 @@ const buildWebsochatLaunchStarter = (
   const publishedLatestEpisodeNo = payload.publishedLatestEpisodeNo ?? payload.latestEpisodeNo ?? 0;
   return {
     productTitle: payload.title,
-    scopeState: "unknown",
+    scopeState: payload.readEpisodeNo ? "known" : "unknown",
+    readEpisodeNo: payload.readEpisodeNo || null,
+    readEpisodeTitle: payload.readEpisodeTitle || null,
     latestEpisodeNo: payload.latestEpisodeNo || 0,
     publishedLatestEpisodeNo,
     syncedLatestEpisodeNo: resolveWebsochatSyncedLatestEpisodeNo(
@@ -1346,8 +1348,19 @@ export default function WebsochatPage() {
     [productsData]
   );
   const detectedReadEpisodeNo = selectedProductEpisodesData?.data?.latestEpisodeNo ?? 0;
-  const detectedReadEpisodeTitle = selectedProductEpisodesData?.data?.latestEpisodeTitle ?? "";
-  const effectiveReadEpisodeNo = detectedReadEpisodeNo > 0 ? detectedReadEpisodeNo : null;
+  const launchReadEpisodeNo =
+    selectedProductId && selectedProductId === pendingLaunchPayload?.productId
+      ? pendingLaunchPayload.readEpisodeNo || null
+      : stickyStarter?.readEpisodeNo || null;
+  const launchReadEpisodeTitle =
+    selectedProductId && selectedProductId === pendingLaunchPayload?.productId
+      ? pendingLaunchPayload.readEpisodeTitle || ""
+      : stickyStarter?.readEpisodeTitle || "";
+  const detectedReadEpisodeTitle = launchReadEpisodeNo
+    ? launchReadEpisodeTitle
+    : selectedProductEpisodesData?.data?.latestEpisodeTitle ?? "";
+  const effectiveReadEpisodeNo =
+    launchReadEpisodeNo || (detectedReadEpisodeNo > 0 ? detectedReadEpisodeNo : null);
   const effectiveProductId =
     selectedProductId
     || activeSession?.productId
@@ -2698,9 +2711,14 @@ export default function WebsochatPage() {
           pendingLaunch.publishedLatestEpisodeNo,
           pendingLaunch.latestEpisodeNo
         ),
-        readScopeLabel: canUseAccountScope
-          ? "읽은 범위 자동 감지: 작품 선택 후 맞춰드릴게요."
-          : "읽은 범위 자동 감지: 로그인하면 자동으로 맞춰드릴게요.",
+        readScopeLabel: pendingLaunch.readEpisodeNo
+          ? formatWebsochatReadScope(
+              pendingLaunch.readEpisodeNo,
+              pendingLaunch.readEpisodeTitle
+            )
+          : canUseAccountScope
+            ? "읽은 범위 자동 감지: 작품 선택 후 맞춰드릴게요."
+            : "읽은 범위 자동 감지: 로그인하면 자동으로 맞춰드릴게요.",
       },
     });
     setPendingLaunchPayload(pendingLaunch);
@@ -2780,16 +2798,18 @@ export default function WebsochatPage() {
       effectiveProductId,
       runtimeActorScope.canUseAccountScope
     );
+    const requestedReadEpisodeNo =
+      effectiveReadEpisodeNo || latestAccountReadEpisodeNo || null;
     const createdDate = new Date().toISOString();
     const created = await createSession({
       product_id: effectiveProductId,
       guest_key: runtimeActorScope.guestKey || undefined,
       adult_yn: adultYn,
-      account_read_episode_to: latestAccountReadEpisodeNo,
+      account_read_episode_to: requestedReadEpisodeNo,
     });
     const sessionId = created.data.sessionId;
     const resolvedReadEpisodeNo = resolveWebsochatConversationCeilingEpisodeNo(
-      latestAccountReadEpisodeNo || effectiveReadEpisodeNo || null,
+      requestedReadEpisodeNo,
       created.data.product.syncedLatestEpisodeNo,
       resolveWebsochatPublishedLatestEpisodeNo(
         created.data.product.publishedLatestEpisodeNo,
@@ -2821,10 +2841,10 @@ export default function WebsochatPage() {
         || null
       ),
       readScopeState:
-        (latestAccountReadEpisodeNo || effectiveReadEpisodeNo) ? "known" : "unknown",
+        requestedReadEpisodeNo ? "known" : "unknown",
       readEpisodeNo: resolvedReadEpisodeNo,
       readEpisodeTitle:
-        resolvedReadEpisodeNo === (latestAccountReadEpisodeNo || effectiveReadEpisodeNo || null)
+        resolvedReadEpisodeNo === requestedReadEpisodeNo
           ? detectedReadEpisodeTitle || null
           : null,
       latestEpisodeNo: created.data.product.latestEpisodeNo || 0,
@@ -3163,6 +3183,8 @@ export default function WebsochatPage() {
         effectiveProductId,
         requestCanUseAccountScope
       );
+      const requestReadEpisodeNo =
+        effectiveReadEpisodeNo || latestAccountReadEpisodeNo || null;
       const latestBillingStatusResponse = await queryClient.fetchQuery(
         getWebsochatBillingStatusQueryOptions(
           requestActorKey,
@@ -3440,7 +3462,7 @@ export default function WebsochatPage() {
           product_id: effectiveProductId,
           guest_key: requestGuestKey || undefined,
           adult_yn: adultYn,
-          account_read_episode_to: latestAccountReadEpisodeNo,
+          account_read_episode_to: requestReadEpisodeNo,
         });
         if (!isCurrentAssistantTurnOwner()) return null;
         sessionId = created.data.sessionId;
@@ -3467,10 +3489,10 @@ export default function WebsochatPage() {
             || null
           ),
           readScopeState:
-            (latestAccountReadEpisodeNo || effectiveReadEpisodeNo) ? "known" : "unknown",
+            requestReadEpisodeNo ? "known" : "unknown",
           readEpisodeNo:
             resolveWebsochatConversationCeilingEpisodeNo(
-              latestAccountReadEpisodeNo || effectiveReadEpisodeNo || null,
+              requestReadEpisodeNo,
               created.data.product.syncedLatestEpisodeNo,
               resolveWebsochatPublishedLatestEpisodeNo(
                 created.data.product.publishedLatestEpisodeNo,
@@ -3479,13 +3501,13 @@ export default function WebsochatPage() {
             ) || null,
           readEpisodeTitle:
             resolveWebsochatConversationCeilingEpisodeNo(
-              latestAccountReadEpisodeNo || effectiveReadEpisodeNo || null,
+              requestReadEpisodeNo,
               created.data.product.syncedLatestEpisodeNo,
               resolveWebsochatPublishedLatestEpisodeNo(
                 created.data.product.publishedLatestEpisodeNo,
                 created.data.product.latestEpisodeNo
               )
-            ) === (latestAccountReadEpisodeNo || effectiveReadEpisodeNo || null)
+            ) === requestReadEpisodeNo
               ? detectedReadEpisodeTitle || null
               : null,
           latestEpisodeNo: created.data.product.latestEpisodeNo || 0,
@@ -3520,8 +3542,8 @@ export default function WebsochatPage() {
                 rp_mode: resolvedRpMode,
                 active_character: resolvedActiveCharacter,
                 game_mode: options?.gameMode,
-                game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? latestAccountReadEpisodeNo : null,
-                account_read_episode_to: latestAccountReadEpisodeNo,
+                game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? requestReadEpisodeNo : null,
+                account_read_episode_to: requestReadEpisodeNo,
               }, { signal: turnAbortController.signal })
             : await postWebsochatMessageOnce({
                 sessionId,
@@ -3533,8 +3555,8 @@ export default function WebsochatPage() {
                 rp_mode: resolvedRpMode,
                 active_character: resolvedActiveCharacter,
                 game_mode: options?.gameMode,
-                game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? latestAccountReadEpisodeNo : null,
-                account_read_episode_to: latestAccountReadEpisodeNo,
+                game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? requestReadEpisodeNo : null,
+                account_read_episode_to: requestReadEpisodeNo,
               }, { signal: turnAbortController.signal });
           if (isNextEpisodeAction && isCurrentAssistantTurnOwner()) {
             setIsNextEpisodeCompletionHolding(true);
@@ -3565,8 +3587,8 @@ export default function WebsochatPage() {
                 rp_mode: resolvedRpMode,
                 active_character: resolvedActiveCharacter,
                 game_mode: options?.gameMode,
-                game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? latestAccountReadEpisodeNo : null,
-                account_read_episode_to: latestAccountReadEpisodeNo,
+                game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? requestReadEpisodeNo : null,
+                account_read_episode_to: requestReadEpisodeNo,
               },
               (event) => {
                 if (!isCurrentAssistantTurnOwner()) return;
@@ -3645,8 +3667,8 @@ export default function WebsochatPage() {
               rp_mode: resolvedRpMode,
               active_character: resolvedActiveCharacter,
               game_mode: options?.gameMode,
-              game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? latestAccountReadEpisodeNo : null,
-              account_read_episode_to: latestAccountReadEpisodeNo,
+              game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? requestReadEpisodeNo : null,
+              account_read_episode_to: requestReadEpisodeNo,
             }, { signal: turnAbortController.signal });
             await applyCompletedResponse(response.data);
           }
