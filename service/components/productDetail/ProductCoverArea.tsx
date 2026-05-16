@@ -153,7 +153,8 @@ const ProductCoverArea = ({
       ? (data as { contextStatus?: string | null }).contextStatus
       : null;
   const shouldShowWebsochatEntryCta =
-    websochatContextStatus === "ready"
+    data?.priceType === "free"
+    && websochatContextStatus === "ready"
     && Number(data?.latestEpisodeNo || 0) > 0
     && Number(data?.syncedLatestEpisodeNo || 0) > 0;
 

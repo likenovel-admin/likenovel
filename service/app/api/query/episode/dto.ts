@@ -45,6 +45,7 @@ export interface ISelectViewerPathResponse {
     product_id: number; // 작품 ID
     title: string; // 작품 제목
     coverImagePath: string | null; // 작품 표지 이미지 경로
+    episodeNo?: number | null;
     episodeTitle: string; // 에피소드 제목
     epubFilePath: string; // EPUB 파일 경로 (URL)
     privateYn?: "Y" | "N"; // 회차 비공개 여부
@@ -75,6 +76,11 @@ export interface ISelectViewerPathResponse {
       days: number;
       hours: number;
     } | null;
+    productPriceType?: "free" | "paid" | null;
+    websochatContextStatus?: string | null;
+    websochatPublishedLatestEpisodeNo?: number | null;
+    websochatSyncedLatestEpisodeNo?: number | null;
+    websochatEligible?: boolean;
   };
 }
 

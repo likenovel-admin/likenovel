@@ -73,6 +73,7 @@ const ButtonBottom = ({
     0
   );
   const shouldShowWebsochatButton =
+    !isPaidProduct &&
     contextStatus === "ready" &&
     !!productId &&
     !!productName &&
