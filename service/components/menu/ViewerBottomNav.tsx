@@ -15,6 +15,8 @@ interface Props {
   bookmarkYn?: "Y" | "N";
   likedYN?: "Y" | "N";
   handleCommentState?: () => void;
+  showWebsochatButton?: boolean;
+  handleWebsochatClick?: () => void;
 }
 
 const ViewerBottomNav = ({
@@ -28,13 +30,15 @@ const ViewerBottomNav = ({
   bookmarkYn,
   likedYN,
   handleCommentState,
+  showWebsochatButton,
+  handleWebsochatClick,
 }: Props) => {
   const { settings } = useViewStore((state) => ({
     settings: state.settings,
   }));
   return (
     <div
-      className={`flex fixed bottom-0 left-0 z-50 w-full h-[60px] justify-between px-[16px] md:px-[120px] ${
+      className={`flex fixed bottom-0 left-0 z-50 w-full h-[60px] items-center justify-between px-[16px] md:px-[120px] ${
         showNav
           ? "bg-white"
           : settings.theme === "dark"
@@ -70,7 +74,7 @@ const ViewerBottomNav = ({
                 activeLikeStyle="w-[24px] h-[22px]"
               />
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center gap-10pxr">
               <BookmarkButton
                 productId={productId || 0}
                 bookmarkYn={bookmarkYn || "N"}
@@ -78,6 +82,15 @@ const ViewerBottomNav = ({
                 bookmarkStyle="w-[16px] h-[22px] text-dark-gray-500 hover:text-dark-gray-600"
                 activeBookmarkStyle="w-[16px] h-[22px]"
               />
+              {showWebsochatButton && (
+                <button
+                  type="button"
+                  onClick={handleWebsochatClick}
+                  className="h-[34px] shrink-0 rounded-[8px] border border-primary-100 bg-primary-100 px-12pxr text-13pxr font-semibold text-white"
+                >
+                  웹소챗
+                </button>
+              )}
             </div>
           </div>
           <button
@@ -90,6 +103,15 @@ const ViewerBottomNav = ({
               <span className="text-15pxr">이전화</span>
             </div>
           </button>
+          {showWebsochatButton && (
+            <button
+              type="button"
+              onClick={handleWebsochatClick}
+              className="hidden md:flex h-[36px] shrink-0 items-center justify-center rounded-[8px] border border-primary-100 bg-primary-100 px-16pxr text-14pxr font-semibold text-white hover:bg-primary-200"
+            >
+              이번 회차로 웹소챗
+            </button>
+          )}
           <button
             onClick={handleNavigateNextChap}
             disabled={!nextEpisodeId}

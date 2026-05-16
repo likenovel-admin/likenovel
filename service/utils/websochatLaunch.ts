@@ -13,6 +13,9 @@ export interface IWebsochatLaunchPayload {
   publishedLatestEpisodeNo?: number | null;
   syncedLatestEpisodeNo?: number | null;
   contextStatus?: string | null;
+  readEpisodeNo?: number | null;
+  readEpisodeTitle?: string | null;
+  launchSource?: string | null;
   action: {
     label: string;
     prompt: string;
@@ -76,6 +79,10 @@ export const consumePendingWebsochatLaunch =
             ? parsed.syncedLatestEpisodeNo
             : null,
         contextStatus: parsed.contextStatus || "ready",
+        readEpisodeNo:
+          typeof parsed.readEpisodeNo === "number" ? parsed.readEpisodeNo : null,
+        readEpisodeTitle: parsed.readEpisodeTitle || null,
+        launchSource: parsed.launchSource || null,
         action: {
           label: parsed.action.label,
           prompt: parsed.action.prompt,
