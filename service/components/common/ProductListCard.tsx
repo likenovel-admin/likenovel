@@ -261,24 +261,27 @@ const ProductListCard = ({
             </>
           )}
           <div
-            className="relative bg-black-100 min-w-[86px] md:min-w-[110px] h-[130px] md:h-[166px] rounded-[10px]"
+            className="relative min-w-[86px] md:min-w-[110px] h-[130px] md:h-[166px] rounded-[10px] overflow-hidden"
             onClick={() => {
               setIsClicked(!isClicked);
             }}
           >
+            {isClicked && (
+              <div className="md:hidden absolute inset-0 bg-black-100 rounded-[10px]" />
+            )}
             {isAdultFilterEnabled ? (
               <>
                 {renderAdultCoverImage(
                   data,
                   110,
                   166,
-                  `hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px]`
+                  `hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px] block`
                 )}
                 {renderAdultCoverImage(
                   data,
                   110,
                   166,
-                  `md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] ${
+                  `md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] block ${
                     isClicked ? "opacity-0" : "opacity-100"
                   }`
                 )}
@@ -290,14 +293,14 @@ const ProductListCard = ({
                   alt={data.title}
                   width={110}
                   height={166}
-                  className={`hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px]`}
+                  className={`hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px] block`}
                 />
                 <Image
                   src={coverImagePath}
                   alt={data.title}
                   width={110}
                   height={166}
-                  className={`md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] ${
+                  className={`md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] block ${
                     isClicked ? "opacity-0" : "opacity-100"
                   }`}
                 />

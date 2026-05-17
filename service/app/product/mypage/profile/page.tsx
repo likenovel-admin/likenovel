@@ -130,26 +130,6 @@ const Page = () => {
                 ),
               ].filter(Boolean)}
               title={profile.userNickname}
-              gradeContent={[
-                profile.userInterestLevelBadgeImagePath && (
-                  <Image
-                    key="interest"
-                    src={profile.userInterestLevelBadgeImagePath}
-                    alt="관심 등급"
-                    width={24}
-                    height={28}
-                  />
-                ),
-                profile.userEventLevelBadgeImagePath && (
-                  <Image
-                    key="event"
-                    src={profile.userEventLevelBadgeImagePath}
-                    alt="이벤트 등급"
-                    width={24}
-                    height={28}
-                  />
-                ),
-              ].filter(Boolean)}
               rightContent={
                 <button
                   className="p-2"

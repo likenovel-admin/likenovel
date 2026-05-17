@@ -20,7 +20,10 @@ import {
 export const PUBLIC_PRODUCT_STALE_TIME_MS = 5 * 60 * 1000;
 export const PUBLIC_PRODUCT_GC_TIME_MS = 30 * 60 * 1000;
 
-export const useSelectProducts = (adult_yn?: string): any => {
+export const useSelectProducts = (
+  adult_yn?: string,
+  cacheIdentity: string = "guest"
+): any => {
   /**
    * 메인 TOP 구좌에서 노출 가능한 최대치(모바일 40개 요구사항)를 만족하기 위해
    * API 호출 limit을 40으로 고정합니다.
@@ -42,7 +45,7 @@ export const useSelectProducts = (adult_yn?: string): any => {
   });
 
   const freeTopsProducts = useQuery<IUseSelectProductsResponse, unknown>({
-    queryKey: ["selectFreeSerialTopProducts", adultYnParam],
+    queryKey: ["selectFreeSerialTopProducts", adultYnParam, cacheIdentity],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/products/managed?division=main&area=freeSerialTop&limit=${limit}&adult_yn=${adultYnParam}`
@@ -57,7 +60,7 @@ export const useSelectProducts = (adult_yn?: string): any => {
     IPublisherPromotionProductsResponse,
     unknown
   >({
-    queryKey: ["selectPublisherPromotionProducts", adultYnParam],
+    queryKey: ["selectPublisherPromotionProducts", adultYnParam, cacheIdentity],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/products/publisher-promotion?adult_yn=${adultYnParam}`
@@ -69,7 +72,7 @@ export const useSelectProducts = (adult_yn?: string): any => {
   });
 
   const paidTopsProducts = useQuery<IUseSelectProductsResponse, unknown>({
-    queryKey: ["selectPaidMainTopProducts", adultYnParam],
+    queryKey: ["selectPaidMainTopProducts", adultYnParam, cacheIdentity],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/products/managed?division=main&area=paidMainTop&limit=${limit}&adult_yn=${adultYnParam}`
@@ -164,10 +167,13 @@ export const useSelectProductDetail = (productId: number) => {
   });
 };
 
-export const useSelectMainSuggestProducts = (adult_yn?: string) => {
+export const useSelectMainSuggestProducts = (
+  adult_yn?: string,
+  cacheIdentity: string = "guest"
+) => {
   const adultYnParam = adult_yn || "N";
   return useQuery<IUseSelectSuggestMainProductsResponse, unknown>({
-    queryKey: ["selectMainSuggestProducts", adultYnParam],
+    queryKey: ["selectMainSuggestProducts", adultYnParam, cacheIdentity],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/products/suggest-managed?adult_yn=${adultYnParam}`
@@ -212,10 +218,13 @@ export const useGetProductsAdminGift = (enabled: boolean) => {
   });
 };
 
-export const useSelectLatestUpdateProducts = (adult_yn?: string) => {
+export const useSelectLatestUpdateProducts = (
+  adult_yn?: string,
+  cacheIdentity: string = "guest"
+) => {
   const adultYnParam = adult_yn || "N";
   return useQuery<IUseSelectProductsResponse, unknown>({
-    queryKey: ["selectLatestUpdateProducts", adultYnParam],
+    queryKey: ["selectLatestUpdateProducts", adultYnParam, cacheIdentity],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/products/latest-update?adult_yn=${adultYnParam}`
@@ -227,10 +236,13 @@ export const useSelectLatestUpdateProducts = (adult_yn?: string) => {
   });
 };
 
-export const useSelectMainRuleSlots = (adult_yn?: string) => {
+export const useSelectMainRuleSlots = (
+  adult_yn?: string,
+  cacheIdentity: string = "guest"
+) => {
   const adultYnParam = adult_yn || "N";
   return useQuery<IUseSelectMainRuleSlotsResponse, unknown>({
-    queryKey: ["selectMainRuleSlots", adultYnParam],
+    queryKey: ["selectMainRuleSlots", adultYnParam, cacheIdentity],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/products/main-rule-slots?adult_yn=${adultYnParam}`
