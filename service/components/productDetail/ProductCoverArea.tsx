@@ -157,6 +157,7 @@ const ProductCoverArea = ({
     && websochatContextStatus === "ready"
     && Number(data?.latestEpisodeNo || 0) > 0
     && Number(data?.syncedLatestEpisodeNo || 0) > 0;
+  const shouldShowEvaluationContainer = false;
 
   const handleGoBack = () => {
     if (process.env.NODE_ENV === "development") {
@@ -412,7 +413,13 @@ const ProductCoverArea = ({
         )}
       </div>
       <div className="flex w-full max-w-[1200px] gap-[2px] mx-auto">
-        <div className="relative flex flex-col w-full md:max-w-[850px] min-h-[300px] md:min-h-[460px] bg-white md:rounded-l-[20px] p-25pxr md:p-40pxr mt-[-30px] md:mt-0">
+        <div
+          className={`relative flex flex-col w-full min-h-[300px] md:min-h-[460px] bg-white p-25pxr md:p-40pxr mt-[-30px] md:mt-0 ${
+            shouldShowEvaluationContainer
+              ? "md:max-w-[850px] md:rounded-l-[20px]"
+              : "md:max-w-[1120px] md:rounded-[20px]"
+          }`}
+        >
           {isLoading && (
             <div className="w-full h-full flex justify-center items-center">
               <Spinner />
@@ -801,10 +808,37 @@ const ProductCoverArea = ({
             </div>
           )}
         </div>
-        <div className="hidden md:flex min-w-[327px] justify-center bg-white rounded-r-[20px] pb-[20px] lg:pb-0">
-          <div className="min-w-[270px]">
+        {shouldShowEvaluationContainer && (
+          <div className="hidden md:flex min-w-[327px] justify-center bg-white rounded-r-[20px] pb-[20px] lg:pb-0">
+            <div className="min-w-[270px]">
+              <div className="flex gap-10pxr items-center mt-30pxr mb-15pxr">
+                <span className="text-20pxr font-semibold">평가</span>
+                <div className="h-[12px] border border-t-0 border-b-0 border-l-light-gray-500 border-r-0" />
+                <div>
+                  <span className="text-13pxr text-dark-gray-300">총</span>
+                  <span className="text-13pxr text-primary-100 font-semibold">
+                    &nbsp;
+                    {evaluations
+                      ? Object.values(evaluations).reduce(
+                          (total, count) => total + count,
+                          0
+                        )
+                      : 0}
+                    명&nbsp;
+                  </span>
+                  <span className="text-13pxr text-dark-gray-300">참여 중</span>
+                </div>
+              </div>
+              {evaluations && <ProductReaction evaluations={evaluations} />}
+            </div>
+          </div>
+        )}
+      </div>
+      {shouldShowEvaluationContainer && (
+        <div className="md:hidden flex w-full justify-center bg-white px-16pxr">
+          <div className="w-full ">
             <div className="flex gap-10pxr items-center mt-30pxr mb-15pxr">
-              <span className="text-20pxr font-semibold">평가</span>
+              <span className="text-18pxr font-semibold">평가</span>
               <div className="h-[12px] border border-t-0 border-b-0 border-l-light-gray-500 border-r-0" />
               <div>
                 <span className="text-13pxr text-dark-gray-300">총</span>
@@ -824,30 +858,7 @@ const ProductCoverArea = ({
             {evaluations && <ProductReaction evaluations={evaluations} />}
           </div>
         </div>
-      </div>
-      <div className="md:hidden flex w-full justify-center bg-white px-16pxr">
-        <div className="w-full ">
-          <div className="flex gap-10pxr items-center mt-30pxr mb-15pxr">
-            <span className="text-18pxr font-semibold">평가</span>
-            <div className="h-[12px] border border-t-0 border-b-0 border-l-light-gray-500 border-r-0" />
-            <div>
-              <span className="text-13pxr text-dark-gray-300">총</span>
-              <span className="text-13pxr text-primary-100 font-semibold">
-                &nbsp;
-                {evaluations
-                  ? Object.values(evaluations).reduce(
-                      (total, count) => total + count,
-                      0
-                    )
-                  : 0}
-                명&nbsp;
-              </span>
-              <span className="text-13pxr text-dark-gray-300">참여 중</span>
-            </div>
-          </div>
-          {evaluations && <ProductReaction evaluations={evaluations} />}
-        </div>
-      </div>
+      )}
       <Modal size="sm" />
       <SuggestionModal
         isOpen={openSuggestionModal}

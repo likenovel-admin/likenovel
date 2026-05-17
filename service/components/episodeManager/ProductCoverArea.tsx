@@ -50,6 +50,7 @@ const ProductCoverArea = ({
   const { data: userInfo } = useSelectUserInfo();
   const isCpUser = userInfo?.data?.userRole === "CP";
   const coverImagePath = resolveProductCoverImage(data?.image?.coverImagePath);
+  const shouldShowEvaluationContainer = false;
   const handleGoBack = () => {
     // router.back();
     router.push("/product/author");
@@ -256,9 +257,11 @@ const ProductCoverArea = ({
 
           <div className="w-[100vw] md:w-full h-2 bg-light-gray-100 md:h-[1px]" />
         </div>
-        <div className="md:hidden block md:min-w-[270px]">
-          <RatingArea evaluations={evaluations} />
-        </div>
+        {shouldShowEvaluationContainer && (
+          <div className="md:hidden block md:min-w-[270px]">
+            <RatingArea evaluations={evaluations} />
+          </div>
+        )}
         <div className="mt-8 md:mr-6">
           <EpisodeTabArea
             episodes={episodes}
@@ -271,9 +274,11 @@ const ProductCoverArea = ({
           />
         </div>
       </div>
-      <div className="hidden md:block md:min-w-[270px]">
-        <RatingArea evaluations={evaluations} />
-      </div>
+      {shouldShowEvaluationContainer && (
+        <div className="hidden md:block md:min-w-[270px]">
+          <RatingArea evaluations={evaluations} />
+        </div>
+      )}
     </div>
   );
 };
