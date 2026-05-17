@@ -1,5 +1,6 @@
 import BookmarkButton from "@/components/common/BookmarkButton";
 import LikeButton from "@/components/menu/LikeButton";
+import WebsochatButton from "@/components/menu/WebsochatButton";
 import useViewStore from "@/store/viewerStore";
 import Image from "next/image";
 import ArrowLeft from "/public/images/arrow-left-medium.svg";
@@ -38,7 +39,7 @@ const ViewerBottomNav = ({
   }));
   return (
     <div
-      className={`flex fixed bottom-0 left-0 z-50 w-full h-[60px] items-center justify-between px-[16px] md:px-[120px] ${
+      className={`flex fixed bottom-0 left-0 z-50 w-full h-[calc(60px+env(safe-area-inset-bottom))] items-center justify-between px-[16px] pb-[env(safe-area-inset-bottom)] md:h-[60px] md:px-[120px] md:pb-0 ${
         showNav
           ? "bg-white"
           : settings.theme === "dark"
@@ -52,7 +53,7 @@ const ViewerBottomNav = ({
     >
       {showNav && (
         <>
-          <div className="flex md:hidden items-center gap-[22px]">
+          <div className="flex md:hidden items-center gap-16pxr min-[390px]:gap-[22px]">
             <button className=" relative" onClick={handleCommentState}>
               <Image
                 src="/images/comment.svg"
@@ -83,13 +84,11 @@ const ViewerBottomNav = ({
                 activeBookmarkStyle="w-[16px] h-[22px]"
               />
               {showWebsochatButton && (
-                <button
-                  type="button"
+                <WebsochatButton
+                  label="웹소챗"
                   onClick={handleWebsochatClick}
-                  className="h-[34px] shrink-0 rounded-[8px] border border-primary-100 bg-primary-100 px-12pxr text-13pxr font-semibold text-white"
-                >
-                  웹소챗
-                </button>
+                  className="h-42pxr min-w-[104px] px-14pxr text-15pxr [&>svg]:h-18pxr [&>svg]:w-18pxr min-[390px]:min-w-[112px] min-[390px]:px-16pxr"
+                />
               )}
             </div>
           </div>
@@ -104,13 +103,11 @@ const ViewerBottomNav = ({
             </div>
           </button>
           {showWebsochatButton && (
-            <button
-              type="button"
+            <WebsochatButton
+              label="이번 회차로 웹소챗"
               onClick={handleWebsochatClick}
-              className="hidden md:flex h-[36px] shrink-0 items-center justify-center rounded-[8px] border border-primary-100 bg-primary-100 px-16pxr text-14pxr font-semibold text-white hover:bg-primary-200"
-            >
-              이번 회차로 웹소챗
-            </button>
+              className="hidden h-40pxr min-w-[172px] px-22pxr text-15pxr md:inline-flex"
+            />
           )}
           <button
             onClick={handleNavigateNextChap}
@@ -122,7 +119,7 @@ const ViewerBottomNav = ({
               <ArrowRight className="w-[10px] h-[18px] text-black-200" />
             </div>
           </button>
-          <div className="flex md:hidden gap-20pxr">
+          <div className="flex md:hidden gap-12pxr min-[390px]:gap-20pxr">
             <button
               onClick={handleNavigatePrevChap}
               disabled={!previousEpisodeId}
