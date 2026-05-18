@@ -92,7 +92,11 @@ const PaidTop = ({ data }: Props) => {
                   product,
                   167,
                   255,
-                  "object-cover w-[108px] md:w-[167px] h-[164px] md:h-[255px] rounded-[10px]"
+                  "object-cover w-[108px] md:w-[167px] h-[164px] md:h-[255px] rounded-[10px]",
+                  {
+                    optimized: true,
+                    sizes: "(max-width: 767px) 108px, 167px",
+                  }
                 )}
                 <AdultAgeBadge product={product} />
                 <div className="absolute -top-4pxr -left-4pxr md:hidden">
@@ -121,8 +125,8 @@ const PaidTop = ({ data }: Props) => {
                 </div>
               </div>
               <div className="flex items-start gap-10pxr mt-14pxr">
-                <div className="max-w-[80px] md:max-w-[170px]">
-                  <span className="text-white text-14pxr md:text-16pxr line-clamp-1">
+                <div className="w-[108px] md:w-[170px]">
+                  <span className="text-white text-14pxr md:text-16pxr line-clamp-2">
                     {product.title}
                   </span>
                   <UserNickname

@@ -1,4 +1,7 @@
-import { resolveProductCoverImage } from "@/constants/common";
+import {
+  DEFAULT_PRODUCT_IMAGE,
+  resolveProductCoverImage,
+} from "@/constants/common";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
@@ -27,6 +30,7 @@ const ProductCoverCard = ({
   const router = useRouter();
   const device = useMediaDevice();
   const coverImagePath = resolveProductCoverImage(data.image?.coverImagePath);
+  const isDefaultCoverImage = coverImagePath === DEFAULT_PRODUCT_IMAGE;
   const navigateToProductDetail = () => {
     if (entrySource) {
       setPendingProductDetailEntrySource(data.productId, entrySource);
@@ -57,6 +61,8 @@ const ProductCoverCard = ({
             alt={data.title}
             width={142}
             height={217}
+            sizes="(max-width: 767px) 108px, 142px"
+            unoptimized={isDefaultCoverImage}
             className="block object-cover w-[108px] md:w-[142px] h-[164px] md:h-[217px] rounded-[10px]"
           />
           <AdultAgeBadge product={data} />

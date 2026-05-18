@@ -86,6 +86,7 @@ const ProductListCard = ({
   const [isActiveBookmark, setIsActiveBookmark] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
   const coverImagePath = resolveProductCoverImage(data.image?.coverImagePath);
+  const isDefaultCoverImage = coverImagePath === DEFAULT_PRODUCT_IMAGE;
   const [isOpenHelper, setIsOpenHelper] = useState<{
     type: "normal" | "paid";
     isOpen: boolean;
@@ -275,7 +276,11 @@ const ProductListCard = ({
                   data,
                   110,
                   166,
-                  `hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px] block`
+                  `hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px] block`,
+                  {
+                    optimized: true,
+                    sizes: "110px",
+                  }
                 )}
                 {renderAdultCoverImage(
                   data,
@@ -283,7 +288,11 @@ const ProductListCard = ({
                   166,
                   `md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] block ${
                     isClicked ? "opacity-0" : "opacity-100"
-                  }`
+                  }`,
+                  {
+                    optimized: true,
+                    sizes: "86px",
+                  }
                 )}
               </>
             ) : (
@@ -294,6 +303,8 @@ const ProductListCard = ({
                   width={110}
                   height={166}
                   className={`hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px] block`}
+                  unoptimized={isDefaultCoverImage}
+                  loading={isDefaultCoverImage ? "eager" : "lazy"}
                 />
                 <Image
                   src={coverImagePath}
@@ -303,6 +314,8 @@ const ProductListCard = ({
                   className={`md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] block ${
                     isClicked ? "opacity-0" : "opacity-100"
                   }`}
+                  unoptimized={isDefaultCoverImage}
+                  loading={isDefaultCoverImage ? "eager" : "lazy"}
                 />
               </>
             )}
