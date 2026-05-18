@@ -19,6 +19,9 @@ export default function MakingProductUpdate() {
 
   useEffect(() => {
     setBgColor("bg-[#F7F8FA]");
+    return () => {
+      setBgColor("bg-white");
+    };
   }, [setBgColor]);
 
   useEffect(() => {
