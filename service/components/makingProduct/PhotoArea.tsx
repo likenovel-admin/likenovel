@@ -1,7 +1,10 @@
 import { useSelectPresignedFilePath } from "@/app/api/query/author/product";
 import { resolveProductCoverImage } from "@/constants/common";
 import useToastStore from "@/store/toastStore";
-import { prepareWebpUpload } from "@/utils/webpUpload";
+import {
+  PRODUCT_COVER_MAX_IMAGE_DIMENSION,
+  prepareWebpUpload,
+} from "@/utils/webpUpload";
 import axios from "axios";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -47,7 +50,9 @@ const PhotoArea = ({ onFileId, imagePath, onUploadingChange }: Props) => {
   const processAndUploadFile = async (file: File): Promise<boolean> => {
     setUploadingState(true);
     try {
-      const { uploadFile, uploadFileName } = await prepareWebpUpload(file);
+      const { uploadFile, uploadFileName } = await prepareWebpUpload(file, {
+        maxDimension: PRODUCT_COVER_MAX_IMAGE_DIMENSION,
+      });
       const response = await mutateAsync(uploadFileName);
       return await handleUpload(
         response.data.coverImageUploadPath,

@@ -114,7 +114,11 @@ const FreeTop = ({ data }: Props) => {
                     product,
                     56,
                     56,
-                    "object-cover w-[56px] h-[56px] rounded-[10px]"
+                    "object-cover w-[56px] h-[56px] rounded-[10px]",
+                    {
+                      optimized: true,
+                      sizes: "56px",
+                    }
                   )}
                   <div className="absolute -top-4pxr -left-4pxr">
                     <span className="inline-flex items-center justify-center w-[20px] h-[20px] rounded-full bg-black/70 text-white text-11pxr font-semibold">
@@ -165,7 +169,11 @@ const FreeTop = ({ data }: Props) => {
                   product,
                   72,
                   104,
-                  "object-cover w-[72px] h-[104px] rounded-l-[10px]"
+                  "object-cover w-[72px] h-[104px] rounded-l-[10px]",
+                  {
+                    optimized: true,
+                    sizes: "72px",
+                  }
                 )}
                 {/* PC 랭킹 배지: 커버 좌상단에 딱 맞게 오버레이 */}
                 <div className="absolute top-0 left-0 scale-[0.8] origin-top-left">

@@ -6,7 +6,10 @@ import { useDeleteRecentProduct } from "@/app/api/query/product";
 import useConfirmStore from "@/store/confirmStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
-import { resolveProductCoverImage } from "@/constants/common";
+import {
+  DEFAULT_PRODUCT_IMAGE,
+  resolveProductCoverImage,
+} from "@/constants/common";
 import { IProduct } from "@/types";
 import {
   getInterestEndDate,
@@ -69,6 +72,7 @@ const ProductListCard = ({ pageType, data, hasGle = true }: Props) => {
   const coverImagePath = resolveProductCoverImage(
     data?.image?.coverImagePath || data?.coverImagePath
   );
+  const isDefaultCoverImage = coverImagePath === DEFAULT_PRODUCT_IMAGE;
 
   // 작품 제목의 마지막 글자 받침 유무 및 숫자/기호 체크 함수
   const getProperParticle = (title: string) => {
@@ -358,6 +362,8 @@ const ProductListCard = ({ pageType, data, hasGle = true }: Props) => {
             width={90}
             height={130}
             className={`object-cover min-w-[90px] h-[130px] rounded-[10px]`}
+            unoptimized={isDefaultCoverImage}
+            loading={isDefaultCoverImage ? "eager" : "lazy"}
           />
           <AdultAgeBadge product={data} />
         </div>
