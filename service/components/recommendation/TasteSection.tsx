@@ -2,7 +2,10 @@
 
 import { IRecommendSection } from "@/app/api/query/recommendation/dto";
 import { usePostAiSignalEvent } from "@/app/api/query/recommendation";
-import { DEFAULT_PRODUCT_IMAGE } from "@/constants/common";
+import {
+  DEFAULT_PRODUCT_IMAGE,
+  resolveProductCoverImage,
+} from "@/constants/common";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useAuthStore from "@/store/authStore";
 import {
@@ -68,6 +71,8 @@ const TasteSection = ({ section }: Props) => {
           const isCoverBroken = Boolean(
             brokenCoverProductIds[product.productId]
           );
+          const coverImageSrc = resolveProductCoverImage(product.coverUrl);
+          const isDefaultCoverImage = coverImageSrc === DEFAULT_PRODUCT_IMAGE;
           return (
             <div
               key={product.productId}
@@ -92,13 +97,13 @@ const TasteSection = ({ section }: Props) => {
               }}
             >
               <div className="relative w-[108px] md:w-[142px] h-[164px] md:h-[217px] bg-light-gray-100 rounded-[10px] overflow-hidden">
-                {product.coverUrl && !isCoverBroken ? (
+                {!isCoverBroken && !isDefaultCoverImage ? (
                   <Image
-                    src={product.coverUrl}
+                    src={coverImageSrc}
                     alt={product.title}
                     width={142}
                     height={217}
-                    unoptimized
+                    sizes="(max-width: 767px) 108px, 142px"
                     className="object-cover w-full h-full rounded-[10px]"
                     onError={() =>
                       setBrokenCoverProductIds((prev) => ({
@@ -113,6 +118,8 @@ const TasteSection = ({ section }: Props) => {
                     alt={product.title}
                     width={142}
                     height={217}
+                    unoptimized
+                    loading="eager"
                     className="object-cover w-full h-full rounded-[10px]"
                   />
                 )}

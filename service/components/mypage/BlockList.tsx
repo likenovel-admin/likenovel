@@ -124,13 +124,6 @@ const CommentItem = ({ onUnblock, ...block }: CommentItemProps) => {
                 <span className="text-14pxr font-semibold">
                   {block.userNickname}
                 </span>
-                <Image
-                  src={block.userEventLevelBadgeImagePath}
-                  alt="레벨"
-                  width={12}
-                  height={14}
-                  className="w-[12px] h-[15px]"
-                />
               </div>
             </div>
           </div>

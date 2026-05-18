@@ -86,6 +86,7 @@ const ProductListCard = ({
   const [isActiveBookmark, setIsActiveBookmark] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
   const coverImagePath = resolveProductCoverImage(data.image?.coverImagePath);
+  const isDefaultCoverImage = coverImagePath === DEFAULT_PRODUCT_IMAGE;
   const [isOpenHelper, setIsOpenHelper] = useState<{
     type: "normal" | "paid";
     isOpen: boolean;
@@ -261,26 +262,37 @@ const ProductListCard = ({
             </>
           )}
           <div
-            className="relative bg-black-100 min-w-[86px] md:min-w-[110px] h-[130px] md:h-[166px] rounded-[10px]"
+            className="relative min-w-[86px] md:min-w-[110px] h-[130px] md:h-[166px] rounded-[10px] overflow-hidden"
             onClick={() => {
               setIsClicked(!isClicked);
             }}
           >
+            {isClicked && (
+              <div className="md:hidden absolute inset-0 bg-black-100 rounded-[10px]" />
+            )}
             {isAdultFilterEnabled ? (
               <>
                 {renderAdultCoverImage(
                   data,
                   110,
                   166,
-                  `hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px]`
+                  `hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px] block`,
+                  {
+                    optimized: true,
+                    sizes: "110px",
+                  }
                 )}
                 {renderAdultCoverImage(
                   data,
                   110,
                   166,
-                  `md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] ${
+                  `md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] block ${
                     isClicked ? "opacity-0" : "opacity-100"
-                  }`
+                  }`,
+                  {
+                    optimized: true,
+                    sizes: "86px",
+                  }
                 )}
               </>
             ) : (
@@ -290,16 +302,20 @@ const ProductListCard = ({
                   alt={data.title}
                   width={110}
                   height={166}
-                  className={`hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px]`}
+                  className={`hidden md:block object-cover min-w-[110px] h-[166px] rounded-[10px] block`}
+                  unoptimized={isDefaultCoverImage}
+                  loading={isDefaultCoverImage ? "eager" : "lazy"}
                 />
                 <Image
                   src={coverImagePath}
                   alt={data.title}
                   width={110}
                   height={166}
-                  className={`md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] ${
+                  className={`md:hidden object-cover min-w-[86px] h-[130px] rounded-[10px] block ${
                     isClicked ? "opacity-0" : "opacity-100"
                   }`}
+                  unoptimized={isDefaultCoverImage}
+                  loading={isDefaultCoverImage ? "eager" : "lazy"}
                 />
               </>
             )}

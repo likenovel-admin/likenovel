@@ -43,13 +43,6 @@ export default function ReviewCard({
             <span className="mr-[8px] font-semibold text-base leading-[18px] text-[#111317] tracking-[-2%]">
               {comment.userNickname}
             </span>
-            <Image
-              src={comment.userEventLevelBadgeImagePath}
-              alt="레벨"
-              width={12}
-              height={14}
-              className="w-[12px] h-[15px]"
-            />
             <div className="flex items-center">
               {comment.userRole !== "user" && comment.userRole && (
                 <SquareBadge

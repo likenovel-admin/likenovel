@@ -518,12 +518,6 @@ const ProfileAddModal = ({ profileId }: ProfileAddModalProps) => {
                       {
                         label: (
                           <div className="ml-[-12px] text-black-100 font-normal text-14pxr flex gap-2 mr-3">
-                            <Image
-                              src={"/images/test/level.svg"}
-                              alt="작가 등급"
-                              width={12}
-                              height={14}
-                            />
                             수호자
                           </div>
                         ),
@@ -532,12 +526,6 @@ const ProfileAddModal = ({ profileId }: ProfileAddModalProps) => {
                       {
                         label: (
                           <div className="ml-[-12px] text-black-100 font-normal text-14pxr flex gap-2 mr-3">
-                            <Image
-                              src={"/images/test/level.svg"}
-                              alt="작가 등급"
-                              width={12}
-                              height={14}
-                            />
                             수호자
                           </div>
                         ),

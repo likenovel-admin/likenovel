@@ -22,11 +22,15 @@ interface RatingFormProps {
   productId?: number;
   episodeId?: number;
   commentTotalCount?: number;
+  commentOpenYn?: "Y" | "N";
+  evaluationOpenYn?: "Y" | "N";
 }
 export default function RatingForm({
   productId,
   episodeId,
   commentTotalCount = 0,
+  commentOpenYn = "Y",
+  evaluationOpenYn = "Y",
 }: RatingFormProps) {
   const { isAuthenticated } = useAuthStore();
   const queryClient = useQueryClient();
@@ -38,13 +42,15 @@ export default function RatingForm({
   const { setToast } = useToastStore();
   const evaluateEpisode = useEvaluateEpisode();
   const addCommentEpisode = useAddCommentEpisode();
+  const isCommentOpen = commentOpenYn !== "N";
+  const isEvaluationOpen = evaluationOpenYn !== "N";
 
   const { data: episodeData, refetch } = useSelectViewerPath(episodeId || 0);
   const { data: episodeEvaluationData, refetch: refetchEvaluation } =
     useSelectEpisodeEvaluation(
       productId || 0,
       episodeId || 0,
-      !!productId && !!episodeId
+      isEvaluationOpen && !!productId && !!episodeId
     );
 
   const prettyCount = useMemo(() => {
@@ -129,6 +135,7 @@ export default function RatingForm({
   });
 
   const handleSubmitComment = withAuth(async () => {
+    if (!isCommentOpen) return;
     if (!comment.trim()) return;
 
     if (!episodeId) {
@@ -177,7 +184,7 @@ export default function RatingForm({
 
   return (
     <div className="mx-auto max-w-5xl ">
-      {!hasUserEvaluated ? (
+      {isEvaluationOpen && !hasUserEvaluated ? (
         <>
           <div className="rounded-[16px] border-0 md:border border-[#E7EAEE] bg-white ">
             {/* Header */}
@@ -253,7 +260,7 @@ export default function RatingForm({
           {/* Divider */}
           <div className="mt-[25px] h-px w-full bg-[#F0F2F6]" />
         </>
-      ) : (
+      ) : isEvaluationOpen ? (
         <>
           {/* Existing evaluation results */}
           {evaluationData && (
@@ -281,26 +288,45 @@ export default function RatingForm({
             </div>
           )}
         </>
-      )}
+      ) : null}
 
       {/* Comment box */}
       <div className="mt-[23px]">
         <h3 className="text-[22px] font-bold tracking-[-2%]">
           작품 댓글 {commentTotalCount}
         </h3>
-        <div className="mt-[16px] rounded-[16px] bg-[#F7F7F7] gap-22pxr pl-[22px] flex items-center justify-between px-[12px] py-[10px]">
+        <div
+          className={`mt-[16px] rounded-[16px] gap-22pxr pl-[22px] flex items-center justify-between px-[12px] py-[10px] ${
+            isCommentOpen ? "bg-[#F7F7F7]" : "bg-light-gray-100"
+          }`}
+        >
           <input
             type="text"
             value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="댓글을 입력해 주세요"
-            className="bg-[#F7F7F7] flex-1 outline-none focus:border-0 focus:outline-none"
+            onChange={(e) => {
+              if (isCommentOpen) {
+                setComment(e.target.value);
+              }
+            }}
+            placeholder={
+              isCommentOpen
+                ? "댓글을 입력해 주세요"
+                : "아직 댓글을 받을 준비가 안됐어요."
+            }
+            disabled={!isCommentOpen}
+            className={`flex-1 outline-none focus:border-0 focus:outline-none ${
+              isCommentOpen
+                ? "bg-[#F7F7F7]"
+                : "cursor-not-allowed bg-light-gray-100 text-dark-gray-300 placeholder:text-dark-gray-300"
+            }`}
           />
           <button
             onClick={handleSubmitComment}
-            disabled={!comment.trim() || addCommentEpisode.isPending}
+            disabled={
+              !isCommentOpen || !comment.trim() || addCommentEpisode.isPending
+            }
             className={`rounded-[20px] bg-[#E9E9E9] px-[18px] py-[10px] text-[#888B92] ${
-              comment.trim() && !addCommentEpisode.isPending
+              isCommentOpen && comment.trim() && !addCommentEpisode.isPending
                 ? "!bg-[#176BF2] !text-white"
                 : ""
             }`}

@@ -51,6 +51,7 @@ import {
   isPositiveIntegerInput,
   showAlert,
 } from "@/lib/utils";
+import { prepareCoverImageForUpload } from "@/lib/coverImageUpload";
 import { ChevronLeft, ImagePlus, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -566,11 +567,12 @@ export default function ProductUploadPage() {
 
     try {
       setIsCoverUploading(true);
-      const uploadMeta = await requestCoverUploadUrl(file.name);
+      const uploadImage = await prepareCoverImageForUpload(file);
+      const uploadMeta = await requestCoverUploadUrl(uploadImage.fileName);
       const uploadResponse = await fetch(uploadMeta.data.uploadPath, {
         method: "PUT",
-        headers: { "Content-Type": file.type || "application/octet-stream" },
-        body: file,
+        headers: { "Content-Type": uploadImage.contentType },
+        body: uploadImage.file,
       });
 
       if (!uploadResponse.ok) {
@@ -580,7 +582,7 @@ export default function ProductUploadPage() {
       setCoverImageFileId(uploadMeta.data.fileId);
       setCoverPreview((prev) => {
         if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
-        return URL.createObjectURL(file);
+        return URL.createObjectURL(uploadImage.file);
       });
     } catch (error) {
       showAlert("오류", catchErrorMessage(error), "확인");

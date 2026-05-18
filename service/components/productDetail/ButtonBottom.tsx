@@ -12,7 +12,10 @@ import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import { ProductInterestStatus } from "@/types";
 import { isEndDateExpired } from "@/utils/getLatestEpisodeDate";
-import { savePendingWebsochatLaunch } from "@/utils/websochatLaunch";
+import {
+  buildWebsochatLaunchPayload,
+  savePendingWebsochatLaunch,
+} from "@/utils/websochatLaunch";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -64,40 +67,28 @@ const ButtonBottom = ({
     accessToken: state.accessToken,
   }));
   const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
-  const resolvedPublishedLatestEpisodeNo = Math.max(
-    Number(publishedLatestEpisodeNo || 0),
-    0
-  );
-  const resolvedSyncedLatestEpisodeNo = Math.max(
-    Number(syncedLatestEpisodeNo || 0),
-    0
-  );
-  const shouldShowWebsochatButton =
-    !isPaidProduct &&
-    contextStatus === "ready" &&
-    !!productId &&
-    !!productName &&
-    resolvedPublishedLatestEpisodeNo > 0 &&
-    resolvedSyncedLatestEpisodeNo > 0;
+  const websochatLaunchSource = {
+    productId,
+    title: productName,
+    authorNickname: authorName || null,
+    coverImagePath: coverImagePath || null,
+    isPaidProduct,
+    publishedLatestEpisodeNo,
+    syncedLatestEpisodeNo,
+    contextStatus,
+  };
+  const shouldShowWebsochatButton = false;
 
   const handleWebsochatClick = () => {
-    if (!shouldShowWebsochatButton || !productId || !productName) return;
-    savePendingWebsochatLaunch({
-      productId,
-      title: productName,
-      authorNickname: authorName || null,
-      coverImagePath: coverImagePath || null,
-      latestEpisodeNo: resolvedPublishedLatestEpisodeNo,
-      publishedLatestEpisodeNo: resolvedPublishedLatestEpisodeNo,
-      syncedLatestEpisodeNo: resolvedSyncedLatestEpisodeNo,
-      contextStatus: contextStatus || null,
-      action: {
-        label: "작품 대화",
-        prompt: "이 작품에 대해 뭐든 편하게 이야기해줘",
-        modeKey: "qa",
-        qaActionKey: null,
-      },
+    const payload = buildWebsochatLaunchPayload(websochatLaunchSource, {
+      label: "작품 대화",
+      prompt: "이 작품에 대해 뭐든 편하게 이야기해줘",
+      modeKey: "qa",
+      qaActionKey: null,
     });
+    if (!payload) return;
+
+    savePendingWebsochatLaunch(payload);
     router.push("/websochat");
   };
 

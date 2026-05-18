@@ -92,9 +92,18 @@ const PaidTop = ({ data }: Props) => {
                   product,
                   167,
                   255,
-                  "object-cover w-[108px] md:w-[167px] h-[164px] md:h-[255px] rounded-[10px]"
+                  "object-cover w-[108px] md:w-[167px] h-[164px] md:h-[255px] rounded-[10px]",
+                  {
+                    optimized: true,
+                    sizes: "(max-width: 767px) 108px, 167px",
+                  }
                 )}
                 <AdultAgeBadge product={product} />
+                <div className="absolute -top-4pxr -left-4pxr md:hidden">
+                  <span className="inline-flex items-center justify-center w-[20px] h-[20px] rounded-full bg-black/70 text-white text-11pxr font-semibold">
+                    {product.rank?.currentRank || 0}
+                  </span>
+                </div>
                 <div className="absolute top-[-5px] left-[10px] hidden md:block">
                   <RankingBadge rank={product.rank?.currentRank || 0} />
                 </div>
@@ -116,12 +125,8 @@ const PaidTop = ({ data }: Props) => {
                 </div>
               </div>
               <div className="flex items-start gap-10pxr mt-14pxr">
-                <span className="text-14pxr text-white font-medium md:hidden">
-                  {product.rank?.currentRank || 0}
-                </span>
-                <div className="border-l-dark-gray-500 border border-r-0 border-t-0 border-b-0 h-[15px] mt-[4px] md:hidden" />
-                <div className="max-w-[80px] md:max-w-[170px]">
-                  <span className="text-white text-14pxr md:text-16pxr line-clamp-1">
+                <div className="w-[108px] md:w-[170px]">
+                  <span className="text-white text-14pxr md:text-16pxr line-clamp-2">
                     {product.title}
                   </span>
                   <UserNickname

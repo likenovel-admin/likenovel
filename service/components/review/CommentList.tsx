@@ -238,13 +238,6 @@ const CommentList = ({ reviewId, commentData }: Props) => {
                           <span className="text-14pxr font-semibold">
                             {comment.commenter.nickname}
                           </span>
-                          <Image
-                            src={comment.commenter.userEventLevelBadgeImagePath}
-                            alt="레벨"
-                            width={12}
-                            height={14}
-                            className="w-[12px] h-[15px]"
-                          />
                         </div>
                         <div className="flex items-center">
                           {comment.commenter.userRole !== "user" &&
