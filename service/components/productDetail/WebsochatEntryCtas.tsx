@@ -15,7 +15,7 @@ type WebsochatEntryCtaSpec = {
   };
 };
 
-const WEBSOCHAT_ENTRY_CTA_POOL: WebsochatEntryCtaSpec[] = [
+export const WEBSOCHAT_ENTRY_CTA_POOL: WebsochatEntryCtaSpec[] = [
   {
     key: "chat-freestyle",
     actionCopy: "수다떨기",

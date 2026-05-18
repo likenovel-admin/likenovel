@@ -33,6 +33,7 @@ import Spinner from "../common/Spinner";
 import SquareBadge from "../common/SquareBadge";
 import UserNickname from "../common/UserNickname";
 import WebsochatEntryCtas from "./WebsochatEntryCtas";
+import WebsochatMiniPreview from "./WebsochatMiniPreview";
 import SuggestionModal from "../modal/SuggestionModal";
 import Another from "/public/images/another.svg";
 import ArrowDown from "/public/images/arrow-down.svg";
@@ -158,6 +159,7 @@ const ProductCoverArea = ({
     && Number(data?.latestEpisodeNo || 0) > 0
     && Number(data?.syncedLatestEpisodeNo || 0) > 0;
   const shouldShowEvaluationContainer = false;
+  const shouldShowRightPanel = true;
 
   const handleGoBack = () => {
     if (process.env.NODE_ENV === "development") {
@@ -415,7 +417,7 @@ const ProductCoverArea = ({
       <div className="flex w-full max-w-[1200px] gap-[2px] mx-auto">
         <div
           className={`relative flex flex-col w-full min-h-[300px] md:min-h-[460px] bg-white p-25pxr md:p-40pxr mt-[-30px] md:mt-0 ${
-            shouldShowEvaluationContainer
+            shouldShowRightPanel
               ? "md:max-w-[850px] md:rounded-l-[20px]"
               : "md:max-w-[1120px] md:rounded-[20px]"
           }`}
@@ -696,18 +698,6 @@ const ProductCoverArea = ({
                         </span>
                       </div>
                     </Button>
-                    {shouldShowWebsochatEntryCta ? (
-                      <WebsochatEntryCtas
-                        productId={data.productId}
-                        productTitle={data.title}
-                        authorNickname={data.authorNickname}
-                        coverImagePath={coverImagePath}
-                        publishedLatestEpisodeNo={data.latestEpisodeNo}
-                        syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
-                        contextStatus={websochatContextStatus}
-                        isLoggedIn={!!user?.userId}
-                      />
-                    ) : null}
                   </div>
                   {isShowButtonProposal && (
                     <Button
@@ -743,16 +733,30 @@ const ProductCoverArea = ({
                     </div>
                   </Button>
                   {shouldShowWebsochatEntryCta ? (
-                    <WebsochatEntryCtas
-                      productId={data.productId}
-                      productTitle={data.title}
-                      authorNickname={data.authorNickname}
-                      coverImagePath={coverImagePath}
-                      publishedLatestEpisodeNo={data.latestEpisodeNo}
-                      syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
-                      contextStatus={websochatContextStatus}
-                      isLoggedIn={!!user?.userId}
-                    />
+                    <>
+                      <WebsochatEntryCtas
+                        productId={data.productId}
+                        productTitle={data.title}
+                        authorNickname={data.authorNickname}
+                        coverImagePath={coverImagePath}
+                        publishedLatestEpisodeNo={data.latestEpisodeNo}
+                        syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
+                        contextStatus={websochatContextStatus}
+                        isLoggedIn={!!user?.userId}
+                      />
+                      <WebsochatMiniPreview
+                        productId={data.productId}
+                        productTitle={data.title}
+                        authorNickname={data.authorNickname}
+                        coverImagePath={coverImagePath}
+                        publishedLatestEpisodeNo={data.latestEpisodeNo}
+                        syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
+                        contextStatus={websochatContextStatus}
+                        isLoggedIn={!!user?.userId}
+                        defaultOpen={false}
+                        className="mt-8pxr"
+                      />
+                    </>
                   ) : null}
                 </div>
                 {isShowButtonProposal && (
@@ -808,7 +812,23 @@ const ProductCoverArea = ({
             </div>
           )}
         </div>
-        {shouldShowEvaluationContainer && (
+        {shouldShowWebsochatEntryCta ? (
+          <div className="hidden md:flex w-[327px] shrink-0 justify-center bg-white rounded-r-[20px] px-18pxr py-20pxr">
+            <WebsochatMiniPreview
+              productId={data.productId}
+              productTitle={data.title}
+              authorNickname={data.authorNickname}
+              coverImagePath={coverImagePath}
+              publishedLatestEpisodeNo={data.latestEpisodeNo}
+              syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
+              contextStatus={websochatContextStatus}
+              isLoggedIn={!!user?.userId}
+              defaultOpen
+              collapsible={false}
+              className="w-full min-w-[270px] self-start"
+            />
+          </div>
+        ) : shouldShowEvaluationContainer ? (
           <div className="hidden md:flex min-w-[327px] justify-center bg-white rounded-r-[20px] pb-[20px] lg:pb-0">
             <div className="min-w-[270px]">
               <div className="flex gap-10pxr items-center mt-30pxr mb-15pxr">
@@ -831,6 +851,12 @@ const ProductCoverArea = ({
               </div>
               {evaluations && <ProductReaction evaluations={evaluations} />}
             </div>
+          </div>
+        ) : (
+          <div className="hidden md:flex w-[327px] shrink-0 items-center justify-center bg-white rounded-r-[20px] px-24pxr">
+            <p className="text-center text-14pxr font-medium leading-[1.5] text-dark-gray-300">
+              현재 웹소챗이 비활성화된 작품입니다.
+            </p>
           </div>
         )}
       </div>

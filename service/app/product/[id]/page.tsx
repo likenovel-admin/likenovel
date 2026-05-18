@@ -653,22 +653,19 @@ export default function ProductDetail() {
                     entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PRODUCT_DETAIL_CART_SUGGEST}
                   />
                 )}
-              {(otherProducts?.data?.products.length ?? 0) > 0 && (
-                <MobileProducts
-                  headerText="작가의 다른 작품"
-                  products={otherProducts?.data.products ?? []}
-                  entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PRODUCT_DETAIL_SAME_AUTHOR}
-                />
-              )}
+              <MobileProducts
+                headerText="작가의 다른 작품"
+                products={otherProducts?.data.products ?? []}
+                entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PRODUCT_DETAIL_SAME_AUTHOR}
+                emptyMessage="이 작가의 다른 작품이 없습니다."
+              />
             </div>
           </div>
           <div className="hidden md:block w-[30%] mt-50pxr">
-            {(otherProducts?.data?.products.length ?? 0) > 0 && (
-              <SameAuthorProducts
-                products={otherProducts?.data.products ?? []}
-                entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PRODUCT_DETAIL_SAME_AUTHOR}
-              />
-            )}
+            <SameAuthorProducts
+              products={otherProducts?.data.products ?? []}
+              entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PRODUCT_DETAIL_SAME_AUTHOR}
+            />
           </div>
         </div>
       </div>
