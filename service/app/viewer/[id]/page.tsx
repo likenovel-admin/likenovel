@@ -361,6 +361,8 @@ const Viewer = () => {
         <Rating
           productId={data?.data.product_id || undefined}
           episodeId={episodeId}
+          commentOpenYn={data?.data.commentOpenYn || "Y"}
+          evaluationOpenYn={data?.data.evaluationOpenYn || "Y"}
           setModalType={setModalType}
         />
       ) : (

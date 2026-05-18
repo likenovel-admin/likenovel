@@ -37,6 +37,7 @@ export interface IMakeProductRequest {
   monopoly_yn: "Y" | "N";
   cp_contract_yn: "Y" | "N";
   cp_nickname?: string | null;
+  websochat_enabled_yn?: "Y" | "N";
   product_type?: "normal" | null;
 }
 
@@ -71,6 +72,7 @@ export interface IMakingProductObject {
   paidApprovedYn?: "Y" | "N";
   paidApplyStatus?: "review" | "accepted" | "denied" | null;
   productType?: "normal" | null;
+  websochatEnabledYn?: "Y" | "N";
 }
 export interface ISelectMakingProductResponse {
   data: IMakingProductObject;

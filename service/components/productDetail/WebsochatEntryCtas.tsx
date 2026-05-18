@@ -1,6 +1,9 @@
 "use client";
 
-import { savePendingWebsochatLaunch } from "@/utils/websochatLaunch";
+import {
+  buildWebsochatLaunchPayload,
+  savePendingWebsochatLaunch,
+} from "@/utils/websochatLaunch";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 
@@ -15,7 +18,7 @@ type WebsochatEntryCtaSpec = {
   };
 };
 
-const WEBSOCHAT_ENTRY_CTA_POOL: WebsochatEntryCtaSpec[] = [
+export const WEBSOCHAT_ENTRY_CTA_POOL: WebsochatEntryCtaSpec[] = [
   {
     key: "chat-freestyle",
     actionCopy: "수다떨기",
@@ -163,6 +166,7 @@ interface Props {
   productTitle: string;
   authorNickname?: string | null;
   coverImagePath?: string | null;
+  priceType?: string | null;
   publishedLatestEpisodeNo?: number | null;
   syncedLatestEpisodeNo?: number | null;
   contextStatus?: string | null;
@@ -175,6 +179,7 @@ export default function WebsochatEntryCtas({
   productTitle,
   authorNickname,
   coverImagePath,
+  priceType,
   publishedLatestEpisodeNo,
   syncedLatestEpisodeNo,
   contextStatus,
@@ -182,38 +187,41 @@ export default function WebsochatEntryCtas({
   className = "",
 }: Props) {
   const router = useRouter();
-  const resolvedPublishedLatestEpisodeNo = Math.max(Number(publishedLatestEpisodeNo || 0), 0);
-  const resolvedSyncedLatestEpisodeNo = Math.max(Number(syncedLatestEpisodeNo || 0), 0);
-  const isContextReady = contextStatus === "ready";
+  const websochatLaunchSource = {
+    productId,
+    title: productTitle,
+    authorNickname,
+    coverImagePath,
+    priceType,
+    publishedLatestEpisodeNo,
+    syncedLatestEpisodeNo,
+    contextStatus,
+  };
 
   const selectedCta = useMemo(() => {
     const availablePool = WEBSOCHAT_ENTRY_CTA_POOL.filter((cta) => (
       isLoggedIn || cta.action.qaActionKey !== "next_episode_write"
     ));
     if (!availablePool.length) return null;
-    const index = Math.floor(Math.random() * availablePool.length);
+    const index = Math.abs(productId) % availablePool.length;
     return availablePool[index] || availablePool[0];
-  }, [isLoggedIn]);
+  }, [isLoggedIn, productId]);
 
   const handleClickCta = (cta: WebsochatEntryCtaSpec) => {
-    savePendingWebsochatLaunch({
-      productId,
-      title: productTitle,
-      authorNickname,
-      coverImagePath,
-      latestEpisodeNo: publishedLatestEpisodeNo || 0,
-      publishedLatestEpisodeNo: publishedLatestEpisodeNo || 0,
-      syncedLatestEpisodeNo: syncedLatestEpisodeNo ?? null,
-      contextStatus: contextStatus ?? null,
-      action: cta.action,
-    });
+    const payload = buildWebsochatLaunchPayload(
+      websochatLaunchSource,
+      cta.action
+    );
+    if (!payload) return;
+
+    savePendingWebsochatLaunch(payload);
     router.push("/websochat");
   };
 
   if (!selectedCta) return null;
-  if (!isContextReady) return null;
-  if (resolvedPublishedLatestEpisodeNo <= 0) return null;
-  if (resolvedSyncedLatestEpisodeNo <= 0) return null;
+  if (!buildWebsochatLaunchPayload(websochatLaunchSource, selectedCta.action)) {
+    return null;
+  }
 
   return (
     <button
@@ -222,8 +230,7 @@ export default function WebsochatEntryCtas({
       className={`flex w-full items-center justify-center rounded-[10px] border border-transparent bg-light-gray-200 px-18pxr py-12pxr text-center transition-colors hover:bg-light-gray-300 ${className}`}
     >
       <span className="text-14pxr font-semibold tracking-[-2%] text-dark-gray-500 md:text-15pxr">
-        이 작품으로{" "}
-        <span className="text-primary-100">{selectedCta.actionCopy}</span>
+        이 작품으로 <span className="text-primary-100">채팅하기</span>
       </span>
     </button>
   );

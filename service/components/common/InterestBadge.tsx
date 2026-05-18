@@ -21,6 +21,9 @@ const InterestBadge = ({ product, width, height, style }: Props) => {
     isInterestFireImage && diffInHours > 0
       ? product?.badge?.interestFireActiveImagePath
       : product?.badge?.interestFireFadeImagePath;
+  const isActiveInterestFireImage = Boolean(
+    isInterestFireImage && diffInHours > 0
+  );
 
   return (
     <>
@@ -30,7 +33,9 @@ const InterestBadge = ({ product, width, height, style }: Props) => {
           width={width}
           height={height}
           alt="관심도"
-          className={`${style} w-[${width}px] h-[${height}px]`}
+          className={`${style} w-[${width}px] h-[${height}px] ${
+            isActiveInterestFireImage ? "" : "opacity-0"
+          }`}
           onError={(e) => {
             (e.target as HTMLImageElement).src = "";
           }}

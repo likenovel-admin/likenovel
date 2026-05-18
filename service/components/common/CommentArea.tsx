@@ -432,13 +432,6 @@ const CommentArea = ({
                           <span className="text-14pxr font-semibold">
                             {comment.userNickname}
                           </span>
-                          <Image
-                            src={comment.userEventLevelBadgeImagePath}
-                            alt="레벨"
-                            width={12}
-                            height={14}
-                            className="w-[12px] h-[15px]"
-                          />
                         </div>
                         <div className="flex items-center">
                           {comment.userRole !== "user" && comment.userRole && (

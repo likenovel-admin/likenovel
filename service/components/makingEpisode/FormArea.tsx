@@ -19,6 +19,7 @@ import utc from "dayjs/plugin/utc";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Controller, FormProvider, useForm, FieldErrors } from "react-hook-form";
+import Checkbox from "../common/CheckBox";
 import Editor from "../common/Editor";
 import DatePicker from "../form/datepicker";
 import Input from "../form/input";
@@ -31,7 +32,9 @@ export interface IMakeEpisodeForm {
   title: string;
   content: string;
   authorComment: string;
-  evaluationOpen: "all" | "evaluation" | "comment";
+  commentOpen: "Y" | "N";
+  evaluationOpen: "Y" | "N";
+  applyCommentSettingToNextEpisodes: boolean;
   isEpisodeOpen: "Y" | "N";
   hasPublishEpisodeDate: "Y" | "N";
   publishEpisodeDate: Date | null | undefined;
@@ -41,6 +44,20 @@ export interface IMakeEpisodeForm {
 type EpisodeReleaseMode = "open" | "reserve" | "private";
 const MIN_RESERVE_MINUTES = 5;
 const RESERVE_MINIMUM_MESSAGE = `예약공개는 현재 시간 기준 ${MIN_RESERVE_MINUTES}분 이후부터 설정할 수 있습니다.`;
+const COMMENT_SETTING_STORAGE_KEY_PREFIX = "likenovel:author-comment-open";
+
+const getCommentSettingStorageKey = (productId?: number) =>
+  productId
+    ? `${COMMENT_SETTING_STORAGE_KEY_PREFIX}:${productId}`
+    : COMMENT_SETTING_STORAGE_KEY_PREFIX;
+
+const getStoredCommentOpen = (productId?: number): "Y" | "N" | null => {
+  if (typeof window === "undefined") return null;
+  const stored = window.localStorage.getItem(
+    getCommentSettingStorageKey(productId)
+  );
+  return stored === "N" ? "N" : stored === "Y" ? "Y" : null;
+};
 
 interface Props {
   productId?: number;
@@ -89,7 +106,11 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
         title: episodeId ? originData.title : "",
         content: episodeId ? originData.content : "",
         authorComment: episodeId ? originData.authorComment : "",
-        evaluationOpen: episodeId ? originData.evaluationOpen : "all",
+        commentOpen: episodeId
+          ? originData.commentOpen || "Y"
+          : getStoredCommentOpen(productId) || "Y",
+        evaluationOpen: episodeId ? originData.evaluationOpen || "N" : "N",
+        applyCommentSettingToNextEpisodes: false,
         isEpisodeOpen: episodeId ? originData.isEpisodeOpen : "Y",
         hasPublishEpisodeDate: episodeId
           ? originData.hasPublishEpisodeDate
@@ -192,12 +213,8 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
       title: data.data.title,
       content: data.data.content,
       authorComment: data.data.authorComment,
-      evaluationOpen:
-        data.data.evaluationOpenYn === "Y" && data.data.commentOpenYn === "Y"
-          ? "all"
-          : data.data.evaluationOpenYn === "Y"
-          ? "evaluation"
-          : "comment",
+      commentOpen: data.data.commentOpenYn === "N" ? "N" : "Y",
+      evaluationOpen: data.data.evaluationOpenYn === "Y" ? "Y" : "N",
       isEpisodeOpen: data.data.episodeOpenYn,
       hasPublishEpisodeDate: data.data.publishReserveYn,
       publishEpisodeDate: normalizePublishReserveDate(
@@ -242,16 +259,8 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
       title: formData.title,
       content: normalizeViewerContentHtml(formData.content),
       author_comment: formData.authorComment,
-      evaluation_open_yn:
-        formData.evaluationOpen === "all" ||
-        formData.evaluationOpen === "evaluation"
-          ? "Y"
-          : "N",
-      comment_open_yn:
-        formData.evaluationOpen === "all" ||
-        formData.evaluationOpen === "comment"
-          ? "Y"
-          : "N",
+      evaluation_open_yn: episodeId ? formData.evaluationOpen : "N",
+      comment_open_yn: formData.commentOpen,
       episode_open_yn:
         formData.hasPublishEpisodeDate === "Y"
           ? "N"
@@ -264,6 +273,21 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
           : null,
       price_type: null,
     };
+  };
+
+  const persistCommentSettingIfNeeded = (formData: IMakeEpisodeForm) => {
+    if (
+      formData.category !== "episode" ||
+      !formData.applyCommentSettingToNextEpisodes ||
+      typeof window === "undefined"
+    ) {
+      return;
+    }
+
+    window.localStorage.setItem(
+      getCommentSettingStorageKey(productId),
+      formData.commentOpen
+    );
   };
 
   const transformFormDataToNoticeRequestData = (
@@ -335,6 +359,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
             onSuccess: (data: any) => {
               console.log("data", data);
               const episode = data?.data?.data?.episodeId;
+              persistCommentSettingIfNeeded(formData);
               setToast({
                 message: "회차 저장에 성공했습니다.",
                 type: "success",
@@ -414,6 +439,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
           },
           {
             onSuccess: () => {
+              persistCommentSettingIfNeeded(formData);
               router.push(`/product/author/episode-manager/${productId}`);
               setToast({
                 message: "회차 등록에 성공했습니다.",
@@ -485,6 +511,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
           { episodeId: episodeId || 0, data: requestData },
           {
             onSuccess: () => {
+              persistCommentSettingIfNeeded(formData);
               setToast({
                 message: "회차 수정에 성공했습니다.",
                 type: "success",
@@ -593,34 +620,53 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
                 </div>
               }
             />
-            <Controller
-              name={"evaluationOpen"}
-              control={control}
-              render={({ field }) => (
-                <Input
-                  label={"평가 공개 여부"}
-                  labelStyle={labelClassName}
-                  optionsStyle="peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md cursor-pointer"
-                  activeOptionStyle="border-primary-100"
-                  options={[
-                    {
-                      label: "댓글/평가 모두 받기",
-                      value: "all",
-                    },
-                    {
-                      label: "평가만 받기",
-                      value: "evaluation",
-                    },
-                    {
-                      label: "댓글만 받기",
-                      value: "comment",
-                    },
-                  ]}
-                  {...field}
-                  checkedValue={field.value}
+            {categoryValue === "episode" && (
+              <div className="flex flex-col gap-10pxr">
+                <Controller
+                  name={"commentOpen"}
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      label={"댓글 설정"}
+                      labelStyle={labelClassName}
+                      optionsStyle="peer-checked:border-primary-100 w-auto h-[46px] md:h-[50px] px-14pxr flex items-center justify-center gap-[7px] border border-light-gray-500 rounded-md cursor-pointer"
+                      activeOptionStyle="border-primary-100"
+                      options={[
+                        {
+                          label: "댓글 받기",
+                          value: "Y",
+                        },
+                        {
+                          label: "댓글 안받기",
+                          value: "N",
+                        },
+                      ]}
+                      {...field}
+                      checkedValue={field.value}
+                    />
+                  )}
                 />
-              )}
-            />
+                <Controller
+                  name="applyCommentSettingToNextEpisodes"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="mt-[-2px] flex flex-col gap-4pxr">
+                      <Checkbox
+                        label="앞으로 작성하는 회차에도 기본 적용"
+                        labelStyle="text-13pxr text-dark-gray-400"
+                        checked={field.value}
+                        onChange={(event) =>
+                          field.onChange(event.target.checked)
+                        }
+                      />
+                      <p className="text-12pxr text-dark-gray-300">
+                        이미 등록된 회차에는 적용되지 않습니다.
+                      </p>
+                    </div>
+                  )}
+                />
+              </div>
+            )}
             <Input
               label={"공개 상태"}
               labelStyle={requiredLabelClassName}

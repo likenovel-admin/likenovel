@@ -23,6 +23,7 @@ import {
 } from "@/utils/navigationHistory";
 import { logProductTrace } from "@/utils/productTrace";
 import { buildViewerPath } from "@/utils/viewerPath";
+import { getWebsochatLaunchEligibility } from "@/utils/websochatLaunch";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import BookmarkButton from "../common/BookmarkButton";
@@ -33,6 +34,7 @@ import Spinner from "../common/Spinner";
 import SquareBadge from "../common/SquareBadge";
 import UserNickname from "../common/UserNickname";
 import WebsochatEntryCtas from "./WebsochatEntryCtas";
+import WebsochatMiniPreview from "./WebsochatMiniPreview";
 import SuggestionModal from "../modal/SuggestionModal";
 import Another from "/public/images/another.svg";
 import ArrowDown from "/public/images/arrow-down.svg";
@@ -152,11 +154,22 @@ const ProductCoverArea = ({
     typeof (data as { contextStatus?: string | null } | undefined)?.contextStatus === "string"
       ? (data as { contextStatus?: string | null }).contextStatus
       : null;
-  const shouldShowWebsochatEntryCta =
-    data?.priceType === "free"
-    && websochatContextStatus === "ready"
-    && Number(data?.latestEpisodeNo || 0) > 0
-    && Number(data?.syncedLatestEpisodeNo || 0) > 0;
+  const websochatLaunchEligibility = getWebsochatLaunchEligibility({
+    productId: data?.productId,
+    title: data?.title,
+    priceType: data?.priceType,
+    publishedLatestEpisodeNo: data?.latestEpisodeNo,
+    syncedLatestEpisodeNo: data?.syncedLatestEpisodeNo,
+    contextStatus: websochatContextStatus,
+  });
+  const shouldShowWebsochatEntryCta = websochatLaunchEligibility.canLaunch;
+  const shouldShowWebsochatUnavailable =
+    websochatLaunchEligibility.displayState === "unavailable";
+  const shouldShowEvaluationContainer = false;
+  const shouldShowRightPanel =
+    shouldShowWebsochatEntryCta ||
+    shouldShowWebsochatUnavailable ||
+    shouldShowEvaluationContainer;
 
   const handleGoBack = () => {
     if (process.env.NODE_ENV === "development") {
@@ -412,7 +425,13 @@ const ProductCoverArea = ({
         )}
       </div>
       <div className="flex w-full max-w-[1200px] gap-[2px] mx-auto">
-        <div className="relative flex flex-col w-full md:max-w-[850px] min-h-[300px] md:min-h-[460px] bg-white md:rounded-l-[20px] p-25pxr md:p-40pxr mt-[-30px] md:mt-0">
+        <div
+          className={`relative flex flex-col w-full min-h-[300px] md:min-h-[460px] bg-white p-25pxr md:p-40pxr mt-[-30px] md:mt-0 ${
+            shouldShowRightPanel
+              ? "md:max-w-[850px] md:rounded-l-[20px]"
+              : "md:max-w-[1120px] md:rounded-[20px]"
+          }`}
+        >
           {isLoading && (
             <div className="w-full h-full flex justify-center items-center">
               <Spinner />
@@ -695,6 +714,7 @@ const ProductCoverArea = ({
                         productTitle={data.title}
                         authorNickname={data.authorNickname}
                         coverImagePath={coverImagePath}
+                        priceType={data.priceType}
                         publishedLatestEpisodeNo={data.latestEpisodeNo}
                         syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
                         contextStatus={websochatContextStatus}
@@ -736,16 +756,39 @@ const ProductCoverArea = ({
                     </div>
                   </Button>
                   {shouldShowWebsochatEntryCta ? (
-                    <WebsochatEntryCtas
-                      productId={data.productId}
-                      productTitle={data.title}
-                      authorNickname={data.authorNickname}
-                      coverImagePath={coverImagePath}
-                      publishedLatestEpisodeNo={data.latestEpisodeNo}
-                      syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
-                      contextStatus={websochatContextStatus}
-                      isLoggedIn={!!user?.userId}
-                    />
+                    <>
+                      <WebsochatEntryCtas
+                        productId={data.productId}
+                        productTitle={data.title}
+                        authorNickname={data.authorNickname}
+                        coverImagePath={coverImagePath}
+                        priceType={data.priceType}
+                        publishedLatestEpisodeNo={data.latestEpisodeNo}
+                        syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
+                        contextStatus={websochatContextStatus}
+                        isLoggedIn={!!user?.userId}
+                      />
+                      <WebsochatMiniPreview
+                        productId={data.productId}
+                        productTitle={data.title}
+                        authorNickname={data.authorNickname}
+                        coverImagePath={coverImagePath}
+                        priceType={data.priceType}
+                        adultYn={data.adultYn}
+                        publishedLatestEpisodeNo={data.latestEpisodeNo}
+                        syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
+                        contextStatus={websochatContextStatus}
+                        isLoggedIn={!!user?.userId}
+                        defaultOpen={false}
+                        className="mt-8pxr"
+                      />
+                    </>
+                  ) : shouldShowWebsochatUnavailable ? (
+                    <div className="mt-8pxr rounded-[12px] border border-light-gray-300 bg-light-gray-100 px-14pxr py-12pxr text-center">
+                      <p className="text-13pxr font-medium leading-[1.5] tracking-[-2%] text-dark-gray-400">
+                        {websochatLaunchEligibility.unavailableMessage}
+                      </p>
+                    </div>
                   ) : null}
                 </div>
                 {isShowButtonProposal && (
@@ -801,10 +844,61 @@ const ProductCoverArea = ({
             </div>
           )}
         </div>
-        <div className="hidden md:flex min-w-[327px] justify-center bg-white rounded-r-[20px] pb-[20px] lg:pb-0">
-          <div className="min-w-[270px]">
+        {shouldShowWebsochatEntryCta ? (
+          <div className="hidden md:flex w-[327px] shrink-0 items-stretch justify-center bg-white rounded-r-[20px] px-18pxr py-20pxr">
+            <WebsochatMiniPreview
+              productId={data.productId}
+              productTitle={data.title}
+              authorNickname={data.authorNickname}
+              coverImagePath={coverImagePath}
+              priceType={data.priceType}
+              adultYn={data.adultYn}
+              publishedLatestEpisodeNo={data.latestEpisodeNo}
+              syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
+              contextStatus={websochatContextStatus}
+              isLoggedIn={!!user?.userId}
+              defaultOpen
+              collapsible={false}
+              className="h-full min-h-[430px] w-full min-w-[270px]"
+            />
+          </div>
+        ) : shouldShowEvaluationContainer ? (
+          <div className="hidden md:flex min-w-[327px] justify-center bg-white rounded-r-[20px] pb-[20px] lg:pb-0">
+            <div className="min-w-[270px]">
+              <div className="flex gap-10pxr items-center mt-30pxr mb-15pxr">
+                <span className="text-20pxr font-semibold">평가</span>
+                <div className="h-[12px] border border-t-0 border-b-0 border-l-light-gray-500 border-r-0" />
+                <div>
+                  <span className="text-13pxr text-dark-gray-300">총</span>
+                  <span className="text-13pxr text-primary-100 font-semibold">
+                    &nbsp;
+                    {evaluations
+                      ? Object.values(evaluations).reduce(
+                          (total, count) => total + count,
+                          0
+                        )
+                      : 0}
+                    명&nbsp;
+                  </span>
+                  <span className="text-13pxr text-dark-gray-300">참여 중</span>
+                </div>
+              </div>
+              {evaluations && <ProductReaction evaluations={evaluations} />}
+            </div>
+          </div>
+        ) : shouldShowWebsochatUnavailable ? (
+          <div className="hidden md:flex w-[327px] shrink-0 items-center justify-center bg-white rounded-r-[20px] px-24pxr">
+            <p className="text-center text-14pxr font-medium leading-[1.5] tracking-[-2%] text-dark-gray-300">
+              {websochatLaunchEligibility.unavailableMessage}
+            </p>
+          </div>
+        ) : null}
+      </div>
+      {shouldShowEvaluationContainer && (
+        <div className="md:hidden flex w-full justify-center bg-white px-16pxr">
+          <div className="w-full ">
             <div className="flex gap-10pxr items-center mt-30pxr mb-15pxr">
-              <span className="text-20pxr font-semibold">평가</span>
+              <span className="text-18pxr font-semibold">평가</span>
               <div className="h-[12px] border border-t-0 border-b-0 border-l-light-gray-500 border-r-0" />
               <div>
                 <span className="text-13pxr text-dark-gray-300">총</span>
@@ -824,30 +918,7 @@ const ProductCoverArea = ({
             {evaluations && <ProductReaction evaluations={evaluations} />}
           </div>
         </div>
-      </div>
-      <div className="md:hidden flex w-full justify-center bg-white px-16pxr">
-        <div className="w-full ">
-          <div className="flex gap-10pxr items-center mt-30pxr mb-15pxr">
-            <span className="text-18pxr font-semibold">평가</span>
-            <div className="h-[12px] border border-t-0 border-b-0 border-l-light-gray-500 border-r-0" />
-            <div>
-              <span className="text-13pxr text-dark-gray-300">총</span>
-              <span className="text-13pxr text-primary-100 font-semibold">
-                &nbsp;
-                {evaluations
-                  ? Object.values(evaluations).reduce(
-                      (total, count) => total + count,
-                      0
-                    )
-                  : 0}
-                명&nbsp;
-              </span>
-              <span className="text-13pxr text-dark-gray-300">참여 중</span>
-            </div>
-          </div>
-          {evaluations && <ProductReaction evaluations={evaluations} />}
-        </div>
-      </div>
+      )}
       <Modal size="sm" />
       <SuggestionModal
         isOpen={openSuggestionModal}

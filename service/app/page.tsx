@@ -47,6 +47,7 @@ export default function Home() {
       : accessToken
         ? `token:${accessToken.slice(-16)}`
         : "guest";
+  const mainProductCacheIdentity = interestDropSoonCacheIdentity;
   const tasteRecommendCacheIdentity =
     user?.userId != null
       ? `user:${user.userId}`
@@ -56,10 +57,22 @@ export default function Home() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasFirstLoginOnboarding, setHasFirstLoginOnboarding] = useState(false);
 
-  const { data, isSuccess } = useSelectProducts(adultYn);
-  const { data: suggestProductsData } = useSelectMainSuggestProducts(adultYn);
-  const { data: mainRuleSlotsData } = useSelectMainRuleSlots(adultYn);
-  const { data: latestUpdateData } = useSelectLatestUpdateProducts(adultYn);
+  const { data, isSuccess } = useSelectProducts(
+    adultYn,
+    mainProductCacheIdentity
+  );
+  const { data: suggestProductsData } = useSelectMainSuggestProducts(
+    adultYn,
+    mainProductCacheIdentity
+  );
+  const { data: mainRuleSlotsData } = useSelectMainRuleSlots(
+    adultYn,
+    mainProductCacheIdentity
+  );
+  const { data: latestUpdateData } = useSelectLatestUpdateProducts(
+    adultYn,
+    mainProductCacheIdentity
+  );
   const { data: interestDropSoonData } =
     useSelectInterestDropSoonUpdateProducts(
       adultYn,

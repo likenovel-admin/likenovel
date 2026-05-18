@@ -6,6 +6,8 @@ import { Dispatch, SetStateAction, useMemo, useState } from "react";
 interface RatingProps {
   productId?: number;
   episodeId: number;
+  commentOpenYn?: "Y" | "N";
+  evaluationOpenYn?: "Y" | "N";
   setModalType: Dispatch<
     SetStateAction<"episode" | "setting" | "rating" | null>
   >;
@@ -14,6 +16,8 @@ interface RatingProps {
 export default function Rating({
   productId,
   episodeId,
+  commentOpenYn = "Y",
+  evaluationOpenYn = "Y",
   setModalType,
 }: RatingProps) {
   const [activeTab, setActiveTab] = useState("recommend");
@@ -38,6 +42,8 @@ export default function Rating({
           productId={productId}
           episodeId={episodeId}
           commentTotalCount={commentTotalCount}
+          commentOpenYn={commentOpenYn}
+          evaluationOpenYn={evaluationOpenYn}
         />
         <CommentList
           setModalType={setModalType}

@@ -210,19 +210,6 @@ const HeaderContent = () => {
               닉네임 변경
             </Button>
           </div>
-          <span className="text-11pxr md:text-13pxr text-dark-gray-300 flex gap-[2px] mt-1">
-            {"회원등급"}
-            <Image
-              src={
-                userInfo?.data.userInterestLevelBadgeImagePath ||
-                "/images/test/level.svg"
-              }
-              alt="작가 등급"
-              width={12}
-              height={14}
-            />{" "}
-            {"입니다"}
-          </span>
         </div>
       </div>
       <Modal size="full" />

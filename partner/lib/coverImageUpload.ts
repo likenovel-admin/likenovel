@@ -1,4 +1,3 @@
-const WEBP_QUALITY = 0.82;
 const COVER_WEBP_QUALITY = 0.92;
 const WEBP_MIME_TYPE = "image/webp";
 export const PRODUCT_COVER_MAX_IMAGE_DIMENSION = 1024;
@@ -8,12 +7,6 @@ type UploadableImageFile = {
   fileName: string;
   contentType: string;
 };
-
-const WEBP_CONVERTIBLE_TYPES = new Set([
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-]);
 
 const replaceExtensionWithWebp = (fileName: string) => {
   const dotIndex = fileName.lastIndexOf(".");
@@ -64,7 +57,7 @@ const loadImageBitmap = (file: File): Promise<HTMLImageElement> => {
 
 const canvasToWebpBlob = (
   canvas: HTMLCanvasElement,
-  quality = WEBP_QUALITY,
+  quality = COVER_WEBP_QUALITY,
 ): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -84,58 +77,6 @@ const canvasToWebpBlob = (
     );
   });
 };
-
-export async function prepareBannerImageForUpload(
-  file: File,
-): Promise<UploadableImageFile> {
-  if (file.type === WEBP_MIME_TYPE) {
-    return {
-      file,
-      fileName: replaceExtensionWithWebp(file.name),
-      contentType: WEBP_MIME_TYPE,
-    };
-  }
-
-  if (!WEBP_CONVERTIBLE_TYPES.has(file.type)) {
-    return {
-      file,
-      fileName: file.name,
-      contentType: file.type || "application/octet-stream",
-    };
-  }
-
-  try {
-    const image = await loadImageBitmap(file);
-    const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-
-    const context = canvas.getContext("2d");
-    if (!context) {
-      throw new Error("이미지 변환 컨텍스트를 만들 수 없습니다.");
-    }
-
-    context.drawImage(image, 0, 0);
-    const blob = await canvasToWebpBlob(canvas);
-    const fileName = replaceExtensionWithWebp(file.name);
-
-    return {
-      file: new File([blob], fileName, {
-        type: WEBP_MIME_TYPE,
-        lastModified: file.lastModified,
-      }),
-      fileName,
-      contentType: WEBP_MIME_TYPE,
-    };
-  } catch (error) {
-    console.warn("배너 이미지 webp 변환 실패, 원본으로 업로드합니다.", error);
-    return {
-      file,
-      fileName: file.name,
-      contentType: file.type || "application/octet-stream",
-    };
-  }
-}
 
 export async function prepareCoverImageForUpload(
   file: File,
@@ -181,7 +122,7 @@ export async function prepareCoverImageForUpload(
       targetDimensions.height,
     );
 
-    const blob = await canvasToWebpBlob(canvas, COVER_WEBP_QUALITY);
+    const blob = await canvasToWebpBlob(canvas);
 
     return {
       file: new File([blob], fileName, {

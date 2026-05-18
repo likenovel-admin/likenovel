@@ -3,6 +3,9 @@
 import {
   DEFAULT_PRODUCT_IMAGE,
   resolveProductCoverImage,
+  WEBSOCHAT_GHOST_QUESTIONS,
+  WEBSOCHAT_GHOST_ROTATE_MS,
+  WEBSOCHAT_MESSAGE_MAX_LENGTH,
   WEBSOCHAT_PREPARE_NAV_EVENT,
 } from "@/constants/common";
 import { getEpisodeListQueryOptions, useGetEpisodeList } from "@/app/api/query/product";
@@ -36,14 +39,21 @@ import Button from "@/components/common/Button";
 import ModalContainer from "@/components/common/ModalContainer";
 import Spinner from "@/components/common/Spinner";
 import GlobalNav from "@/components/menu/GlobalNav";
+import WebsochatGuideBubble from "@/components/websochat/WebsochatGuideBubble";
 import useAuthStore from "@/store/authStore";
 import useConfirmStore from "@/store/confirmStore";
 import { STORAGE_KEYS } from "@/utils/localStorage";
 import { buildProductDetailPath } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
 import {
+  buildWebsochatIdleGuideMessage,
+  buildWebsochatStarterGuideMessage,
   consumePendingWebsochatLaunch,
+  consumeWebsochatSessionPendingDraft,
+  formatWebsochatReadScope,
   IWebsochatLaunchPayload,
+  WEBSOCHAT_ACTIVE_SESSION_STORAGE_KEY,
+  WEBSOCHAT_SESSION_SHORTCUT_PROMPTS_STORAGE_KEY,
 } from "@/utils/websochatLaunch";
 import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
@@ -58,6 +68,9 @@ const useBrowserLayoutEffect =
 
 const WEBSOCHAT_EPISODE_RANGE_PATTERN = /(\d{1,4})\s*(?:~|-|–|—)\s*(\d{1,4})\s*화/g;
 const WEBSOCHAT_EPISODE_SINGLE_PATTERN = /(\d{1,4})\s*화/g;
+const normalizeWebsochatMessageContent = (content?: string | null) =>
+  String(content ?? "").trim().slice(0, WEBSOCHAT_MESSAGE_MAX_LENGTH);
+
 const extractWebsochatEpisodeRefs = (content: string, latestEpisodeNo: number) => {
   if (!content.trim() || latestEpisodeNo <= 0) return [] as number[];
 
@@ -104,44 +117,6 @@ const getWebsochatMessageEpisodeRefs = (
     return message.referencedEpisodeNos;
   }
   return extractWebsochatEpisodeRefs(message.content, latestEpisodeNo);
-};
-
-const formatWebsochatReadScope = (
-  episodeNo?: number | null,
-  episodeTitle?: string | null
-) => {
-  if (!episodeNo || episodeNo <= 0) return "";
-  const normalizedTitle = String(episodeTitle || "").trim();
-  return normalizedTitle
-    ? `${episodeNo}화(${normalizedTitle})`
-    : `${episodeNo}화`;
-};
-
-const buildWebsochatStarterGuideMessage = (starter: IWebsochatStarterItem) => {
-  const readScopeText = formatWebsochatReadScope(
-    starter.readEpisodeNo,
-    starter.readEpisodeTitle
-  );
-
-  if (starter.scopeState === "known" && readScopeText) {
-    return `${starter.productTitle} 이야기, ${readScopeText}까지 읽은 기준으로 편하게 이어가볼게요. 기억에 남은 장면이나 궁금한 인물, 다음 전개 같은 거 아무거나 말해 주세요.`;
-  }
-
-  if (starter.scopeState === "none") {
-    return `${starter.productTitle}로 같이 시작해볼게요. 아직 읽기 전이어도 괜찮아요. 어디까지 봤는지 알려주면 그 범위에 맞춰서 더 자연스럽게 이야기해드릴게요.`;
-  }
-
-  return `${starter.productTitle}로 이야기 시작해볼게요. 몇 화까지 봤는지만 알려주면 그 기준에 맞춰서 스포일러 없이 더 자연스럽게 이어갈게요.`;
-};
-
-const buildWebsochatIdleGuideMessage = (
-  productTitle?: string | null
-) => {
-  if (productTitle) {
-    return `${productTitle} 이야기로 바로 시작할게요. 마음에 남은 장면, 궁금한 인물, 다음 전개처럼 떠오르는 것부터 편하게 말해 주세요.`;
-  }
-
-  return "먼저 작품만 골라주면 바로 같이 이야기 시작할게요. 작품 대화든 인물과 대화든, 원하는 방식으로 편하게 이어가면 돼요.";
 };
 
 const buildWebsochatDraftEntryNotice = ({
@@ -458,9 +433,7 @@ const formatWebsochatRelativeUpdatedAt = (value?: string | null) => {
   return `${Math.max(dayDiff, 1)}일 전`;
 };
 
-const WEBSOCHAT_ACTIVE_SESSION_STORAGE_KEY = "websochat_active_session_id";
 const WEBSOCHAT_MODE_NOTICES_STORAGE_KEY = "websochat_mode_notices";
-const WEBSOCHAT_SESSION_SHORTCUT_PROMPTS_STORAGE_KEY = "websochat_session_shortcut_prompts";
 const WEBSOCHAT_STICKY_GUIDES_STORAGE_KEY = "websochat_sticky_guides";
 const WEBSOCHAT_DEBUG_LOG_STORAGE_KEY = "websochat_debug_log";
 
@@ -780,14 +753,11 @@ const DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS: IWebsochatStarterActionItem[] = [
     qaActionKey: null,
     cashCost: null,
   },
-  {
-    label: "이상형월드컵",
-    prompt: "이 작품으로 이상형월드컵을 시작해줘",
-    modeKey: "ideal_worldcup",
-    qaActionKey: null,
-    cashCost: null,
-  },
 ];
+
+const isVisibleWebsochatShortcutAction = (
+  action: IWebsochatStarterActionItem
+) => action.modeKey !== "ideal_worldcup";
 
 const parseWebsochatCreatedAt = (value?: string | null) => {
   if (!value) return 0;
@@ -923,6 +893,7 @@ export default function WebsochatPage() {
   const [isNextEpisodeCompletionHolding, setIsNextEpisodeCompletionHolding] = useState(false);
   const [guestKey, setGuestKey] = useState("");
   const [draft, setDraft] = useState("");
+  const [composerGhostIndex, setComposerGhostIndex] = useState(0);
   const [hasStoredAuthToken, setHasStoredAuthToken] = useState(false);
   const [pendingLaunchPayload, setPendingLaunchPayload] =
     useState<IWebsochatLaunchPayload | null>(null);
@@ -1209,6 +1180,15 @@ export default function WebsochatPage() {
 
   useEffect(() => {
     if (!activeSessionId) return;
+    const pendingDraft = consumeWebsochatSessionPendingDraft(activeSessionId);
+    if (!pendingDraft) return;
+    setDraft((current) =>
+      current.trim() ? current : normalizeWebsochatMessageContent(pendingDraft)
+    );
+  }, [activeSessionId]);
+
+  useEffect(() => {
+    if (!activeSessionId) return;
     if (hydratedShortcutPromptSessionIdRef.current !== activeSessionId) return;
     writeStoredSessionShortcutPrompt(activeSessionId, activeShortcutPrompt);
   }, [activeSessionId, activeShortcutPrompt, writeStoredSessionShortcutPrompt]);
@@ -1256,6 +1236,14 @@ export default function WebsochatPage() {
     websochatGuestKey,
     null
   );
+  const freeRemainingMessages = Math.max(
+    Number(billingStatusData?.data?.freeRemainingMessages ?? 0),
+    0
+  );
+  const freeRemainingMessageSuffix =
+    freeRemainingMessages > 0
+      ? ` · 무료 ${freeRemainingMessages}회 남음`
+      : "";
   const { data: selectedProductEpisodesData } = useGetEpisodeList(
     selectedProductEpisodeListParams,
     isAuthInitialized && !!selectedProductId && canUseAccountScope
@@ -1389,8 +1377,9 @@ export default function WebsochatPage() {
       ? pendingSessionPreview.readScopeState
       : null)
     ?? null;
-  const availableShortcutActions =
-    effectiveStarter?.actions || DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS;
+  const availableShortcutActions = (
+    effectiveStarter?.actions || DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS
+  ).filter(isVisibleWebsochatShortcutAction);
   const userReadEpisodeNo = activeSessionId
     ? activeSessionMeta?.readEpisodeNo
       ?? activeSession?.readEpisodeNo
@@ -1456,6 +1445,18 @@ export default function WebsochatPage() {
   const isRpAwaitingCharacter =
     composerMode === "rp" && rpStage === "awaiting_character";
   const isRpChatting = composerMode === "rp" && rpStage === "chatting";
+  const composerGhostQuestion =
+    WEBSOCHAT_GHOST_QUESTIONS[composerGhostIndex] ||
+    "지금까지 떡밥 뭐 남았어?";
+  useEffect(() => {
+    if (draft.trim() || isRpAwaitingCharacter || isRpChatting) return;
+    const timer = window.setInterval(() => {
+      setComposerGhostIndex(
+        (current) => (current + 1) % WEBSOCHAT_GHOST_QUESTIONS.length
+      );
+    }, WEBSOCHAT_GHOST_ROTATE_MS);
+    return () => window.clearInterval(timer);
+  }, [draft, isRpAwaitingCharacter, isRpChatting]);
   const serverSessionRpStage =
     messagesData?.data?.session?.rpStage
     ?? activeSession?.rpStage
@@ -1563,7 +1564,7 @@ export default function WebsochatPage() {
     ? "대화하고 싶은 인물 이름을 적어줘. 예: 레이너"
     : isRpChatting
       ? `${addKoreanPostposition(activeCharacterLabel || "인물", "에게", "에게")} 말 걸어봐. 예: 왜 그래?`
-      : "이 작품 이야기 편하게 해줘. 예: 주인공 성격 분석해줘";
+      : `${composerGhostQuestion}${freeRemainingMessageSuffix}`;
   const composerPlaceholderWithShortcutHint = `${composerPlaceholder}\nShift+Enter로 줄바꿈`;
   const composerModeDetail = isRpAwaitingCharacter
     ? "인물 선택 중"
@@ -1608,7 +1609,12 @@ export default function WebsochatPage() {
         cardSnapshot: item.cardSnapshot ?? null,
       },
     }));
-    const fallbackStarterItems = !visibleLocalStarters.length && effectiveStarter
+    const shouldShowFallbackStarter =
+      !visibleLocalStarters.length
+      && orderedPersistedMessages.length === 0
+      && transientMessages.length === 0
+      && effectiveStarter;
+    const fallbackStarterItems = shouldShowFallbackStarter
       ? [{
           type: "starter" as const,
           key: `starter-${activeSessionId || effectiveProductId || "draft"}`,
@@ -2776,7 +2782,7 @@ export default function WebsochatPage() {
   const openLoginConfirm = () => {
     const currentUrl = encodeURIComponent(pathname || "/websochat");
     setConfirm({
-      content: "웹소챗은 하루 2번까지 무료예요. 이어서 이야기하려면 로그인해 주세요.",
+      content: "오늘 무료 3회를 모두 썼어요. 로그인해 주세요.",
       confirmText: "로그인하기",
       onConfirm: () => {
         window.location.href = `/login?redirect=${currentUrl}`;
@@ -2787,6 +2793,19 @@ export default function WebsochatPage() {
 
   const moveToCashChargePage = () => {
     router.push("/product/mypage/cash");
+  };
+
+  const openCashChargeConfirm = (cashCost?: number | null) => {
+    const resolvedCashCost = Number(cashCost || 0);
+    setConfirm({
+      content:
+        resolvedCashCost > 0
+          ? `${resolvedCashCost}캐시가 필요해요. 충전할까요?`
+          : "캐시가 부족해요. 충전할까요?",
+      confirmText: "충전하기",
+      onConfirm: moveToCashChargePage,
+      buttonCount: 2,
+    });
   };
 
   const ensureActiveSessionForComposerMode = useCallback(async () => {
@@ -3112,7 +3131,7 @@ export default function WebsochatPage() {
       gameMode?: "ideal_worldcup" | "vs_game" | null;
     }
   ) => {
-    const content = (nextContent ?? draft).trim();
+    const content = normalizeWebsochatMessageContent(nextContent ?? draft);
     if (
       !content
       || !effectiveProductId
@@ -3202,7 +3221,7 @@ export default function WebsochatPage() {
         && requestCanUseAccountScope
         && (billingStatus.cashBalance ?? 0) < billingStatus.cashCostPerMessage
       ) {
-        moveToCashChargePage();
+        openCashChargeConfirm(billingStatus.cashCostPerMessage);
         return null;
       }
       const isPendingRpSelectionReply =
@@ -3753,7 +3772,7 @@ export default function WebsochatPage() {
       }
 
       if (errorInfo.message === "캐시 잔액이 부족합니다.") {
-        moveToCashChargePage();
+        openCashChargeConfirm();
         return null;
       }
 
@@ -4197,6 +4216,9 @@ export default function WebsochatPage() {
       setComposerMode("qa");
       setRpStage("idle");
       setActiveCharacterLabel(null);
+      if (pendingLaunchPayload.launchSource === "product_detail_mini_preview") {
+        setDraft(normalizeWebsochatMessageContent(pendingLaunchPayload.action.prompt));
+      }
       return;
     }
     const noticeId = appendModeNotice(
@@ -4266,7 +4288,8 @@ export default function WebsochatPage() {
 
   const composerShortcutActions = useMemo(
     () => (effectiveStarter?.actions || DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS).filter((action) => (
-      canUseAccountScope || action.qaActionKey !== "next_episode_write"
+      isVisibleWebsochatShortcutAction(action)
+      && (canUseAccountScope || action.qaActionKey !== "next_episode_write")
     )),
     [canUseAccountScope, effectiveStarter?.actions]
   );
@@ -4431,18 +4454,18 @@ export default function WebsochatPage() {
                 <>
                   {shouldShowIdleGuideMessage ? (
                     <div className="self-start max-w-[92%] md:max-w-[90%]">
-                      <div className="rounded-[16px] bg-white px-16pxr py-12pxr text-16pxr leading-[1.6] whitespace-pre-wrap text-dark-gray-500 shadow-sm">
+                      <WebsochatGuideBubble>
                         {buildWebsochatIdleGuideMessage()}
-                      </div>
+                      </WebsochatGuideBubble>
                     </div>
                   ) : null}
                   {messageFeedItems.map((item) => {
                   if (item.type === "starter") {
                     return (
                       <div key={item.key} className="self-start max-w-[92%] md:max-w-[90%]">
-                        <div className="rounded-[16px] bg-white px-16pxr py-12pxr text-16pxr leading-[1.6] whitespace-pre-wrap text-dark-gray-500 shadow-sm">
+                        <WebsochatGuideBubble>
                           {buildWebsochatStarterGuideMessage(item.starter)}
-                        </div>
+                        </WebsochatGuideBubble>
                         {renderWebsochatReasonCards(item.starter.reasonCards)}
                         {renderWebsochatCtaCards({
                           ctaCards: item.starter.ctaCards,
@@ -4709,7 +4732,8 @@ export default function WebsochatPage() {
                         event.preventDefault();
                         handleClickSend();
                       }}
-                      placeholder="작품에 관해 뭐든 말해보세요."
+                      placeholder={composerPlaceholder}
+                      maxLength={WEBSOCHAT_MESSAGE_MAX_LENGTH}
                       disabled={isReadScopeGuardPending || isAssistantTurnPending}
                       rows={1}
                       className="flex-1 bg-transparent px-4pxr py-8pxr text-16pxr md:text-14pxr leading-[1.5] outline-none resize-none overflow-y-auto placeholder:text-13pxr md:placeholder:text-14pxr disabled:bg-light-gray-100 disabled:text-dark-gray-300"
