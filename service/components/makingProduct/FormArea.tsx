@@ -22,7 +22,7 @@ import { getUser } from "@/utils/getUser";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import Checkbox from "../common/CheckBox";
 import ExclamationTooltip, {
@@ -41,6 +41,7 @@ import BaseSearchTag from "./BaseSearchTag";
 import BottomButton from "./BottomButton";
 import PhotoArea from "./PhotoArea";
 import StoppedTooltip from "./StoppedTooltip";
+import Another from "/public/images/another.svg";
 dayjs.extend(utc);
 
 const NEXT_PAID_START_CHAPTER_VALUE = -1;
@@ -70,6 +71,7 @@ export interface IMakeProductForm {
   monopoly: "Y" | "N";
   contract: "Y" | "N";
   cpNickname: string;
+  websochatEnabledYn: "Y" | "N";
   paidStartChapterDate: Date | null;
   paidStartChapter: number;
   agree: boolean;
@@ -144,6 +146,7 @@ const FormArea = ({ productId }: Props) => {
         monopoly: productId ? originData.monopoly : "Y",
         contract: productId ? originData.contract : "N",
         cpNickname: productId ? originData.cpNickname : "",
+        websochatEnabledYn: productId ? originData.websochatEnabledYn : "Y",
         paidStartChapterDate:
           productId &&
           (defaultData?.data.priceType === "paid" ||
@@ -175,6 +178,8 @@ const FormArea = ({ productId }: Props) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(false);
   const [usePaidStartDate, setUsePaidStartDate] = useState(true);
+  const [isWebsochatMenuOpen, setIsWebsochatMenuOpen] = useState(false);
+  const websochatMenuRef = useRef<HTMLDivElement | null>(null);
   const isPaidProduct = Boolean(productId && data?.data.priceType === "paid");
   const isPaidSettingEnabled = Boolean(
     productId &&
@@ -203,6 +208,10 @@ const FormArea = ({ productId }: Props) => {
   const monopolyValue = watch("monopoly");
   const contractValue = watch("contract");
   const cpNicknameValue = watch("cpNickname");
+  const websochatEnabledYn = watch("websochatEnabledYn");
+  const isWebsochatDisabled = websochatEnabledYn === "N";
+  const shouldShowWebsochatHiddenSetting =
+    !productId || data?.data.priceType === "free";
   const subGenreOptions = genreOptions.filter(
     (genre) => genre !== primaryGenreValue
   );
@@ -275,6 +284,22 @@ const FormArea = ({ productId }: Props) => {
       });
     }
   }, [canCreateNormal, productId, setValue]);
+
+  useEffect(() => {
+    if (!isWebsochatMenuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        websochatMenuRef.current &&
+        !websochatMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsWebsochatMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isWebsochatMenuOpen]);
 
   useEffect(() => {
     if (productId && data?.data) {
@@ -400,6 +425,7 @@ const FormArea = ({ productId }: Props) => {
       paidApplyStatus: data?.data.paidApplyStatus || null,
       publishRegularYn: data?.data.publishRegularYn || "Y",
       productType: data?.data.productType === "normal" ? "normal" : "",
+      websochatEnabledYn: data?.data.websochatEnabledYn === "N" ? "N" : "Y",
     };
     return defaultValues;
   };
@@ -491,23 +517,6 @@ const FormArea = ({ productId }: Props) => {
     setIsSubmitting(true);
     if (productId) {
       const requestData: any = transformFormDataToRequestData(data);
-      if (shouldIncludePaidFieldsOnUpdate) {
-        // Keep paid metadata only when the product is already in a paid flow.
-        const paidDate = data.paidStartChapterDate
-          ? data.paidStartChapterDate
-          : dayjs()
-              .add(1, "day")
-              .hour(12)
-              .minute(0)
-              .second(0)
-              .millisecond(0)
-              .toDate();
-        requestData.paid_setting_date = dayjs.utc(paidDate).format();
-        requestData.paid_episode_no =
-          data.paidStartChapter === NEXT_PAID_START_CHAPTER_VALUE
-            ? nextPaidStartChapterNo
-            : data.paidStartChapter || 1;
-      }
       updateProduct(
         { productId, data: requestData },
         {
@@ -611,6 +620,7 @@ const FormArea = ({ productId }: Props) => {
         formData.contract === "Y"
           ? formData.cpNickname.trim() || null
           : null,
+      websochat_enabled_yn: formData.websochatEnabledYn,
       product_type: formData.productType === "normal" ? "normal" : null,
     };
 
@@ -657,7 +667,52 @@ const FormArea = ({ productId }: Props) => {
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit, onError)}>
-        <div className="md:flex md:mt-[50px] mt-[28px] pb-20pxr md:bg-white md:rounded-[10px] md:pr-35pxr">
+        <div className="relative md:flex md:mt-[50px] mt-[28px] pb-20pxr md:bg-white md:rounded-[10px] md:pr-35pxr">
+          {!isPending && shouldShowWebsochatHiddenSetting && (
+            <div
+              ref={websochatMenuRef}
+              className="absolute right-10pxr top-10pxr z-20 md:right-14pxr md:top-14pxr"
+            >
+              <button
+                type="button"
+                className="flex h-32pxr w-32pxr items-center justify-center rounded-[8px] text-dark-gray-100 hover:bg-light-gray-100 hover:text-dark-gray-500"
+                aria-label="작품 추가 설정"
+                onClick={() => setIsWebsochatMenuOpen((prev) => !prev)}
+              >
+                <Another className="h-[15px] w-[3px]" />
+              </button>
+              {isWebsochatMenuOpen && (
+                <div className="absolute right-0 top-36pxr w-[244px] rounded-[8px] border border-light-gray-500 bg-white p-14pxr">
+                  <Controller
+                    name="websochatEnabledYn"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex items-start justify-between gap-12pxr">
+                        <div className="min-w-0">
+                          <p className="text-14pxr font-semibold text-dark-gray-500">
+                            {isWebsochatDisabled
+                              ? "이 작품 웹소챗 비활성화"
+                              : "이 작품 웹소챗 활성화"}
+                          </p>
+                          <p className="mt-4pxr text-12pxr leading-[1.5] text-dark-gray-300">
+                            {isWebsochatDisabled
+                              ? "이 작품으로 웹소챗을 이용할 수 없게 합니다."
+                              : "독자들이 웹소챗을 이용할 수 있게 합니다. 작가에게 월마다 이용금액의 정산율만큼 정산됩니다."}
+                          </p>
+                        </div>
+                        <Toggle
+                          checked={field.value !== "N"}
+                          onChange={(event) => {
+                            field.onChange(event.target.checked ? "Y" : "N");
+                          }}
+                        />
+                      </div>
+                    )}
+                  />
+                </div>
+              )}
+            </div>
+          )}
           {isPending ? (
             <div className="w-full h-screen flex items-center justify-center">
               <Spinner />

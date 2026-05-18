@@ -1,7 +1,7 @@
 import { ko } from "date-fns/locale/ko";
 import dayjs from "dayjs";
 import Image from "next/image";
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { forwardRef, ReactNode, useEffect, useMemo, useState } from "react";
 import ReactDatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import Input from "../input";
@@ -23,6 +23,107 @@ export interface DatePickerProps {
   onChange?: (date: Date | null) => void;
   disabled?: boolean;
 }
+
+interface DatePickerInputProps {
+  label?: ReactNode;
+  labelStyle?: string;
+  inputStyle?: string;
+  gap?: string;
+  placeholder?: string;
+  isError?: boolean | null;
+  name?: string;
+  disabled?: boolean;
+  showTimeSelect?: boolean;
+  dateValue?: Date;
+  timeDraft: string;
+  onTimeDraftChange: (value: string) => void;
+  onTimeBlur: () => void;
+  onBlur?: React.FocusEventHandler<HTMLInputElement>;
+  onChange?: React.ChangeEventHandler<HTMLInputElement>;
+  onClick?: React.MouseEventHandler<HTMLInputElement | HTMLImageElement>;
+  onFocus?: React.FocusEventHandler<HTMLInputElement>;
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+  value?: string;
+}
+
+const DatePickerInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
+  (
+    {
+      label,
+      labelStyle,
+      inputStyle,
+      gap,
+      isError,
+      name,
+      disabled,
+      showTimeSelect,
+      dateValue,
+      timeDraft,
+      onTimeDraftChange,
+      onTimeBlur,
+      onBlur,
+      onChange,
+      onClick,
+      onFocus,
+      onKeyDown,
+      value,
+      placeholder,
+    },
+    ref
+  ) => {
+    return (
+      <div className="flex gap-2 items-end">
+        <div className={"flex flex-[2] w-full"}>
+          <Input
+            ref={ref}
+            onBlur={onBlur}
+            onChange={onChange}
+            onClick={onClick}
+            onFocus={onFocus}
+            onKeyDown={onKeyDown}
+            value={value ? dayjs(value).format("YYYY-MM-DD") : ""}
+            label={label}
+            labelStyle={labelStyle}
+            inputStyle={inputStyle}
+            readOnly
+            disabled={disabled}
+            gap={gap}
+            full
+            isError={isError}
+            name={name}
+            placeholder={placeholder}
+            additionalText={
+              <Image
+                src="/images/calendar.svg"
+                alt="calendar"
+                width={20}
+                height={20}
+                className={`mr-3 ${disabled ? "opacity-40" : "cursor-pointer"}`}
+                onClick={disabled ? undefined : onClick}
+              />
+            }
+          />
+        </div>
+        {showTimeSelect && (
+          <div className="flex gap-1 items-center h-fit flex-1">
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="HH:mm"
+              value={timeDraft}
+              onChange={(e) => onTimeDraftChange(e.target.value)}
+              onBlur={onTimeBlur}
+              disabled={disabled}
+              className="w-full p-2 border border-gray-300 rounded-lg text-14pxr text-dark-gray-400 font-normal disabled:opacity-40"
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+);
+
+DatePickerInput.displayName = "DatePickerInput";
 
 const DatePicker = ({
   label,
@@ -61,73 +162,18 @@ const DatePicker = ({
   const isCompleteTimeDraft = (raw: string) =>
     /^([01]\d|2[0-3]):([0-5]\d)$/.test(raw);
 
-  const CustomInput = ({
-    onBlur,
-    onChange,
-    onClick,
-    onFocus,
-    onKeyDown,
-    value,
-  }: any) => {
-    return (
-      <div className="flex gap-2 items-end">
-        <div className={"flex flex-[2] w-full"}>
-          <Input
-            ref={null}
-            onBlur={onBlur}
-            onChange={onChange}
-            onClick={onClick}
-            onFocus={onFocus}
-            onKeyDown={onKeyDown}
-            value={value ? dayjs(value).format("YYYY-MM-DD") : ""}
-            label={label}
-            labelStyle={labelStyle}
-            inputStyle={inputStyle}
-            readOnly
-            disabled={disabled}
-            gap={gap}
-            full
-            isError={isError}
-            name={name}
-            placeholder={placeholder}
-            additionalText={
-              <Image
-                src="/images/calendar.svg"
-                alt="calendar"
-                width={20}
-                height={20}
-                className={`mr-3 ${disabled ? "opacity-40" : "cursor-pointer"}`}
-                onClick={disabled ? undefined : onClick}
-              />
-            }
-          />
-        </div>
-        {showTimeSelect && (
-          <div className="flex gap-1 items-center h-fit flex-1">
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="HH:mm"
-              value={timeDraft}
-              onChange={(e) => {
-                const nextDraft = normalizeTimeDraft(e.target.value);
-                setTimeDraft(nextDraft);
-                if (!isCompleteTimeDraft(nextDraft)) return;
-                const current = dateValue ? dayjs(dateValue) : dayjs();
-                const [h, m] = nextDraft.split(":").map(Number);
-                const merged = current.hour(h).minute(m).second(0).toDate();
-                handleDateChange?.(merged);
-              }}
-              onBlur={() => {
-                setTimeDraft(formattedTimeValue);
-              }}
-              disabled={disabled}
-              className="w-full p-2 border border-gray-300 rounded-lg text-14pxr text-dark-gray-400 font-normal disabled:opacity-40"
-            />
-          </div>
-        )}
-      </div>
-    );
+  const handleTimeDraftChange = (rawValue: string) => {
+    const nextDraft = normalizeTimeDraft(rawValue);
+    setTimeDraft(nextDraft);
+    if (!isCompleteTimeDraft(nextDraft)) return;
+    const current = dateValue ? dayjs(dateValue) : dayjs();
+    const [h, m] = nextDraft.split(":").map(Number);
+    const merged = current.hour(h).minute(m).second(0).toDate();
+    handleDateChange?.(merged);
+  };
+
+  const handleTimeBlur = () => {
+    setTimeDraft(formattedTimeValue);
   };
 
   // ✅ 기본 뷰 타입을 "month" 로 설정 (좌/우 클릭 시 월 단위 이동)
@@ -146,7 +192,23 @@ const DatePicker = ({
       }}
       dateFormat={"yyyy-MM-dd HH:mm"}
       popperPlacement="bottom-start"
-      customInput={<CustomInput />}
+      customInput={
+        <DatePickerInput
+          label={label}
+          labelStyle={labelStyle}
+          inputStyle={inputStyle}
+          gap={gap}
+          isError={isError}
+          name={name}
+          disabled={disabled}
+          showTimeSelect={showTimeSelect}
+          dateValue={dateValue}
+          timeDraft={timeDraft}
+          onTimeDraftChange={handleTimeDraftChange}
+          onTimeBlur={handleTimeBlur}
+          placeholder={placeholder}
+        />
+      }
       locale={"ko"}
       showPopperArrow={false}
       shouldCloseOnSelect
