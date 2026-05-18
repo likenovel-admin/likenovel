@@ -1,32 +1,57 @@
 "use client";
 
 import {
+  postWebsochatMessageOnce,
+  postWebsochatMessageStream,
+  useCreateWebsochatSession,
+  WebsochatStreamEvent,
+} from "@/app/api/query/websochat";
+import { IWebsochatMessageItem } from "@/app/api/query/websochat/dto";
+import WebsochatGuideBubble from "@/components/websochat/WebsochatGuideBubble";
+import useAuthStore from "@/store/authStore";
+import useConfirmStore from "@/store/confirmStore";
+import {
   WEBSOCHAT_GHOST_FADE_MS,
   WEBSOCHAT_GHOST_QUESTIONS,
   WEBSOCHAT_GHOST_ROTATE_MS,
   WEBSOCHAT_MESSAGE_MAX_LENGTH,
 } from "@/constants/common";
-import { savePendingWebsochatLaunch } from "@/utils/websochatLaunch";
-import { useRouter } from "next/navigation";
+import {
+  buildWebsochatIdleGuideMessage,
+  buildWebsochatMiniPreviewStateKey,
+  getOrCreateWebsochatGuestKey,
+  readWebsochatMiniPreviewState,
+  saveActiveWebsochatSessionId,
+  saveWebsochatMiniPreviewState,
+  saveWebsochatSessionPendingDraft,
+} from "@/utils/websochatLaunch";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   FormEvent,
   KeyboardEvent,
+  useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 
-type PreviewMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
+type PreviewMessage = Pick<
+  IWebsochatMessageItem,
+  "messageId" | "role" | "content" | "createdDate"
+> & {
+  isStreaming?: boolean;
 };
+
+const MINI_PREVIEW_MESSAGE_LIMIT = 2;
 
 interface Props {
   productId: number;
   productTitle: string;
   authorNickname?: string | null;
   coverImagePath?: string | null;
+  priceType?: string | null;
+  adultYn?: "Y" | "N" | null;
   publishedLatestEpisodeNo?: number | null;
   syncedLatestEpisodeNo?: number | null;
   contextStatus?: string | null;
@@ -36,57 +61,49 @@ interface Props {
   className?: string;
 }
 
-const PREVIEW_LIMIT = 2;
-
-const buildPreviewAnswer = (productTitle: string, content: string) => {
-  const trimmed = content.trim();
-
-  if (/요약|줄거리|내용/.test(trimmed)) {
-    return `"${productTitle}"의 흐름을 읽은 범위 안에서 정리해볼 수 있어요. 더 자세한 회차별 맥락은 웹소챗에서 이어서 볼 수 있습니다.`;
-  }
-
-  if (/인물|캐릭터|주인공|관계/.test(trimmed)) {
-    return `인물 관계와 갈등 지점을 같이 짚어볼 수 있어요. 웹소챗으로 이동하면 읽은 범위 기준으로 더 깊게 이어집니다.`;
-  }
-
-  if (/다음|전개|예상|떡밥/.test(trimmed)) {
-    return `지금까지 공개된 단서 안에서 다음 전개를 추측해볼 수 있어요. 이어서 웹소챗에서 더 구체적으로 이야기해보세요.`;
-  }
-
-  return `"${productTitle}"에 대해 바로 대화할 수 있어요. 궁금한 장면, 인물, 설정을 웹소챗에서 더 깊게 이어가 보세요.`;
-};
+const normalizeMiniPreviewContent = (content?: string | null) =>
+  String(content ?? "").trim().slice(0, WEBSOCHAT_MESSAGE_MAX_LENGTH);
 
 export default function WebsochatMiniPreview({
   productId,
   productTitle,
   authorNickname,
   coverImagePath,
+  adultYn,
   publishedLatestEpisodeNo,
   syncedLatestEpisodeNo,
   contextStatus,
-  isLoggedIn = false,
   defaultOpen = true,
   collapsible = true,
   className = "",
 }: Props) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { setConfirm } = useConfirmStore();
+  const { user, isAuthenticated, accessToken } = useAuthStore((state) => ({
+    user: state.user,
+    isAuthenticated: state.isAuthenticated,
+    accessToken: state.accessToken,
+  }));
+  const { mutateAsync: createSession } = useCreateWebsochatSession();
   const inputRef = useRef<HTMLInputElement>(null);
+  const messageListRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(collapsible ? defaultOpen : true);
   const [inputValue, setInputValue] = useState("");
-  const [previewCount, setPreviewCount] = useState(0);
-  const [pendingPrompt, setPendingPrompt] = useState("");
-  const [showContinuePrompt, setShowContinuePrompt] = useState(false);
+  const [sessionId, setSessionId] = useState<number | null>(null);
   const [messages, setMessages] = useState<PreviewMessage[]>([]);
-  const [ghostIndex, setGhostIndex] = useState(() =>
-    Math.floor(Math.random() * WEBSOCHAT_GHOST_QUESTIONS.length)
-  );
+  const [completedSendCount, setCompletedSendCount] = useState(0);
+  const [isSending, setIsSending] = useState(false);
+  const [streamingStatusMessage, setStreamingStatusMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [ghostIndex, setGhostIndex] = useState(0);
   const [ghostVisible, setGhostVisible] = useState(true);
+  const [miniPreviewStateKey, setMiniPreviewStateKey] = useState("");
 
   const hasInput = inputValue.trim().length > 0;
-  const hasConversation = messages.length > 0;
   const currentGhost = WEBSOCHAT_GHOST_QUESTIONS[ghostIndex];
+  const idleGuideMessage = buildWebsochatIdleGuideMessage(productTitle);
 
-  // ghost 질문 페이드 회전 — 입력이 비어 있을 때만 순환
   useEffect(() => {
     if (hasInput) return;
     const timer = window.setInterval(() => {
@@ -101,6 +118,43 @@ export default function WebsochatMiniPreview({
     return () => window.clearInterval(timer);
   }, [hasInput]);
 
+  useEffect(() => {
+    const hasWaitingAssistant = messages.some(
+      (message) =>
+        message.role === "assistant" &&
+        message.isStreaming &&
+        !String(message.content || "").trim()
+    );
+    if (!hasWaitingAssistant) {
+      setStreamingStatusMessage("");
+      return;
+    }
+
+    const timer1 = window.setTimeout(() => {
+      setStreamingStatusMessage("읽은 데까지 먼저 맞춰보는 중이에요.");
+    }, 1200);
+    const timer2 = window.setTimeout(() => {
+      setStreamingStatusMessage("관련 장면이랑 감정선 같이 보고 있어요.");
+    }, 3500);
+    const timer3 = window.setTimeout(() => {
+      setStreamingStatusMessage("조금만 더, 답을 다듬고 있어요.");
+    }, 7000);
+
+    return () => {
+      window.clearTimeout(timer1);
+      window.clearTimeout(timer2);
+      window.clearTimeout(timer3);
+    };
+  }, [messages]);
+
+  useEffect(() => {
+    const messageList = messageListRef.current;
+    if (!messageList) return;
+    window.requestAnimationFrame(() => {
+      messageList.scrollTop = messageList.scrollHeight;
+    });
+  }, [messages, streamingStatusMessage]);
+
   const acceptGhost = () => {
     setInputValue(currentGhost);
     window.requestAnimationFrame(() => inputRef.current?.focus());
@@ -114,66 +168,244 @@ export default function WebsochatMiniPreview({
     }
   };
 
-  const launchWebsochat = (prompt?: string) => {
-    const resolvedPrompt = prompt?.trim() || "이 작품에 대해 뭐든 편하게 이야기해줘";
+  const canUseAccountScope = useCallback(() => {
+    if (accessToken || isAuthenticated || user?.userId) return true;
+    if (typeof window === "undefined") return false;
+    return Boolean(
+      window.localStorage.getItem("access_token") ||
+        window.sessionStorage.getItem("access_token")
+    );
+  }, [accessToken, isAuthenticated, user?.userId]);
 
-    savePendingWebsochatLaunch({
+  const resolveGuestKey = () =>
+    canUseAccountScope() ? null : getOrCreateWebsochatGuestKey();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const guestKey = canUseAccountScope() ? null : getOrCreateWebsochatGuestKey();
+    const nextStateKey = buildWebsochatMiniPreviewStateKey({
       productId,
-      title: productTitle,
-      authorNickname,
-      coverImagePath,
-      latestEpisodeNo: publishedLatestEpisodeNo || 0,
-      publishedLatestEpisodeNo: publishedLatestEpisodeNo || 0,
-      syncedLatestEpisodeNo: syncedLatestEpisodeNo ?? null,
-      contextStatus: contextStatus ?? null,
-      launchSource: "product_detail_mini_preview",
-      action: {
-        label: "작품 대화",
-        prompt: resolvedPrompt,
-        modeKey: "qa",
-        qaActionKey: null,
-      },
+      userId: user?.userId || null,
+      guestKey,
     });
-    router.push("/websochat");
+    const savedState = readWebsochatMiniPreviewState(nextStateKey);
+
+    setMiniPreviewStateKey(nextStateKey);
+    setSessionId(null);
+    setMessages([]);
+    setErrorMessage("");
+    setInputValue("");
+    setCompletedSendCount(savedState?.completedSendCount || 0);
+  }, [canUseAccountScope, productId, user?.userId]);
+
+  const continueInWebsochat = async (draft?: string) => {
+    const normalizedDraft = normalizeMiniPreviewContent(draft);
+
+    try {
+      const nextSessionId = sessionId || (await ensurePreviewSession());
+
+      saveActiveWebsochatSessionId(nextSessionId);
+      if (normalizedDraft) {
+        saveWebsochatSessionPendingDraft(nextSessionId, normalizedDraft);
+      }
+      router.push("/websochat");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "웹소챗 세션을 만들지 못했습니다. 잠시 후 다시 시도해 주세요."
+      );
+    }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const trimmed = inputValue.trim();
-    if (!trimmed) return;
+  const openContinueConfirm = (draft: string) => {
+    setConfirm({
+      content: (
+        <>
+          <span>웹소챗에서 이어서 이야기할 수 있어요.</span>
+          <span className="mt-6pxr text-13pxr font-normal leading-[1.5] text-dark-gray-400">
+            확인을 누르면 지금 대화하던 작품 세션으로 이동합니다.
+          </span>
+          <span className="mt-4pxr text-13pxr font-normal leading-[1.5] text-dark-gray-400">
+            매일 무료로 3번까지 메시지 전송이 가능합니다.
+          </span>
+        </>
+      ),
+      confirmText: "웹소챗에서 계속하기",
+      onConfirm: () => continueInWebsochat(draft),
+      buttonCount: 2,
+    });
+  };
 
-    if (previewCount >= PREVIEW_LIMIT) {
-      setPendingPrompt(trimmed);
-      setShowContinuePrompt(true);
-      setInputValue("");
-      return;
-    }
+  const ensurePreviewSession = async () => {
+    if (sessionId) return sessionId;
+    const guestKey = resolveGuestKey();
+    const created = await createSession({
+      product_id: productId,
+      guest_key: guestKey || undefined,
+      adult_yn: adultYn === "Y" ? "Y" : "N",
+    });
+    const nextSessionId = created.data.sessionId;
+    setSessionId(nextSessionId);
+    saveActiveWebsochatSessionId(nextSessionId);
+    saveWebsochatMiniPreviewState(miniPreviewStateKey, {
+      completedSendCount,
+    });
+    return nextSessionId;
+  };
 
-    const nextCount = previewCount + 1;
-    const messageId = Date.now();
-    setPreviewCount(nextCount);
-    setPendingPrompt(trimmed);
+  const sendPreviewMessage = async (content: string) => {
+    const nextSessionId = await ensurePreviewSession();
+    const guestKey = resolveGuestKey();
+    const clientMessageId =
+      typeof window !== "undefined" && window.crypto?.randomUUID
+        ? window.crypto.randomUUID()
+        : `${Date.now()}-${Math.random()}`;
+    const now = Date.now();
+    const userMessageId = -now;
+    const assistantMessageId = -(now + 1);
+
+    setErrorMessage("");
     setMessages((current) => [
       ...current,
       {
-        id: `user-${messageId}-${nextCount}`,
+        messageId: userMessageId,
         role: "user",
-        content: trimmed,
-      },
+        content,
+        clientMessageId,
+        createdDate: new Date(now).toISOString(),
+      } as PreviewMessage,
       {
-        id: `assistant-${messageId}-${nextCount}`,
+        messageId: assistantMessageId,
         role: "assistant",
-        content: buildPreviewAnswer(productTitle, trimmed),
+        content: "",
+        createdDate: new Date(now + 1).toISOString(),
+        isStreaming: true,
       },
     ]);
+
+    let completedData: { sessionId: number; messages: IWebsochatMessageItem[] } | null = null;
+    let streamError = "";
+    const requestBody = {
+      sessionId: nextSessionId,
+      content,
+      client_message_id: clientMessageId,
+      guest_key: guestKey || undefined,
+      starter_mode_key: null,
+      qa_action_key: null,
+      rp_mode: null,
+      active_character: null,
+      game_mode: null,
+      game_read_episode_to: null,
+      account_read_episode_to: null,
+    };
+
+    try {
+      await postWebsochatMessageStream(
+        requestBody,
+        (event: WebsochatStreamEvent) => {
+          if (event.event === "assistant_delta" && event.data.delta) {
+            setMessages((current) =>
+              current.map((message) =>
+                message.messageId === assistantMessageId
+                  ? {
+                      ...message,
+                      content: `${message.content || ""}${event.data.delta || ""}`,
+                      isStreaming: true,
+                    }
+                  : message
+              )
+            );
+            return;
+          }
+          if (event.event === "assistant_completed") {
+            completedData = event.data;
+            return;
+          }
+          if (event.event === "assistant_error") {
+            streamError =
+              typeof event.data?.detail === "string" && event.data.detail.trim()
+                ? event.data.detail.trim()
+                : "웹소챗 응답을 불러오지 못했습니다.";
+          }
+        }
+      );
+
+      if (streamError) {
+        throw new Error(streamError);
+      }
+
+      if (!completedData) {
+        const response = await postWebsochatMessageOnce(requestBody);
+        completedData = response.data;
+      }
+
+      const resolvedCompletedData = completedData;
+      setMessages((current) => {
+        const nextMessages = current.filter(
+          (message) =>
+            message.messageId !== userMessageId &&
+            message.messageId !== assistantMessageId
+        );
+        const existingIds = new Set(
+          nextMessages.map((message) => message.messageId)
+        );
+        resolvedCompletedData.messages.forEach((message) => {
+          if (existingIds.has(message.messageId)) return;
+          nextMessages.push(message);
+          existingIds.add(message.messageId);
+        });
+        return nextMessages;
+      });
+      setCompletedSendCount((current) => {
+        const nextCount = current + 1;
+        saveWebsochatMiniPreviewState(miniPreviewStateKey, {
+          completedSendCount: nextCount,
+        });
+        return nextCount;
+      });
+      await queryClient.invalidateQueries({ queryKey: ["websochatSessions"] });
+      await queryClient.invalidateQueries({ queryKey: ["websochatMessages"] });
+    } catch (error) {
+      setMessages((current) =>
+        current.filter(
+          (message) =>
+            message.messageId !== userMessageId &&
+            message.messageId !== assistantMessageId
+        )
+      );
+      setErrorMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "웹소챗 응답을 불러오지 못했습니다."
+      );
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmed = normalizeMiniPreviewContent(inputValue);
+    if (!trimmed) return;
+    if (isSending) return;
+
+    if (completedSendCount >= MINI_PREVIEW_MESSAGE_LIMIT) {
+      openContinueConfirm(trimmed);
+      return;
+    }
+
     setInputValue("");
+    setIsSending(true);
+    try {
+      await sendPreviewMessage(trimmed);
+    } finally {
+      setIsSending(false);
+      window.requestAnimationFrame(() => inputRef.current?.focus());
+    }
   };
 
   return (
     <section
-      className={`flex flex-col overflow-hidden rounded-[16px] border border-light-gray-300 bg-light-gray-100 ${
-        collapsible ? "" : "h-full"
-      } ${className}`}
+      className={`flex flex-col overflow-hidden rounded-[12px] border border-light-gray-300 bg-white ${className}`}
       aria-label="웹소챗 미리보기"
     >
       {collapsible ? (
@@ -194,49 +426,56 @@ export default function WebsochatMiniPreview({
 
       {isOpen ? (
         <div
-          className={`flex min-h-0 flex-col p-14pxr md:p-16pxr ${
-            collapsible ? "border-t border-light-gray-300" : "flex-1"
-          }`}
+            className={`flex flex-col p-14pxr md:p-16pxr ${
+              collapsible
+                ? "min-h-[320px] justify-end border-t border-light-gray-300"
+                : "min-h-0 flex-1 justify-end"
+            }`}
         >
-          {hasConversation ? (
-            <div
-              className={`flex flex-col gap-10pxr overflow-y-auto pr-2pxr ${
-                collapsible ? "max-h-[230px]" : "min-h-0 flex-1"
-              }`}
-            >
-              {messages.map((message) => (
+          <div
+            ref={messageListRef}
+            className={`flex flex-col gap-10pxr overflow-y-auto px-2pxr py-12pxr ${
+              collapsible ? "h-[230px] min-h-0" : "h-[320px] min-h-0"
+            }`}
+          >
+            <WebsochatGuideBubble size="compact" className="max-w-[92%]">
+              {idleGuideMessage}
+            </WebsochatGuideBubble>
+            {messages.map((message) => (
+              <div
+                key={message.messageId}
+                className={`flex flex-col gap-6pxr ${
+                  message.role === "user" ? "items-end" : "items-start"
+                }`}
+              >
                 <div
-                  key={message.id}
-                  className={`max-w-[88%] whitespace-pre-wrap rounded-[14px] px-14pxr py-10pxr text-13pxr leading-[1.55] tracking-[-2%] ${
+                  className={`max-w-[92%] whitespace-pre-wrap rounded-[12px] px-12pxr py-9pxr text-12pxr leading-[1.55] tracking-[-2%] ${
                     message.role === "user"
-                      ? "ml-auto bg-primary-100 text-white"
-                      : "bg-white text-dark-gray-500"
+                      ? "bg-primary-100 text-white"
+                      : "bg-light-gray-100 text-dark-gray-500"
                   }`}
                 >
-                  {message.content}
+                  {message.content || (message.isStreaming ? "..." : "")}
                 </div>
+                {message.role === "assistant" &&
+                message.isStreaming &&
+                streamingStatusMessage ? (
+                  <div className="max-w-[92%] px-4pxr text-11pxr leading-[1.4] tracking-[-2%] text-dark-gray-300">
+                    {streamingStatusMessage}
+                  </div>
+                ) : null}
+              </div>
               ))}
-            </div>
-          ) : (
-            <div
-              className={`flex flex-col items-center justify-center gap-6pxr rounded-[12px] bg-white px-16pxr py-20pxr text-center ${
-                collapsible ? "" : "min-h-0 flex-1"
-              }`}
-            >
-              <p className="text-14pxr font-semibold tracking-[-2%] text-black-100">
-                작품에 대해 미리 물어보세요
-              </p>
-              <p className="text-12pxr leading-[1.6] tracking-[-2%] text-dark-gray-400">
-                읽은 범위 안에서 AI가 답하고,
-                <br />
-                이어서 웹소챗으로 더 깊게 이야기할 수 있어요.
-              </p>
-            </div>
-          )}
+          </div>
+          {errorMessage ? (
+            <p className="mt-8pxr text-12pxr leading-[1.45] tracking-[-2%] text-red-500">
+              {errorMessage}
+            </p>
+          ) : null}
 
           <form
             onSubmit={handleSubmit}
-            className="mt-10pxr flex shrink-0 items-center gap-8pxr rounded-[20px] bg-white py-4pxr pl-14pxr pr-6pxr ring-1 ring-inset ring-light-gray-300 transition-shadow focus-within:ring-primary-100"
+            className="mt-10pxr flex shrink-0 items-center gap-8pxr rounded-[12px] bg-light-gray-100 py-4pxr pl-12pxr pr-6pxr ring-1 ring-inset ring-light-gray-300 transition-colors focus-within:bg-white focus-within:ring-primary-100"
           >
             <div className="relative min-w-0 flex-1">
               <input
@@ -247,13 +486,15 @@ export default function WebsochatMiniPreview({
                 onKeyDown={handleKeyDown}
                 placeholder=""
                 maxLength={WEBSOCHAT_MESSAGE_MAX_LENGTH}
-                className="w-full bg-transparent px-2pxr py-8pxr text-14pxr leading-[1.5] tracking-[-2%] text-black-100 outline-none"
-                aria-label="미니 웹소챗 질문 입력"
+                className="w-full bg-transparent px-2pxr py-8pxr text-12pxr leading-[1.5] tracking-[-2%] text-black-100 outline-none"
+                aria-label="웹소챗 질문 입력"
+                aria-busy={isSending}
+                readOnly={isSending}
               />
               {!hasInput ? (
                 <span
                   aria-hidden="true"
-                  className={`pointer-events-none absolute inset-y-0 left-0 flex items-center px-2pxr text-13pxr tracking-[-2%] text-dark-gray-300 transition-opacity duration-200 ${
+                  className={`pointer-events-none absolute inset-y-0 left-0 flex items-center px-2pxr text-12pxr tracking-[-2%] text-dark-gray-300 transition-opacity duration-200 ${
                     ghostVisible ? "opacity-100" : "opacity-0"
                   }`}
                 >
@@ -261,79 +502,32 @@ export default function WebsochatMiniPreview({
                 </span>
               ) : null}
             </div>
-            {hasInput ? (
-              <button
-                type="submit"
-                aria-label="미니 웹소챗 메시지 전송"
-                className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-primary-100 text-white transition-colors hover:bg-primary-100/90"
+            <button
+              type="submit"
+              aria-label={
+                completedSendCount >= MINI_PREVIEW_MESSAGE_LIMIT
+                  ? "웹소챗에서 계속하기"
+                  : "미니 웹소챗 메시지 전송"
+              }
+              disabled={!hasInput || isSending}
+              className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full bg-primary-100 text-white transition-colors hover:bg-primary-100/90 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                focusable="false"
               >
-                <svg
-                  aria-hidden="true"
-                  width="17"
-                  height="17"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  focusable="false"
-                >
-                  <path d="M12 19V5M5 12l7-7 7 7" />
-                </svg>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={acceptGhost}
-                aria-label="추천 질문 채우기"
-                title="Tab 키로도 채울 수 있어요"
-                className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-light-gray-400 bg-white text-dark-gray-400 transition-colors hover:border-primary-100 hover:text-primary-100"
-              >
-                <svg
-                  aria-hidden="true"
-                  width="17"
-                  height="17"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  focusable="false"
-                >
-                  <path d="M5 12h14M13 5l7 7-7 7" />
-                </svg>
-              </button>
-            )}
+                <path d="M12 19V5M5 12l7-7 7 7" />
+              </svg>
+            </button>
           </form>
-
-          {showContinuePrompt ? (
-            <div className="mt-12pxr shrink-0 rounded-[12px] border border-light-gray-300 bg-white px-12pxr py-12pxr">
-              <p className="text-13pxr font-semibold tracking-[-2%] text-black-100">
-                웹소챗에서 이어서 이야기해볼까요?
-              </p>
-              <p className="mt-4pxr text-12pxr leading-[18px] tracking-[-2%] text-dark-gray-400">
-                웹소챗에서는 작품을 읽은 범위 안에서 더 깊게 대화할 수 있어요.
-              </p>
-              <div className="mt-10pxr flex gap-8pxr">
-                <button
-                  type="button"
-                  onClick={() => launchWebsochat(pendingPrompt)}
-                  className="flex-1 rounded-[10px] bg-primary-100 px-12pxr py-10pxr text-13pxr font-semibold tracking-[-2%] text-white hover:bg-primary-100/90"
-                >
-                  웹소챗에서 계속하기
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowContinuePrompt(false)}
-                  className="rounded-[10px] border border-light-gray-500 px-12pxr py-10pxr text-13pxr font-semibold tracking-[-2%] text-dark-gray-500"
-                >
-                  닫기
-                </button>
-              </div>
-            </div>
-          ) : null}
         </div>
       ) : null}
     </section>

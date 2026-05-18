@@ -23,6 +23,7 @@ import {
 } from "@/utils/navigationHistory";
 import { logProductTrace } from "@/utils/productTrace";
 import { buildViewerPath } from "@/utils/viewerPath";
+import { getWebsochatLaunchEligibility } from "@/utils/websochatLaunch";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import BookmarkButton from "../common/BookmarkButton";
@@ -153,13 +154,22 @@ const ProductCoverArea = ({
     typeof (data as { contextStatus?: string | null } | undefined)?.contextStatus === "string"
       ? (data as { contextStatus?: string | null }).contextStatus
       : null;
-  const shouldShowWebsochatEntryCta =
-    data?.priceType === "free"
-    && websochatContextStatus === "ready"
-    && Number(data?.latestEpisodeNo || 0) > 0
-    && Number(data?.syncedLatestEpisodeNo || 0) > 0;
+  const websochatLaunchEligibility = getWebsochatLaunchEligibility({
+    productId: data?.productId,
+    title: data?.title,
+    priceType: data?.priceType,
+    publishedLatestEpisodeNo: data?.latestEpisodeNo,
+    syncedLatestEpisodeNo: data?.syncedLatestEpisodeNo,
+    contextStatus: websochatContextStatus,
+  });
+  const shouldShowWebsochatEntryCta = websochatLaunchEligibility.canLaunch;
+  const shouldShowWebsochatUnavailable =
+    websochatLaunchEligibility.displayState === "unavailable";
   const shouldShowEvaluationContainer = false;
-  const shouldShowRightPanel = true;
+  const shouldShowRightPanel =
+    shouldShowWebsochatEntryCta ||
+    shouldShowWebsochatUnavailable ||
+    shouldShowEvaluationContainer;
 
   const handleGoBack = () => {
     if (process.env.NODE_ENV === "development") {
@@ -698,6 +708,19 @@ const ProductCoverArea = ({
                         </span>
                       </div>
                     </Button>
+                    {shouldShowWebsochatEntryCta ? (
+                      <WebsochatEntryCtas
+                        productId={data.productId}
+                        productTitle={data.title}
+                        authorNickname={data.authorNickname}
+                        coverImagePath={coverImagePath}
+                        priceType={data.priceType}
+                        publishedLatestEpisodeNo={data.latestEpisodeNo}
+                        syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
+                        contextStatus={websochatContextStatus}
+                        isLoggedIn={!!user?.userId}
+                      />
+                    ) : null}
                   </div>
                   {isShowButtonProposal && (
                     <Button
@@ -739,6 +762,7 @@ const ProductCoverArea = ({
                         productTitle={data.title}
                         authorNickname={data.authorNickname}
                         coverImagePath={coverImagePath}
+                        priceType={data.priceType}
                         publishedLatestEpisodeNo={data.latestEpisodeNo}
                         syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
                         contextStatus={websochatContextStatus}
@@ -749,6 +773,8 @@ const ProductCoverArea = ({
                         productTitle={data.title}
                         authorNickname={data.authorNickname}
                         coverImagePath={coverImagePath}
+                        priceType={data.priceType}
+                        adultYn={data.adultYn}
                         publishedLatestEpisodeNo={data.latestEpisodeNo}
                         syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
                         contextStatus={websochatContextStatus}
@@ -757,6 +783,12 @@ const ProductCoverArea = ({
                         className="mt-8pxr"
                       />
                     </>
+                  ) : shouldShowWebsochatUnavailable ? (
+                    <div className="mt-8pxr rounded-[12px] border border-light-gray-300 bg-light-gray-100 px-14pxr py-12pxr text-center">
+                      <p className="text-13pxr font-medium leading-[1.5] tracking-[-2%] text-dark-gray-400">
+                        {websochatLaunchEligibility.unavailableMessage}
+                      </p>
+                    </div>
                   ) : null}
                 </div>
                 {isShowButtonProposal && (
@@ -813,19 +845,21 @@ const ProductCoverArea = ({
           )}
         </div>
         {shouldShowWebsochatEntryCta ? (
-          <div className="hidden md:flex w-[327px] shrink-0 justify-center bg-white rounded-r-[20px] px-18pxr py-20pxr">
+          <div className="hidden md:flex w-[327px] shrink-0 items-stretch justify-center bg-white rounded-r-[20px] px-18pxr py-20pxr">
             <WebsochatMiniPreview
               productId={data.productId}
               productTitle={data.title}
               authorNickname={data.authorNickname}
               coverImagePath={coverImagePath}
+              priceType={data.priceType}
+              adultYn={data.adultYn}
               publishedLatestEpisodeNo={data.latestEpisodeNo}
               syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
               contextStatus={websochatContextStatus}
               isLoggedIn={!!user?.userId}
               defaultOpen
               collapsible={false}
-              className="w-full min-w-[270px] self-start"
+              className="h-full min-h-[430px] w-full min-w-[270px]"
             />
           </div>
         ) : shouldShowEvaluationContainer ? (
@@ -852,13 +886,13 @@ const ProductCoverArea = ({
               {evaluations && <ProductReaction evaluations={evaluations} />}
             </div>
           </div>
-        ) : (
+        ) : shouldShowWebsochatUnavailable ? (
           <div className="hidden md:flex w-[327px] shrink-0 items-center justify-center bg-white rounded-r-[20px] px-24pxr">
-            <p className="text-center text-14pxr font-medium leading-[1.5] text-dark-gray-300">
-              현재 웹소챗이 비활성화된 작품입니다.
+            <p className="text-center text-14pxr font-medium leading-[1.5] tracking-[-2%] text-dark-gray-300">
+              {websochatLaunchEligibility.unavailableMessage}
             </p>
           </div>
-        )}
+        ) : null}
       </div>
       {shouldShowEvaluationContainer && (
         <div className="md:hidden flex w-full justify-center bg-white px-16pxr">
