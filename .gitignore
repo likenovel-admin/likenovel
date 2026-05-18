@@ -79,3 +79,4 @@ test_password_reset.py
 docker-compose.yml
 .playwright-mcp/
 *.png
+.gstack/
