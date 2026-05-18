@@ -63,6 +63,13 @@ AGENTS.md
 CURSOR_CHAT_MEMENTO_RECOVERY.md
 
 # --- Project docs (local only) ---
+*.md
+!README.md
+!**/README.md
+!DEPLOYMENT.md
+!.claude/skills/**/*.md
+!.claude/commands/**/*.md
+!.claude/agents/**/*.md
 architecture.md
 backend-api.md
 cms-app.md
@@ -77,6 +84,12 @@ scripts/
 test_password_reset.py
 *_bad_strings.txt
 docker-compose.yml
+*.local.yml
+*.local.yaml
+*.override.yml
+*.override.yaml
+docker-compose.override.yml
+docker-compose.override.yaml
 .playwright-mcp/
 *.png
 .gstack/
