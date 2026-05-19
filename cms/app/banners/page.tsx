@@ -296,7 +296,7 @@ export default function Page() {
 
           {isReorderMode && (
             <div className="mx-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
-              <b>● 순서 변경 중</b> — 드래그로 배너를 이동한 뒤 <b>저장</b>을 누르세요.
+              <b>● 순서 변경 중</b> — 드래그하거나 위치 숫자를 입력한 뒤 <b>저장</b>을 누르세요.
               저장하지 않고 벗어나면 변경 사항이 사라집니다.
             </div>
           )}

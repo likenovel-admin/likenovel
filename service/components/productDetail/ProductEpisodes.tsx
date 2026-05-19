@@ -54,6 +54,7 @@ const ProductEpisodes = ({
     isAuthenticated: state.isAuthenticated,
   }));
   const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
+  const showWaitForFreeCard = waitForFreeYn === "Y" && canUseUserScope;
   const isAuthor =
     !!user?.userId && !!authorId && user.userId === authorId;
   const isAdminCPEditor =
@@ -67,7 +68,7 @@ const ProductEpisodes = ({
 
   // 기다무 대여권 수 조회 (React Query가 ButtonBottom 호출과 중복 제거)
   const { data: ticketsData } = useGetAvailableTickets({
-    product_id: waitForFreeYn === "Y" && canUseUserScope ? productId : undefined,
+    product_id: showWaitForFreeCard ? productId : undefined,
   });
   const wffTicketCount = ticketsData?.count_by_type?.waiting_for_free || 0;
   const wffNextChargeAt = ticketsData?.wff_next_charge_at ?? null;
@@ -194,12 +195,12 @@ const ProductEpisodes = ({
           </span>
         </Button>
       </div>
-      {waitForFreeYn === "Y" && canUseUserScope && (
-        <div className="border border-[#52CFF8] rounded-[10px] px-16pxr py-10pxr mb-12pxr">
-          <div className="flex items-center justify-between mb-6pxr">
-            <div className="flex items-center gap-8pxr">
-              <Clock className="w-[16px] h-[16px] md:w-[18px] md:h-[18px] text-[#52CFF8]" />
-              <span className="text-13pxr md:text-14pxr font-medium text-dark-gray-500 tracking-[-2%]">
+      {showWaitForFreeCard && (
+        <div className="bg-[#F5FAFD] rounded-[10px] min-h-[57px] md:min-h-[62px] py-16pxr">
+          <div className="relative flex items-center justify-between pl-50pxr pr-16pxr">
+            <div className="flex items-center">
+              <Clock className="absolute left-[15px] top-1/2 w-[20px] h-[20px] -translate-y-1/2 text-[#52CFF8]" />
+              <span className="text-13pxr md:text-[0.9rem] font-normal text-dark-gray-500 tracking-[-2%]">
                 기다무 대여권{" "}
                 <span className="text-[#52CFF8] font-bold">
                   {wffTicketCount}장
@@ -207,13 +208,13 @@ const ProductEpisodes = ({
               </span>
             </div>
             {wffTimeRemaining && (
-              <span className="text-12pxr md:text-13pxr font-medium text-dark-gray-400 tracking-[-2%]">
+              <span className="text-12pxr md:text-13pxr font-normal text-dark-gray-400 tracking-[-2%]">
                 {wffTimeRemaining} 남음
               </span>
             )}
           </div>
           {wffTimeRemaining && (
-            <div className="w-full h-[6px] bg-light-gray-300 rounded-full overflow-hidden">
+            <div className="h-[6px] bg-light-gray-300 rounded-full overflow-hidden mx-16pxr mt-6pxr">
               <div
                 className="h-full bg-[#52CFF8] rounded-full transition-all duration-500"
                 style={{ width: `${wffProgress}%` }}
@@ -222,12 +223,14 @@ const ProductEpisodes = ({
           )}
         </div>
       )}
-      <ProductNotice
-        notices={notices}
-        productTitle={productTitle}
-        productId={productId}
-      />
-      <div className="relative flex flex-col gap-10pxr mt-18pxr">
+      <div className={showWaitForFreeCard ? "mt-16pxr" : ""}>
+        <ProductNotice
+          notices={notices}
+          productTitle={productTitle}
+          productId={productId}
+        />
+      </div>
+      <div className="relative flex flex-col gap-10pxr mt-16pxr">
         {visibleEpisodes.length < 1 ? (
           <div className="mt-20pxr">
             <span className="text-13pxr md:text-16pxr text-dark-gray-400">
@@ -246,7 +249,7 @@ const ProductEpisodes = ({
                 return (
               <div
                 key={episode.episodeId}
-                className="relative flex items-center border border-light-gray-400 rounded-[10px] cursor-pointer hover:shadow-md"
+                className="relative flex items-center min-h-[57px] md:min-h-[62px] border border-light-gray-400 rounded-[10px] cursor-pointer hover:shadow-md"
                 onClick={() => {
                   handleClickEpisode(episode);
                 }}
@@ -264,37 +267,43 @@ const ProductEpisodes = ({
                     className={`absolute w-[13px] h-full rounded-l-[10px] bg-light-gray-200`}
                   />
                 )}
-                <div className="flex justify-between items-center w-full p-15pxr ml-10pxr">
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-8pxr">
-                      <SquareBadge
-                        type={
-                          getEpisodeBadge(episode) as
-                            | "free"
-                            | "paid"
-                            | "rental"
-                            | "collect"
-                        }
-                        size="small"
-                      />
+                <div className="flex justify-between items-center w-full min-h-[55px] md:min-h-[60px] py-6pxr md:py-3pxr px-15pxr ml-10pxr">
+                  <div className="flex flex-col flex-1 min-w-0 pr-10pxr">
+                    <div className="flex items-center gap-8pxr min-w-0">
+                      <span className="shrink-0">
+                        <SquareBadge
+                          type={
+                            getEpisodeBadge(episode) as
+                              | "free"
+                              | "paid"
+                              | "rental"
+                              | "collect"
+                          }
+                          size="small"
+                        />
+                      </span>
                       {waitForFreeYn === "Y" &&
                         getEpisodeBadge(episode) === "paid" && (
-                          <SquareBadge
-                            type={["waitForFree"]}
-                            size="small"
-                          />
+                          <span className="shrink-0">
+                            <SquareBadge
+                              type={["waitForFree"]}
+                              size="small"
+                            />
+                          </span>
                         )}
-                      <span className="max-w-[240px] md:max-w-[400px] 2md:max-w-[450px] lg:max-w-[500px] text-14pxr md:text-18pxr font-semibold line-clamp-2">
+                      <span className="min-w-0 shrink text-13pxr md:text-[0.9rem] font-normal line-clamp-2">
                         {episode.episodeTitle}
                       </span>
                       {showUpBadge && (
-                        <SquareBadge type="up" size="small" />
+                        <span className="shrink-0">
+                          <SquareBadge type="up" size="small" />
+                        </span>
                       )}
                     </div>
                     <div className="flex items-center gap-7pxr ml-32pxr">
                       <div className="flex gap-10pxr">
-                        <div className="text-11pxr md:text-13pxr text-dark-gray-300">
-                          <span className="text-[#4D5159]">
+                        <div className="text-11pxr md:text-12pxr text-dark-gray-400">
+                          <span>
                             {displayDate
                               ? getFormattingDate(
                                   displayDate,
@@ -356,7 +365,7 @@ const ProductEpisodes = ({
                       )}
                     </div>
                   </div>
-                  <div className="hidden md:flex gap-30pxr mr-10pxr">
+                  <div className="hidden md:flex shrink-0 gap-30pxr mr-10pxr">
                     {/* TODO: 대여 및 소장 데이터가 확립되면 주석 제거 */}
                     {episode.rentalRemaining && (
                       <div className="flex items-center gap-5pxr">

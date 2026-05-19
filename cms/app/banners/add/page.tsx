@@ -49,7 +49,7 @@ export default function Page() {
   const [url, setUrl] = useState<string>("");
   const [image, setImage] = useState<File | null>(null);
   const [mobileImage, setMobileImage] = useState<File | null>(null);
-  const [showOrder, setShowOrder] = useState<number>(1);
+  const [showOrder, setShowOrder] = useState<string>("");
 
   const getBannerSpec = (pos: string) => {
     if (pos === "main-top" || pos === "paid" || pos === "review")
@@ -91,6 +91,15 @@ export default function Page() {
 
     if (!mobileImage) {
       showAlert("알림", "모바일 배너 이미지를 업로드해주세요.", "확인");
+      return;
+    }
+
+    const parsedShowOrder = showOrder.trim() ? Number(showOrder) : undefined;
+    if (
+      parsedShowOrder !== undefined &&
+      (!Number.isInteger(parsedShowOrder) || parsedShowOrder < 1)
+    ) {
+      showAlert("알림", "노출 위치는 1 이상의 정수로 입력해주세요.", "확인");
       return;
     }
 
@@ -164,7 +173,7 @@ export default function Page() {
         division: divisionValue,
         title: title,
         url: url,
-        show_order: showOrder,
+        show_order: parsedShowOrder,
         image_id: imageId || undefined,
         mobile_image_id: mobileImageId || undefined,
       },
@@ -253,15 +262,22 @@ export default function Page() {
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableHead>노출 순서</TableHead>
+                <TableHead>노출 위치</TableHead>
                 <TableCell>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={showOrder}
-                    onChange={(e) => setShowOrder(Number(e.target.value) || 1)}
-                    className="w-[100px]"
-                  />
+                  <div className="flex flex-col gap-1">
+                    <Input
+                      type="number"
+                      min={1}
+                      value={showOrder}
+                      onChange={(e) => setShowOrder(e.target.value)}
+                      placeholder="마지막"
+                      className="w-[100px]"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      같은 구좌 안에서 몇 번째로 보여줄지 입력합니다. 비워두면
+                      마지막에 배치됩니다.
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
               <TableRow>

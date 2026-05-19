@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import PageHeader from "@/components/ui/page-header";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { item_per_page } from "@/constants/common";
+import { isConfirmedEnter } from "@/lib/keyboard";
 import { calculatePageCount, catchErrorMessage, confirm, showAlert } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, Pencil, Plus, X } from "lucide-react";
@@ -152,7 +153,7 @@ export default function Page() {
                       value={editingName}
                       onChange={(e) => setEditingName(e.target.value)}
                       className="h-8 w-[120px] text-sm"
-                      onKeyDown={(e) => e.key === "Enter" && handleEditCategory(cat.code)}
+                      onKeyDown={(e) => isConfirmedEnter(e) && handleEditCategory(cat.code)}
                     />
                     <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => handleEditCategory(cat.code)}>
                       <Check className="h-4 w-4" />
@@ -205,7 +206,7 @@ export default function Page() {
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="표시명"
                   className="h-8 w-[100px] text-sm"
-                  onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
+                  onKeyDown={(e) => isConfirmedEnter(e) && handleAddCategory()}
                 />
                 <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={handleAddCategory}>
                   <Check className="h-4 w-4" />

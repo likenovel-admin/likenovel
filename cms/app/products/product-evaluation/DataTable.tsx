@@ -5,6 +5,7 @@ import { useUpsertCmsProductEvaluation } from "@/api/cmsProductEvaluation";
 import CommonTable, { Column } from "@/components/common/CommonTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isConfirmedEnter } from "@/lib/keyboard";
 import { catchErrorMessage, showAlert } from "@/lib/utils";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -91,7 +92,7 @@ export default function ProductEvaluationTable({
             value={scoreInputs[row.product_id] ?? ""}
             onChange={(e) => handleScoreChange(row.product_id, e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") handleSave(row.product_id);
+              if (isConfirmedEnter(e)) handleSave(row.product_id);
             }}
           />
           <Button

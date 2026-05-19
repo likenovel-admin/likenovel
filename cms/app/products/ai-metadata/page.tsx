@@ -37,6 +37,7 @@ import {
 import { SidebarInset } from "@/components/ui/sidebar";
 import { Textarea } from "@/components/ui/textarea";
 import { item_per_page } from "@/constants/common";
+import { isConfirmedEnter } from "@/lib/keyboard";
 import { calculatePageCount, catchErrorMessage, confirm, showAlert } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 
@@ -328,7 +329,7 @@ export default function AiMetadataPage() {
                 setFilters((prev) => ({ ...prev, search_word: e.target.value }))
               }
               onKeyDown={(e) => {
-                if (e.key === "Enter") handleSearch();
+                if (isConfirmedEnter(e)) handleSearch();
               }}
             />
 

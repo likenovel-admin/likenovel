@@ -56,10 +56,10 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
             }}
           >
             <div className="mb-[8px]">
-              <LogoIcon alt="likenovel icon" className="w-15pxr h-20pxr" />
+              <LogoIcon alt="likenovel icon" className="w-20pxr h-24pxr" />
             </div>
             <div className="block md:hidden lg:block">
-              <Logo alt="likenovel logo" className="w-80pxr h-15pxr" />
+              <Logo alt="likenovel logo" className="w-104pxr h-14pxr" />
             </div>
           </button>
           <div className="flex gap-18pxr">

@@ -1,5 +1,6 @@
 import { Color as TiptapColor } from "@tiptap/extension-color";
 import { Plugin } from "@tiptap/pm/state";
+import { isConfirmedEnter } from "@/lib/keyboard";
 
 export const Color = TiptapColor.extend({
   addProseMirrorPlugins() {
@@ -8,7 +9,7 @@ export const Color = TiptapColor.extend({
       new Plugin({
         props: {
           handleKeyDown: (_, event) => {
-            if (event.key === "Enter") {
+            if (isConfirmedEnter(event)) {
               this.editor.commands.unsetColor();
             }
             return false;
