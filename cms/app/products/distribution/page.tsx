@@ -22,6 +22,7 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import { item_per_page } from "@/constants/common";
 import { productRatingsCode, productStatusCode } from "@/constants/product";
 import { downloadExcel } from "@/lib/excelDownload";
+import { isConfirmedEnter } from "@/lib/keyboard";
 import { calculatePageCount, catchErrorMessage, showAlert } from "@/lib/utils";
 import { IProduct } from "@/types/product";
 import { format } from "date-fns";
@@ -212,7 +213,7 @@ export default function DistributionProductsPage() {
                 }))
               }
               onKeyDown={(event) => {
-                if (event.key === "Enter") handleSearch();
+                if (isConfirmedEnter(event)) handleSearch();
               }}
             />
 

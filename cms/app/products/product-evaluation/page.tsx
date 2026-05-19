@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { item_per_page } from "@/constants/common";
+import { isConfirmedEnter } from "@/lib/keyboard";
 import { calculatePageCount } from "@/lib/utils";
 import { useState } from "react";
 
@@ -112,7 +113,7 @@ export default function ProductEvaluationPage() {
               setFilters((prev) => ({ ...prev, search_word: e.target.value }))
             }
             onKeyDown={(e) => {
-              if (e.key === "Enter") handleSearch();
+              if (isConfirmedEnter(e)) handleSearch();
             }}
           />
 

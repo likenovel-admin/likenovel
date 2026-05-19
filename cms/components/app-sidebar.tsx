@@ -132,6 +132,10 @@ const data = {
           url: "/products/bulk-upload",
         },
         {
+          title: "관리자 대리 회차 관리",
+          url: "/products/admin-episode-management",
+        },
+        {
           title: "무료연재 예약 스케줄",
           url: "/products/free-serial-schedule",
         },
