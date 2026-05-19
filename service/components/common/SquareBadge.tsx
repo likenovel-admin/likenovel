@@ -19,7 +19,7 @@ interface Props {
     | "editor" //편집자
     | "enter" //엔터사
     | "author"; //작가
-  size?: "small" | "large";
+  size?: "small" | "large" | "header";
   freeEpisodeNumber?: number;
   timePassValue?: string;
 }
@@ -30,6 +30,16 @@ const SquareBadge = ({
   freeEpisodeNumber,
   timePassValue,
 }: Props) => {
+  const priceBadgeSizeClass =
+    size === "large"
+      ? "w-[30px] h-[20px]"
+      : size === "header"
+        ? "w-[27px] h-[18px]"
+        : "w-[24px] h-[18px]";
+  const priceBadgeTextSizeClass =
+    size === "large" ? "text-12pxr" : "text-10pxr";
+  const upBadgeWidthClass = size === "header" ? "w-[27px]" : "w-[18px]";
+
   const renderClockIcon = () => (
     <div
       className={`flex justify-center items-center min-w-[18px] h-[18px] p-[3px] bg-[#52CFF8]`}
@@ -65,7 +75,9 @@ const SquareBadge = ({
     switch (true) {
       case type === "up":
         return (
-          <div className="flex justify-center items-center w-[18px] h-[18px] bg-red-100 rounded-[5px]">
+          <div
+            className={`${upBadgeWidthClass} flex justify-center items-center h-[18px] bg-red-100 rounded-[5px]`}
+          >
             <span className="text-10pxr text-white font-medium">UP</span>
           </div>
         );
@@ -140,14 +152,10 @@ const SquareBadge = ({
       case type === "free":
         return (
           <div
-            className={`${
-              size === "large" ? "w-[30px] h-[20px]" : "w-[24px] h-[18px]"
-            } flex justify-center items-center  bg-white border border-dark-gray-100 rounded-[5px]`}
+            className={`${priceBadgeSizeClass} flex justify-center items-center bg-white border border-dark-gray-100 rounded-[5px]`}
           >
             <span
-              className={`${
-                size === "large" ? "text-12pxr" : "text-10pxr"
-              } text-dark-gray-500 font-medium`}
+              className={`${priceBadgeTextSizeClass} text-dark-gray-500 font-medium`}
             >
               무료
             </span>
@@ -157,14 +165,10 @@ const SquareBadge = ({
       case type === "paid":
         return (
           <div
-            className={`${
-              size === "large" ? "w-[30px] h-[20px]" : "w-[24px] h-[18px]"
-            } flex justify-center items-center bg-red-100 rounded-[5px]`}
+            className={`${priceBadgeSizeClass} flex justify-center items-center bg-red-100 rounded-[5px]`}
           >
             <span
-              className={`${
-                size === "large" ? "text-12pxr" : "text-10pxr"
-              } text-white font-medium`}
+              className={`${priceBadgeTextSizeClass} text-white font-medium`}
             >
               유료
             </span>

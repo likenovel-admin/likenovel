@@ -125,7 +125,7 @@ const TasteSection = ({ section }: Props) => {
                 )}
               </div>
               <div className="mt-8pxr">
-                <p className="text-14pxr md:text-15pxr font-medium line-clamp-1">
+                <p className="text-14pxr md:text-15pxr font-medium line-clamp-2">
                   {product.title}
                 </p>
                 {product.authorNickname && (

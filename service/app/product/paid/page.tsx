@@ -12,9 +12,12 @@ import { useState } from "react";
 
 export default function Paid() {
   const { data, isSuccess } = useSelectBannerPromotionPaid();
+  const banners = Array.isArray(data?.banners) ? data.banners : [];
+  const hasBanners = banners.length > 0;
   const cpPromotionProducts = Array.isArray(data?.publisherPromotionProducts)
     ? data.publisherPromotionProducts.slice(0, 12)
     : [];
+  const hasPublisherPromotion = cpPromotionProducts.length > 0;
   const [activeTab, setActiveTab] = useState("end");
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -23,15 +26,29 @@ export default function Paid() {
     <>
       {isSuccess ? (
         <div className="relative w-full flex flex-col max-w-[1120px] mx-auto">
-          <div className="bg-black-100 h-[385px] w-[100vw] absolute top-[-20px] left-1/2 -translate-x-1/2"></div>
-          <Carousel primaryPanels={data?.banners || []} contained />
-          <div className="w-full flex flex-col mt-70pxr md:mt-[100px]">
-            <CPPromotion
-              data={cpPromotionProducts}
-              title={data?.publisherPromotionTitle}
-              entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PAID_CP_PROMOTION}
-            />
-            <div className="pl-16pxr md:pl-0 mt-50pxr">
+          {hasBanners && (
+            <>
+              <div className="bg-black-100 h-[385px] w-[100vw] absolute top-[-20px] left-1/2 -translate-x-1/2"></div>
+              <Carousel primaryPanels={banners} contained />
+            </>
+          )}
+          <div
+            className={`w-full flex flex-col ${
+              hasBanners ? "mt-70pxr md:mt-[100px]" : "mt-24pxr md:mt-40pxr"
+            }`}
+          >
+            {hasPublisherPromotion && (
+              <CPPromotion
+                data={cpPromotionProducts}
+                title={data?.publisherPromotionTitle}
+                entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.PAID_CP_PROMOTION}
+              />
+            )}
+            <div
+              className={`pl-16pxr md:pl-0 ${
+                hasPublisherPromotion ? "mt-50pxr" : "mt-0"
+              }`}
+            >
               <Tab
                 tabs={[
                   { label: "연재중", value: "ongoing" },

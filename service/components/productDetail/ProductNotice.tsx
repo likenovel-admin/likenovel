@@ -42,8 +42,8 @@ const ProductNotice = ({
   };
 
   return (
-    <div className="relative w-full min-h-[60px] md:min-h-[80px] border border-light-gray-300 rounded-[10px] shadow-md">
-      <div className="absolute top-[18px] left-[15px]">
+    <div className="relative w-full min-h-[57px] md:min-h-[62px] border border-light-gray-300 rounded-[10px] bg-[#f0f2f6] hover:shadow-md">
+      <div className="absolute top-[18px] md:top-[20px] left-[15px]">
         <Image
           src={"/images/notice.svg"}
           width={20}
@@ -57,13 +57,13 @@ const ProductNotice = ({
             {displayedNotices.map((notice) => (
               <div
                 key={notice.noticeId}
-                className={`flex items-center justify-between w-full pl-50pxr py-10pxr md:py-15pxr ${
+                className={`flex items-center justify-between w-full min-h-[55px] md:min-h-[60px] pl-50pxr py-6pxr md:py-4pxr ${
                   sortedNotices.length === 1 ? "" : "border-b"
                 } border-light-gray-300 cursor-pointer`}
                 onClick={() => handleNoticeClick(notice)}
               >
-                <div className="flex flex-col gap-3pxr">
-                  <span className="text-13pxr md:text-16pxr font-medium">
+                <div className="flex min-w-0 flex-col gap-[2px] pr-10pxr">
+                  <span className="text-13pxr md:text-[0.9rem] font-normal line-clamp-2">
                     {notice.subject}
                   </span>
                   <span className="text-11pxr md:text-12pxr text-dark-gray-400">
@@ -80,8 +80,8 @@ const ProductNotice = ({
             )}
           </>
         ) : (
-          <div className="absolute top-[15px] left-[45px]">
-            <span className="text-13pxr md:text-16pxr font-medium">
+          <div className="absolute top-[18px] md:top-[20px] left-[45px]">
+            <span className="text-13pxr md:text-[0.9rem] font-normal">
               공지사항이 없습니다.
             </span>
           </div>
