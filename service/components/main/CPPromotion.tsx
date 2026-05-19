@@ -26,8 +26,6 @@ const CPPromotion = ({
 }: Props) => {
   const router = useRouter();
 
-  console.log("data", data);
-
   if (!data || !data.length) {
     return <ErrorArea />;
   }
@@ -93,7 +91,7 @@ const CPPromotion = ({
                   </div>
                 </div>
                 <div className="relative max-w-[137px] mt-13pxr">
-                  <span className="text-15pxr md:text-16pxr font-medium line-clamp-1">
+                  <span className="text-15pxr md:text-16pxr font-medium line-clamp-2">
                     {product.title}
                   </span>
                   <UserNickname

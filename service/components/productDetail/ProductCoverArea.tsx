@@ -149,7 +149,7 @@ const ProductCoverArea = ({
     );
   const hasPromotionBadge =
     data?.priceType === "paid" && promotionBadgeType.length > 0;
-  const hasHeaderBadges = !!data?.priceType || hasStateBadge || hasPromotionBadge;
+  const hasHeaderBadges = !!data?.priceType || hasStateBadge;
   const websochatContextStatus =
     typeof (data as { contextStatus?: string | null } | undefined)?.contextStatus === "string"
       ? (data as { contextStatus?: string | null }).contextStatus
@@ -383,6 +383,20 @@ const ProductCoverArea = ({
     }
   };
 
+  const renderPromotionBadgeOverlay = (className: string) => {
+    if (!hasPromotionBadge) return null;
+
+    return (
+      <div className={className}>
+        <SquareBadge
+          type={promotionBadgeType}
+          freeEpisodeNumber={data?.badge?.freeEpisodeTicketCount}
+          timePassValue={data?.badge?.timepassFromTo}
+        />
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col items-center">
       <div className="px-16pxr md:px-0 w-full max-w-[1120px] mx-auto">
@@ -405,21 +419,8 @@ const ProductCoverArea = ({
               className={`object-cover min-w-[150px] h-[230px] rounded-[10px]`}
             />
             <AdultAgeBadge product={data} />
-            {data.priceType === "paid" && data.badge && (
-              <div
-                className={`absolute flex bottom-[5px] left-[5px] gap-[2px]`}
-              >
-                <SquareBadge
-                  type={getPromotionBadgeType(
-                    data.badge?.waitForFreeYn || data.badge?.waitingForFreeYn,
-                    data.badge?.freeEpisodeTicketCount,
-                    data.badge?.timepassFromTo,
-                    data.badge?.sixNinePathYn
-                  )}
-                  freeEpisodeNumber={data.badge?.freeEpisodeTicketCount}
-                  timePassValue={data.badge?.timepassFromTo}
-                />
-              </div>
+            {renderPromotionBadgeOverlay(
+              "absolute flex bottom-[5px] left-[5px] gap-[2px]"
             )}
           </>
         )}
@@ -449,22 +450,8 @@ const ProductCoverArea = ({
                     className={`object-cover md:min-w-[150px] lg:min-w-[210px] md:h-[220px] lg:h-[300px] rounded-[10px]`}
                   />
                   <AdultAgeBadge product={data} />
-                  {data.priceType === "paid" && data.badge && (
-                    <div
-                      className={`absolute flex bottom-[10px] left-[10px] gap-[2px]`}
-                    >
-                      <SquareBadge
-                        type={getPromotionBadgeType(
-                          data.badge?.waitForFreeYn ||
-                            data.badge?.waitingForFreeYn,
-                          data.badge?.freeEpisodeTicketCount,
-                          data.badge?.timepassFromTo,
-                          data.badge?.sixNinePathYn
-                        )}
-                        freeEpisodeNumber={data.badge?.freeEpisodeTicketCount}
-                        timePassValue={data.badge?.timepassFromTo}
-                      />
-                    </div>
+                  {renderPromotionBadgeOverlay(
+                    "absolute flex bottom-[10px] left-[10px] gap-[2px]"
                   )}
                 </div>
                 <div
@@ -472,18 +459,11 @@ const ProductCoverArea = ({
                     hasHeaderBadges ? "md:mt-0" : "md:mt-20pxr"
                   }`}
                 >
-                  <div className="flex items-center gap-4pxr md:gap-6pxr flex-wrap">
+                  <div className="flex items-center gap-2pxr flex-wrap">
                     {data.priceType && (
-                      <SquareBadge type={data.priceType} size="large" />
+                      <SquareBadge type={data.priceType} size="header" />
                     )}
-                    <ProductStateBadge product={data} />
-                    {hasPromotionBadge && (
-                      <SquareBadge
-                        type={promotionBadgeType}
-                        freeEpisodeNumber={data.badge?.freeEpisodeTicketCount}
-                        timePassValue={data.badge?.timepassFromTo}
-                      />
-                    )}
+                    <ProductStateBadge product={data} badgeSize="header" />
                   </div>
                   <span className="text-21pxr md:text-25pxr lg:text-30pxr font-semibold md:leading-[29px] lg:leading-[35px]">
                     {data.title}
