@@ -128,7 +128,7 @@ const FreeTop = ({ data }: Props) => {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div className="text-12pxr leading-16pxr text-dark-gray-500 font-semibold line-clamp-1">
+                  <div className="text-12pxr leading-16pxr text-dark-gray-500 font-semibold line-clamp-2">
                     {product.title}
                   </div>
                   <div className="mt-2pxr flex items-center justify-between min-w-0">

@@ -308,7 +308,19 @@ const ButtonBottom = ({
               className="flex gap-3pxr md:gap-7pxr items-center justify-center flex-1 md:flex-none md:w-[176px] md:h-[52px] h-[48px] bg-primary-200 rounded-10px md:rounded-14px text-12pxr md:text-14pxr !text-white hover:opacity-70 px-8pxr md:px-16pxr"
               onClick={handleBulkPurchaseClick}
             >
-              {isVolumeProduct ? "소장/대여" : `일괄구매 ${formattedPrice}원`}
+              {isVolumeProduct ? (
+                "소장/대여"
+              ) : (
+                <>
+                  <span className="flex flex-col items-center leading-[16px] md:hidden">
+                    <span>일괄구매</span>
+                    <span>{formattedPrice}원</span>
+                  </span>
+                  <span className="hidden md:inline">
+                    일괄구매 {formattedPrice}원
+                  </span>
+                </>
+              )}
             </Button>
           ) : null}
         </div>

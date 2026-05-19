@@ -18,6 +18,7 @@ import {
 import { SidebarInset } from "@/components/ui/sidebar";
 import { calculatePageCount, showAlert } from "@/lib/utils";
 import { downloadFile } from "@/lib/fileDownload";
+import { isConfirmedEnter } from "@/lib/keyboard";
 import { useState } from "react";
 
 export default function BlindPage() {
@@ -210,7 +211,7 @@ export default function BlindPage() {
                 }))
               }
               onKeyDown={(event) => {
-                if (event.key === "Enter") handleSearch();
+                if (isConfirmedEnter(event)) handleSearch();
               }}
             />
 

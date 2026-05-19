@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import ReactDatePicker from "react-datepicker";
 import { item_per_page } from "@/constants/common";
+import { isConfirmedEnter } from "@/lib/keyboard";
 import { useSearchParams } from "next/navigation";
 
 interface FilterControlsProps {
@@ -87,7 +88,9 @@ export function SearchDateNText({
         placeholder="검색어 입력"
         value={filters.search_word}
         onChange={(e) => handleChange("search_word", e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+        onKeyDown={(e) => {
+          if (isConfirmedEnter(e)) handleSearch();
+        }}
         className="w-[200px]"
       />
 

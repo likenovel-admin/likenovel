@@ -1,7 +1,7 @@
 "use client";
 
 import { useDeleteBanner } from "@/api/banner";
-import { useDeleteKeyword } from "@/api/keyword";
+import BannerThumbnailPreview from "@/app/banners/BannerThumbnailPreview";
 import CommonTable, { Column } from "@/components/common/CommonTable";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,25 @@ export default function BannersTable({
           : "",
     },
     { header: "배너명", key: "title" },
+    {
+      header: "썸네일",
+      key: "image_path",
+      render: (_, row: IBanner) => (
+        <div className="flex items-center gap-2">
+          <BannerThumbnailPreview
+            src={row.image_path}
+            label="PC"
+            alt={`${row.title} PC 배너`}
+          />
+          <BannerThumbnailPreview
+            src={row.mobile_image_path}
+            label="MO"
+            alt={`${row.title} 모바일 배너`}
+            className="h-10 w-8"
+          />
+        </div>
+      ),
+    },
     {
       header: "노출 기간",
       key: "date",

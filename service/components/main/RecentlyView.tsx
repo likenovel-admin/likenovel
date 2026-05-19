@@ -146,7 +146,7 @@ const RecentlyView = () => {
                         height={146}
                         className="object-cover w-[67px] md:w-[97px] h-[100px] md:h-[146px] rounded-[10px]"
                       />
-                      <span className="w-[67px] md:w-[92px] text-13pxr md:text-14pxr font-medium line-clamp-1 leading-[16px]">
+                      <span className="w-[67px] md:w-[92px] text-13pxr md:text-14pxr font-medium line-clamp-2 leading-[16px]">
                         {product.title}
                       </span>
                       <UserNickname
