@@ -30,6 +30,7 @@ import {
 } from "@/utils/nextEpisodeClickSignal";
 import { buildViewerPath } from "@/utils/viewerPath";
 import { savePendingWebsochatLaunch } from "@/utils/websochatLaunch";
+import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -47,6 +48,7 @@ const Viewer = () => {
   const viewerEpisodeId = isNoticeViewer ? 0 : episodeId;
 
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { setModal, setTypeModal } = useModalStore();
   const { setToast } = useToastStore();
   const { withLoginRequired } = useAuthWrapper();
@@ -107,6 +109,16 @@ const Viewer = () => {
     if (isNoticeViewer) return;
     if (!data?.data?.product_id) return;
 
+    queryClient.invalidateQueries({
+      queryKey: ["selectProductDetail", data.data.product_id],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["selectEpisode", data.data.product_id],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["selectUserInfo"],
+    });
+
     confirmViewerPageContext({
       episodeId,
       kind: viewerContextKind,
@@ -114,7 +126,14 @@ const Viewer = () => {
       hintProductId: productId,
     });
     syncProductDetailTransitionDecision();
-  }, [data?.data?.product_id, episodeId, productId, viewerContextKind, isNoticeViewer]);
+  }, [
+    data?.data?.product_id,
+    episodeId,
+    productId,
+    queryClient,
+    viewerContextKind,
+    isNoticeViewer,
+  ]);
 
   useEffect(() => {
     const fetchEpubFile = async () => {
