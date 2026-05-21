@@ -21,6 +21,26 @@ const API_URL = '/api';
 class ApiClient {
   private mutex = new Mutex();
 
+  private isLoginRequest(url: string) {
+    return url.includes("/login");
+  }
+
+  private shouldHandleAuthFailure(response: Response, errorCode: string) {
+    if (response.status === 401) return true;
+    if (response.status === 403) {
+      return errorCode === "E4010" || errorCode === "E4011";
+    }
+    return false;
+  }
+
+  private clearSessionAndRedirect() {
+    if (typeof window === "undefined") return;
+    clearLocalStorage();
+    if (window.location.pathname !== "/login") {
+      window.location.replace("/login");
+    }
+  }
+
   private getStoredToken() {
     if (typeof window === "undefined") return null;
     return localStorage.getItem("token");
@@ -93,6 +113,49 @@ class ApiClient {
     return fetch(endpoint, authOptions);
   }
 
+  private async refreshTokenAndRetry(
+    endpoint: string,
+    options: RequestInit,
+    notAuth = false
+  ) {
+    await this.mutex.waitForUnlock();
+
+    if (!this.mutex.isLocked()) {
+      const release = await this.mutex.acquire();
+      try {
+        const refreshToken = localStorage.getItem("refreshToken");
+        const accessToken = this.getStoredToken() || "";
+
+        if (!refreshToken) {
+          this.clearSessionAndRedirect();
+          return null;
+        }
+
+        const auth = await this.reissueToken(accessToken, refreshToken);
+
+        if (auth?.accessToken) {
+          localStorage.setItem("token", auth.accessToken);
+          if (auth.refreshToken) {
+            localStorage.setItem("refreshToken", auth.refreshToken);
+          }
+        } else {
+          this.clearSessionAndRedirect();
+          return null;
+        }
+      } finally {
+        release();
+      }
+    } else {
+      await this.mutex.waitForUnlock();
+      if (!this.getStoredToken()) {
+        this.clearSessionAndRedirect();
+        return null;
+      }
+    }
+
+    return this.fetchWithAuth(endpoint, options, notAuth);
+  }
+
   public async request<T>(props: IRequest): Promise<T> {
     let {
       url,
@@ -143,46 +206,25 @@ class ApiClient {
 
     let response = await this.fetchWithAuth(url, options, notAuth);
     const errorCode = await this.getErrorCode(response);
-    const shouldHandleAuthError = errorCode === "E4010" || errorCode === "E4011";
 
     if (
-      (response.status === 401 || response.status === 403) &&
-      !url.includes("/login") &&
+      this.shouldHandleAuthFailure(response, errorCode) &&
+      !this.isLoginRequest(url) &&
       !notAuth &&
-      shouldHandleAuthError
+      typeof window !== "undefined"
     ) {
       if (errorCode === "E4011") {
-        clearLocalStorage();
+        this.clearSessionAndRedirect();
+        return {} as T;
       } else {
-        await this.mutex.waitForUnlock();
-
-        if (!this.mutex.isLocked()) {
-          const release = await this.mutex.acquire();
-          try {
-            const refreshToken = localStorage.getItem("refreshToken");
-            const accessToken = this.getStoredToken() || "";
-
-            if (!refreshToken) {
-              clearLocalStorage();
-            } else {
-              const auth = await this.reissueToken(accessToken, refreshToken);
-
-              if (auth?.accessToken) {
-                localStorage.setItem("token", auth.accessToken);
-                if (auth.refreshToken) {
-                  localStorage.setItem("refreshToken", auth.refreshToken);
-                }
-                response = await this.fetchWithAuth(url, options, notAuth);
-              } else {
-                clearLocalStorage();
-              }
-            }
-          } finally {
-            release();
-          }
-        } else {
-          await this.mutex.waitForUnlock();
-          response = await this.fetchWithAuth(url, options, notAuth);
+        const retryResponse = await this.refreshTokenAndRetry(url, options, notAuth);
+        if (!retryResponse) {
+          return {} as T;
+        }
+        response = retryResponse;
+        if (this.shouldHandleAuthFailure(response, await this.getErrorCode(response))) {
+          this.clearSessionAndRedirect();
+          return {} as T;
         }
       }
     }
