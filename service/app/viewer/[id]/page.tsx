@@ -20,6 +20,7 @@ import {
   setLocalStorage,
   STORAGE_KEYS,
 } from "@/utils/localStorage";
+import { setGuestReadProgress } from "@/utils/guestReadProgress";
 import {
   confirmViewerPageContext,
   upsertPendingViewerPageContext,
@@ -155,7 +156,27 @@ const Viewer = () => {
       }
     };
     fetchEpubFile();
-  }, [data?.data.epubFilePath]);
+  }, [data?.data.epubFilePath, setToast]);
+
+  useEffect(() => {
+    if (isAuthenticated || isNoticeViewer) return;
+
+    const episode = data?.data;
+    if (!episode?.product_id || !episode.episodeNo) return;
+    if (episode.privateYn === "Y" || episode.productPrivateYn === "Y") return;
+
+    setGuestReadProgress({
+      productId: episode.product_id,
+      episodeId,
+      episodeNo: episode.episodeNo,
+      episodeTitle: episode.episodeTitle || "",
+    });
+  }, [
+    data?.data,
+    episodeId,
+    isAuthenticated,
+    isNoticeViewer,
+  ]);
 
   const handleToggleNav = () => {
     setShowNav(!showNav);

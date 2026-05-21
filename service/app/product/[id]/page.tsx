@@ -34,6 +34,10 @@ import {
   startProductTrace,
   updateProductTrace,
 } from "@/utils/productTrace";
+import {
+  getGuestReadProgress,
+  type GuestReadProgressRecord,
+} from "@/utils/guestReadProgress";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -52,6 +56,8 @@ export default function ProductDetail() {
   const [entrySource, setEntrySource] = useState<ProductDetailEntrySource | null>(null);
   const [entrySourceResolved, setEntrySourceResolved] = useState(false);
   const [activeTab, setActiveTab] = useState("episode");
+  const [guestReadProgress, setGuestReadProgressState] =
+    useState<GuestReadProgressRecord | null>(null);
   const { data, isPending, isSuccess } = useSelectProductDetail(productId);
   const { setToast } = useToastStore();
   const { setHasNew } = useGiftBoxStore();
@@ -108,6 +114,37 @@ export default function ProductDetail() {
         firstEpisodeTitle: episodes?.pages[0].data.episodes[0]?.episodeTitle ?? "",
       };
     }, [episodes]);
+
+  useEffect(() => {
+    if (canUseUserScope || !productId) {
+      setGuestReadProgressState(null);
+      return;
+    }
+
+    const refreshGuestReadProgress = () => {
+      setGuestReadProgressState(getGuestReadProgress(productId));
+    };
+
+    refreshGuestReadProgress();
+    window.addEventListener("pageshow", refreshGuestReadProgress);
+    window.addEventListener("focus", refreshGuestReadProgress);
+
+    return () => {
+      window.removeEventListener("pageshow", refreshGuestReadProgress);
+      window.removeEventListener("focus", refreshGuestReadProgress);
+    };
+  }, [canUseUserScope, productId]);
+
+  const effectiveEpisodeId =
+    !canUseUserScope && guestReadProgress ? guestReadProgress.episodeId : episodeId;
+  const effectiveLatestEpisodeNo =
+    !canUseUserScope && guestReadProgress
+      ? guestReadProgress.episodeNo
+      : latestEpisodeNo;
+  const effectiveLatestEpisodeTitle =
+    !canUseUserScope && guestReadProgress
+      ? guestReadProgress.episodeTitle
+      : latestEpisodeTitle;
 
   const {
     productData,
@@ -541,9 +578,9 @@ export default function ProductDetail() {
             isSuccess={isSuccess}
             isLoading={isPending}
             evaluations={mergeKeysEvaluation(evaluationData as IEvaluation)}
-            episodeId={episodeId}
-            latestEpisodeNo={latestEpisodeNo}
-            latestEpisodeTitle={latestEpisodeTitle}
+            episodeId={effectiveEpisodeId}
+            latestEpisodeNo={effectiveLatestEpisodeNo}
+            latestEpisodeTitle={effectiveLatestEpisodeTitle}
             episodeCount={episodeCount}
             firstEpisodeId={firstEpisodeId}
             firstEpisodeTitle={firstEpisodeTitle}
