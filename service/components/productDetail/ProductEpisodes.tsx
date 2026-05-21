@@ -11,6 +11,7 @@ import { formatKoreanNumber } from "@/utils/formatKoreanNumber";
 import { getEpisodeBadge } from "@/utils/getEpisodeBadge";
 import { getFormattingDate } from "@/utils/getFormattingDate";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
+import type { ProductDetailEntrySource } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -35,6 +36,7 @@ interface Props {
   authorId?: number;
   notices: INotice[];
   waitForFreeYn?: "Y" | "N";
+  entrySource?: ProductDetailEntrySource | null;
 }
 
 const ProductEpisodes = ({
@@ -45,6 +47,7 @@ const ProductEpisodes = ({
   authorId,
   notices,
   waitForFreeYn,
+  entrySource,
 }: Props) => {
   const router = useRouter();
   const { withLoginRequired } = useAuthWrapper();
@@ -147,9 +150,14 @@ const ProductEpisodes = ({
   };
 
   const handleClickEpisode = (episode: ISelectEpisodeObject) => {
+    const viewerPath = buildViewerPath(episode.episodeId, {
+      productId,
+      entrySource,
+    });
+
     if (!isAuthenticated && (episode.priceType === "paid" || (episode.episodeNo || 0) > 5)) {
       withLoginRequired(() => undefined, {
-        redirectPath: buildViewerPath(episode.episodeId, { productId }),
+        redirectPath: viewerPath,
         resumeContext: {
           productId,
           originPageType: "product_detail",
@@ -171,12 +179,13 @@ const ProductEpisodes = ({
         episodeId: episode.episodeId,
         productId: productId,
         episodeTitle: episode.episodeTitle,
+        entrySource,
       });
       return;
     }
 
     // Free episode or has rental tickets - go to viewer
-    router.push(buildViewerPath(episode.episodeId, { productId }));
+    router.push(viewerPath);
   };
 
   return (

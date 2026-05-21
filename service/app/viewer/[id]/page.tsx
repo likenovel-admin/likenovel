@@ -29,6 +29,7 @@ import {
   type NextEpisodeClickSignalContext,
   postNextEpisodeClickSignalBestEffort,
 } from "@/utils/nextEpisodeClickSignal";
+import { getProductDetailEntrySource } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
 import { savePendingWebsochatLaunch } from "@/utils/websochatLaunch";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,6 +46,7 @@ const Viewer = () => {
   const viewerContextKind = viewerType === "notice" ? "notice" : "episode";
   const productId = searchParams.get("productId");
   const productTitle = searchParams.get("title");
+  const entrySource = getProductDetailEntrySource(searchParams.get("entrySource"));
   const hintedProductId = Number(productId || 0) || 0;
   const viewerEpisodeId = isNoticeViewer ? 0 : episodeId;
 
@@ -191,6 +193,7 @@ const Viewer = () => {
       <EpisodeModal
         productId={data?.data?.product_id}
         currentEpisodeId={episodeId}
+        entrySource={entrySource}
       />
     );
   };
@@ -217,6 +220,7 @@ const Viewer = () => {
     const nextViewerPath = episode?.nextEpisodeId
       ? buildViewerPath(episode.nextEpisodeId, {
           productId: episode.product_id,
+          entrySource,
         })
       : null;
 
@@ -229,6 +233,7 @@ const Viewer = () => {
             productId: episode.product_id,
             fromEpisodeId: episodeId,
             redirectToEpisodeId: episode.nextEpisodeId,
+            entrySource,
           }
         : null;
 
@@ -293,6 +298,7 @@ const Viewer = () => {
       router.push(
         buildViewerPath(data?.data?.previousEpisodeId, {
           productId: data?.data?.product_id,
+          entrySource,
         })
       );
     }

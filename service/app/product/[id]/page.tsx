@@ -25,8 +25,10 @@ import { IEvaluation, IProduct } from "@/types";
 import { mergeKeysEvaluation } from "@/utils/common";
 import {
   consumePendingProductDetailEntrySource,
-  ProductDetailEntrySource,
+  isProductDetailEntrySourceResolvedForProduct,
+  ProductDetailEntrySourceState,
   PRODUCT_DETAIL_ENTRY_SOURCE,
+  resolveProductDetailEntrySourceState,
 } from "@/utils/productPath";
 import {
   endProductTrace,
@@ -53,8 +55,21 @@ export default function ProductDetail() {
   const pathname = usePathname();
   const pathSegments = pathname.split("/");
   const productId = Number(pathSegments[pathSegments.length - 1]);
-  const [entrySource, setEntrySource] = useState<ProductDetailEntrySource | null>(null);
-  const [entrySourceResolved, setEntrySourceResolved] = useState(false);
+  const [entrySourceState, setEntrySourceState] =
+    useState<ProductDetailEntrySourceState>({
+      productId: null,
+      entrySource: null,
+    });
+  const entrySource =
+    entrySourceState.productId === productId ? entrySourceState.entrySource : null;
+  const entrySourceResolved = isProductDetailEntrySourceResolvedForProduct(
+    entrySourceState,
+    productId
+  );
+  const viewerEntrySource =
+    entrySource === PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION
+      ? entrySource
+      : null;
   const [activeTab, setActiveTab] = useState("episode");
   const [guestReadProgress, setGuestReadProgressState] =
     useState<GuestReadProgressRecord | null>(null);
@@ -262,9 +277,14 @@ export default function ProductDetail() {
   }, [canUseUserScope, user?.userId, user?.userRole, productId]);
 
   useEffect(() => {
-    setEntrySourceResolved(false);
-    setEntrySource(consumePendingProductDetailEntrySource(productId));
-    setEntrySourceResolved(true);
+    const consumedEntrySource = consumePendingProductDetailEntrySource(productId);
+    setEntrySourceState((current) =>
+      resolveProductDetailEntrySourceState(
+        current,
+        productId,
+        consumedEntrySource
+      )
+    );
   }, [productId]);
 
   useEffect(() => {
@@ -584,6 +604,7 @@ export default function ProductDetail() {
             episodeCount={episodeCount}
             firstEpisodeId={firstEpisodeId}
             firstEpisodeTitle={firstEpisodeTitle}
+            entrySource={viewerEntrySource}
           />
         </div>
         <div className="flex w-full max-w-[800px] mt-30pxr md:mt-10pxr">
@@ -635,6 +656,7 @@ export default function ProductDetail() {
               priceType={productData?.priceType}
               episodeCount={episodeCount}
               waitForFreeYn={productData?.badge?.waitForFreeYn || productData?.badge?.waitingForFreeYn}
+              entrySource={viewerEntrySource}
             />
             <div
               ref={commentRef}

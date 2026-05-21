@@ -1,5 +1,5 @@
 import { useSelectViewerPath, useSelectNextEpisodeInfo } from "@/app/api/query/episode";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ArrowRight from "/public/images/arrow-right-medium.svg";
 import useModalStore from "@/store/modalStore";
 import { TYPE_MODAL } from "@/constants/common";
@@ -10,6 +10,7 @@ import {
   type NextEpisodeClickSignalContext,
   postNextEpisodeClickSignalBestEffort,
 } from "@/utils/nextEpisodeClickSignal";
+import { getProductDetailEntrySource } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
 import Image from "next/image";
 import { useRef } from "react";
@@ -20,6 +21,8 @@ interface NextEpisodeProps {
 
 export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const entrySource = getProductDetailEntrySource(searchParams.get("entrySource"));
   const lastTouchTriggeredAtRef = useRef(0);
   const { withLoginRequired } = useAuthWrapper();
   const { setTypeModal } = useModalStore();
@@ -50,6 +53,7 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
     const nextViewerPath = episode?.nextEpisodeId
       ? buildViewerPath(episode.nextEpisodeId, {
           productId: episode.product_id,
+          entrySource,
         })
       : null;
 
@@ -62,6 +66,7 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
             productId: episode.product_id,
             fromEpisodeId: currentEpisodeId,
             redirectToEpisodeId: episode.nextEpisodeId,
+            entrySource,
           }
         : null;
 
