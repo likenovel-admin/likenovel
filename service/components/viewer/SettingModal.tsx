@@ -26,6 +26,8 @@ const SettingModal = () => {
     setSettings({ theme });
   };
 
+  const isCoverVisible = !settings.hideImageCover;
+
   const themeCheck = (theme: string) => {
     if (settings.theme === theme) {
       return (
@@ -205,6 +207,25 @@ const SettingModal = () => {
             <span
               className={`block w-[20px] h-[20px] rounded-full bg-white shadow transition-transform duration-200 ${
                 settings.useParagraphIndent ? "translate-x-[22px]" : "translate-x-[2px]"
+              }`}
+            />
+          </button>
+        </div>
+        <div className="border border-b border-light-gray-200 w-[348px] my-[12px]" />
+        <div className="flex justify-between items-center">
+          <span className="font-semibold">표지 표시</span>
+          <button
+            type="button"
+            aria-pressed={isCoverVisible}
+            aria-label={isCoverVisible ? "표지 숨기기" : "표지 표시"}
+            onClick={() => setSettings({ hideImageCover: isCoverVisible })}
+            className={`w-[44px] h-[24px] rounded-full transition-colors duration-200 ${
+              isCoverVisible ? "bg-[#4C63FF]" : "bg-[#D1D5DB]"
+            } relative`}
+          >
+            <span
+              className={`block w-[20px] h-[20px] rounded-full bg-white shadow transition-transform duration-200 ${
+                isCoverVisible ? "translate-x-[22px]" : "translate-x-[2px]"
               }`}
             />
           </button>
