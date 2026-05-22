@@ -15,10 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { item_per_page } from "@/constants/common";
 import { useGetStatisticSitePageRoutes } from "@/api/statistic";
 import { calculatePageCount } from "@/lib/utils";
 import { IStatisticSitePageRoute } from "@/types/statistic";
+
+const pageViewRoutesPerPage = 30;
 
 const routeGroupOptions = [
   { value: "all", label: "전체" },
@@ -134,7 +135,7 @@ export default function Page() {
   const queryParams = useMemo(
     () => ({
       page,
-      count_per_page: item_per_page,
+      count_per_page: pageViewRoutesPerPage,
       start_date: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
       end_date: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
       route_group: routeGroup === "all" ? undefined : routeGroup,
@@ -149,7 +150,7 @@ export default function Page() {
   } = useGetStatisticSitePageRoutes(queryParams);
 
   const summary = data?.summary;
-  const totalPages = calculatePageCount(data?.total_count || 0, item_per_page);
+  const totalPages = calculatePageCount(data?.total_count || 0, pageViewRoutesPerPage);
 
   return (
     <SidebarInset className="bg-sidebar-inset-background">
