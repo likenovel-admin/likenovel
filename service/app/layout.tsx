@@ -1,4 +1,8 @@
 import AdminPopup from "@/components/common/AdminPopup";
+import {
+  ADMIN_POPUP_PRELOAD_SCRIPT_ID,
+  buildAdminPopupPreloadScript,
+} from "@/constants/adminPopup";
 import AuthInitializer from "@/components/common/AuthInitializer";
 import Confirm from "@/components/common/Confirm";
 import NavigationTracker from "@/components/common/NavigationTracker";
@@ -46,6 +50,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${pretendard.className}`}>
+        <script
+          id={ADMIN_POPUP_PRELOAD_SCRIPT_ID}
+          dangerouslySetInnerHTML={{ __html: buildAdminPopupPreloadScript() }}
+        />
         <AdminPopup />
         <WithNoSSR>
           <ReactQueryProvider>
