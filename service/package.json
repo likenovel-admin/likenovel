@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test:utils": "node --experimental-strip-types constants/adminPopup.spec.mts && node --experimental-strip-types utils/funnelRouteTracker.spec.mts && node --experimental-strip-types utils/guestReadProgress.spec.mts && node --experimental-strip-types utils/nextEpisodeClickSignal.spec.mts && node --experimental-strip-types utils/productPath.spec.mts && node --experimental-strip-types utils/sitePageViewTaxonomy.spec.mts && node --experimental-strip-types utils/viewerPath.spec.mts",
+    "test:utils": "node --experimental-strip-types constants/adminPopup.spec.mts && node --experimental-strip-types utils/funnelRouteTracker.spec.mts && node --experimental-strip-types utils/guestReadProgress.spec.mts && node --experimental-strip-types utils/nextEpisodeClickSignal.spec.mts && node --experimental-strip-types utils/productPath.spec.mts && node --experimental-strip-types utils/sitePageDwellTracker.spec.mts && node --experimental-strip-types utils/sitePageViewTaxonomy.spec.mts && node --experimental-strip-types utils/viewerPath.spec.mts",
     "lint": "next lint"
   },
   "dependencies": {

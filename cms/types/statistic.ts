@@ -9,6 +9,29 @@ export interface IStatisticSite {
   visitors: number;
 }
 
+export interface IStatisticSitePageRouteSummary {
+  page_view_count: number;
+  visitor_count: number;
+  session_count: number;
+  dwell_event_count: number;
+  active_dwell_total_ms: number;
+  active_dwell_avg_ms: number;
+  short_dwell_count: number;
+}
+
+export interface IStatisticSitePageRoute {
+  route_group: string;
+  route_name: string;
+  path_template: string;
+  page_view_count: number;
+  visitor_count: number;
+  session_count: number;
+  dwell_event_count: number;
+  active_dwell_total_ms: number;
+  active_dwell_avg_ms: number;
+  short_dwell_count: number;
+}
+
 export interface IStatisticPayment {
   date: string;
   pay_count: number;
