@@ -24,7 +24,9 @@ import useToastStore from "@/store/toastStore";
 import { IEvaluation, IProduct } from "@/types";
 import { mergeKeysEvaluation } from "@/utils/common";
 import {
-  consumePendingProductDetailEntrySource,
+  consumeProductDetailEntrySource,
+  getEffectiveProductDetailEntrySource,
+  getProductDetailEntrySource,
   isProductDetailEntrySourceResolvedForProduct,
   ProductDetailEntrySourceState,
   PRODUCT_DETAIL_ENTRY_SOURCE,
@@ -41,7 +43,7 @@ import {
   type GuestReadProgressRecord,
 } from "@/utils/guestReadProgress";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function ProductDetail() {
@@ -53,6 +55,9 @@ export default function ProductDetail() {
   const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const entrySourceParam = searchParams.get("entrySource");
+  const urlEntrySource = getProductDetailEntrySource(entrySourceParam);
   const pathSegments = pathname.split("/");
   const productId = Number(pathSegments[pathSegments.length - 1]);
   const [entrySourceState, setEntrySourceState] =
@@ -60,8 +65,11 @@ export default function ProductDetail() {
       productId: null,
       entrySource: null,
     });
-  const entrySource =
-    entrySourceState.productId === productId ? entrySourceState.entrySource : null;
+  const entrySource = getEffectiveProductDetailEntrySource(
+    urlEntrySource,
+    entrySourceState,
+    productId
+  );
   const entrySourceResolved = isProductDetailEntrySourceResolvedForProduct(
     entrySourceState,
     productId
@@ -277,7 +285,10 @@ export default function ProductDetail() {
   }, [canUseUserScope, user?.userId, user?.userRole, productId]);
 
   useEffect(() => {
-    const consumedEntrySource = consumePendingProductDetailEntrySource(productId);
+    const consumedEntrySource = consumeProductDetailEntrySource(
+      productId,
+      urlEntrySource
+    );
     setEntrySourceState((current) =>
       resolveProductDetailEntrySourceState(
         current,
@@ -285,7 +296,7 @@ export default function ProductDetail() {
         consumedEntrySource
       )
     );
-  }, [productId]);
+  }, [productId, urlEntrySource]);
 
   useEffect(() => {
     if (!canUseUserScope || !isSuccess || !productData?.productId || !user?.userId) {

@@ -46,6 +46,10 @@ export interface ProductDetailEntrySourceState {
   entrySource: ProductDetailEntrySource | null;
 }
 
+interface BuildProductDetailPathOptions {
+  entrySource?: string | null;
+}
+
 const PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_KEY =
   "pending_product_detail_entry_source";
 const PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_TTL_MS = 10 * 1000;
@@ -54,8 +58,22 @@ const PRODUCT_DETAIL_ENTRY_SOURCE_SET = new Set<ProductDetailEntrySource>(
   Object.values(PRODUCT_DETAIL_ENTRY_SOURCE)
 );
 
-export const buildProductDetailPath = (productId: number) =>
-  `/product/${productId}`;
+export const buildProductDetailPath = (
+  productId: number,
+  options?: BuildProductDetailPathOptions
+) => {
+  const searchParams = new URLSearchParams();
+  const entrySource = options?.entrySource?.trim();
+
+  if (entrySource) {
+    searchParams.set("entrySource", entrySource);
+  }
+
+  const queryString = searchParams.toString();
+  return queryString
+    ? `/product/${productId}?${queryString}`
+    : `/product/${productId}`;
+};
 
 export const getProductDetailEntrySource = (
   value: string | null
@@ -65,6 +83,18 @@ export const getProductDetailEntrySource = (
   }
 
   return value as ProductDetailEntrySource;
+};
+
+export const getEffectiveProductDetailEntrySource = (
+  urlEntrySource: ProductDetailEntrySource | null,
+  state: ProductDetailEntrySourceState,
+  productId: number
+): ProductDetailEntrySource | null => {
+  if (urlEntrySource) {
+    return urlEntrySource;
+  }
+
+  return state.productId === productId ? state.entrySource : null;
 };
 
 export const resolveProductDetailEntrySourceState = (
@@ -158,4 +188,12 @@ export const consumePendingProductDetailEntrySource = (
     sessionStorage.removeItem(PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_KEY);
     return null;
   }
+};
+
+export const consumeProductDetailEntrySource = (
+  productId: number,
+  urlEntrySource: ProductDetailEntrySource | null
+): ProductDetailEntrySource | null => {
+  const pendingEntrySource = consumePendingProductDetailEntrySource(productId);
+  return urlEntrySource ?? pendingEntrySource;
 };

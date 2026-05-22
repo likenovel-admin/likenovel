@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import {
+  buildProductDetailPath,
+  getProductDetailEntrySource,
+  getEffectiveProductDetailEntrySource,
+  consumeProductDetailEntrySource,
   PRODUCT_DETAIL_ENTRY_SOURCE,
   consumePendingProductDetailEntrySource,
   isProductDetailEntrySourceResolvedForProduct,
@@ -7,6 +11,60 @@ import {
   setPendingProductDetailEntrySource,
   shouldPersistProductDetailEntrySourceForRecharge,
 } from "./productPath.ts";
+
+assert.equal(
+  buildProductDetailPath(634, {
+    entrySource: PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION,
+  }),
+  "/product/634?entrySource=ai_taste_section",
+  "product detail URL should carry entry source when provided"
+);
+
+assert.equal(
+  buildProductDetailPath(634, {
+    entrySource: "  ",
+  }),
+  "/product/634",
+  "blank entry source should not create a query parameter"
+);
+
+assert.equal(
+  getProductDetailEntrySource(
+    new URLSearchParams("entrySource=ai_taste_section").get("entrySource")
+  ),
+  PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION,
+  "product detail page should be able to resolve entry source from URL"
+);
+
+assert.equal(
+  getEffectiveProductDetailEntrySource(
+    PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION,
+    { productId: 634, entrySource: null },
+    634
+  ),
+  PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION,
+  "URL entry source should be available before the effect-backed state updates"
+);
+
+assert.equal(
+  getEffectiveProductDetailEntrySource(
+    null,
+    { productId: 634, entrySource: PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION },
+    634
+  ),
+  PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION,
+  "state entry source should remain the fallback when the URL has no source"
+);
+
+assert.equal(
+  getEffectiveProductDetailEntrySource(
+    null,
+    { productId: 633, entrySource: PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION },
+    634
+  ),
+  null,
+  "state entry source from another product must not leak into the current product"
+);
 
 assert.deepEqual(
   resolveProductDetailEntrySourceState(
@@ -110,6 +168,29 @@ assert.equal(
   consumePendingProductDetailEntrySource(634),
   PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION,
   "custom pending TTL should preserve attribution through recharge round trips"
+);
+
+Date.now = () => 41_000;
+setPendingProductDetailEntrySource(
+  634,
+  PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION,
+  60_000
+);
+
+Date.now = () => 42_000;
+assert.equal(
+  consumeProductDetailEntrySource(
+    634,
+    PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION
+  ),
+  PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION,
+  "URL entry source should win while clearing the pending source"
+);
+
+assert.equal(
+  consumePendingProductDetailEntrySource(634),
+  null,
+  "pending entry source should not leak after a URL-backed product detail view"
 );
 
 Date.now = originalDateNow;
