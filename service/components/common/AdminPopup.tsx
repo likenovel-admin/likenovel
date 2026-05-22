@@ -2,6 +2,7 @@
 import { IPopup, ISelectPopupsResponse } from "@/app/api/query/popup/dto";
 import {
   ADMIN_POPUP_QUERY_API_PATH,
+  ADMIN_POPUP_PRELOAD_WINDOW_KEY,
   shouldFetchAdminPopup,
 } from "@/constants/adminPopup";
 import {
@@ -16,6 +17,23 @@ import {
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+
+type AdminPopupPreloadState = {
+  status: "pending" | "resolved" | "rejected";
+  data?: IPopup | null;
+  promise?: Promise<IPopup | null> | null;
+  consumed?: boolean;
+};
+
+type AdminPopupPreloadWindow = Window & {
+  __likenovelAdminPopupPreload?: AdminPopupPreloadState;
+};
+
+const getAdminPopupPreloadState = () => {
+  if (typeof window === "undefined") return undefined;
+  const popupWindow = window as AdminPopupPreloadWindow;
+  return popupWindow[ADMIN_POPUP_PRELOAD_WINDOW_KEY];
+};
 
 /**
  * AdminPopup Component
@@ -59,9 +77,11 @@ const AdminPopup = () => {
     }
 
     if (typeof window !== "undefined") {
+      const preloadState = getAdminPopupPreloadState();
       const pendingOnboarding =
         sessionStorage.getItem(ONBOARDING_FIRST_LOGIN_SESSION_KEY) === "Y";
       if (pendingOnboarding) {
+        if (preloadState) preloadState.consumed = true;
         setIsVisible(false);
         return;
       }
@@ -69,48 +89,55 @@ const AdminPopup = () => {
 
     const controller = new AbortController();
 
-    const showPopupIfAllowed = async () => {
-      try {
-        const response = await fetch(ADMIN_POPUP_QUERY_API_PATH, {
-          credentials: "same-origin",
-          headers: {
-            Accept: "application/json",
-          },
-          signal: controller.signal,
-        });
+    const applyPopupIfAllowed = (popup?: IPopup | null) => {
+      if (controller.signal.aborted) return;
 
-        if (!response.ok) {
-          throw new Error(`Popup request failed: ${response.status}`);
-        }
+      if (!popup?.id || !popup.imagePath) {
+        setCurrentPopup(null);
+        setIsVisible(false);
+        return;
+      }
 
-        const popupsData = (await response.json()) as ISelectPopupsResponse;
-        const popup = popupsData?.data;
+      // Check localStorage for 1-day hide preference
+      const closedUntilData = getLocalStorage<Record<string, string>>(
+        STORAGE_KEYS.POPUP_CLOSED_UNTIL
+      );
 
-        if (controller.signal.aborted) return;
+      if (closedUntilData && closedUntilData[popup.id]) {
+        const closedUntil = new Date(closedUntilData[popup.id]);
+        const now = new Date();
 
-        if (!popup?.id || !popup.imagePath) {
-          setCurrentPopup(null);
+        if (now < closedUntil) {
           setIsVisible(false);
           return;
         }
+      }
 
-        // Check localStorage for 1-day hide preference
-        const closedUntilData = getLocalStorage<Record<string, string>>(
-          STORAGE_KEYS.POPUP_CLOSED_UNTIL
-        );
+      setCurrentPopup(popup);
+      setIsVisible(true);
+    };
 
-        if (closedUntilData && closedUntilData[popup.id]) {
-          const closedUntil = new Date(closedUntilData[popup.id]);
-          const now = new Date();
+    const fetchPopup = async () => {
+      const response = await fetch(ADMIN_POPUP_QUERY_API_PATH, {
+        credentials: "same-origin",
+        headers: {
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+      });
 
-          if (now < closedUntil) {
-            setIsVisible(false);
-            return;
-          }
-        }
+      if (!response.ok) {
+        throw new Error(`Popup request failed: ${response.status}`);
+      }
 
-        setCurrentPopup(popup);
-        setIsVisible(true);
+      const popupsData = (await response.json()) as ISelectPopupsResponse;
+      return popupsData?.data;
+    };
+
+    const showPopupIfAllowed = async () => {
+      try {
+        const popup = await fetchPopup();
+        applyPopupIfAllowed(popup);
       } catch (error) {
         if (controller.signal.aborted) return;
         console.error("[AdminPopup] Failed to load popup:", error);
@@ -119,7 +146,34 @@ const AdminPopup = () => {
       }
     };
 
-    showPopupIfAllowed();
+    const preloadState = getAdminPopupPreloadState();
+
+    if (preloadState?.consumed) {
+      showPopupIfAllowed();
+    } else if (preloadState?.status === "resolved") {
+      preloadState.consumed = true;
+      applyPopupIfAllowed(preloadState.data);
+    } else if (preloadState?.status === "pending" && preloadState.promise) {
+      preloadState.consumed = true;
+      preloadState.promise
+        .then(async (popup) => {
+          const latestPreloadState = getAdminPopupPreloadState();
+          if (!popup && latestPreloadState?.status === "rejected") {
+            const fallbackPopup = await fetchPopup();
+            applyPopupIfAllowed(fallbackPopup);
+            return;
+          }
+          applyPopupIfAllowed(popup);
+        })
+        .catch((error) => {
+          if (controller.signal.aborted) return;
+          console.error("[AdminPopup] Failed to load popup:", error);
+          setCurrentPopup(null);
+          setIsVisible(false);
+        });
+    } else {
+      showPopupIfAllowed();
+    }
 
     return () => {
       controller.abort();
