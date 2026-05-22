@@ -1,6 +1,6 @@
 # 브랜칭 & 배포 & 인프라 가이드
 
-Last updated: 2026-03-17
+Last updated: 2026-05-22
 
 ---
 
@@ -20,6 +20,14 @@ main (개발 기준)
 
 > **흐름: `main` → `dev` (스테이징 검증) → `prod` (운영 배포)**
 > prod에는 dev에서 검증된 코드만 올린다. main → prod 직접 머지 금지.
+
+### 작업 브랜치 원칙
+
+- 모든 기능/버그 수정은 최신 `origin/main` 기준에서 시작한다.
+- Bart 또는 외부 작업자는 `origin/main` 기준 task branch까지만 push한다. `main`/`dev`/`prod` 머지와 배포는 우리가 검수 후 수행한다.
+- `main`에 이미 merge된 feature/fix 브랜치는 닫힌 브랜치로 본다. 같은 로컬 브랜치가 남아 있어도 그 위에 새 작업 커밋을 얹지 않는다.
+- 현재 브랜치가 `origin/main` 기준 `ahead`와 `behind`를 동시에 가지면 push/merge 전에 중단한다. local-only 커밋과 origin-only 커밋을 분리해 읽고, submodule pointer가 최신 main 기준보다 내려가지 않는지 확인한다.
+- `dev`와 `prod`는 배포 환경 브랜치다. 기능 커밋을 직접 만들지 않고, `main -> dev -> prod` 순서의 merge commit으로만 전파한다.
 
 ---
 
@@ -319,6 +327,8 @@ main/dev/prod 히스토리나 backend submodule pointer가 꼬였을 때는 아�
 - public branch에 force-push하지 않는다.
 - `git add .` / `git add -A`를 쓰지 않는다.
 - submodule pointer를 브랜치명 감으로 stage하지 않는다. 항상 fetch 후 명시 SHA를 확인한다.
+- 이미 `main`에 merge된 feature/fix 브랜치를 새 작업 브랜치처럼 재사용하지 않는다.
+- `ahead 1, behind N` 상태의 local-only 커밋을 그대로 push하지 않는다.
 
 #### 정상화 순서
 
@@ -384,6 +394,8 @@ git show -s --format='%H%nparents: %P%nsubject: %s' HEAD
 
 - merge 중이고 commit 전이면 `git merge --abort` 후 lock부터 다시 시작한다.
 - local commit만 있고 push 전이면 push하지 않는다. diff/parents를 보고 사용자 승인 후 되돌리거나 새 merge commit을 만든다.
+- 이미 `main`에 merge된 작업 브랜치 위에 새 local-only 커밋을 만들었다면 현재 브랜치를 그대로 push하지 않는다. 새 커밋이 공개되지 않았고 local-only가 명확할 때만 최신 `origin/main` 위로 재정렬한다.
+- 재정렬 후 `git diff --submodule=log origin/main..HEAD -- likenovel-service-api/likenovel-service-api`가 비어 있고, root submodule pointer가 `origin/main`보다 내려가지 않는지 확인한다.
 - 이미 잘못 push했다면 force-push로 지우지 않는다. 현재 원격 SHA를 새 lock으로 잡고, 올바른 SHA로 forward-fix merge/align commit을 추가한다.
 - backend prod 배포가 CodeDeploy version update commit을 추가했으면 root prod pointer는 그 최신 backend prod SHA로 align한다. dev bridge SHA로 내리면 downgrade다.
 - 완료 판정은 root/backend 모두에서 `main -> dev`, `dev -> prod` ancestry가 `0`일 때만 한다.
