@@ -58,6 +58,50 @@ export type SitePageViewPayload = {
   taxonomyVersion: number;
 };
 
+export const SITE_PAGE_DWELL_MIN_ACTIVE_MS = 1000;
+export const SITE_PAGE_DWELL_MAX_ACTIVE_MS = 30 * 60 * 1000;
+
+const sitePageDwellTrackedRouteGroups = new Set<SitePageViewRouteGroup>([
+  "home",
+  "viewer",
+  "product_detail",
+  "search",
+  "ranking",
+  "websochat",
+  "event",
+  "promotion",
+  "review",
+  "quest",
+  "notice",
+  "faq",
+  "catalog",
+  "author",
+  "legal",
+  "vote",
+]);
+
+export type BuildSitePageDwellPayloadInput = {
+  pathname: string;
+  visitorId: string;
+  sessionId: string;
+  eventId: string;
+  occurredAt: string;
+  activeMs: number;
+};
+
+export type SitePageDwellPayload = {
+  eventId: string;
+  occurredAt: string;
+  visitorId: string;
+  sessionId: string;
+  routeGroup: SitePageViewRouteGroup;
+  routeName: string;
+  pathTemplate: string;
+  activeMs: number;
+  source: "service-web";
+  taxonomyVersion: number;
+};
+
 const numberSegment = "\\d+";
 
 const routeRules: Array<{ pattern: RegExp; meta: SitePageViewRouteMeta }> = [
@@ -144,6 +188,48 @@ export function buildSitePageViewPayload(
     path,
     queryHash: null,
     referrerPath: input.referrerPath ? sanitizeSitePageViewPath(input.referrerPath) : null,
+    source: "service-web",
+    taxonomyVersion: SITE_PAGE_VIEW_TAXONOMY_VERSION,
+  };
+}
+
+export function shouldTrackSitePageDwellPath(pathname: string): boolean {
+  if (!shouldTrackSitePageViewPath(pathname)) {
+    return false;
+  }
+  const meta = getSitePageViewRouteMeta(pathname);
+  return sitePageDwellTrackedRouteGroups.has(meta.routeGroup);
+}
+
+export function normalizeSitePageDwellActiveMs(activeMs: number): number | null {
+  if (!Number.isFinite(activeMs) || activeMs < SITE_PAGE_DWELL_MIN_ACTIVE_MS) {
+    return null;
+  }
+  return Math.min(Math.round(activeMs), SITE_PAGE_DWELL_MAX_ACTIVE_MS);
+}
+
+export function buildSitePageDwellPayload(
+  input: BuildSitePageDwellPayloadInput
+): SitePageDwellPayload | null {
+  if (!shouldTrackSitePageDwellPath(input.pathname)) {
+    return null;
+  }
+
+  const activeMs = normalizeSitePageDwellActiveMs(input.activeMs);
+  if (activeMs == null) {
+    return null;
+  }
+
+  const meta = getSitePageViewRouteMeta(input.pathname);
+  return {
+    eventId: input.eventId,
+    occurredAt: input.occurredAt,
+    visitorId: input.visitorId,
+    sessionId: input.sessionId,
+    routeGroup: meta.routeGroup,
+    routeName: meta.routeName,
+    pathTemplate: meta.pathTemplate,
+    activeMs,
     source: "service-web",
     taxonomyVersion: SITE_PAGE_VIEW_TAXONOMY_VERSION,
   };
