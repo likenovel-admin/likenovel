@@ -54,6 +54,10 @@ const data = {
           url: "/statistics/site",
         },
         {
+          title: "페이지뷰 상세 분석",
+          url: "/statistics/page-views",
+        },
+        {
           title: "Payment",
           url: "/statistics/payment",
         },

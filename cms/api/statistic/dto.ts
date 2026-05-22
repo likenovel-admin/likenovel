@@ -1,4 +1,6 @@
 import {
+  IStatisticSitePageRoute,
+  IStatisticSitePageRouteSummary,
   IStatisticSite,
   IStatisticPayment,
   IStatisticPaymentByUser,
@@ -33,6 +35,22 @@ export interface IGetStatisticSiteParams {
   count_per_page?: number;
   start_date?: string;
   end_date?: string;
+}
+
+export interface IGetStatisticSitePageRoutesResponse {
+  total_count: number;
+  page: number;
+  count_per_page: number;
+  summary: IStatisticSitePageRouteSummary;
+  results: IStatisticSitePageRoute[];
+}
+
+export interface IGetStatisticSitePageRoutesParams {
+  page?: number;
+  count_per_page?: number;
+  start_date?: string;
+  end_date?: string;
+  route_group?: string;
 }
 
 export interface IGetStatisticPaymentResponse {

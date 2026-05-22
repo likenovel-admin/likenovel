@@ -3,6 +3,8 @@
 import {
   IGetStatisticSiteAllResponse,
   IGetStatisticSiteParams,
+  IGetStatisticSitePageRoutesParams,
+  IGetStatisticSitePageRoutesResponse,
   IGetStatisticSiteResponse,
   IGetStatisticPaymentParams,
   IGetStatisticPaymentResponse,
@@ -50,6 +52,23 @@ export const getStatisticSiteDownload = async (
     queryParams: params,
   });
   return res;
+};
+
+export const useGetStatisticSitePageRoutes = (
+  params: IGetStatisticSitePageRoutesParams
+) => {
+  return useQuery<IGetStatisticSitePageRoutesResponse>({
+    queryKey: ["GetStatisticSitePageRoutes", JSON.stringify(params)],
+
+    queryFn: async () => {
+      const res = await apiClient.request<IGetStatisticSitePageRoutesResponse>({
+        url: "/v1/query/statistics/site-page-routes",
+        method: "GET",
+        queryParams: params,
+      });
+      return res;
+    },
+  });
 };
 
 export const useGetStatisticPayment = (params: IGetStatisticPaymentParams) => {
