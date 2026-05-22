@@ -46,6 +46,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${pretendard.className}`}>
+        <AdminPopup />
         <WithNoSSR>
           <ReactQueryProvider>
               <ErrorBoundaryWrapper>
@@ -67,7 +68,6 @@ export default function RootLayout({
                   <div id="modal-root" />
                   <Confirm />
                   <Toast />
-                  <AdminPopup />
                   <SearchModal />
                   <CacheUseModal />
                   <DonateModal />
