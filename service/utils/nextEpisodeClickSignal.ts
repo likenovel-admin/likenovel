@@ -5,6 +5,7 @@ export interface NextEpisodeClickSignalContext {
   productId: number;
   fromEpisodeId: number;
   redirectToEpisodeId: number;
+  entrySource?: string | null;
 }
 
 export const postNextEpisodeClickSignalBestEffort = (
@@ -18,14 +19,20 @@ export const postNextEpisodeClickSignalBestEffort = (
 
   if (!accessToken) return;
 
+  const eventPayload: Record<string, string | number> = {
+    redirect_to_episode_id: context.redirectToEpisodeId,
+  };
+  const entrySource = context.entrySource?.trim();
+  if (entrySource) {
+    eventPayload.entry_source = entrySource;
+  }
+
   const body: IPostAiSignalEventBody = {
     product_id: context.productId,
     episode_id: context.fromEpisodeId,
     event_type: "next_episode_click",
     next_available_yn: "Y",
-    event_payload: {
-      redirect_to_episode_id: context.redirectToEpisodeId,
-    },
+    event_payload: eventPayload,
   };
 
   void fetch("/api/v1/command/ai/signal-events", {

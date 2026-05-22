@@ -22,6 +22,7 @@ import {
   logNavigationHistory,
 } from "@/utils/navigationHistory";
 import { logProductTrace } from "@/utils/productTrace";
+import type { ProductDetailEntrySource } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
 import { getWebsochatLaunchEligibility } from "@/utils/websochatLaunch";
 import { useRouter } from "next/navigation";
@@ -54,6 +55,7 @@ interface Props {
   episodeCount?: number;
   firstEpisodeId?: number;
   firstEpisodeTitle?: string;
+  entrySource?: ProductDetailEntrySource | null;
 }
 
 const ProductCoverArea = ({
@@ -67,6 +69,7 @@ const ProductCoverArea = ({
   episodeCount,
   firstEpisodeId,
   firstEpisodeTitle,
+  entrySource,
 }: Props) => {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -281,7 +284,10 @@ const ProductCoverArea = ({
 
     if (targetEpisodeId) {
       router.push(
-        buildViewerPath(targetEpisodeId, { productId: data.productId })
+        buildViewerPath(targetEpisodeId, {
+          productId: data.productId,
+          entrySource,
+        })
       );
     }
   };

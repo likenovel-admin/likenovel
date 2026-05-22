@@ -28,8 +28,10 @@ const fontSizeMap = [
 
 const letterSpacingMap = ["0px", "1px", "2px", "3px", "4px"];
 const lineHeightMap = ["1.45em", "1.7em", "1.95em", "2.2em", "2.45em"];
+const BROKEN_IMAGE_SRC_SENTINELS = new Set(["none", "null", "undefined"]);
 const COVER_IMAGE_SELECTORS =
   'img[src*="cover"], img[alt*="cover"], img[alt*="표지"], img[class*="cover"], .cover-image, .titlepage img, .frontcover img';
+const SLOW_CONNECTION_TYPES = new Set(["slow-2g", "2g"]);
 
 const themeColors: Record<string, string> = {
   light: "#f9f8f8",
@@ -123,6 +125,9 @@ const EpubViewer = ({
   const lastPageHostRef = useRef<HTMLElement | null>(null);
   const epubReadyTimerRef = useRef<NodeJS.Timeout | null>(null);
   const epubReadyDoneRef = useRef(false);
+  const initialScrolledBodyDisplayDoneRef = useRef(false);
+  const initialScrolledBodyAppendScheduledRef = useRef(false);
+  const coverPreloadImageRef = useRef<HTMLImageElement | null>(null);
 
   const device = useMediaDevice();
   const { isAuthenticated } = useAuthStore((s) => ({ isAuthenticated: s.isAuthenticated }));
@@ -169,6 +174,56 @@ const EpubViewer = ({
       document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [epubReady]);
+
+  useEffect(() => {
+    if (!epubReady || !isScroll || !settings.hideImageCover) return;
+    if (!resolvedCoverImagePath) return;
+
+    const connection = (
+      navigator as Navigator & {
+        connection?: { effectiveType?: string; saveData?: boolean };
+      }
+    ).connection;
+    if (
+      connection?.saveData ||
+      (connection?.effectiveType &&
+        SLOW_CONNECTION_TYPES.has(connection.effectiveType))
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    let idleCallbackId: number | null = null;
+
+    const preloadCover = () => {
+      if (cancelled) return;
+      const image = new window.Image();
+      coverPreloadImageRef.current = image;
+      image.src = resolvedCoverImagePath;
+      image.decode?.().catch(() => {
+        // best-effort preload only
+      });
+    };
+
+    if ("requestIdleCallback" in window) {
+      idleCallbackId = window.requestIdleCallback(preloadCover, {
+        timeout: 2500,
+      });
+    } else {
+      fallbackTimer = setTimeout(preloadCover, 1200);
+    }
+
+    return () => {
+      cancelled = true;
+      if (idleCallbackId !== null && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleCallbackId);
+      }
+      if (fallbackTimer) {
+        clearTimeout(fallbackTimer);
+      }
+    };
+  }, [epubReady, isScroll, resolvedCoverImagePath, settings.hideImageCover]);
 
   const buildSignalBody = useCallback(
     (
@@ -311,6 +366,8 @@ const EpubViewer = ({
     setShowLastPage(false);
     setEpubReady(false);
     epubReadyDoneRef.current = false;
+    initialScrolledBodyDisplayDoneRef.current = false;
+    initialScrolledBodyAppendScheduledRef.current = false;
     showLastPageRef.current = false;
     lastResizeDimensionsRef.current = { width: 0, height: 0 };
     if (epubReadyTimerRef.current) {
@@ -491,7 +548,15 @@ const EpubViewer = ({
       // 빈 src 이미지 감지 (벌크 업로드 등으로 깨진 표지)
       const brokenCoverImgs = docTitle.includes("cover")
         ? Array.from(doc.querySelectorAll("img")).filter(
-            (img) => !img.getAttribute("src") || img.getAttribute("src") === ""
+            (img) => {
+              const normalizedSrc = (img.getAttribute("src") || "")
+                .trim()
+                .toLowerCase();
+              return (
+                normalizedSrc === "" ||
+                BROKEN_IMAGE_SRC_SENTINELS.has(normalizedSrc)
+              );
+            }
           )
         : [];
 
@@ -521,83 +586,178 @@ const EpubViewer = ({
           (imgEl as HTMLImageElement).src = resolvedCoverImagePath;
         }
 
-        let toggleButton =
-          img.parentElement?.querySelector<HTMLButtonElement>(
-            ".epub-cover-toggle"
-          );
-
-        const handleToggleClick = (e: Event) => {
-          e.preventDefault();
-          e.stopPropagation();
-          // settingsRef로 항상 최신값 참조 (stale closure 방지)
-          setSettings({ hideImageCover: !settingsRef.current.hideImageCover });
-        };
-
-        if (!toggleButton) {
-          toggleButton = doc.createElement("button");
-          toggleButton.className = "epub-cover-toggle";
-          toggleButton.style.cssText = `
-            margin: 10px auto;
-            padding: 10px 18px 10px 20px;
-            background: transparent;
-            color: #6B6E76;
-            border: 1px solid #DFE1E8;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
-            font-family: inherit;
-            transition: background-color 0.2s;
-          `;
-          img.parentElement?.insertBefore(toggleButton, img.nextSibling);
-        }
-
-        // Reset listeners
-        toggleButton.replaceWith(toggleButton.cloneNode(true));
-        toggleButton =
-          img.parentElement?.querySelector<HTMLButtonElement>(
-            ".epub-cover-toggle"
-          )!;
-        toggleButton.addEventListener("click", handleToggleClick);
-
-        // Only show in scrolled mode
-        toggleButton.style.display = isScroll ? "block" : "none";
+        img.parentElement
+          ?.querySelectorAll<HTMLButtonElement>(".epub-cover-toggle")
+          .forEach((button) => button.remove());
 
         if (isScroll) {
-          imgEl.style.display = settingsRef.current.hideImageCover ? "none" : "block";
+          imgEl.style.display = settingsRef.current.hideImageCover
+            ? "none"
+            : "block";
+          imgEl.style.visibility = "visible";
           imgEl.style.margin = "0 auto";
+          imgEl.style.maxWidth = "100%";
+          imgEl.style.height = "auto";
           if (imgEl.parentElement) {
             imgEl.parentElement.style.textAlign = "center";
           }
         } else {
           imgEl.style.display = "";
+          imgEl.style.visibility = "";
           imgEl.style.margin = "";
+          imgEl.style.maxWidth = "";
+          imgEl.style.height = "";
           if (imgEl.parentElement) {
             imgEl.parentElement.style.textAlign = "";
           }
         }
 
-        const iconSVG = settingsRef.current.hideImageCover
-          ? `<svg width="9" height="5" viewBox="0 0 9 5" fill="none" xmlns="http://www.w3.org/2000/svg">
-               <path fill-rule="evenodd" clip-rule="evenodd" d="M8.37701 0.219783C8.08412 -0.0731099 7.60924 -0.0731095 7.31635 0.219784L4.29851 3.23762L1.28056 0.21967C0.987664 -0.0732237 0.51279 -0.0732236 0.219896 0.21967C-0.0729962 0.512563 -0.0729962 0.987437 0.219897 1.28033L3.7232 4.78363C3.88083 4.94126 4.09118 5.01406 4.2975 5.00202C4.50443 5.01462 4.71559 4.94186 4.87371 4.78374L8.37701 1.28044C8.6699 0.98755 8.6699 0.512676 8.37701 0.219783Z" fill="#8A8E96"/>
-             </svg>`
-          : `<svg width="9" height="5" viewBox="0 0 9 5" fill="none" xmlns="http://www.w3.org/2000/svg">
-               <path fill-rule="evenodd" clip-rule="evenodd" d="M0.21967 4.78412C0.512563 5.07702 0.987437 5.07702 1.28033 4.78412L4.29817 1.76628L7.31612 4.78424C7.60902 5.07713 8.08389 5.07713 8.37678 4.78424C8.66968 4.49134 8.66968 4.01647 8.37678 3.72358L4.87348 0.220278C4.71585 0.0626419 4.5055 -0.0101535 4.29918 0.00189047C4.09225 -0.0107142 3.88109 0.0620435 3.72297 0.220165L0.21967 3.72346C-0.0732234 4.01636 -0.0732233 4.49123 0.21967 4.78412Z" fill="#8A8E96"/>
-             </svg>`;
-
-        const labelText = settingsRef.current.hideImageCover ? "표지펴기" : "표지접기";
-        toggleButton!.innerHTML = `
-          <span style="display:inline-flex;align-items:center;gap:8px;">
-            <span>${labelText}</span>
-            ${iconSVG}
-          </span>
-        `;
       });
 
-      if (!doc.body.getAttribute("data-cover-toggle-setup")) {
-        doc.body.setAttribute("data-cover-toggle-setup", "true");
-      }
+      doc.body.removeAttribute("data-cover-toggle-setup");
     });
-  }, [isScroll, resolvedCoverImagePath, setSettings, settings.hideImageCover]);
+  }, [isScroll, resolvedCoverImagePath]);
+
+  const displayInitialScrolledBody = useCallback((rendition: Rendition) => {
+    if (
+      !isScroll ||
+      location !== 0 ||
+      initialScrolledBodyDisplayDoneRef.current ||
+      initialScrolledBodyAppendScheduledRef.current
+    ) {
+      return;
+    }
+
+    initialScrolledBodyAppendScheduledRef.current = true;
+    const appendBodySection = (finalize = false) => {
+      const book = (rendition as any).book;
+      const manager = (rendition as any).manager;
+      if (!book || !manager?.views) return false;
+
+      try {
+        const spine = book?.spine;
+        const firstSection =
+          typeof spine?.get === "function"
+            ? spine.get(0)
+            : Array.isArray(spine?.spineItems)
+              ? spine.spineItems[0]
+              : Array.isArray(spine?.items)
+                ? spine.items[0]
+                : null;
+        const firstSpineMarker = [
+          firstSection?.href,
+          firstSection?.canonical,
+          firstSection?.idref,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!firstSpineMarker.includes("cover")) {
+          initialScrolledBodyDisplayDoneRef.current = true;
+          return true;
+        }
+
+        const bodySection =
+          typeof spine?.get === "function"
+            ? spine.get(1)
+            : Array.isArray(spine?.spineItems)
+              ? spine.spineItems[1]
+              : Array.isArray(spine?.items)
+                ? spine.items[1]
+                : null;
+        if (!bodySection) return false;
+
+        const views = manager.views?.all?.() || [];
+        const hasCoverView = views.some((view: any) => {
+          const section = view?.section;
+          return (
+            section === firstSection ||
+            (typeof section?.index === "number" &&
+              section.index === firstSection.index) ||
+            (section?.href && section.href === firstSection.href) ||
+            (section?.idref && section.idref === firstSection.idref)
+          );
+        });
+        const hasBodyView = views.some((view: any) => {
+          const section = view?.section;
+          return (
+            section === bodySection ||
+            (typeof section?.index === "number" &&
+              section.index === bodySection.index) ||
+            (section?.href && section.href === bodySection.href) ||
+            (section?.idref && section.idref === bodySection.idref)
+          );
+        });
+        if (hasBodyView) {
+          if (finalize) {
+            initialScrolledBodyDisplayDoneRef.current = true;
+          }
+          return true;
+        }
+
+        const appendSection = (section: any, markDoneOnComplete = false) => {
+          const appendResult = manager.append(section);
+          if (typeof appendResult?.then === "function") {
+            appendResult
+              .then(() => {
+                if (markDoneOnComplete) {
+                  initialScrolledBodyDisplayDoneRef.current = true;
+                }
+              })
+              .catch(() => {
+                initialScrolledBodyDisplayDoneRef.current = false;
+                initialScrolledBodyAppendScheduledRef.current = false;
+              });
+            return true;
+          }
+
+          const appendedView = appendResult || manager.views?.last?.();
+          if (typeof appendedView?.display === "function") {
+            Promise.resolve(appendedView.display(manager.request))
+              .then(() => {
+                appendedView.show?.();
+                if (markDoneOnComplete) {
+                  initialScrolledBodyDisplayDoneRef.current = true;
+                }
+              })
+              .catch(() => {
+                initialScrolledBodyDisplayDoneRef.current = false;
+                initialScrolledBodyAppendScheduledRef.current = false;
+              });
+          } else if (markDoneOnComplete) {
+            initialScrolledBodyDisplayDoneRef.current = true;
+          }
+
+          return true;
+        };
+
+        if (!settingsRef.current.hideImageCover && !hasCoverView) {
+          appendSection(firstSection);
+        }
+
+        return appendSection(bodySection, finalize);
+      } catch {
+        return false;
+      }
+    };
+
+    Promise.resolve((rendition as any).book?.ready)
+      .then(() => {
+        const delays = [0, 150, 350, 700, 1200, 2000];
+        delays.forEach((delay, index) => {
+          window.setTimeout(() => {
+            if (initialScrolledBodyDisplayDoneRef.current) return;
+            appendBodySection(index === delays.length - 1);
+            if (index === delays.length - 1) {
+              initialScrolledBodyAppendScheduledRef.current = false;
+            }
+          }, delay);
+        });
+      })
+      .catch(() => {
+        initialScrolledBodyAppendScheduledRef.current = false;
+      });
+  }, [isScroll, location]);
 
   const isInitialMobileCoverVisible = useCallback((rendition?: Rendition | null) => {
     if (device !== "mobile" || isScroll) {
@@ -1249,6 +1409,7 @@ const EpubViewer = ({
               }}
               getRendition={(_rendition) => {
                 renditionRef.current = _rendition;
+                displayInitialScrolledBody(_rendition);
 
                 _rendition.on("rendered", () => {
                   if (isScroll && wrapperRef.current) {
@@ -1257,6 +1418,7 @@ const EpubViewer = ({
                     debouncedResize(_rendition, width, height);
                     placeHostAtEnd();
                     syncScrolledContainerLayout(false);
+                    displayInitialScrolledBody(_rendition);
                     if (pendingScrollRestoreTopRef.current !== null) {
                       const targetScrollTop = pendingScrollRestoreTopRef.current;
                       requestAnimationFrame(() => {
@@ -1490,13 +1652,6 @@ const EpubViewer = ({
 
                   updateTheme(_rendition);
                   updateToggleButtons();
-
-                  // content 재로드 시 표지 접기 상태 유지 (settingsRef는 항상 최신값)
-                  if (isScroll && settingsRef.current.hideImageCover) {
-                    doc.querySelectorAll(COVER_IMAGE_SELECTORS).forEach((el: Element) => {
-                      (el as HTMLElement).style.display = "none";
-                    });
-                  }
 
                   if (isScroll) {
                     placeHostAtEnd();

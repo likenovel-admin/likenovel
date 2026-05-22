@@ -2,6 +2,7 @@ import AdminPopup from "@/components/common/AdminPopup";
 import AuthInitializer from "@/components/common/AuthInitializer";
 import Confirm from "@/components/common/Confirm";
 import NavigationTracker from "@/components/common/NavigationTracker";
+import SitePageViewTracker from "@/components/common/SitePageViewTracker";
 import Spinner from "@/components/common/Spinner";
 import Toast from "@/components/common/Toast";
 import WithNoSSR from "@/components/common/WithNoSSR";
@@ -51,6 +52,7 @@ export default function RootLayout({
                 <AuthInitializer />
                 <Suspense fallback={null}>
                   <NavigationTracker />
+                  <SitePageViewTracker />
                 </Suspense>
                 <Suspense
                   fallback={
