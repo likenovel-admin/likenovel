@@ -1,6 +1,9 @@
 "use client";
-import { useSelectPopups } from "@/app/api/query/popup";
-import { IPopup } from "@/app/api/query/popup/dto";
+import { IPopup, ISelectPopupsResponse } from "@/app/api/query/popup/dto";
+import {
+  ADMIN_POPUP_QUERY_API_PATH,
+  shouldFetchAdminPopup,
+} from "@/constants/adminPopup";
 import {
   getLocalStorage,
   setLocalStorage,
@@ -14,8 +17,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const POPUP_SHOWN_SESSION_KEY = "popup_shown_on_main_session";
-
 /**
  * AdminPopup Component
  * Displays popup images configured from CMS admin panel
@@ -24,11 +25,9 @@ const POPUP_SHOWN_SESSION_KEY = "popup_shown_on_main_session";
  * - Shows only on main page ("/")
  * - Close button to dismiss popup
  * - "오늘 하루 보지 않기" 버튼으로 1일 숨김
- * - Shows once per browser session on main page
  * - Stores hide preference in localStorage
  */
 const AdminPopup = () => {
-  const { data: popupsData } = useSelectPopups();
   const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(false);
   const [currentPopup, setCurrentPopup] = useState<IPopup | null>(null);
@@ -53,8 +52,9 @@ const AdminPopup = () => {
 
   useEffect(() => {
     // Show popup only on main page
-    if (pathname !== "/") {
+    if (!shouldFetchAdminPopup(pathname)) {
       setIsVisible(false);
+      setCurrentPopup(null);
       return;
     }
 
@@ -67,60 +67,64 @@ const AdminPopup = () => {
       }
     }
 
-    const popup = popupsData?.data;
+    const controller = new AbortController();
 
-    if (!popup) {
-      setCurrentPopup(null);
-      setIsVisible(false);
-      return;
-    }
-
-    setCurrentPopup(popup);
-
-    // Check localStorage for 1-day hide preference
-    const closedUntilData = getLocalStorage<Record<string, string>>(
-      STORAGE_KEYS.POPUP_CLOSED_UNTIL
-    );
-
-    if (closedUntilData && closedUntilData[popup.id]) {
-      const closedUntil = new Date(closedUntilData[popup.id]);
-      const now = new Date();
-
-      if (now < closedUntil) {
-        setIsVisible(false);
-        return;
-      }
-    }
-
-    // Show only once per browser session on main page
-    if (typeof window !== "undefined") {
-      let shownPopupIds: Record<string, boolean> = {};
-
+    const showPopupIfAllowed = async () => {
       try {
-        const raw = sessionStorage.getItem(POPUP_SHOWN_SESSION_KEY);
-        shownPopupIds = raw
-          ? (JSON.parse(raw) as Record<string, boolean>)
-          : {};
-      } catch {
-        shownPopupIds = {};
-      }
+        const response = await fetch(ADMIN_POPUP_QUERY_API_PATH, {
+          credentials: "same-origin",
+          headers: {
+            Accept: "application/json",
+          },
+          signal: controller.signal,
+        });
 
-      if (shownPopupIds[popup.id]) {
+        if (!response.ok) {
+          throw new Error(`Popup request failed: ${response.status}`);
+        }
+
+        const popupsData = (await response.json()) as ISelectPopupsResponse;
+        const popup = popupsData?.data;
+
+        if (controller.signal.aborted) return;
+
+        if (!popup?.id || !popup.imagePath) {
+          setCurrentPopup(null);
+          setIsVisible(false);
+          return;
+        }
+
+        // Check localStorage for 1-day hide preference
+        const closedUntilData = getLocalStorage<Record<string, string>>(
+          STORAGE_KEYS.POPUP_CLOSED_UNTIL
+        );
+
+        if (closedUntilData && closedUntilData[popup.id]) {
+          const closedUntil = new Date(closedUntilData[popup.id]);
+          const now = new Date();
+
+          if (now < closedUntil) {
+            setIsVisible(false);
+            return;
+          }
+        }
+
+        setCurrentPopup(popup);
+        setIsVisible(true);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error("[AdminPopup] Failed to load popup:", error);
+        setCurrentPopup(null);
         setIsVisible(false);
-        return;
       }
+    };
 
-      sessionStorage.setItem(
-        POPUP_SHOWN_SESSION_KEY,
-        JSON.stringify({
-          ...shownPopupIds,
-          [popup.id]: true,
-        })
-      );
-    }
+    showPopupIfAllowed();
 
-    setIsVisible(true);
-  }, [popupsData, pathname, onboardingStatusVersion]);
+    return () => {
+      controller.abort();
+    };
+  }, [pathname, onboardingStatusVersion]);
 
   const handleClose = () => {
     setIsVisible(false);
@@ -168,6 +172,7 @@ const AdminPopup = () => {
               alt="popup"
               width={1200}
               height={1200}
+              priority
               sizes="(max-width: 768px) 90vw, 600px"
               className="w-full h-auto max-h-[70vh] object-contain"
             />
