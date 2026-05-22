@@ -6,6 +6,7 @@ import {
   IUseSelectEpisodesResponse,
 } from "./dto";
 import { ISelectEpisodeResponse } from "../author/episode/dto";
+import useAuthStore from "@/store/authStore";
 
 export const useSelectEpisodes = (
   productId: number,
@@ -43,8 +44,20 @@ export const useSelectEpisodes = (
 };
 
 export const useSelectViewerPath = (episodeId: number) => {
+  const { user, accessToken, isAuthenticated } = useAuthStore((state) => ({
+    user: state.user,
+    accessToken: state.accessToken,
+    isAuthenticated: state.isAuthenticated,
+  }));
+  const viewerCacheIdentity =
+    isAuthenticated && user?.userId
+      ? `user:${user.userId}`
+      : accessToken
+        ? "auth"
+        : "guest";
+
   return useQuery<ISelectViewerPathResponse>({
-    queryKey: ["selectViewerPath", episodeId],
+    queryKey: ["selectViewerPath", episodeId, viewerCacheIdentity],
     queryFn: async () => {
       const response = await instance.get(`/v1/query/episodes/${episodeId}`);
       return response.data;

@@ -15,6 +15,7 @@ import SelectBox from "@/components/form/selectbox";
 import { IProduct } from "@/types";
 import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
+import Recent24hAnalyticsArea from "./Recent24hAnalyticsArea";
 
 const DEFAULT_RANGE_DAYS = 29;
 const MAX_RANGE_DAYS = 90;
@@ -147,6 +148,9 @@ const getDateRangeValidationMessage = (
 };
 
 const MyProductAnalyticsArea = () => {
+  const [activeSubTab, setActiveSubTab] = useState<"recent24h" | "inflowDropoff">(
+    "recent24h"
+  );
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [draftStartDate, setDraftStartDate] = useState<Date | null>(
     buildInitialStartDate()
@@ -290,8 +294,11 @@ const MyProductAnalyticsArea = () => {
     );
   }, [funnelData]);
 
-  const rows = funnelData?.results || [];
-  const episodeDropoffRows = episodeDropoffData?.results || [];
+  const rows = useMemo(() => funnelData?.results || [], [funnelData?.results]);
+  const episodeDropoffRows = useMemo(
+    () => episodeDropoffData?.results || [],
+    [episodeDropoffData?.results]
+  );
   const topDropoffRow = useMemo(
     () => getTopDropoffRow(episodeDropoffRows),
     [episodeDropoffRows]
@@ -473,13 +480,56 @@ const MyProductAnalyticsArea = () => {
             작품별분석
           </span>
           <span className="text-13pxr md:text-14pxr text-dark-gray-300">
-            작품 상세페이지를 본 뒤 독자가 실제로 읽기를 시작했는지, 어디에서 멈췄는지 확인할 수 있습니다.
-          </span>
-          <span className="text-12pxr text-dark-gray-300">
-            날짜는 상세페이지를 처음 연 날 기준으로 집계됩니다.
+            최근 조회 흐름과 독자 유입·이탈을 확인할 수 있습니다.
           </span>
         </div>
 
+        <div className="flex border-b border-light-gray-300">
+          <button
+            type="button"
+            onClick={() => setActiveSubTab("recent24h")}
+            className={`h-[42px] px-14pxr text-14pxr font-medium border-b-2 ${
+              activeSubTab === "recent24h"
+                ? "border-black-100 text-black-100"
+                : "border-transparent text-dark-gray-300"
+            }`}
+          >
+            최근 24시간
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab("inflowDropoff")}
+            className={`h-[42px] px-14pxr text-14pxr font-medium border-b-2 ${
+              activeSubTab === "inflowDropoff"
+                ? "border-black-100 text-black-100"
+                : "border-transparent text-dark-gray-300"
+            }`}
+          >
+            유입/이탈
+          </button>
+        </div>
+
+        {activeSubTab === "recent24h" ? (
+          <>
+            <div className="border border-light-gray-300 rounded-[10px] p-16pxr bg-white">
+              <div className="max-w-[360px]">
+                <SelectBox
+                  label="작품 선택"
+                  labelClassName="text-13pxr font-medium text-dark-gray-400 mb-6pxr"
+                  options={productOptions}
+                  value={selectedProductId}
+                  onChange={(event) => setSelectedProductId(event.target.value)}
+                  className="h-[44px] text-14pxr"
+                  full
+                />
+              </div>
+            </div>
+            <Recent24hAnalyticsArea
+              productId={selectedProductId ? Number(selectedProductId) : undefined}
+            />
+          </>
+        ) : (
+          <>
         <div className="border border-light-gray-300 rounded-[20px] p-16pxr md:p-20pxr bg-white shadow-sm">
           <div className="flex flex-wrap gap-8pxr mb-12pxr">
             {RANGE_PRESET_OPTIONS.map((preset) => {
@@ -839,6 +889,8 @@ const MyProductAnalyticsArea = () => {
             </>
           )}
         </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -24,9 +24,13 @@ import useToastStore from "@/store/toastStore";
 import { IEvaluation, IProduct } from "@/types";
 import { mergeKeysEvaluation } from "@/utils/common";
 import {
-  consumePendingProductDetailEntrySource,
-  ProductDetailEntrySource,
+  consumeProductDetailEntrySource,
+  getEffectiveProductDetailEntrySource,
+  getProductDetailEntrySource,
+  isProductDetailEntrySourceResolvedForProduct,
+  ProductDetailEntrySourceState,
   PRODUCT_DETAIL_ENTRY_SOURCE,
+  resolveProductDetailEntrySourceState,
 } from "@/utils/productPath";
 import {
   endProductTrace,
@@ -34,8 +38,12 @@ import {
   startProductTrace,
   updateProductTrace,
 } from "@/utils/productTrace";
+import {
+  getGuestReadProgress,
+  type GuestReadProgressRecord,
+} from "@/utils/guestReadProgress";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function ProductDetail() {
@@ -47,11 +55,32 @@ export default function ProductDetail() {
   const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const entrySourceParam = searchParams.get("entrySource");
+  const urlEntrySource = getProductDetailEntrySource(entrySourceParam);
   const pathSegments = pathname.split("/");
   const productId = Number(pathSegments[pathSegments.length - 1]);
-  const [entrySource, setEntrySource] = useState<ProductDetailEntrySource | null>(null);
-  const [entrySourceResolved, setEntrySourceResolved] = useState(false);
+  const [entrySourceState, setEntrySourceState] =
+    useState<ProductDetailEntrySourceState>({
+      productId: null,
+      entrySource: null,
+    });
+  const entrySource = getEffectiveProductDetailEntrySource(
+    urlEntrySource,
+    entrySourceState,
+    productId
+  );
+  const entrySourceResolved = isProductDetailEntrySourceResolvedForProduct(
+    entrySourceState,
+    productId
+  );
+  const viewerEntrySource =
+    entrySource === PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION
+      ? entrySource
+      : null;
   const [activeTab, setActiveTab] = useState("episode");
+  const [guestReadProgress, setGuestReadProgressState] =
+    useState<GuestReadProgressRecord | null>(null);
   const { data, isPending, isSuccess } = useSelectProductDetail(productId);
   const { setToast } = useToastStore();
   const { setHasNew } = useGiftBoxStore();
@@ -108,6 +137,37 @@ export default function ProductDetail() {
         firstEpisodeTitle: episodes?.pages[0].data.episodes[0]?.episodeTitle ?? "",
       };
     }, [episodes]);
+
+  useEffect(() => {
+    if (canUseUserScope || !productId) {
+      setGuestReadProgressState(null);
+      return;
+    }
+
+    const refreshGuestReadProgress = () => {
+      setGuestReadProgressState(getGuestReadProgress(productId));
+    };
+
+    refreshGuestReadProgress();
+    window.addEventListener("pageshow", refreshGuestReadProgress);
+    window.addEventListener("focus", refreshGuestReadProgress);
+
+    return () => {
+      window.removeEventListener("pageshow", refreshGuestReadProgress);
+      window.removeEventListener("focus", refreshGuestReadProgress);
+    };
+  }, [canUseUserScope, productId]);
+
+  const effectiveEpisodeId =
+    !canUseUserScope && guestReadProgress ? guestReadProgress.episodeId : episodeId;
+  const effectiveLatestEpisodeNo =
+    !canUseUserScope && guestReadProgress
+      ? guestReadProgress.episodeNo
+      : latestEpisodeNo;
+  const effectiveLatestEpisodeTitle =
+    !canUseUserScope && guestReadProgress
+      ? guestReadProgress.episodeTitle
+      : latestEpisodeTitle;
 
   const {
     productData,
@@ -225,10 +285,18 @@ export default function ProductDetail() {
   }, [canUseUserScope, user?.userId, user?.userRole, productId]);
 
   useEffect(() => {
-    setEntrySourceResolved(false);
-    setEntrySource(consumePendingProductDetailEntrySource(productId));
-    setEntrySourceResolved(true);
-  }, [productId]);
+    const consumedEntrySource = consumeProductDetailEntrySource(
+      productId,
+      urlEntrySource
+    );
+    setEntrySourceState((current) =>
+      resolveProductDetailEntrySourceState(
+        current,
+        productId,
+        consumedEntrySource
+      )
+    );
+  }, [productId, urlEntrySource]);
 
   useEffect(() => {
     if (!canUseUserScope || !isSuccess || !productData?.productId || !user?.userId) {
@@ -541,12 +609,13 @@ export default function ProductDetail() {
             isSuccess={isSuccess}
             isLoading={isPending}
             evaluations={mergeKeysEvaluation(evaluationData as IEvaluation)}
-            episodeId={episodeId}
-            latestEpisodeNo={latestEpisodeNo}
-            latestEpisodeTitle={latestEpisodeTitle}
+            episodeId={effectiveEpisodeId}
+            latestEpisodeNo={effectiveLatestEpisodeNo}
+            latestEpisodeTitle={effectiveLatestEpisodeTitle}
             episodeCount={episodeCount}
             firstEpisodeId={firstEpisodeId}
             firstEpisodeTitle={firstEpisodeTitle}
+            entrySource={viewerEntrySource}
           />
         </div>
         <div className="flex w-full max-w-[800px] mt-30pxr md:mt-10pxr">
@@ -598,6 +667,7 @@ export default function ProductDetail() {
               priceType={productData?.priceType}
               episodeCount={episodeCount}
               waitForFreeYn={productData?.badge?.waitForFreeYn || productData?.badge?.waitingForFreeYn}
+              entrySource={viewerEntrySource}
             />
             <div
               ref={commentRef}

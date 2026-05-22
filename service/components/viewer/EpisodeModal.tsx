@@ -7,6 +7,7 @@ import useModalStore from "@/store/modalStore";
 import useViewStore from "@/store/viewerStore";
 import { getEpisodeBadge } from "@/utils/getEpisodeBadge";
 import { getFormattingDate } from "@/utils/getFormattingDate";
+import type { ProductDetailEntrySource } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -16,9 +17,14 @@ import Align from "/public/images/align.svg";
 interface EpisodeModalProps {
   productId?: number;
   currentEpisodeId?: number;
+  entrySource?: ProductDetailEntrySource | null;
 }
 
-const EpisodeModal = ({ productId, currentEpisodeId }: EpisodeModalProps) => {
+const EpisodeModal = ({
+  productId,
+  currentEpisodeId,
+  entrySource,
+}: EpisodeModalProps) => {
   const router = useRouter();
   const { withLoginRequired } = useAuthWrapper();
   const { closeModal } = useModalStore();
@@ -202,6 +208,7 @@ const EpisodeModal = ({ productId, currentEpisodeId }: EpisodeModalProps) => {
                         withLoginRequired(() => undefined, {
                           redirectPath: buildViewerPath(episode.episodeId, {
                             productId,
+                            entrySource,
                           }),
                           resumeContext: productId
                             ? {
@@ -214,7 +221,10 @@ const EpisodeModal = ({ productId, currentEpisodeId }: EpisodeModalProps) => {
                         return;
                       }
                       router.push(
-                        buildViewerPath(episode.episodeId, { productId })
+                        buildViewerPath(episode.episodeId, {
+                          productId,
+                          entrySource,
+                        })
                       );
                       closeModal();
                     }}

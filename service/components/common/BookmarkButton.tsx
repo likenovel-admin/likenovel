@@ -2,6 +2,7 @@ import { useChangeBookmark } from "@/app/api/query/bookmark";
 import useAuthStore from "@/store/authStore";
 import useToastStore from "@/store/toastStore";
 import { setLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
+import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -27,6 +28,7 @@ const BookmarkButton = ({
   const { isAuthenticated } = useAuthStore();
   const { setToast } = useToastStore();
   const { mutateAsync } = useChangeBookmark();
+  const queryClient = useQueryClient();
   const [isBookmarked, setIsBookmarked] = useState(bookmarkYn === "Y");
 
   useEffect(() => {
@@ -48,8 +50,19 @@ const BookmarkButton = ({
       return;
     }
     try {
-      setIsBookmarked(!isBookmarked);
-      await mutateAsync(productId);
+      const nextBookmarked = !isBookmarked;
+      setIsBookmarked(nextBookmarked);
+      const response = await mutateAsync(productId);
+      const nextBookmarkYn = response?.data?.data?.bookmarkYn;
+      if (nextBookmarkYn === "Y" || nextBookmarkYn === "N") {
+        setIsBookmarked(nextBookmarkYn === "Y");
+      }
+      queryClient.invalidateQueries({
+        queryKey: ["selectProductDetail", productId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["selectBookmarks"],
+      });
       setToast({
         message: (
           <span className="flex items-center gap-13pxr text-14pxr md:text-16pxr">
@@ -63,6 +76,7 @@ const BookmarkButton = ({
         isShowIcon: false,
       });
     } catch (error) {
+      setIsBookmarked(isBookmarked);
       setToast({
         message: "선호작 변경에 실패했습니다.",
         type: "error",

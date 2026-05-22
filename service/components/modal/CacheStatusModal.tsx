@@ -16,6 +16,11 @@ import {
   getOriginPageTypeFromPathname,
 } from "@/utils/funnelResume";
 import { postNextEpisodeClickSignalBestEffort } from "@/utils/nextEpisodeClickSignal";
+import {
+  getProductDetailEntrySource,
+  setPendingProductDetailEntrySource,
+  shouldPersistProductDetailEntrySourceForRecharge,
+} from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
@@ -29,6 +34,9 @@ import ArrowRight from "/public/images/arrow-right-medium.svg";
 interface CacheStatusModalProps extends CommonModalProps {
   title: string;
 }
+
+const PAYMENT_RETURN_ENTRY_SOURCE_TTL_MS = 60 * 60 * 1000;
+
 const CacheStatusModal = () => {
   const device = useMediaDevice();
   const { typeModal, closeTypeModal, typeModalData } = useModalStore();
@@ -119,6 +127,9 @@ const CacheStatusContents = ({
 
   // Check if user has enough cash
   const hasEnoughCash = totalCash >= episodePrice;
+  const entrySource = getProductDetailEntrySource(
+    typeModalData?.signalContext?.entrySource ?? typeModalData?.entrySource ?? null
+  );
 
   useEffect(() => {
     if (typeModalData?.episodeId && typeModalData?.productId) {
@@ -148,6 +159,7 @@ const CacheStatusContents = ({
     router.push(
       buildViewerPath(episodeId, {
         productId,
+        entrySource,
       })
     );
   };
@@ -160,11 +172,20 @@ const CacheStatusContents = ({
       return;
     }
 
+    const originPageType = getOriginPageTypeFromPathname(pathname);
+    if (shouldPersistProductDetailEntrySourceForRecharge(originPageType, entrySource)) {
+      setPendingProductDetailEntrySource(
+        productId,
+        entrySource,
+        PAYMENT_RETURN_ENTRY_SOURCE_TTL_MS
+      );
+    }
+
     router.push(
       appendFunnelResumeToPath("/product/mypage/cash", {
         productId,
         reason: "payment",
-        originPageType: getOriginPageTypeFromPathname(pathname),
+        originPageType,
         originEpisodeId: getEpisodeIdFromViewerPathname(pathname),
         returnPath: getCurrentInternalPath(),
       })

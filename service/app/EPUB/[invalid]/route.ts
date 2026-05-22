@@ -5,7 +5,7 @@ import { DEFAULT_PRODUCT_IMAGE } from "@/constants/common";
 const BROKEN_IMAGE_SENTINELS = new Set(["none", "null", "undefined"]);
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { invalid: string } }
 ) {
   const invalid = params.invalid?.trim().toLowerCase();
@@ -14,5 +14,17 @@ export async function GET(
     return new NextResponse("Not Found", { status: 404 });
   }
 
-  return NextResponse.redirect(DEFAULT_PRODUCT_IMAGE, 307);
+  const requestUrl = new URL(request.url);
+  const proto =
+    request.headers.get("x-forwarded-proto") ||
+    requestUrl.protocol.replace(":", "");
+  const host =
+    request.headers.get("x-forwarded-host") ||
+    request.headers.get("host") ||
+    requestUrl.host;
+
+  return NextResponse.redirect(
+    new URL(DEFAULT_PRODUCT_IMAGE, `${proto}://${host}`),
+    307
+  );
 }
