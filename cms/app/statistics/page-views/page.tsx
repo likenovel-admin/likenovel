@@ -33,11 +33,38 @@ const routeGroupOptions = [
   { value: "websochat", label: "웹소챗" },
   { value: "review", label: "리뷰" },
   { value: "quest", label: "퀘스트" },
+  { value: "mypage", label: "마이페이지" },
+  { value: "auth", label: "인증" },
+  { value: "payment", label: "결제" },
   { value: "author", label: "작가" },
   { value: "notice", label: "공지" },
   { value: "faq", label: "FAQ" },
   { value: "legal", label: "약관" },
+  { value: "system", label: "시스템" },
+  { value: "support", label: "고객센터" },
+  { value: "message", label: "메시지" },
+  { value: "preference", label: "취향" },
+  { value: "present", label: "선물함" },
   { value: "vote", label: "투표" },
+  { value: "unknown", label: "미분류" },
+];
+
+const routeTermDescriptions = [
+  {
+    label: "경로 그룹",
+    description:
+      "페이지를 운영 관점의 큰 묶음으로 나눈 값입니다. 필터와 상위 비교 기준으로 씁니다.",
+  },
+  {
+    label: "경로 이름",
+    description:
+      "같은 그룹 안에서 실제 화면 종류를 더 자세히 구분한 값입니다. 예: viewer_episode, event_detail",
+  },
+  {
+    label: "경로 템플릿",
+    description:
+      "작품 ID, 회차 ID처럼 매번 달라지는 값을 [id] 또는 *로 치환한 표준 경로입니다. 예: /viewer/[id]",
+  },
 ];
 
 function formatNumber(value: number | null | undefined) {
@@ -62,9 +89,9 @@ function formatPercent(numerator: number, denominator: number) {
 }
 
 const columns: Column[] = [
-  { header: "Route Group", key: "route_group" },
-  { header: "Route Name", key: "route_name" },
-  { header: "Path Template", key: "path_template" },
+  { header: "경로 그룹", key: "route_group" },
+  { header: "경로 이름", key: "route_name" },
+  { header: "경로 템플릿", key: "path_template" },
   {
     header: "PV",
     key: "page_view_count",
@@ -198,6 +225,29 @@ export default function Page() {
             <div className="text-xs text-muted-foreground">짧은 체류</div>
             <div className="mt-1 text-lg font-semibold">
               {formatPercent(summary?.short_dwell_count || 0, summary?.dwell_event_count || 0)}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-md border bg-background p-4 text-sm">
+          <div className="grid gap-3">
+            {routeTermDescriptions.map((item) => (
+              <div key={item.label} className="grid grid-cols-[120px_1fr] gap-3">
+                <div className="font-medium text-foreground">{item.label}</div>
+                <div className="text-muted-foreground">{item.description}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 border-t pt-3">
+            <div className="font-medium text-foreground">수집 가능한 경로 그룹</div>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              {routeGroupOptions
+                .filter((option) => option.value !== "all")
+                .map((option) => (
+                  <span key={option.value}>
+                    {option.label}({option.value})
+                  </span>
+                ))}
             </div>
           </div>
         </div>
