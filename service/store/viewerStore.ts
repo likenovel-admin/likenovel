@@ -30,7 +30,7 @@ const DEFAULT_SETTINGS: IWorkSettings = {
   lineHeight: 2,
   marginSize: 2,
   useParagraphIndent: true,
-  hideImageCover: false,
+  hideImageCover: true,
 };
 
 const clampNumber = (value: unknown, min: number, max: number, fallback: number) => {
@@ -106,16 +106,22 @@ const useViewStore = create<IWork>()(
     }),
     {
       name: "work-settings",
-      version: 2,
+      version: 3,
       partialize: (state) => ({
         settings: sanitizeSettings(state.settings),
         episodeListAlignType:
           state.episodeListAlignType === "old" ? "old" : "new",
       }),
-      migrate: (persistedState) => {
+      migrate: (persistedState, version) => {
         const persisted = persistedState as Partial<IWork> | undefined;
+        const settings = sanitizeSettings(persisted?.settings);
+        const migratedSettings =
+          typeof version !== "number" || version < 3
+            ? { ...settings, hideImageCover: true }
+            : settings;
+
         return {
-          settings: sanitizeSettings(persisted?.settings),
+          settings: migratedSettings,
           episodeListAlignType:
             persisted?.episodeListAlignType === "old" ? "old" : "new",
         };

@@ -41,6 +41,15 @@ export const PRODUCT_DETAIL_ENTRY_SOURCE = {
 export type ProductDetailEntrySource =
   (typeof PRODUCT_DETAIL_ENTRY_SOURCE)[keyof typeof PRODUCT_DETAIL_ENTRY_SOURCE];
 
+export interface ProductDetailEntrySourceState {
+  productId: number | null;
+  entrySource: ProductDetailEntrySource | null;
+}
+
+interface BuildProductDetailPathOptions {
+  entrySource?: string | null;
+}
+
 const PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_KEY =
   "pending_product_detail_entry_source";
 const PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_TTL_MS = 10 * 1000;
@@ -49,8 +58,22 @@ const PRODUCT_DETAIL_ENTRY_SOURCE_SET = new Set<ProductDetailEntrySource>(
   Object.values(PRODUCT_DETAIL_ENTRY_SOURCE)
 );
 
-export const buildProductDetailPath = (productId: number) =>
-  `/product/${productId}`;
+export const buildProductDetailPath = (
+  productId: number,
+  options?: BuildProductDetailPathOptions
+) => {
+  const searchParams = new URLSearchParams();
+  const entrySource = options?.entrySource?.trim();
+
+  if (entrySource) {
+    searchParams.set("entrySource", entrySource);
+  }
+
+  const queryString = searchParams.toString();
+  return queryString
+    ? `/product/${productId}?${queryString}`
+    : `/product/${productId}`;
+};
 
 export const getProductDetailEntrySource = (
   value: string | null
@@ -62,9 +85,49 @@ export const getProductDetailEntrySource = (
   return value as ProductDetailEntrySource;
 };
 
+export const getEffectiveProductDetailEntrySource = (
+  urlEntrySource: ProductDetailEntrySource | null,
+  state: ProductDetailEntrySourceState,
+  productId: number
+): ProductDetailEntrySource | null => {
+  if (urlEntrySource) {
+    return urlEntrySource;
+  }
+
+  return state.productId === productId ? state.entrySource : null;
+};
+
+export const resolveProductDetailEntrySourceState = (
+  current: ProductDetailEntrySourceState,
+  productId: number,
+  consumedEntrySource: ProductDetailEntrySource | null
+): ProductDetailEntrySourceState => {
+  if (consumedEntrySource) {
+    return { productId, entrySource: consumedEntrySource };
+  }
+
+  if (current.productId === productId) {
+    return current;
+  }
+
+  return { productId, entrySource: null };
+};
+
+export const isProductDetailEntrySourceResolvedForProduct = (
+  state: ProductDetailEntrySourceState,
+  productId: number
+) => state.productId === productId;
+
+export const shouldPersistProductDetailEntrySourceForRecharge = (
+  originPageType: string | null | undefined,
+  entrySource: ProductDetailEntrySource | null
+): entrySource is ProductDetailEntrySource =>
+  originPageType === "product_detail" && !!entrySource;
+
 export const setPendingProductDetailEntrySource = (
   productId: number,
-  entrySource: ProductDetailEntrySource
+  entrySource: ProductDetailEntrySource,
+  ttlMs: number = PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_TTL_MS
 ) => {
   if (typeof window === "undefined") {
     return;
@@ -76,6 +139,7 @@ export const setPendingProductDetailEntrySource = (
       productId,
       entrySource,
       timestamp: Date.now(),
+      expiresAt: Date.now() + ttlMs,
     })
   );
 };
@@ -97,14 +161,20 @@ export const consumePendingProductDetailEntrySource = (
       productId?: number;
       entrySource?: string;
       timestamp?: number;
+      expiresAt?: number;
     };
 
     sessionStorage.removeItem(PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_KEY);
 
+    const expiresAt =
+      typeof parsed.expiresAt === "number"
+        ? parsed.expiresAt
+        : (parsed.timestamp ?? 0) + PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_TTL_MS;
+
     if (
       parsed.productId !== productId ||
       typeof parsed.timestamp !== "number" ||
-      Date.now() - parsed.timestamp > PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_TTL_MS
+      Date.now() > expiresAt
     ) {
       return null;
     }
@@ -118,4 +188,12 @@ export const consumePendingProductDetailEntrySource = (
     sessionStorage.removeItem(PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_KEY);
     return null;
   }
+};
+
+export const consumeProductDetailEntrySource = (
+  productId: number,
+  urlEntrySource: ProductDetailEntrySource | null
+): ProductDetailEntrySource | null => {
+  const pendingEntrySource = consumePendingProductDetailEntrySource(productId);
+  return urlEntrySource ?? pendingEntrySource;
 };

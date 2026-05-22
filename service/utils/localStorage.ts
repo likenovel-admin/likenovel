@@ -18,6 +18,7 @@ export const STORAGE_KEYS = {
   QUEST_REWARD_AFTER_LOGIN: "quest_reward_after_login",
   WEBSOCHAT_GUEST_KEY: "story_agent_guest_key",
   WEBSOCHAT_GUEST_KEY_LEGACY: "story_agent_guest_key",
+  GUEST_READ_PROGRESS: "guest_read_progress",
 } as const;
 
 /**

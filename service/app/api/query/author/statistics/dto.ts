@@ -66,3 +66,48 @@ export interface IAuthorProductEpisodeDropoffParams {
   countPerPage?: number;
   enabled?: boolean;
 }
+
+export type AuthorRecent24hRankStatus =
+  | "reflected"
+  | "pending"
+  | "excluded"
+  | "not_ready"
+  | string;
+
+export interface IAuthorProductRecent24hEpisodeRow {
+  episodeId: number;
+  episodeNo: number;
+  episodeTitle: string | null;
+  recent24hCountHit: number;
+  cumulativeCountHit: number;
+  shareRate: number | null;
+}
+
+export interface IAuthorProductRecent24hHourlyRow {
+  hourLabel: string;
+  countHit: number;
+}
+
+export interface IAuthorProductRecent24hSummary {
+  recent24hCountHit: number | null;
+  previous24hCountHit: number | null;
+  cumulativeCountHit: number;
+  rankStatus: AuthorRecent24hRankStatus;
+  rankBasisAt: string | null;
+}
+
+export interface IAuthorProductRecent24hResponse {
+  productId: number;
+  basisAt: string | null;
+  fromAt: string | null;
+  toAt: string | null;
+  totalEpisodeCount: number;
+  summary: IAuthorProductRecent24hSummary;
+  hourly: IAuthorProductRecent24hHourlyRow[];
+  episodes: IAuthorProductRecent24hEpisodeRow[];
+}
+
+export interface IAuthorProductRecent24hParams {
+  productId?: number;
+  enabled?: boolean;
+}

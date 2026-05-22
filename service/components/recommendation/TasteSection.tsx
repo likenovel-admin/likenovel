@@ -93,7 +93,11 @@ const TasteSection = ({ section }: Props) => {
                   product.productId,
                   PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION
                 );
-                router.push(buildProductDetailPath(product.productId));
+                router.push(
+                  buildProductDetailPath(product.productId, {
+                    entrySource: PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION,
+                  })
+                );
               }}
             >
               <div className="relative w-[108px] md:w-[142px] h-[164px] md:h-[217px] bg-light-gray-100 rounded-[10px] overflow-hidden">

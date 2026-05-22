@@ -8,32 +8,58 @@ import { showAlert } from "@/lib/utils";
 import { useAuthStore } from "@/store/useAuthenticate";
 import { useProfileStore } from "@/store/useProfileStore";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 type FormData = {
   email: string;
   password: string;
+  rememberEmail: boolean;
 };
+
+const REMEMBERED_EMAIL_KEY = "cms.login.rememberedEmail";
 
 export default function LoginPage() {
   const route = useRouter();
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>();
+  } = useForm<FormData>({
+    defaultValues: {
+      email: "",
+      password: "",
+      rememberEmail: true,
+    },
+  });
   const login = useLoginIn();
   const { setProfile } = useProfileStore();
   const { setIsAuthenticated } = useAuthStore();
 
-  const onSubmit = async (data: FormData) => {
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
+    if (!rememberedEmail) return;
+
+    setValue("email", rememberedEmail);
+  }, [setValue]);
+
+  const onSubmit = async (formData: FormData) => {
     if (login.isPending) {
       return;
     }
+
+    const email = formData.email.trim();
+
     login.mutate(
-      { ...data, keep_signin_yn: "Y" },
+      { email, password: formData.password, keep_signin_yn: "Y" },
       {
         onSuccess: (data) => {
+          if (data.data.auth && formData.rememberEmail) {
+            localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+          } else {
+            localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+          }
           setIsAuthenticated(true);
           setProfile({
             id: data.data.auth.userId,
@@ -61,6 +87,7 @@ export default function LoginPage() {
             <label className="block mb-1 font-medium">이메일</label>
             <input
               type="email"
+              autoComplete="email"
               className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.email ? "border-red-500" : "border-gray-300"}`}
               placeholder="이메일을 입력하세요"
               {...register("email", {
@@ -81,6 +108,7 @@ export default function LoginPage() {
             <label className="block mb-1 font-medium">비밀번호</label>
             <input
               type="password"
+              autoComplete="current-password"
               className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.password ? "border-red-500" : "border-gray-300"}`}
               placeholder="비밀번호를 입력하세요"
               {...register("password", {
@@ -97,6 +125,14 @@ export default function LoginPage() {
               </p>
             )}
           </div>
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-300"
+              {...register("rememberEmail")}
+            />
+            이메일 저장
+          </label>
           <button
             type="submit"
             className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50"

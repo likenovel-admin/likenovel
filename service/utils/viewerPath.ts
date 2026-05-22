@@ -2,6 +2,7 @@ interface BuildViewerPathOptions {
   productId?: number | string | null;
   type?: string | null;
   title?: string | null;
+  entrySource?: string | null;
 }
 
 const normalizeProductId = (productId?: number | string | null) => {
@@ -36,6 +37,11 @@ export const buildViewerPath = (
 
   if (options?.title) {
     searchParams.set("title", options.title);
+  }
+
+  const entrySource = options?.entrySource?.trim();
+  if (entrySource) {
+    searchParams.set("entrySource", entrySource);
   }
 
   const queryString = searchParams.toString();

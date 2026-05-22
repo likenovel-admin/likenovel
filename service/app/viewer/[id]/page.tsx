@@ -20,6 +20,7 @@ import {
   setLocalStorage,
   STORAGE_KEYS,
 } from "@/utils/localStorage";
+import { setGuestReadProgress } from "@/utils/guestReadProgress";
 import {
   confirmViewerPageContext,
   upsertPendingViewerPageContext,
@@ -28,8 +29,10 @@ import {
   type NextEpisodeClickSignalContext,
   postNextEpisodeClickSignalBestEffort,
 } from "@/utils/nextEpisodeClickSignal";
+import { getProductDetailEntrySource } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
 import { savePendingWebsochatLaunch } from "@/utils/websochatLaunch";
+import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -43,10 +46,12 @@ const Viewer = () => {
   const viewerContextKind = viewerType === "notice" ? "notice" : "episode";
   const productId = searchParams.get("productId");
   const productTitle = searchParams.get("title");
+  const entrySource = getProductDetailEntrySource(searchParams.get("entrySource"));
   const hintedProductId = Number(productId || 0) || 0;
   const viewerEpisodeId = isNoticeViewer ? 0 : episodeId;
 
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { setModal, setTypeModal } = useModalStore();
   const { setToast } = useToastStore();
   const { withLoginRequired } = useAuthWrapper();
@@ -107,6 +112,16 @@ const Viewer = () => {
     if (isNoticeViewer) return;
     if (!data?.data?.product_id) return;
 
+    queryClient.invalidateQueries({
+      queryKey: ["selectProductDetail", data.data.product_id],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["selectEpisode", data.data.product_id],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["selectUserInfo"],
+    });
+
     confirmViewerPageContext({
       episodeId,
       kind: viewerContextKind,
@@ -114,7 +129,14 @@ const Viewer = () => {
       hintProductId: productId,
     });
     syncProductDetailTransitionDecision();
-  }, [data?.data?.product_id, episodeId, productId, viewerContextKind, isNoticeViewer]);
+  }, [
+    data?.data?.product_id,
+    episodeId,
+    productId,
+    queryClient,
+    viewerContextKind,
+    isNoticeViewer,
+  ]);
 
   useEffect(() => {
     const fetchEpubFile = async () => {
@@ -136,7 +158,27 @@ const Viewer = () => {
       }
     };
     fetchEpubFile();
-  }, [data?.data.epubFilePath]);
+  }, [data?.data.epubFilePath, setToast]);
+
+  useEffect(() => {
+    if (isAuthenticated || isNoticeViewer) return;
+
+    const episode = data?.data;
+    if (!episode?.product_id || !episode.episodeNo) return;
+    if (episode.privateYn === "Y" || episode.productPrivateYn === "Y") return;
+
+    setGuestReadProgress({
+      productId: episode.product_id,
+      episodeId,
+      episodeNo: episode.episodeNo,
+      episodeTitle: episode.episodeTitle || "",
+    });
+  }, [
+    data?.data,
+    episodeId,
+    isAuthenticated,
+    isNoticeViewer,
+  ]);
 
   const handleToggleNav = () => {
     setShowNav(!showNav);
@@ -151,6 +193,7 @@ const Viewer = () => {
       <EpisodeModal
         productId={data?.data?.product_id}
         currentEpisodeId={episodeId}
+        entrySource={entrySource}
       />
     );
   };
@@ -177,6 +220,7 @@ const Viewer = () => {
     const nextViewerPath = episode?.nextEpisodeId
       ? buildViewerPath(episode.nextEpisodeId, {
           productId: episode.product_id,
+          entrySource,
         })
       : null;
 
@@ -189,6 +233,7 @@ const Viewer = () => {
             productId: episode.product_id,
             fromEpisodeId: episodeId,
             redirectToEpisodeId: episode.nextEpisodeId,
+            entrySource,
           }
         : null;
 
@@ -253,6 +298,7 @@ const Viewer = () => {
       router.push(
         buildViewerPath(data?.data?.previousEpisodeId, {
           productId: data?.data?.product_id,
+          entrySource,
         })
       );
     }

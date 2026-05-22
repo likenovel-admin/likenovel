@@ -5,6 +5,8 @@ import {
   IAuthorProductDetailFunnelResponse,
   IAuthorProductEpisodeDropoffParams,
   IAuthorProductEpisodeDropoffResponse,
+  IAuthorProductRecent24hParams,
+  IAuthorProductRecent24hResponse,
 } from "./dto";
 
 export const useProductDetailFunnelStatistics = ({
@@ -80,5 +82,24 @@ export const useProductEpisodeDropoffStatistics = ({
       return response.data;
     },
     enabled: enabled && !!startDate && !!endDate && typeof productId === "number",
+  });
+};
+
+export const useProductRecent24hStatistics = ({
+  productId,
+  enabled = true,
+}: IAuthorProductRecent24hParams) => {
+  return useQuery<IAuthorProductRecent24hResponse>({
+    queryKey: ["productRecent24hStatistics", productId ?? null],
+    queryFn: async () => {
+      const response = await instance.get(
+        `/v1/query/partners/product-recent-24h-statistics/${productId}`
+      );
+
+      return response.data;
+    },
+    enabled: enabled && typeof productId === "number",
+    retry: false,
+    staleTime: 5000,
   });
 };
