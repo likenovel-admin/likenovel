@@ -51,8 +51,6 @@ export default function Page() {
         "회원가입",
         "회원탈퇴",
         "DAU",
-        "MAU",
-        "DAU / MAU",
       ],
       fields: [
         "date",
@@ -62,14 +60,6 @@ export default function Page() {
         "signin_count",
         "signoff_count",
         "DAU",
-        "MAU",
-        (item) => {
-          const dau = item.DAU;
-          const mau = item.MAU;
-          if (!mau || mau === 0) return "-";
-          const ratio = dau / mau;
-          return `${ratio.toFixed(4)}%`;
-        },
       ],
       filename: "Site Statistics",
       onStart: () => setIsLoading(true),
@@ -95,6 +85,9 @@ export default function Page() {
             엑셀 다운로드
           </Button>
         </div>
+        <p className="text-sm text-muted-foreground">
+          DAU: 해당 날짜에 서비스 페이지를 조회한 로그인 유저 수
+        </p>
         <StatisticsTable
           data={data?.results ?? []}
           loading={isLoadingData || isFetching}
