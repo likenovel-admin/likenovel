@@ -16,18 +16,6 @@ const columns: Column[] = [
   { header: "회원가입", key: "signin_count" },
   { header: "회원탈퇴", key: "signoff_count" },
   { header: "DAU", key: "DAU" },
-  { header: "MAU", key: "MAU" },
-  {
-    header: "DAU / MAU",
-    key: "dauMau",
-    render: (_, row) => {
-      const dau = row.DAU;
-      const mau = row.MAU;
-      if (!mau || mau === 0) return "-";
-      const ratio = dau / mau;
-      return `${ratio.toFixed(4)}%`;
-    },
-  },
 ];
 
 export default function StatisticsTable({ data, loading }: Props) {
