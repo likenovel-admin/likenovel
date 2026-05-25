@@ -46,6 +46,11 @@ import { STORAGE_KEYS } from "@/utils/localStorage";
 import { buildProductDetailPath } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
 import {
+  isRetryableWebsochatStreamError,
+  isWebsochatTechnicalStreamErrorMessage,
+} from "@/utils/websochatError";
+import { getStableWebsochatProductSnapshot } from "@/utils/websochatProductSnapshot";
+import {
   buildWebsochatIdleGuideMessage,
   buildWebsochatStarterGuideMessage,
   consumePendingWebsochatLaunch,
@@ -348,7 +353,11 @@ const buildWebsochatErrorNotice = (
     return "AI 답변을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.";
   }
 
-  if (message && message !== "캐시 잔액이 부족합니다.") {
+  if (
+    message
+    && message !== "캐시 잔액이 부족합니다."
+    && !isWebsochatTechnicalStreamErrorMessage(message)
+  ) {
     return message;
   }
 
@@ -2438,7 +2447,10 @@ export default function WebsochatPage() {
 
   useEffect(() => {
     if (!selectedProduct) return;
-    setSelectedProductSnapshot(normalizeWebsochatProductCover(selectedProduct));
+    const normalizedProduct = normalizeWebsochatProductCover(selectedProduct);
+    setSelectedProductSnapshot((current) =>
+      getStableWebsochatProductSnapshot(current, normalizedProduct)
+    );
   }, [selectedProduct]);
 
   useEffect(() => {
@@ -3673,6 +3685,9 @@ export default function WebsochatPage() {
               throw streamError;
             }
             if (streamTerminalError) {
+              throw streamError;
+            }
+            if (!isRetryableWebsochatStreamError(streamError)) {
               throw streamError;
             }
             setStreamingStatusMessage("");
