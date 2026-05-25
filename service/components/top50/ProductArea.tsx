@@ -1,3 +1,4 @@
+import { useGetAiProductBriefs } from "@/app/api/query/recommendation";
 import { IProduct } from "@/types";
 import { getLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
 import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
@@ -31,6 +32,25 @@ const ProductArea = ({ data, pageType = "free" }: Props) => {
   const visibleProducts = useMemo(
     () => allProducts.slice(0, visibleCount),
     [allProducts, visibleCount]
+  );
+  const aiBriefProductIds = useMemo(
+    () =>
+      listType === "list"
+        ? visibleProducts.map((product) => product.productId)
+        : [],
+    [visibleProducts, listType]
+  );
+  const { data: aiBriefsData } = useGetAiProductBriefs(
+    aiBriefProductIds,
+    "N",
+    listType === "list" && aiBriefProductIds.length > 0
+  );
+  const aiBriefsByProductId = useMemo(
+    () =>
+      new Map(
+        (aiBriefsData?.data ?? []).map((brief) => [brief.productId, brief])
+      ),
+    [aiBriefsData]
   );
 
   const handleObserver = useCallback(
@@ -77,6 +97,10 @@ const ProductArea = ({ data, pageType = "free" }: Props) => {
               hasPromotionBadge={pageType === "paid" ? true : false}
               isAdultFilterEnabled
               hideStats
+              enableAiLibrarianPreview
+              aiLibrarianBrief={
+                aiBriefsByProductId.get(product.productId) ?? null
+              }
               entrySource={
                 pageType === "paid"
                   ? PRODUCT_DETAIL_ENTRY_SOURCE.TOP50_PAID

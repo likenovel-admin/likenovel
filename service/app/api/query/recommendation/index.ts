@@ -12,6 +12,7 @@ import {
   IPostOnboardingDismissResponse,
   IGetTasteRecommendationsResponse,
   ITasteProfileResponse,
+  IGetAiProductBriefsResponse,
 } from "./dto";
 
 /** 온보딩 유명작 목록 */
@@ -40,6 +41,46 @@ export const useGetTasteRecommendations = (
       return res.data;
     },
     enabled,
+  });
+};
+
+const normalizeProductIds = (productIds: Array<number | null | undefined>) => {
+  const normalized: number[] = [];
+  const seen = new Set<number>();
+
+  for (const value of productIds || []) {
+    const productId = Number(value);
+    if (!Number.isInteger(productId) || productId <= 0 || seen.has(productId)) {
+      continue;
+    }
+    seen.add(productId);
+    normalized.push(productId);
+    if (normalized.length >= 60) break;
+  }
+
+  return normalized;
+};
+
+/** AI 사서 소개용 공개 작품 brief */
+export const useGetAiProductBriefs = (
+  productIds: Array<number | null | undefined>,
+  adultYn: string = "N",
+  enabled: boolean = true
+) => {
+  const normalizedIds = normalizeProductIds(productIds);
+  const productIdParam = normalizedIds.join(",");
+
+  return useQuery<IGetAiProductBriefsResponse>({
+    queryKey: ["aiProductBriefs", productIdParam, adultYn],
+    queryFn: async () => {
+      if (!productIdParam) return { data: [] };
+      const res = await instance.get(
+        `/v1/query/ai/product-briefs?product_ids=${productIdParam}&adult_yn=${adultYn}`
+      );
+      return res.data;
+    },
+    enabled: enabled && normalizedIds.length > 0,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
