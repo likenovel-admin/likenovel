@@ -5,6 +5,7 @@ interface Props {
   previewLines?: string[];
   isVisible: boolean;
   onClick: () => void;
+  className?: string;
 }
 
 export default function AiLibrarianListPreview({
@@ -12,6 +13,7 @@ export default function AiLibrarianListPreview({
   previewLines,
   isVisible,
   onClick,
+  className = "",
 }: Props) {
   const lines =
     previewLines && previewLines.length > 0
@@ -22,7 +24,11 @@ export default function AiLibrarianListPreview({
   if (lines.length === 0) return null;
 
   return (
-    <div className="h-[58px] overflow-hidden pt-6pxr pr-[70px] md:pr-0">
+    <div
+      className={`overflow-hidden transition-[max-height,padding-top] duration-200 ease-out motion-reduce:transition-none ${
+        isVisible ? "max-h-[68px] pt-6pxr" : "max-h-0 pt-0"
+      } ${className}`}
+    >
       <button
         type="button"
         aria-hidden={!isVisible}
@@ -37,11 +43,11 @@ export default function AiLibrarianListPreview({
             : "pointer-events-none translate-y-2 opacity-0"
         }`}
       >
-        <div className="flex items-start gap-8pxr border border-light-gray-500 bg-light-gray-100 px-10pxr py-7pxr rounded-[10px]">
-          <span className="shrink-0 text-11pxr font-bold text-primary-100">
+        <div className="flex flex-col gap-3pxr border border-light-gray-500 bg-light-gray-100 px-10pxr py-6pxr rounded-[10px]">
+          <span className="text-10pxr leading-[13px] font-bold text-primary-100">
             AI 사서
           </span>
-          <span className="min-w-0 flex flex-col text-12pxr leading-[16px] text-dark-gray-500">
+          <span className="flex flex-col text-11pxr leading-[15px] text-dark-gray-500">
             {lines.map((line, index) => (
               <span key={`${index}-${line}`} className="line-clamp-1">
                 {line}
