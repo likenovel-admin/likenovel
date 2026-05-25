@@ -5,6 +5,7 @@ import {
 } from "@/constants/common";
 import ApplyPaidModal from "@/components/modal/ApplyPaidModal";
 import { useAdultCoverImage } from "@/hooks/useAdultCoverImage";
+import { useAiLibrarianDwellReveal } from "@/hooks/useAiLibrarianDwellReveal";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useAuthStore from "@/store/authStore";
 import useConfirmStore from "@/store/confirmStore";
@@ -15,13 +16,19 @@ import { getLatestEpisodeDate } from "@/utils/getLatestEpisodeDate";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
 import { getUpdateFrequency } from "@/utils/getUpdateFrequency";
 import {
+  type AiProductBrief,
+  buildAiLibrarianCopy,
+  buildProductDetailAiLibrarianPath,
+} from "@/utils/aiLibrarian";
+import {
   buildProductDetailPath,
   ProductDetailEntrySource,
   setPendingProductDetailEntrySource,
 } from "@/utils/productPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import AiLibrarianListPreview from "../aiLibrarian/AiLibrarianListPreview";
 import GeneralPromotionModal from "../modal/GeneralPromotionModal";
 import AdultAgeBadge from "./AdultAgeBadge";
 import BookmarkButton from "./BookmarkButton";
@@ -55,6 +62,8 @@ interface Props {
   hideStats?: boolean;
   refetch?: () => void;
   entrySource?: ProductDetailEntrySource;
+  enableAiLibrarianPreview?: boolean;
+  aiLibrarianBrief?: AiProductBrief | null;
 }
 
 const ProductListCard = ({
@@ -69,6 +78,8 @@ const ProductListCard = ({
   hasGle = true,
   refetch,
   entrySource,
+  enableAiLibrarianPreview = false,
+  aiLibrarianBrief = null,
 }: Props) => {
   const router = useRouter();
   const device = useMediaDevice();
@@ -78,6 +89,17 @@ const ProductListCard = ({
   const { setToast } = useToastStore();
   const updateConversionProductMutation = useUpdateConversionProduct();
   const { user } = useAuthStore();
+  const shouldShowAiLibrarianPreview =
+    enableAiLibrarianPreview && !isAuthorPage && !isReviewPage;
+  const aiLibrarianCopy = useMemo(
+    () => buildAiLibrarianCopy(data, aiLibrarianBrief),
+    [data, aiLibrarianBrief]
+  );
+  const { ref: aiLibrarianDwellRef, isRevealed: isAiLibrarianRevealed } =
+    useAiLibrarianDwellReveal({
+      productId: data.productId,
+      enabled: shouldShowAiLibrarianPreview,
+    });
 
   // Check if current user is the author of this product
   const isProductAuthor = user?.userId === data.authorId;
@@ -112,6 +134,12 @@ const ProductListCard = ({
       setPendingProductDetailEntrySource(data.productId, entrySource);
     }
     router.push(buildProductDetailPath(data.productId));
+  };
+  const navigateToAiLibrarianDetail = () => {
+    if (entrySource) {
+      setPendingProductDetailEntrySource(data.productId, entrySource);
+    }
+    router.push(buildProductDetailAiLibrarianPath(data.productId));
   };
 
   useEffect(() => {
@@ -228,6 +256,7 @@ const ProductListCard = ({
   return (
     <>
       <div
+        ref={aiLibrarianDwellRef}
         className={`relative flex w-full justify-between min-h-[155px] md:min-h-[208px] rounded-[10px] md:border border-light-gray-500 ${
           isAuthorPage ? "" : "cursor-pointer"
         }  md:hover:shadow-lg`}
@@ -647,6 +676,13 @@ const ProductListCard = ({
                 width={16}
                 height={21}
                 style="hidden md:block absolute right-[20px]"
+              />
+            )}
+            {shouldShowAiLibrarianPreview && (
+              <AiLibrarianListPreview
+                preview={aiLibrarianCopy.preview}
+                isVisible={isAiLibrarianRevealed}
+                onClick={navigateToAiLibrarianDetail}
               />
             )}
           </div>
