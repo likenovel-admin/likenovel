@@ -89,12 +89,18 @@ const ProductListCard = ({
   const { setToast } = useToastStore();
   const updateConversionProductMutation = useUpdateConversionProduct();
   const { user } = useAuthStore();
-  const shouldShowAiLibrarianPreview =
-    enableAiLibrarianPreview && !isAuthorPage && !isReviewPage;
   const aiLibrarianCopy = useMemo(
-    () => buildAiLibrarianCopy(data, aiLibrarianBrief),
+    () =>
+      aiLibrarianBrief
+        ? buildAiLibrarianCopy(data, aiLibrarianBrief)
+        : null,
     [data, aiLibrarianBrief]
   );
+  const shouldShowAiLibrarianPreview =
+    enableAiLibrarianPreview &&
+    Boolean(aiLibrarianCopy) &&
+    !isAuthorPage &&
+    !isReviewPage;
   const { ref: aiLibrarianDwellRef, isRevealed: isAiLibrarianRevealed } =
     useAiLibrarianDwellReveal({
       productId: data.productId,
@@ -678,9 +684,9 @@ const ProductListCard = ({
                 style="hidden md:block absolute right-[20px]"
               />
             )}
-            {shouldShowAiLibrarianPreview && (
+            {shouldShowAiLibrarianPreview && aiLibrarianCopy && (
               <AiLibrarianListPreview
-                preview={aiLibrarianCopy.preview}
+                previewLines={aiLibrarianCopy.previewLines}
                 isVisible={isAiLibrarianRevealed}
                 onClick={navigateToAiLibrarianDetail}
               />
