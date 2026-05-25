@@ -9,8 +9,12 @@ import {
   useSelectProductDetail,
 } from "@/app/api/query/product";
 import { useSelectSuggestProducts } from "@/app/api/query/suggest";
-import { usePostAiSignalEvent } from "@/app/api/query/recommendation";
+import {
+  useGetAiProductBriefs,
+  usePostAiSignalEvent,
+} from "@/app/api/query/recommendation";
 import CommentArea from "@/components/common/CommentArea";
+import AiLibrarianDetailCard from "@/components/aiLibrarian/AiLibrarianDetailCard";
 import MobileProducts from "@/components/common/MobileProducts";
 import Tab from "@/components/common/Tab";
 import ProductCoverArea from "@/components/productDetail/ProductCoverArea";
@@ -23,6 +27,10 @@ import useGiftBoxStore from "@/store/giftboxStore";
 import useToastStore from "@/store/toastStore";
 import { IEvaluation, IProduct } from "@/types";
 import { mergeKeysEvaluation } from "@/utils/common";
+import {
+  buildAiLibrarianCopy,
+  shouldFocusAiLibrarian,
+} from "@/utils/aiLibrarian";
 import {
   consumeProductDetailEntrySource,
   getEffectiveProductDetailEntrySource,
@@ -57,6 +65,7 @@ export default function ProductDetail() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const entrySourceParam = searchParams.get("entrySource");
+  const focusParam = searchParams.get("focus");
   const urlEntrySource = getProductDetailEntrySource(entrySourceParam);
   const pathSegments = pathname.split("/");
   const productId = Number(pathSegments[pathSegments.length - 1]);
@@ -88,6 +97,7 @@ export default function ProductDetail() {
   const addRecentProductMutation = useAddRecentProduct();
   const { mutate: postAiSignalEvent } = usePostAiSignalEvent();
   const detailViewSignalKeyRef = useRef<string | null>(null);
+  const aiLibrarianRef = useRef<HTMLDivElement>(null);
 
   // Check if user has already received tickets for this product (using sessionStorage for current session)
   const ticketCheckKey = `rental_ticket_checked_${productId}`;
@@ -191,6 +201,31 @@ export default function ProductDetail() {
       issuedVouchers: data?.data.issuedVouchers ?? [],
     };
   }, [data]);
+  const { data: aiBriefsData } = useGetAiProductBriefs(
+    [productId],
+    productData?.adultYn === "Y" ? "Y" : "N",
+    !!productId && isSuccess
+  );
+  const aiLibrarianCopy = useMemo(
+    () =>
+      productData
+        ? buildAiLibrarianCopy(productData, aiBriefsData?.data?.[0] ?? null)
+        : null,
+    [aiBriefsData, productData]
+  );
+
+  useEffect(() => {
+    if (!isSuccess || !shouldFocusAiLibrarian(focusParam)) return;
+
+    const timer = window.setTimeout(() => {
+      aiLibrarianRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [focusParam, isSuccess]);
 
   useEffect(() => {
     logProductTrace(
@@ -618,6 +653,14 @@ export default function ProductDetail() {
             entrySource={viewerEntrySource}
           />
         </div>
+        {productData && aiLibrarianCopy && (
+          <div
+            ref={aiLibrarianRef}
+            className="w-full max-w-[800px] mt-20pxr md:mt-24pxr scroll-mt-[88px]"
+          >
+            <AiLibrarianDetailCard copy={aiLibrarianCopy} />
+          </div>
+        )}
         <div className="flex w-full max-w-[800px] mt-30pxr md:mt-10pxr">
           <Tab
             tabs={[
