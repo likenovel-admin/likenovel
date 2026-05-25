@@ -67,6 +67,11 @@ const aiCopy = buildAiLibrarianCopy(fantasyProduct, aiBrief);
 
 assert.equal(aiCopy.preview.includes("마법 도서관"), true);
 assert.equal(aiCopy.preview.includes("진실"), true);
+assert.equal(aiCopy.previewLines.length, 2);
+assert.equal(aiCopy.previewLines.some((line) => line.includes("…")), false);
+assert.match(aiCopy.previewLines[1], /전개/);
+assert.match(aiCopy.previewLines[1], /마법·세계관·성장/);
+assert.match(aiCopy.previewLines[1], /강점/);
 assert.equal(aiCopy.intro.includes("마지막 사서"), true);
 assert.equal(aiCopy.points.some((point) => point.includes("진실 추적")), true);
 assert.deepEqual(aiCopy.chips.slice(0, 4), ["마법", "세계관", "성장", "마법 도서관"]);

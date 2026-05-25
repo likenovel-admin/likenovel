@@ -206,12 +206,13 @@ export default function ProductDetail() {
     productData?.adultYn === "Y" ? "Y" : "N",
     !!productId && isSuccess
   );
+  const aiLibrarianBrief = aiBriefsData?.data?.[0] ?? null;
   const aiLibrarianCopy = useMemo(
     () =>
-      productData
-        ? buildAiLibrarianCopy(productData, aiBriefsData?.data?.[0] ?? null)
+      productData && aiLibrarianBrief
+        ? buildAiLibrarianCopy(productData, aiLibrarianBrief)
         : null,
-    [aiBriefsData, productData]
+    [aiLibrarianBrief, productData]
   );
 
   useEffect(() => {

@@ -26,6 +26,7 @@ export type AiProductBrief = {
 
 export type AiLibrarianCopy = {
   preview: string;
+  previewLines: string[];
   intro: string;
   points: string[];
   chips: string[];
@@ -59,6 +60,54 @@ const clampSentence = (value: string, maxLength: number) => {
   return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
 };
 
+const stripEllipsisMarks = (value: string) =>
+  normalizeText(value).replace(/…/g, "").replace(/\.{2,}/g, "").trim();
+
+const getPacingLabel = (value: string) => {
+  switch (normalizeText(value).toLowerCase()) {
+    case "fast":
+      return "빠른 전개";
+    case "slow":
+      return "차근차근 쌓는 전개";
+    case "medium":
+      return "중간 호흡의 전개";
+    default:
+      return "초반 전개";
+  }
+};
+
+const buildListPreviewLines = ({
+  hook,
+  premise,
+  chips,
+  protagonistGoal,
+  mood,
+  pacing,
+  title,
+}: {
+  hook: string;
+  premise: string;
+  chips: string[];
+  protagonistGoal: string;
+  mood: string;
+  pacing: string;
+  title: string;
+}) => {
+  const firstLine =
+    stripEllipsisMarks(hook || premise) ||
+    (title ? `「${title}」의 초반 갈등을 먼저 보세요.` : "초반 갈등을 먼저 보세요.");
+  const pacingLabel = getPacingLabel(pacing);
+  const secondLine = chips.length
+    ? `${pacingLabel}와 ${chips.slice(0, 3).join("·")} 강점이 선명해요.`
+    : protagonistGoal
+    ? `${pacingLabel}로 ${protagonistGoal} 동력이 선명해요.`
+    : mood
+    ? `${pacingLabel}와 ${mood} 분위기가 강점이에요.`
+    : `${pacingLabel}로 설정과 인물의 방향을 빠르게 판단할 수 있어요.`;
+
+  return [firstLine, stripEllipsisMarks(secondLine)];
+};
+
 const buildBriefCopy = (
   brief: AiProductBrief,
   product: AiLibrarianProductInput
@@ -71,6 +120,7 @@ const buildBriefCopy = (
   const protagonistType = normalizeText(brief.protagonistType);
   const protagonistGoal = normalizeText(brief.protagonistGoal);
   const mood = normalizeText(brief.mood);
+  const title = normalizeText(product.title);
   const briefTags = uniqueValues([
     ...(brief.tasteTags || []),
     ...(brief.worldviewTags || []),
@@ -96,6 +146,15 @@ const buildBriefCopy = (
       ? `${mood} 결을 좋아하면 잘 맞아요.`
       : "초반 갈등과 인물의 방향이 또렷해요."
   }`;
+  const previewLines = buildListPreviewLines({
+    hook,
+    premise,
+    chips,
+    protagonistGoal,
+    mood,
+    pacing: normalizeText(brief.pacing),
+    title,
+  });
 
   const points = [
     premise
@@ -113,6 +172,7 @@ const buildBriefCopy = (
 
   return {
     preview: clampSentence(previewBase, MAX_PREVIEW_LENGTH),
+    previewLines,
     intro: `${clampSentence(hook || premise, 118)}${
       mood ? ` ${mood} 결이 강하게 깔려 있어요.` : ""
     }`,
@@ -163,6 +223,15 @@ export const buildAiLibrarianCopy = (
           : "초반 분위기와 인물의 목표를 따라가며 읽기 좋아요."
       }`
     : `${titleLead} 아직 자세한 소개가 적지만, 초반 분위기와 인물의 목표를 따라가며 읽어볼 만해요.`;
+  const previewLines = buildListPreviewLines({
+    hook: synopsis ? `${titleLead} ${tasteAnchor}을 먼저 보면 초반 결이 잡혀요.` : "",
+    premise: synopsis,
+    chips,
+    protagonistGoal: "",
+    mood: primaryGenre,
+    pacing: "",
+    title: productTitle,
+  });
 
   const synopsisPoint = synopsis
     ? synopsisSignal
@@ -180,6 +249,7 @@ export const buildAiLibrarianCopy = (
 
   return {
     preview: clampSentence(previewBase, MAX_PREVIEW_LENGTH),
+    previewLines,
     intro,
     points,
     chips,
