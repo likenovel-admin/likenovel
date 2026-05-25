@@ -685,11 +685,13 @@ const ProductListCard = ({
               />
             )}
             {shouldShowAiLibrarianPreview && aiLibrarianCopy && (
-              <AiLibrarianListPreview
-                previewLines={aiLibrarianCopy.previewLines}
-                isVisible={isAiLibrarianRevealed}
-                onClick={navigateToAiLibrarianDetail}
-              />
+              <div className="hidden md:block">
+                <AiLibrarianListPreview
+                  previewLines={aiLibrarianCopy.previewLines}
+                  isVisible={isAiLibrarianRevealed}
+                  onClick={navigateToAiLibrarianDetail}
+                />
+              </div>
             )}
           </div>
         </div>
@@ -945,10 +947,10 @@ const ProductListCard = ({
         </div>
         {!isAuthorPage && (
           <>
-            {data.trendindex && data.properties && (
-              <>
+            <div className="absolute bottom-[17px] right-[11px] md:hidden flex items-center gap-7pxr">
+              {data.trendindex && data.properties && (
                 <button
-                  className={`absolute bottom-[17px] right-[38px] md:hidden flex items-center justify-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
+                  className={`flex items-center justify-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
                     isMobileStatsOpen ? "bg-black-100" : "bg-white"
                   }`}
                   onClick={(e) => {
@@ -965,59 +967,59 @@ const ProductListCard = ({
                     i
                   </span>
                 </button>
-                {isMobileStatsOpen && (
-                  <div className="absolute bottom-[52px] right-[10px] md:hidden z-10 min-w-[190px] rounded-[10px] bg-white border border-light-gray-500 p-10pxr">
-                    {(isCPAdmin || isProductAuthor) && (
-                      <div className="flex justify-between gap-16pxr">
-                        <span className="text-11pxr text-dark-gray-300">
-                          CP조회수
-                        </span>
-                        <span className="text-11pxr text-dark-gray-500">
-                          {data.trendindex.cpHitCount || '-'}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between gap-16pxr">
-                      <span className="text-11pxr text-dark-gray-300">
-                        연독률
-                      </span>
-                      <span className="text-11pxr text-dark-gray-500">
-                        {data.trendindex.readThroughRate ? `${Number(data.trendindex.readThroughRate).toFixed(1)}%` : '-'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between gap-16pxr">
-                      <span className="text-11pxr text-dark-gray-300">
-                        주평균 연재횟수
-                      </span>
-                      <span className="text-11pxr text-dark-gray-500">
-                        {data.properties.averageWeeklyEpisodes ? Number(data.properties.averageWeeklyEpisodes).toFixed(1) : '-'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between gap-16pxr">
-                      <span className="text-11pxr text-dark-gray-300">
-                        주요 독자층
-                      </span>
-                      <span className="text-11pxr text-dark-gray-500 text-right">
-                        {data.trendindex.primaryReaderGroup?.["1"] || "-"}
-                        {data.trendindex.primaryReaderGroup?.["2"] ? (
-                          <>
-                            <br />
-                            {data.trendindex.primaryReaderGroup?.["2"]}
-                          </>
-                        ) : null}
-                      </span>
-                    </div>
+              )}
+              <BookmarkButton
+                productId={data.productId}
+                bookmarkYn={data.properties?.bookmarkYn || "N"}
+                buttonStyle="flex items-center justify-center w-[32px] h-[35px]"
+                bookmarkStyle="w-[16px] h-[19px] text-dark-gray-200 hover:text-dark-gray-500"
+                activeBookmarkStyle="w-[16px] h-[19px]"
+              />
+            </div>
+            {data.trendindex && data.properties && isMobileStatsOpen && (
+              <div className="absolute bottom-[52px] right-[10px] md:hidden z-10 min-w-[190px] rounded-[10px] bg-white border border-light-gray-500 p-10pxr">
+                {(isCPAdmin || isProductAuthor) && (
+                  <div className="flex justify-between gap-16pxr">
+                    <span className="text-11pxr text-dark-gray-300">
+                      CP조회수
+                    </span>
+                    <span className="text-11pxr text-dark-gray-500">
+                      {data.trendindex.cpHitCount || '-'}
+                    </span>
                   </div>
                 )}
-              </>
+                <div className="flex justify-between gap-16pxr">
+                  <span className="text-11pxr text-dark-gray-300">
+                    연독률
+                  </span>
+                  <span className="text-11pxr text-dark-gray-500">
+                    {data.trendindex.readThroughRate ? `${Number(data.trendindex.readThroughRate).toFixed(1)}%` : '-'}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-16pxr">
+                  <span className="text-11pxr text-dark-gray-300">
+                    주평균 연재횟수
+                  </span>
+                  <span className="text-11pxr text-dark-gray-500">
+                    {data.properties.averageWeeklyEpisodes ? Number(data.properties.averageWeeklyEpisodes).toFixed(1) : '-'}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-16pxr">
+                  <span className="text-11pxr text-dark-gray-300">
+                    주요 독자층
+                  </span>
+                  <span className="text-11pxr text-dark-gray-500 text-right">
+                    {data.trendindex.primaryReaderGroup?.["1"] || "-"}
+                    {data.trendindex.primaryReaderGroup?.["2"] ? (
+                      <>
+                        <br />
+                        {data.trendindex.primaryReaderGroup?.["2"]}
+                      </>
+                    ) : null}
+                  </span>
+                </div>
+              </div>
             )}
-            <BookmarkButton
-              productId={data.productId}
-              bookmarkYn={data.properties?.bookmarkYn || "N"}
-              buttonStyle="absolute bottom-[17px] right-[11px] p-2"
-              bookmarkStyle="w-[16px] h-[19px] text-dark-gray-200 hover:text-dark-gray-500"
-              activeBookmarkStyle="w-[16px] h-[19px]"
-            />
             <div className="absolute bottom-[17px] right-[65px] p-2 md:hidden">
               <ProductRemarkContent
                 data={data}
@@ -1052,6 +1054,15 @@ const ProductListCard = ({
           </div>
         )}
       </div>
+      {shouldShowAiLibrarianPreview && aiLibrarianCopy && (
+        <div className="md:hidden px-[16px]">
+          <AiLibrarianListPreview
+            previewLines={aiLibrarianCopy.previewLines}
+            isVisible={isAiLibrarianRevealed}
+            onClick={navigateToAiLibrarianDetail}
+          />
+        </div>
+      )}
       <div className="md:hidden w-[93%] ml-[16px] border border-t-light-gray-400 border-b-0 border-l-0 border-r-0" />
     </>
   );
