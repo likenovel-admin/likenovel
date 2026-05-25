@@ -25,6 +25,10 @@ import {
   saveWebsochatMiniPreviewState,
   saveWebsochatSessionPendingDraft,
 } from "@/utils/websochatLaunch";
+import {
+  getWebsochatSafeUserMessage,
+  isRetryableWebsochatStreamError,
+} from "@/utils/websochatError";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   FormEvent,
@@ -301,41 +305,49 @@ export default function WebsochatMiniPreview({
     };
 
     try {
-      await postWebsochatMessageStream(
-        requestBody,
-        (event: WebsochatStreamEvent) => {
-          if (event.event === "assistant_delta" && event.data.delta) {
-            setMessages((current) =>
-              current.map((message) =>
-                message.messageId === assistantMessageId
-                  ? {
-                      ...message,
-                      content: `${message.content || ""}${event.data.delta || ""}`,
-                      isStreaming: true,
-                    }
-                  : message
-              )
-            );
-            return;
+      let shouldRetryStreamWithOnce = false;
+      try {
+        await postWebsochatMessageStream(
+          requestBody,
+          (event: WebsochatStreamEvent) => {
+            if (event.event === "assistant_delta" && event.data.delta) {
+              setMessages((current) =>
+                current.map((message) =>
+                  message.messageId === assistantMessageId
+                    ? {
+                        ...message,
+                        content: `${message.content || ""}${event.data.delta || ""}`,
+                        isStreaming: true,
+                      }
+                    : message
+                )
+              );
+              return;
+            }
+            if (event.event === "assistant_completed") {
+              completedData = event.data;
+              return;
+            }
+            if (event.event === "assistant_error") {
+              streamError =
+                typeof event.data?.detail === "string" && event.data.detail.trim()
+                  ? event.data.detail.trim()
+                  : "웹소챗 응답을 불러오지 못했습니다.";
+            }
           }
-          if (event.event === "assistant_completed") {
-            completedData = event.data;
-            return;
-          }
-          if (event.event === "assistant_error") {
-            streamError =
-              typeof event.data?.detail === "string" && event.data.detail.trim()
-                ? event.data.detail.trim()
-                : "웹소챗 응답을 불러오지 못했습니다.";
-          }
+        );
+      } catch (error) {
+        if (!isRetryableWebsochatStreamError(error)) {
+          throw error;
         }
-      );
+        shouldRetryStreamWithOnce = true;
+      }
 
       if (streamError) {
         throw new Error(streamError);
       }
 
-      if (!completedData) {
+      if (shouldRetryStreamWithOnce || !completedData) {
         const response = await postWebsochatMessageOnce(requestBody);
         completedData = response.data;
       }
@@ -374,11 +386,7 @@ export default function WebsochatMiniPreview({
             message.messageId !== assistantMessageId
         )
       );
-      setErrorMessage(
-        error instanceof Error && error.message
-          ? error.message
-          : "웹소챗 응답을 불러오지 못했습니다."
-      );
+      setErrorMessage(getWebsochatSafeUserMessage(error));
     }
   };
 
