@@ -1,4 +1,5 @@
-import { RefObject, useEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type UseAiLibrarianDwellRevealOptions = {
   productId: number;
@@ -12,8 +13,12 @@ type RevealEventDetail = {
 };
 
 const REVEAL_EVENT = "likenovel:ai-librarian-preview-reveal";
+export const AI_LIBRARIAN_DWELL_MIN_SCROLL_Y = 120;
 const registeredElements = new Map<number, HTMLElement>();
 let activeProductId: number | null = null;
+
+export const shouldAllowAiLibrarianDwellRevealAtScroll = (scrollY: number) =>
+  scrollY >= AI_LIBRARIAN_DWELL_MIN_SCROLL_Y;
 
 const getVisibleRatio = (element: HTMLElement) => {
   const rect = element.getBoundingClientRect();
@@ -86,11 +91,31 @@ export const useAiLibrarianDwellReveal = ({
       timerRef.current = null;
     };
 
+    const clearReveal = () => {
+      const wasActive = activeProductId === productId;
+      clearTimer();
+      if (!wasActive) return;
+      activeProductId = null;
+      setIsRevealed(false);
+    };
+
+    const canScheduleReveal = () =>
+      isVisibleRef.current &&
+      shouldAllowAiLibrarianDwellRevealAtScroll(window.scrollY);
+
     const scheduleReveal = () => {
       clearTimer();
-      if (!isVisibleRef.current) return;
+      if (!canScheduleReveal()) {
+        clearReveal();
+        return;
+      }
 
       timerRef.current = setTimeout(() => {
+        if (!canScheduleReveal()) {
+          clearReveal();
+          return;
+        }
+
         const bestProductId = getBestVisibleProductId(threshold);
         if (bestProductId != null) {
           announceReveal(bestProductId);
@@ -104,9 +129,7 @@ export const useAiLibrarianDwellReveal = ({
           entry?.isIntersecting && entry.intersectionRatio >= threshold
         );
         if (!isVisibleRef.current) {
-          clearTimer();
-          if (activeProductId === productId) activeProductId = null;
-          setIsRevealed(false);
+          clearReveal();
           return;
         }
         scheduleReveal();
@@ -115,7 +138,10 @@ export const useAiLibrarianDwellReveal = ({
     );
 
     const handleScroll = () => {
-      if (!isVisibleRef.current) return;
+      if (!isVisibleRef.current) {
+        clearReveal();
+        return;
+      }
       scheduleReveal();
     };
 
