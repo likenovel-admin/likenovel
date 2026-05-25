@@ -102,7 +102,21 @@ export const postWebsochatMessageStream = async (
   });
   if (!response.ok || !response.body) {
     const fallbackText = await response.text().catch(() => "");
-    throw new Error(fallbackText || "websochat stream failed");
+    let parsed: { message?: string; code?: string } | null = null;
+    try {
+      const parsedJson = JSON.parse(fallbackText);
+      parsed = parsedJson && typeof parsedJson === "object" ? parsedJson : null;
+    } catch {
+      parsed = null;
+    }
+    const error = new Error(parsed?.message || fallbackText || "websochat stream failed") as Error & {
+      response?: { status: number; data?: { message?: string; code?: string } };
+    };
+    error.response = {
+      status: response.status,
+      data: parsed || { message: fallbackText || "websochat stream failed" },
+    };
+    throw error;
   }
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
