@@ -1,4 +1,5 @@
 import { useSelectPaidAllProductsInfinite } from "@/app/api/query/product";
+import { useGetAiProductBriefs } from "@/app/api/query/recommendation";
 import { useGenre } from "@/contexts/GenreContext";
 import useAuthStore from "@/store/authStore";
 import useBottomSheetStore from "@/store/bottomSheetStore";
@@ -54,6 +55,23 @@ const ProductArea = ({ stateType }: Props) => {
     return (getLocalStorage<"list" | "box">(STORAGE_KEYS.PAID_TOP_VIEW_TYPE) ||
       "list") as "list" | "box";
   });
+  const aiBriefProductIds = useMemo(
+    () =>
+      listType === "list" ? allProducts.map((product) => product.productId) : [],
+    [allProducts, listType]
+  );
+  const { data: aiBriefsData } = useGetAiProductBriefs(
+    aiBriefProductIds,
+    adultYn,
+    listType === "list" && aiBriefProductIds.length > 0
+  );
+  const aiBriefsByProductId = useMemo(
+    () =>
+      new Map(
+        (aiBriefsData?.data ?? []).map((brief) => [brief.productId, brief])
+      ),
+    [aiBriefsData]
+  );
 
   /**
    * 유료 리스트 무한스크롤:
@@ -188,6 +206,10 @@ const ProductArea = ({ stateType }: Props) => {
                   hasInterestBadge
                   hasPromotionBadge
                   hideStats
+                  enableAiLibrarianPreview
+                  aiLibrarianBrief={
+                    aiBriefsByProductId.get(product.productId) ?? null
+                  }
                   entrySource={
                     stateType === "ongoing"
                       ? PRODUCT_DETAIL_ENTRY_SOURCE.PAID_ONGOING_LIST

@@ -82,6 +82,28 @@ export interface IGetTasteRecommendationsResponse {
   };
 }
 
+export interface IAiProductBrief {
+  productId: number;
+  title?: string | null;
+  premise?: string | null;
+  hook?: string | null;
+  mood?: string | null;
+  pacing?: string | null;
+  protagonistType?: string | null;
+  protagonistGoal?: string | null;
+  tasteTags?: string[];
+  worldviewTags?: string[];
+  protagonistTypeTags?: string[];
+  protagonistJobTags?: string[];
+  protagonistMaterialTags?: string[];
+  styleTags?: string[];
+  romanceTags?: string[];
+}
+
+export interface IGetAiProductBriefsResponse {
+  data: IAiProductBrief[];
+}
+
 // ── AI 챗 추천 ──────────────────────────────────────
 
 export interface ITasteMatch {

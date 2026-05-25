@@ -1,4 +1,5 @@
 import { useSelectFreeAllProductsInfinite } from "@/app/api/query/product";
+import { useGetAiProductBriefs } from "@/app/api/query/recommendation";
 import { useGenre } from "@/contexts/GenreContext";
 import useAuthStore from "@/store/authStore";
 import useBottomSheetStore from "@/store/bottomSheetStore";
@@ -30,6 +31,10 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
   const adultYn = user?.isOnAdult ? "Y" : "N";
   const observerTarget = useRef<HTMLDivElement>(null);
   const ITEMS_PER_PAGE = 27;
+  const [listType, setListType] = useState<"list" | "box">(() => {
+    return (getLocalStorage<"list" | "box">(STORAGE_KEYS.FREE_TOP_VIEW_TYPE) ||
+      "list") as "list" | "box";
+  });
 
   const {
     isLoading,
@@ -50,11 +55,23 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
     if (!data) return [];
     return data.pages.flatMap((page) => page.data ?? []);
   }, [data]);
-
-  const [listType, setListType] = useState<"list" | "box">(() => {
-    return (getLocalStorage<"list" | "box">(STORAGE_KEYS.FREE_TOP_VIEW_TYPE) ||
-      "list") as "list" | "box";
-  });
+  const aiBriefProductIds = useMemo(
+    () =>
+      listType === "list" ? allProducts.map((product) => product.productId) : [],
+    [allProducts, listType]
+  );
+  const { data: aiBriefsData } = useGetAiProductBriefs(
+    aiBriefProductIds,
+    adultYn,
+    listType === "list" && aiBriefProductIds.length > 0
+  );
+  const aiBriefsByProductId = useMemo(
+    () =>
+      new Map(
+        (aiBriefsData?.data ?? []).map((brief) => [brief.productId, brief])
+      ),
+    [aiBriefsData]
+  );
 
   // Refetch when isOnAdult changes
   useEffect(() => {
@@ -184,6 +201,10 @@ const ProductArea = ({ pageType = "normal" }: Props) => {
                   data={product as unknown as IProduct}
                   hasInterestBadge
                   hideStats
+                  enableAiLibrarianPreview
+                  aiLibrarianBrief={
+                    aiBriefsByProductId.get(product.productId) ?? null
+                  }
                   entrySource={
                     pageType === "normal"
                       ? PRODUCT_DETAIL_ENTRY_SOURCE.FREE_NORMAL_LIST
