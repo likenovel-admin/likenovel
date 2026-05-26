@@ -73,6 +73,21 @@ export const useGetStatisticSitePageRoutes = (
   });
 };
 
+export const getStatisticSitePageRoutesDownload = async (
+  params: IGetStatisticSitePageRoutesParams
+) => {
+  const res = await apiClient.request<IGetStatisticSitePageRoutesResponse>({
+    url: "/v1/query/statistics/site-page-routes",
+    method: "GET",
+    queryParams: {
+      ...params,
+      page: -1,
+      count_per_page: -1,
+    },
+  });
+  return res;
+};
+
 export const useGetStatisticPayment = (params: IGetStatisticPaymentParams) => {
   return useQuery<IGetStatisticPaymentResponse>({
     queryKey: ["GetStatisticPayment", JSON.stringify(params)],

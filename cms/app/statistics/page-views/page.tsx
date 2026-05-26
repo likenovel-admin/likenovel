@@ -6,6 +6,7 @@ import CommonTable, { Column } from "@/components/common/CommonTable";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import PaginationControls from "@/components/common/PaginationControls";
 import SearchByDateRange from "@/components/common/SearchByDateRange";
+import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/ui/page-header";
 import { SidebarInset } from "@/components/ui/sidebar";
 import {
@@ -15,8 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useGetStatisticSitePageRoutes } from "@/api/statistic";
-import { calculatePageCount } from "@/lib/utils";
+import {
+  getStatisticSitePageRoutesDownload,
+  useGetStatisticSitePageRoutes,
+} from "@/api/statistic";
+import { downloadExcel } from "@/lib/excelDownload";
+import { calculatePageCount, catchErrorMessage, showAlert } from "@/lib/utils";
 import { IStatisticSitePageRoute } from "@/types/statistic";
 
 const pageViewRoutesPerPage = 30;
@@ -49,6 +54,10 @@ const routeGroupOptions = [
   { value: "vote", label: "투표" },
   { value: "unknown", label: "미분류" },
 ];
+
+const routeGroupLabelMap = new Map(
+  routeGroupOptions.map((option) => [option.value, option.label])
+);
 
 const routeTermDescriptions = [
   {
@@ -89,9 +98,23 @@ function formatPercent(numerator: number, denominator: number) {
   return `${((numerator / denominator) * 100).toFixed(1)}%`;
 }
 
+function formatShortDwellRatio(shortDwellCount: number, dwellEventCount: number) {
+  return `${formatNumber(shortDwellCount)} / ${formatNumber(dwellEventCount)} (${formatPercent(shortDwellCount, dwellEventCount)})`;
+}
+
+function formatRouteGroup(value: unknown) {
+  const routeGroup = String(value || "");
+  return routeGroupLabelMap.get(routeGroup) ?? routeGroup;
+}
+
+function formatRouteName(value: unknown) {
+  const routeName = String(value || "");
+  return routeName === "unknown" ? "미분류" : routeName;
+}
+
 const columns: Column[] = [
-  { header: "경로 그룹", key: "route_group" },
-  { header: "경로 이름", key: "route_name" },
+  { header: "경로 그룹", key: "route_group", render: (value) => formatRouteGroup(value) },
+  { header: "경로 이름", key: "route_name", render: (value) => formatRouteName(value) },
   { header: "경로 템플릿", key: "path_template" },
   {
     header: "PV",
@@ -119,14 +142,15 @@ const columns: Column[] = [
     render: (value) => formatDuration(value),
   },
   {
-    header: "짧은 체류",
+    header: "짧은 체류(5초 미만)",
     key: "short_dwell_count",
     render: (value, row: IStatisticSitePageRoute) =>
-      `${formatNumber(value)} (${formatPercent(value || 0, row.dwell_event_count || 0)})`,
+      formatShortDwellRatio(Number(value || 0), row.dwell_event_count || 0),
   },
 ];
 
 export default function Page() {
+  const [isDownloading, setIsDownloading] = useState(false);
   const [page, setPage] = useState(1);
   const [startDate, setStartDate] = useState<Date | null>(() => subDays(new Date(), 6));
   const [endDate, setEndDate] = useState<Date | null>(() => new Date());
@@ -151,6 +175,54 @@ export default function Page() {
 
   const summary = data?.summary;
   const totalPages = calculatePageCount(data?.total_count || 0, pageViewRoutesPerPage);
+
+  const downloadParams = useMemo(
+    () => ({
+      start_date: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
+      end_date: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
+      route_group: routeGroup === "all" ? undefined : routeGroup,
+    }),
+    [endDate, routeGroup, startDate]
+  );
+
+  const handleDownloadExcel = async () => {
+    await downloadExcel<IStatisticSitePageRoute>({
+      apiFn: getStatisticSitePageRoutesDownload,
+      params: downloadParams,
+      headers: [
+        "경로 그룹",
+        "경로 이름",
+        "경로 템플릿",
+        "PV",
+        "방문자(일별 합)",
+        "세션(일별 합)",
+        "체류 이벤트",
+        "평균 활성 구간",
+        "총 활성 체류",
+        "짧은 체류(5초 미만)",
+        "짧은 체류 비율",
+      ],
+      fields: [
+        (item) => formatRouteGroup(item.route_group),
+        (item) => formatRouteName(item.route_name),
+        "path_template",
+        (item) => item.page_view_count,
+        (item) => item.visitor_count,
+        (item) => item.session_count,
+        (item) => item.dwell_event_count,
+        (item) => formatDuration(item.active_dwell_avg_ms),
+        (item) => formatDuration(item.active_dwell_total_ms),
+        (item) => item.short_dwell_count,
+        (item) => formatPercent(item.short_dwell_count || 0, item.dwell_event_count || 0),
+      ],
+      filename: "Page View Route Statistics",
+      onStart: () => setIsDownloading(true),
+      onFinish: () => setIsDownloading(false),
+      onError: (error) => {
+        showAlert("오류", catchErrorMessage(error), "확인");
+      },
+    });
+  };
 
   return (
     <SidebarInset className="bg-sidebar-inset-background">
@@ -223,9 +295,12 @@ export default function Page() {
             </div>
           </div>
           <div className="rounded-md border bg-background p-3">
-            <div className="text-xs text-muted-foreground">짧은 체류</div>
+            <div className="text-xs text-muted-foreground">짧은 체류(5초 미만)</div>
             <div className="mt-1 text-lg font-semibold">
-              {formatPercent(summary?.short_dwell_count || 0, summary?.dwell_event_count || 0)}
+              {formatShortDwellRatio(
+                summary?.short_dwell_count || 0,
+                summary?.dwell_event_count || 0
+              )}
             </div>
           </div>
         </div>
@@ -253,14 +328,25 @@ export default function Page() {
           </div>
         </div>
 
-        <CommonTable
-          columns={columns}
-          data={data?.results ?? []}
-          loading={isLoadingData || isFetching}
-          emptyMessage="페이지뷰 상세 데이터가 없습니다."
-        />
+        <div className="space-y-3">
+          <div className="flex items-center justify-end">
+            <Button
+              variant="outline"
+              onClick={handleDownloadExcel}
+              disabled={isDownloading}
+            >
+              엑셀 다운로드
+            </Button>
+          </div>
+          <CommonTable
+            columns={columns}
+            data={data?.results ?? []}
+            loading={isLoadingData || isFetching}
+            emptyMessage="페이지뷰 상세 데이터가 없습니다."
+          />
+        </div>
         <PaginationControls page={page} setPage={setPage} totalPages={totalPages} />
-        <FullPageLoader isLoading={isLoadingData || isFetching} />
+        <FullPageLoader isLoading={isDownloading || isLoadingData || isFetching} />
       </div>
     </SidebarInset>
   );
