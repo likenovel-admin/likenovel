@@ -17,6 +17,9 @@ import {
   IStatisticAiReaderRecentAction,
   IStatisticAiReaderSummary,
   IStatisticAiReaderTimelineAction,
+  IStatisticAiApiUsageModel,
+  IStatisticAiApiUsageSource,
+  IStatisticAiApiUsageSummary,
 } from "@/types/statistic";
 
 export interface IGetStatisticSiteResponse {
@@ -162,4 +165,15 @@ export interface IGetStatisticAiReaderTimelineResponse {
   page: number;
   count_per_page: number;
   items: IStatisticAiReaderTimelineAction[];
+}
+
+export interface IGetStatisticAiApiUsageParams {
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface IGetStatisticAiApiUsageResponse {
+  summary: IStatisticAiApiUsageSummary;
+  results: IStatisticAiApiUsageSource[];
+  model_summary: IStatisticAiApiUsageModel[];
 }

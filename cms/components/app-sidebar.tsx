@@ -73,6 +73,10 @@ const data = {
           title: "AI 유저 인게이지먼트",
           url: "/statistics/ai-reader",
         },
+        {
+          title: "API 사용량",
+          url: "/statistics/ai-api-usage",
+        },
       ],
     },
     {

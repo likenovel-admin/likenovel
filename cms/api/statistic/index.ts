@@ -20,6 +20,8 @@ import {
   IGetStatisticAiReaderAgentActionsResponse,
   IGetStatisticAiReaderTimelineParams,
   IGetStatisticAiReaderTimelineResponse,
+  IGetStatisticAiApiUsageParams,
+  IGetStatisticAiApiUsageResponse,
 } from "@/api/statistic/dto";
 import apiClient from "@/lib/apiClient";
 import { useQuery } from "@tanstack/react-query";
@@ -69,6 +71,21 @@ export const useGetStatisticSitePageRoutes = (
       return res;
     },
   });
+};
+
+export const getStatisticSitePageRoutesDownload = async (
+  params: IGetStatisticSitePageRoutesParams
+) => {
+  const res = await apiClient.request<IGetStatisticSitePageRoutesResponse>({
+    url: "/v1/query/statistics/site-page-routes",
+    method: "GET",
+    queryParams: {
+      ...params,
+      page: -1,
+      count_per_page: -1,
+    },
+  });
+  return res;
 };
 
 export const useGetStatisticPayment = (params: IGetStatisticPaymentParams) => {
@@ -194,6 +211,23 @@ export const useGetStatisticAiReaderTimeline = (
     queryFn: async () => {
       const res = await apiClient.request<IGetStatisticAiReaderTimelineResponse>({
         url: "/v1/query/statistics/ai-reader-engagement/actions",
+        method: "GET",
+        queryParams: params,
+      });
+      return res;
+    },
+  });
+};
+
+export const useGetStatisticAiApiUsage = (
+  params: IGetStatisticAiApiUsageParams
+) => {
+  return useQuery<IGetStatisticAiApiUsageResponse>({
+    queryKey: ["GetStatisticAiApiUsage", JSON.stringify(params)],
+
+    queryFn: async () => {
+      const res = await apiClient.request<IGetStatisticAiApiUsageResponse>({
+        url: "/v1/query/statistics/ai-api-usage",
         method: "GET",
         queryParams: params,
       });

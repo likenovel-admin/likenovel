@@ -79,7 +79,6 @@ const getPacingLabel = (value: string) => {
 const buildListPreviewLines = ({
   hook,
   premise,
-  chips,
   protagonistGoal,
   mood,
   pacing,
@@ -87,7 +86,6 @@ const buildListPreviewLines = ({
 }: {
   hook: string;
   premise: string;
-  chips: string[];
   protagonistGoal: string;
   mood: string;
   pacing: string;
@@ -97,9 +95,7 @@ const buildListPreviewLines = ({
     stripEllipsisMarks(hook || premise) ||
     (title ? `「${title}」의 초반 갈등을 먼저 보세요.` : "초반 갈등을 먼저 보세요.");
   const pacingLabel = getPacingLabel(pacing);
-  const secondLine = chips.length
-    ? `${pacingLabel}와 ${chips.slice(0, 3).join("·")} 강점이 선명해요.`
-    : protagonistGoal
+  const secondLine = protagonistGoal
     ? `${pacingLabel}로 ${protagonistGoal} 동력이 선명해요.`
     : mood
     ? `${pacingLabel}와 ${mood} 분위기가 강점이에요.`
@@ -116,7 +112,6 @@ const buildBriefCopy = (
   const premise = normalizeText(brief.premise);
   if (!hook && !premise) return null;
 
-  const genres = uniqueValues(product.genre);
   const protagonistType = normalizeText(brief.protagonistType);
   const protagonistGoal = normalizeText(brief.protagonistGoal);
   const mood = normalizeText(brief.mood);
@@ -130,13 +125,10 @@ const buildBriefCopy = (
     ...(brief.protagonistMaterialTags || []),
     ...(brief.romanceTags || []),
   ]);
-  const chips = uniqueValues([...briefTags, ...genres, ...(product.keywords || [])]).slice(
-    0,
-    MAX_CHIPS
-  );
+  const chips = briefTags.slice(0, MAX_CHIPS);
   const tasteLine =
     chips.length > 0
-      ? `${chips.slice(0, 3).join(", ")} 결을 좋아하는 독자에게 맞을 수 있어요.`
+      ? "아래 AI 키워드의 결이 맞는 독자에게 어울릴 수 있어요."
       : "처음 읽는 독자가 작품의 출발점과 인물의 방향을 잡기 쉬워요.";
 
   const previewBase = `${clampSentence(hook || premise, 74)} ${
@@ -149,7 +141,6 @@ const buildBriefCopy = (
   const previewLines = buildListPreviewLines({
     hook,
     premise,
-    chips,
     protagonistGoal,
     mood,
     pacing: normalizeText(brief.pacing),
@@ -189,21 +180,11 @@ export const buildAiLibrarianCopy = (
   if (briefCopy) return briefCopy;
 
   const genres = uniqueValues(product.genre);
-  const keywords = uniqueValues(product.keywords);
-  const chips = [...genres, ...keywords].slice(0, MAX_CHIPS);
   const primaryGenre = genres[0] || "";
-  const primaryKeyword = keywords[0] || "";
   const synopsis = normalizeText(product.synopsis);
   const productTitle = normalizeText(product.title);
   const titleLead = productTitle ? `「${productTitle}」은` : "이 작품은";
-  const tasteAnchor =
-    primaryKeyword && primaryGenre
-      ? `${primaryGenre} 안에서 ${primaryKeyword} 포인트`
-      : primaryKeyword
-      ? `${primaryKeyword} 포인트`
-      : primaryGenre
-      ? `${primaryGenre} 장르의 기대감`
-      : "초반 분위기와 인물의 목표";
+  const tasteAnchor = primaryGenre ? `${primaryGenre} 장르의 기대감` : "초반 분위기와 인물의 목표";
   const synopsisSignal = synopsis
     ? "소개글이 던지는 설정을 첫 회차에서 어떻게 갈등으로 연결하는지 보면 좋아요."
     : "초반 회차에서 인물의 방향과 갈등 구조를 먼저 확인해보세요.";
@@ -217,16 +198,11 @@ export const buildAiLibrarianCopy = (
   const previewBase = synopsis
     ? `${titleLead} ${tasteAnchor}을 먼저 보면 초반 결이 잡혀요.`
     : primaryGenre
-    ? `${titleLead} ${primaryGenre} 중심의 흐름이에요. ${
-        primaryKeyword
-          ? `${primaryKeyword} 포인트를 보고 들어가면 초반 몰입이 쉬워요.`
-          : "초반 분위기와 인물의 목표를 따라가며 읽기 좋아요."
-      }`
+    ? `${titleLead} ${primaryGenre} 중심의 흐름이에요. 초반 분위기와 인물의 목표를 따라가며 읽기 좋아요.`
     : `${titleLead} 아직 자세한 소개가 적지만, 초반 분위기와 인물의 목표를 따라가며 읽어볼 만해요.`;
   const previewLines = buildListPreviewLines({
     hook: synopsis ? `${titleLead} ${tasteAnchor}을 먼저 보면 초반 결이 잡혀요.` : "",
     premise: synopsis,
-    chips,
     protagonistGoal: "",
     mood: primaryGenre,
     pacing: "",
@@ -241,9 +217,7 @@ export const buildAiLibrarianCopy = (
     primaryGenre
       ? `${primaryGenre} 장르의 기대감을 먼저 잡고 들어가면 좋아요.`
       : "초반 분위기와 인물의 목표를 먼저 확인해보세요.",
-    primaryKeyword
-      ? `${primaryKeyword} 요소를 좋아한다면 입문 장벽이 낮을 수 있어요.`
-      : "작품 키워드가 적어도 첫 회차의 갈등 구조를 따라가면 판단하기 쉬워요.",
+    "첫 회차의 갈등 구조를 따라가면 판단하기 쉬워요.",
     synopsisPoint,
   ];
 
@@ -252,7 +226,7 @@ export const buildAiLibrarianCopy = (
     previewLines,
     intro,
     points,
-    chips,
+    chips: [],
   };
 };
 

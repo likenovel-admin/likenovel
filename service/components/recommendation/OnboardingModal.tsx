@@ -7,6 +7,7 @@ import {
 import Button from "@/components/common/Button";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ONBOARDING_SELECTED_TAG_CHIP_CLASS } from "./tagChipStyles";
 
 interface Props {
   isOpen: boolean;
@@ -299,7 +300,7 @@ const OnboardingModal = ({
                     key={item.key}
                     type="button"
                     onClick={() => toggleTag(item.tabKey, item.label)}
-                    className="inline-flex items-center gap-6pxr rounded-full border border-primary-100 bg-white px-10pxr py-6pxr text-12pxr font-medium tracking-[-2%] text-primary-100"
+                    className={ONBOARDING_SELECTED_TAG_CHIP_CLASS}
                   >
                     <span>{item.label}</span>
                     <span aria-hidden="true">×</span>

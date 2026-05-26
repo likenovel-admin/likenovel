@@ -1,13 +1,16 @@
 "use client";
 
+import Button from "@/components/common/Button";
+import { ONBOARDING_SELECTED_TAG_CHIP_CLASS } from "@/components/recommendation/tagChipStyles";
 import type { AiLibrarianCopy } from "@/utils/aiLibrarian";
 import { PRODUCT_DETAIL_AI_LIBRARIAN_FOCUS } from "@/utils/aiLibrarian";
 
 interface Props {
   copy: AiLibrarianCopy;
+  onAskMore?: () => void;
 }
 
-export default function AiLibrarianDetailCard({ copy }: Props) {
+export default function AiLibrarianDetailCard({ copy, onAskMore }: Props) {
   return (
     <section
       id={PRODUCT_DETAIL_AI_LIBRARIAN_FOCUS}
@@ -39,14 +42,27 @@ export default function AiLibrarianDetailCard({ copy }: Props) {
           {copy.chips.map((chip) => (
             <span
               key={chip}
-              className="rounded-[6px] bg-light-gray-100 px-8pxr py-4pxr text-12pxr text-dark-gray-400"
+              className={ONBOARDING_SELECTED_TAG_CHIP_CLASS}
             >
-              #{chip}
+              {chip}
             </span>
           ))}
         </div>
       )}
 
+      {onAskMore && (
+        <div className="mt-14pxr flex justify-center">
+          <Button
+            type="button"
+            variant="blueBorder"
+            size="sm"
+            onClick={onAskMore}
+            className="min-w-[188px] text-primary-100"
+          >
+            AI사서에게 더 물어볼까요?
+          </Button>
+        </div>
+      )}
     </section>
   );
 }
