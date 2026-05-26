@@ -8,6 +8,11 @@ const source = readFileSync(
 
 assert.doesNotMatch(source, /websochatLaunch/);
 assert.doesNotMatch(source, /useRouter/);
-assert.doesNotMatch(source, /더 물어보기/);
-assert.doesNotMatch(source, /AI 사서에게 더 물어보기/);
+assert.match(source, /onAskMore\?: \(\) => void/);
+assert.match(source, /AI사서에게 더 물어볼까요\?/);
+assert.match(source, /onClick=\{onAskMore\}/);
 assert.doesNotMatch(source, /스포일러 없이 정리/);
+assert.match(source, /rounded-full/);
+assert.match(source, /ONBOARDING_SELECTED_TAG_CHIP_CLASS/);
+assert.doesNotMatch(source, /border-light-gray-500 bg-light-gray-100 px-9pxr/);
+assert.doesNotMatch(source, /websochat/i);

@@ -26,9 +26,9 @@ const fantasyProduct = {
 const copy = buildAiLibrarianCopy(fantasyProduct);
 
 assert.equal(copy.preview.includes("검은 탑의 막내 사서"), true);
-assert.equal(copy.preview.includes("마법"), true);
+assert.equal(copy.preview.includes("마법"), false);
 assert.equal(copy.points.length, 3);
-assert.deepEqual(copy.chips.slice(0, 3), ["판타지", "성장", "마법"]);
+assert.deepEqual(copy.chips, []);
 
 const roughSynopsisCopy = buildAiLibrarianCopy({
   ...fantasyProduct,
@@ -70,11 +70,34 @@ assert.equal(aiCopy.preview.includes("진실"), true);
 assert.equal(aiCopy.previewLines.length, 2);
 assert.equal(aiCopy.previewLines.some((line) => line.includes("…")), false);
 assert.match(aiCopy.previewLines[1], /전개/);
-assert.match(aiCopy.previewLines[1], /마법·세계관·성장/);
-assert.match(aiCopy.previewLines[1], /강점/);
+assert.doesNotMatch(aiCopy.previewLines[1], /마법·세계관·성장/);
+assert.doesNotMatch(aiCopy.previewLines[1], /강점/);
 assert.equal(aiCopy.intro.includes("마지막 사서"), true);
 assert.equal(aiCopy.points.some((point) => point.includes("진실 추적")), true);
 assert.deepEqual(aiCopy.chips.slice(0, 4), ["마법", "세계관", "성장", "마법 도서관"]);
+assert.equal(aiCopy.chips.includes("동료"), false);
+
+const aiOnlyChipCopy = buildAiLibrarianCopy(
+  {
+    ...fantasyProduct,
+    keywords: ["작가태그"],
+    genre: ["작가장르"],
+  },
+  {
+    ...aiBrief,
+    tasteTags: ["AI취향"],
+    worldviewTags: [],
+    protagonistTypeTags: [],
+    protagonistJobTags: [],
+    protagonistMaterialTags: [],
+    styleTags: [],
+    romanceTags: [],
+  }
+);
+
+assert.deepEqual(aiOnlyChipCopy.chips, ["AI취향"]);
+assert.equal(aiOnlyChipCopy.previewLines.some((line) => line.includes("작가태그")), false);
+assert.equal(aiOnlyChipCopy.points.some((point) => point.includes("작가태그")), false);
 
 const fallbackCopy = buildAiLibrarianCopy({
   ...fantasyProduct,

@@ -688,6 +688,7 @@ const ProductListCard = ({
               <div className="hidden md:block">
                 <AiLibrarianListPreview
                   previewLines={aiLibrarianCopy.previewLines}
+                  chips={aiLibrarianCopy.chips}
                   isVisible={isAiLibrarianRevealed}
                   onClick={navigateToAiLibrarianDetail}
                 />
@@ -1058,6 +1059,7 @@ const ProductListCard = ({
         <div className="md:hidden px-[16px]">
           <AiLibrarianListPreview
             previewLines={aiLibrarianCopy.previewLines}
+            chips={aiLibrarianCopy.chips}
             isVisible={isAiLibrarianRevealed}
             onClick={navigateToAiLibrarianDetail}
           />
