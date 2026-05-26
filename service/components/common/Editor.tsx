@@ -3,6 +3,7 @@ import {
   useSelectStoragePath,
 } from "@/app/api/query/author/episode";
 import useToastStore from "@/store/toastStore";
+import { plainTextToTiptapParagraphs } from "@/utils/plainTextToTiptapParagraphs";
 import { prepareWebpUpload } from "@/utils/webpUpload";
 import Bold from "@tiptap/extension-bold";
 import BulletList from "@tiptap/extension-bullet-list";
@@ -40,40 +41,11 @@ const Editor = ({ value, onChange, preferPlainTextPaste = false }: Props) => {
   const [hasShownLimitWarning, setHasShownLimitWarning] = useState(false);
 
   const pastePlainTextPreserveNewlines = (rawText: string) => {
-    const normalized = rawText.replace(/\r\n/g, "\n");
-    const lines = normalized.split("\n");
-    const nodes: Array<{
-      type: "paragraph";
-      content?: Array<{ type: "text"; text: string } | { type: "hardBreak" }>;
-    }> = [];
-    let currentParagraph: Array<
-      { type: "text"; text: string } | { type: "hardBreak" }
-    > = [];
-
-    const flushParagraph = () => {
-      if (currentParagraph.length === 0) return;
-      nodes.push({ type: "paragraph", content: currentParagraph });
-      currentParagraph = [];
-    };
-
-    lines.forEach((line) => {
-      if (line.trim().length === 0) {
-        flushParagraph();
-        nodes.push({
-          type: "paragraph",
-          content: [{ type: "hardBreak" }],
-        });
-        return;
-      }
-
-      if (currentParagraph.length > 0) {
-        currentParagraph.push({ type: "hardBreak" });
-      }
-      currentParagraph.push({ type: "text", text: line });
-    });
-    flushParagraph();
-
-    editor?.chain().focus().insertContent(nodes).run();
+    editor
+      ?.chain()
+      .focus()
+      .insertContent(plainTextToTiptapParagraphs(rawText))
+      .run();
   };
 
   const editor = useEditor({
