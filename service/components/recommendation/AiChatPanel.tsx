@@ -10,7 +10,13 @@ import {
   PRODUCT_DETAIL_ENTRY_SOURCE,
   setPendingProductDetailEntrySource,
 } from "@/utils/productPath";
-import { removeLocalStorage, setLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
+import { removeLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
+import {
+  consumeQueuedAiLibrarianProductQuestion,
+  hasAiLibrarianAuthToken,
+  openAiLibrarianPanelOrLogin,
+  redirectToAiLibrarianLogin,
+} from "@/utils/aiLibrarianPanel";
 import ProductStateBadge from "@/components/common/ProductStateBadge";
 import SquareBadge from "@/components/common/SquareBadge";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
@@ -55,9 +61,12 @@ const AiChatPanel = () => {
     showBadge,
     consumeBadge,
     browsedProductIds,
+    pendingProductQuestion,
     addUserMessage,
     addAssistantMessage,
     addExcludeId,
+    requestProductQuestion,
+    consumePendingProductQuestion,
     initFromHistory,
     clearChat,
   } = useChatStore();
@@ -109,6 +118,7 @@ const AiChatPanel = () => {
         trigger?: "manual" | "browsing";
         browsedProductIds?: number[];
         skipUserMessage?: boolean;
+        resetSession?: boolean;
       }
     ) => {
       const trigger = options?.trigger ?? "manual";
@@ -123,13 +133,17 @@ const AiChatPanel = () => {
           : "재미있는 작품 추천해줘");
 
       setErrorMessage(null);
+      if (options?.resetSession) {
+        clearChat();
+      }
       if (!options?.skipUserMessage) {
         addUserMessage(prompt);
       }
       setIsLoading(true);
 
+      const baseMessages = options?.resetSession ? [] : recentMessages;
       const requestMessages = [
-        ...recentMessages.map((message) => ({
+        ...baseMessages.map((message) => ({
           role: message.role,
           content: message.content,
           product_id: message.product?.productId,
@@ -146,7 +160,7 @@ const AiChatPanel = () => {
             ...pageContext,
           },
           preset: preset ?? null,
-          exclude_product_ids: excludeIds,
+          exclude_product_ids: options?.resetSession ? [] : excludeIds,
           adult_yn: adultYn,
         },
         {
@@ -182,7 +196,7 @@ const AiChatPanel = () => {
                 const authMessage = "로그인이 필요합니다.";
                 addAssistantMessage({ content: authMessage });
                 setErrorMessage(authMessage);
-                redirectToLogin();
+                redirectToAiLibrarianLogin(router);
                 return;
               }
             }
@@ -203,6 +217,8 @@ const AiChatPanel = () => {
       excludeIds,
       recentMessages,
       pageContext,
+      router,
+      clearChat,
     ]
   );
 
@@ -213,48 +229,61 @@ const AiChatPanel = () => {
     setQuery("");
   };
 
-  const hasAuthToken = () => {
-    if (typeof window === "undefined") return false;
-    return !!(
-      localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
-      sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
-    );
-  };
-
-  const redirectToLogin = () => {
-    const currentPath = window.location.pathname + window.location.search;
-    setLocalStorage(STORAGE_KEYS.PREVIOUS_PAGE, currentPath);
-    setLocalStorage(STORAGE_KEYS.AI_RECOMMEND_OPEN_AFTER_LOGIN, "Y");
-    router.push("/login?modal=open", { scroll: false });
-  };
+  const isBusy = isLoading || isPending;
 
   const handleToggle = () => {
     if (isOpen) {
       setIsOpen(false);
       return;
     }
-    const isAuthNow = isAuthenticated || hasAuthToken();
-    if (!isAuthNow) {
-      redirectToLogin();
+    openAiLibrarianPanelOrLogin({ isAuthenticated, router, setIsOpen });
+  };
+
+  useEffect(() => {
+    if (!isOpen || isBusy || !pendingProductQuestion) return;
+    if (pageContext.current_product_id !== pendingProductQuestion.productId) {
       return;
     }
-    setIsOpen(true);
-  };
+
+    consumePendingProductQuestion();
+    handleRecommend(undefined, pendingProductQuestion.prompt, {
+      trigger: "manual",
+      resetSession: true,
+    });
+  }, [
+    consumePendingProductQuestion,
+    handleRecommend,
+    isBusy,
+    isOpen,
+    pageContext.current_product_id,
+    pendingProductQuestion,
+  ]);
 
   // 로그인 후 자동 열기
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!isAuthenticated && !hasAuthToken()) return;
+    if (!isAuthenticated && !hasAiLibrarianAuthToken()) return;
 
-    if (localStorage.getItem(STORAGE_KEYS.AI_RECOMMEND_OPEN_AFTER_LOGIN) === "Y") {
+    const shouldOpenAfterLogin =
+      localStorage.getItem(STORAGE_KEYS.AI_RECOMMEND_OPEN_AFTER_LOGIN) === "Y";
+    const queuedProductQuestion = pageContext.current_product_id
+      ? consumeQueuedAiLibrarianProductQuestion(pageContext.current_product_id)
+      : null;
+
+    if (shouldOpenAfterLogin) {
       setIsOpen(true);
       removeLocalStorage(STORAGE_KEYS.AI_RECOMMEND_OPEN_AFTER_LOGIN);
     }
-  }, [isAuthenticated, pathname, setIsOpen]);
+
+    if (queuedProductQuestion) {
+      setIsOpen(true);
+      requestProductQuestion(queuedProductQuestion);
+    }
+  }, [isAuthenticated, pageContext.current_product_id, pathname, requestProductQuestion, setIsOpen]);
 
   // 브라우징 트리거
   useEffect(() => {
-    const isAuthNow = isAuthenticated || hasAuthToken();
+    const isAuthNow = isAuthenticated || hasAiLibrarianAuthToken();
     if (!isAuthNow || !isOpen || !showBadge) return;
     if (browsedProductIds.length < 3) return;
 
@@ -278,7 +307,10 @@ const AiChatPanel = () => {
   ]);
 
   const matchPercent = (value: number) => Math.round(value * 100);
-  const isBusy = isLoading || isPending;
+  const isProductDetailPage = /^\/product\/\d+$/.test(pathname ?? "");
+  const floatingButtonBottomClassName = isProductDetailPage
+    ? "bottom-[96px] md:bottom-[98px]"
+    : "bottom-20pxr";
 
   if (HIDDEN_PREFIXES.some((prefix) => pathname?.startsWith(prefix))) {
     return null;
@@ -288,8 +320,9 @@ const AiChatPanel = () => {
     <>
       {/* 플로팅 버튼 */}
       <button
-        className="fixed bottom-20pxr right-4 md:right-6 z-40 w-[50px] h-[50px] rounded-full bg-primary-100 text-white shadow-[0_8px_20px_rgba(23,107,242,0.35)] flex flex-col items-center justify-center gap-[2px]"
+        className={`fixed ${floatingButtonBottomClassName} right-4 md:right-6 z-40 w-[50px] h-[50px] rounded-full bg-primary-100 text-white shadow-[0_8px_20px_rgba(23,107,242,0.35)] flex flex-col items-center justify-center gap-[2px]`}
         onClick={handleToggle}
+        aria-label={isOpen ? "AI 사서 닫기" : "AI 사서 열기"}
       >
         {showBadge && !isOpen && (
           <span className="absolute -top-1 -right-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-11pxr font-bold text-primary-100">
@@ -304,14 +337,14 @@ const AiChatPanel = () => {
       {/* 오버레이 */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/30"
+          className="fixed inset-0 z-[70] bg-black/30"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* 사이드 패널 */}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-full sm:w-[400px] bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.12)] flex flex-col transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 z-[80] h-full w-full sm:w-[400px] bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.12)] flex flex-col transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >

@@ -10,6 +10,11 @@ export interface IChatMessage {
   tasteMatch?: ITasteMatch;
 }
 
+export interface IPendingProductQuestion {
+  productId: number;
+  prompt: string;
+}
+
 interface IChatState {
   isOpen: boolean;
   isLoading: boolean;
@@ -19,6 +24,7 @@ interface IChatState {
   browsedTimestamps: number[];
   showBadge: boolean;
   hasDeepRead: boolean;
+  pendingProductQuestion: IPendingProductQuestion | null;
   setIsOpen: (isOpen: boolean) => void;
   setIsLoading: (isLoading: boolean) => void;
   addUserMessage: (content: string) => void;
@@ -32,6 +38,8 @@ interface IChatState {
   setHasDeepRead: () => void;
   checkBrowsingTrigger: () => void;
   consumeBadge: () => void;
+  requestProductQuestion: (payload: IPendingProductQuestion) => void;
+  consumePendingProductQuestion: () => void;
   initFromHistory: (messages: IChatMessage[]) => void;
   clearChat: () => void;
 }
@@ -64,6 +72,7 @@ const useChatStore = create<IChatState>((set) => ({
   browsedTimestamps: [],
   showBadge: false,
   hasDeepRead: false,
+  pendingProductQuestion: null,
   setIsOpen: (isOpen: boolean) => set({ isOpen }),
   setIsLoading: (isLoading: boolean) => set({ isLoading }),
   addUserMessage: (content: string) =>
@@ -130,6 +139,9 @@ const useChatStore = create<IChatState>((set) => ({
       };
     }),
   consumeBadge: () => set({ showBadge: false }),
+  requestProductQuestion: (payload: IPendingProductQuestion) =>
+    set({ pendingProductQuestion: payload }),
+  consumePendingProductQuestion: () => set({ pendingProductQuestion: null }),
   initFromHistory: (history: IChatMessage[]) =>
     set((state) => {
       if (state.messages.length > 0) return state;
@@ -138,7 +150,8 @@ const useChatStore = create<IChatState>((set) => ({
         .map((msg) => msg.product!.productId);
       return { messages: history, excludeIds };
     }),
-  clearChat: () => set({ messages: [], excludeIds: [] }),
+  clearChat: () =>
+    set({ messages: [], excludeIds: [], pendingProductQuestion: null }),
 }));
 
 export default useChatStore;

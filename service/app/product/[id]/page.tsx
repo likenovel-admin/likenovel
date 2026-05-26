@@ -23,6 +23,7 @@ import ProductEpisodes from "@/components/productDetail/ProductEpisodes";
 import SameAuthorProducts from "@/components/productDetail/SameAuthorProducts";
 import SuggestProducts from "@/components/productDetail/SuggestProducts";
 import useAuthStore from "@/store/authStore";
+import useChatStore from "@/store/chatStore";
 import useGiftBoxStore from "@/store/giftboxStore";
 import useToastStore from "@/store/toastStore";
 import { IEvaluation, IProduct } from "@/types";
@@ -31,6 +32,7 @@ import {
   buildAiLibrarianCopy,
   shouldFocusAiLibrarian,
 } from "@/utils/aiLibrarian";
+import { openAiLibrarianPanelOrLogin } from "@/utils/aiLibrarianPanel";
 import {
   consumeProductDetailEntrySource,
   getEffectiveProductDetailEntrySource,
@@ -93,6 +95,10 @@ export default function ProductDetail() {
   const { data, isPending, isSuccess } = useSelectProductDetail(productId);
   const { setToast } = useToastStore();
   const { setHasNew } = useGiftBoxStore();
+  const setAiLibrarianPanelOpen = useChatStore((state) => state.setIsOpen);
+  const requestProductQuestion = useChatStore(
+    (state) => state.requestProductQuestion
+  );
   const queryClient = useQueryClient();
   const addRecentProductMutation = useAddRecentProduct();
   const { mutate: postAiSignalEvent } = usePostAiSignalEvent();
@@ -214,6 +220,23 @@ export default function ProductDetail() {
         : null,
     [aiLibrarianBrief, productData]
   );
+  const handleAskAiLibrarianMore = () => {
+    const productQuestion = {
+      productId,
+      prompt: productData?.title
+        ? `${productData.title} 이 작품 어떤 작품인지 알려줘`
+        : "이 작품 어떤 작품인지 알려줘",
+    };
+    const shouldAskAiLibrarian = openAiLibrarianPanelOrLogin({
+      isAuthenticated,
+      router,
+      setIsOpen: setAiLibrarianPanelOpen,
+      pendingProductQuestion: productQuestion,
+    });
+    if (!shouldAskAiLibrarian) return;
+
+    requestProductQuestion(productQuestion);
+  };
 
   useEffect(() => {
     if (!isSuccess || !shouldFocusAiLibrarian(focusParam)) return;
@@ -659,7 +682,10 @@ export default function ProductDetail() {
             ref={aiLibrarianRef}
             className="w-full max-w-[800px] mt-20pxr md:mt-24pxr scroll-mt-[88px]"
           >
-            <AiLibrarianDetailCard copy={aiLibrarianCopy} />
+            <AiLibrarianDetailCard
+              copy={aiLibrarianCopy}
+              onAskMore={handleAskAiLibrarianMore}
+            />
           </div>
         )}
         <div className="flex w-full max-w-[800px] mt-30pxr md:mt-10pxr">

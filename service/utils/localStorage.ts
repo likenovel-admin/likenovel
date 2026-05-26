@@ -15,6 +15,7 @@ export const STORAGE_KEYS = {
   PREVIOUS_PAGE: "previous_page",
   POPUP_CLOSED_UNTIL: "popup_closed_until",
   AI_RECOMMEND_OPEN_AFTER_LOGIN: "ai_recommend_open_after_login",
+  AI_PENDING_PRODUCT_QUESTION: "ai_pending_product_question",
   QUEST_REWARD_AFTER_LOGIN: "quest_reward_after_login",
   WEBSOCHAT_GUEST_KEY: "story_agent_guest_key",
   WEBSOCHAT_GUEST_KEY_LEGACY: "story_agent_guest_key",
