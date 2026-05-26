@@ -254,3 +254,36 @@ export interface IStatisticAiReaderError {
   model_name?: string | null;
   error_message?: string | null;
 }
+
+export interface IStatisticAiApiUsageSummary {
+  request_count: number;
+  success_count: number;
+  failure_count: number;
+  exact_cost_usd: number;
+  estimated_cost_usd: number;
+  tracked_cost_usd: number;
+  untracked_count: number;
+  charged_cash: number;
+}
+
+export interface IStatisticAiApiUsageSource {
+  source_key: string;
+  source_label: string;
+  request_count: number;
+  success_count: number;
+  failure_count: number;
+  exact_cost_usd: number;
+  estimated_cost_usd: number;
+  untracked_count: number;
+  charged_cash: number;
+}
+
+export interface IStatisticAiApiUsageModel {
+  provider: string;
+  model_name: string;
+  source_key: string;
+  request_count: number;
+  exact_cost_usd: number;
+  estimated_cost_usd: number;
+  untracked_count: number;
+}
