@@ -171,6 +171,30 @@ export function buildShortTrackingDestination(code: string): string | null {
   return `/product/${productId}?${params.toString()}`;
 }
 
+export function getForwardedRequestOrigin(request: {
+  headers: { get(name: string): string | null };
+  url: string;
+}): string {
+  const requestUrl = new URL(request.url);
+  const proto =
+    request.headers.get("x-forwarded-proto") ||
+    requestUrl.protocol.replace(":", "");
+  const host =
+    request.headers.get("x-forwarded-host") ||
+    request.headers.get("host") ||
+    requestUrl.host;
+
+  return `${proto}://${host}`;
+}
+
+export function buildShortTrackingRedirectUrl(
+  code: string,
+  request: { headers: { get(name: string): string | null }; url: string }
+): string {
+  const destination = buildShortTrackingDestination(code) || "/";
+  return new URL(destination, getForwardedRequestOrigin(request)).toString();
+}
+
 export function extractMarketingAttribution(input: {
   search: string | null | undefined;
   referrer: string | null | undefined;
