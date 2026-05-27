@@ -1,6 +1,7 @@
 "use client";
 
-import { ONBOARDING_SELECTED_TAG_CHIP_CLASS } from "@/components/recommendation/tagChipStyles";
+const AI_LIBRARIAN_LIST_TAG_CHIP_CLASS =
+  "inline-flex max-w-[88px] items-center rounded-full border border-primary-100 bg-white px-6pxr py-2pxr text-9pxr leading-[12px] font-medium tracking-[-2%] text-primary-100";
 
 interface Props {
   preview?: string;
@@ -57,7 +58,7 @@ export default function AiLibrarianListPreview({
               {visibleChips.map((chip) => (
                 <span
                   key={chip}
-                  className={`${ONBOARDING_SELECTED_TAG_CHIP_CLASS} max-w-[112px]`}
+                  className={AI_LIBRARIAN_LIST_TAG_CHIP_CLASS}
                 >
                   <span className="truncate">{chip}</span>
                 </span>
