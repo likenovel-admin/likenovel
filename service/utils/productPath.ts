@@ -53,6 +53,14 @@ interface BuildProductDetailPathOptions {
 const PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_KEY =
   "pending_product_detail_entry_source";
 const PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_TTL_MS = 10 * 1000;
+const MARKETING_UTM_KEYS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+] as const;
+
+export const PRODUCT_DETAIL_MARKETING_BACK_FALLBACK_PATH = "/";
 
 const PRODUCT_DETAIL_ENTRY_SOURCE_SET = new Set<ProductDetailEntrySource>(
   Object.values(PRODUCT_DETAIL_ENTRY_SOURCE)
@@ -73,6 +81,20 @@ export const buildProductDetailPath = (
   return queryString
     ? `/product/${productId}?${queryString}`
     : `/product/${productId}`;
+};
+
+export const getProductDetailMarketingBackFallbackPath = (
+  search: string | null | undefined
+): string | null => {
+  const queryString = (search || "").startsWith("?")
+    ? (search || "").slice(1)
+    : search || "";
+  const params = new URLSearchParams(queryString);
+  const hasMarketingSignal = MARKETING_UTM_KEYS.some(
+    (key) => (params.get(key) || "").trim().length > 0
+  );
+
+  return hasMarketingSignal ? PRODUCT_DETAIL_MARKETING_BACK_FALLBACK_PATH : null;
 };
 
 export const getProductDetailEntrySource = (

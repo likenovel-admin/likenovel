@@ -3,8 +3,10 @@ import {
   buildProductDetailPath,
   getProductDetailEntrySource,
   getEffectiveProductDetailEntrySource,
+  getProductDetailMarketingBackFallbackPath,
   consumeProductDetailEntrySource,
   PRODUCT_DETAIL_ENTRY_SOURCE,
+  PRODUCT_DETAIL_MARKETING_BACK_FALLBACK_PATH,
   consumePendingProductDetailEntrySource,
   isProductDetailEntrySourceResolvedForProduct,
   resolveProductDetailEntrySourceState,
@@ -26,6 +28,26 @@ assert.equal(
   }),
   "/product/634",
   "blank entry source should not create a query parameter"
+);
+
+assert.equal(
+  getProductDetailMarketingBackFallbackPath(
+    "?utm_source=instagram&utm_medium=social&utm_campaign=p1109_card&utm_content=card01"
+  ),
+  PRODUCT_DETAIL_MARKETING_BACK_FALLBACK_PATH,
+  "marketing product landings should use an internal back fallback"
+);
+
+assert.equal(
+  getProductDetailMarketingBackFallbackPath("entrySource=ai_taste_section"),
+  null,
+  "internal entry source links should not override normal product back behavior"
+);
+
+assert.equal(
+  getProductDetailMarketingBackFallbackPath("?utm_source=   "),
+  null,
+  "blank marketing query values should not seed an internal back fallback"
 );
 
 assert.equal(
