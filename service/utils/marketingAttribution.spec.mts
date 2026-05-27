@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import {
   buildShortTrackingRedirectUrl,
   buildShortTrackingDestination,
+  buildShortTrackingAttribution,
+  encodeMarketingAttributionCookiePayload,
   extractMarketingAttribution,
+  getMarketingAttributionCookiePayload,
+  hasShortTrackingMarketingLandingForPath,
+  MARKETING_ATTRIBUTION_COOKIE_NAME,
 } from "./marketingAttribution.ts";
 
 {
@@ -10,7 +15,7 @@ import {
 
   assert.equal(
     destination,
-    "/product/1109?utm_source=instagram&utm_medium=social&utm_campaign=p1109_card&utm_content=card01"
+    "/product/1109"
   );
 }
 
@@ -19,7 +24,7 @@ import {
 
   assert.equal(
     destination,
-    "/product/1109?utm_source=threads&utm_medium=social&utm_campaign=p1109_card&utm_content=card12"
+    "/product/1109"
   );
 }
 
@@ -28,8 +33,22 @@ import {
 
   assert.equal(
     destination,
-    "/product/1109?utm_source=twitter&utm_medium=social&utm_campaign=p1109_card&utm_content=card01"
+    "/product/1109"
   );
+}
+
+{
+  const attribution = buildShortTrackingAttribution("ig1117c1");
+
+  assert.deepEqual(attribution, {
+    utmSource: "instagram",
+    utmMedium: "social",
+    utmCampaign: "p1117_card",
+    utmContent: "card01",
+    externalReferrerHost: null,
+    externalReferrerGroup: "instagram",
+    landingPath: "/product/1117",
+  });
 }
 
 {
@@ -54,7 +73,26 @@ import {
 
   assert.equal(
     redirectUrl,
-    "https://likenovel.net/product/1117?utm_source=instagram&utm_medium=social&utm_campaign=p1117_card&utm_content=card01"
+    "https://likenovel.net/product/1117"
+  );
+}
+
+{
+  const attribution = buildShortTrackingAttribution("ig1117c1");
+  assert.ok(attribution);
+
+  const cookieValue = encodeMarketingAttributionCookiePayload(attribution);
+  const cookieHeader = `${MARKETING_ATTRIBUTION_COOKIE_NAME}=${cookieValue}; other=value`;
+  const parsed = getMarketingAttributionCookiePayload(cookieHeader);
+
+  assert.deepEqual(parsed, attribution);
+  assert.equal(
+    hasShortTrackingMarketingLandingForPath(cookieHeader, "/product/1117"),
+    true
+  );
+  assert.equal(
+    hasShortTrackingMarketingLandingForPath(cookieHeader, "/product/1118"),
+    false
   );
 }
 
