@@ -13,12 +13,12 @@ type RevealEventDetail = {
 };
 
 const REVEAL_EVENT = "likenovel:ai-librarian-preview-reveal";
-export const AI_LIBRARIAN_DWELL_MIN_SCROLL_Y = 120;
+export const AI_LIBRARIAN_DWELL_TOP_SCROLL_Y = 120;
 const registeredElements = new Map<number, HTMLElement>();
 let activeProductId: number | null = null;
 
-export const shouldAllowAiLibrarianDwellRevealAtScroll = (scrollY: number) =>
-  scrollY >= AI_LIBRARIAN_DWELL_MIN_SCROLL_Y;
+export const shouldPreferTopAiLibrarianDwellReveal = (scrollY: number) =>
+  scrollY < AI_LIBRARIAN_DWELL_TOP_SCROLL_Y;
 
 const getVisibleRatio = (element: HTMLElement) => {
   const rect = element.getBoundingClientRect();
@@ -29,8 +29,9 @@ const getVisibleRatio = (element: HTMLElement) => {
   return Math.max(0, visibleBottom - visibleTop) / rect.height;
 };
 
-const getBestVisibleProductId = (threshold: number) => {
+const getBestVisibleProductId = (threshold: number, scrollY: number) => {
   const viewportCenter = window.innerHeight / 2;
+  const preferTop = shouldPreferTopAiLibrarianDwellReveal(scrollY);
   let bestProductId: number | null = null;
   let bestDistance = Number.POSITIVE_INFINITY;
 
@@ -39,7 +40,9 @@ const getBestVisibleProductId = (threshold: number) => {
     if (ratio < threshold) return;
 
     const rect = element.getBoundingClientRect();
-    const distance = Math.abs(rect.top + rect.height / 2 - viewportCenter);
+    const distance = preferTop
+      ? Math.max(rect.top, 0)
+      : Math.abs(rect.top + rect.height / 2 - viewportCenter);
     if (distance < bestDistance) {
       bestDistance = distance;
       bestProductId = productId;
@@ -99,9 +102,7 @@ export const useAiLibrarianDwellReveal = ({
       setIsRevealed(false);
     };
 
-    const canScheduleReveal = () =>
-      isVisibleRef.current &&
-      shouldAllowAiLibrarianDwellRevealAtScroll(window.scrollY);
+    const canScheduleReveal = () => isVisibleRef.current;
 
     const scheduleReveal = () => {
       clearTimer();
@@ -116,7 +117,10 @@ export const useAiLibrarianDwellReveal = ({
           return;
         }
 
-        const bestProductId = getBestVisibleProductId(threshold);
+        const bestProductId = getBestVisibleProductId(
+          threshold,
+          window.scrollY
+        );
         if (bestProductId != null) {
           announceReveal(bestProductId);
         }

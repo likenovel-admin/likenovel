@@ -6,11 +6,20 @@ const source = readFileSync(
   "utf8"
 );
 
-assert.match(source, /AI_LIBRARIAN_DWELL_MIN_SCROLL_Y\s*=\s*120/);
-assert.match(source, /shouldAllowAiLibrarianDwellRevealAtScroll/);
+assert.match(source, /AI_LIBRARIAN_DWELL_TOP_SCROLL_Y\s*=\s*120/);
+assert.match(source, /shouldPreferTopAiLibrarianDwellReveal/);
+assert.doesNotMatch(source, /shouldAllowAiLibrarianDwellRevealAtScroll/);
 assert.match(
   source,
-  /const canScheduleReveal = \(\) =>[\s\S]*isVisibleRef\.current[\s\S]*shouldAllowAiLibrarianDwellRevealAtScroll\(window\.scrollY\)/
+  /const canScheduleReveal = \(\) =>[\s\S]*isVisibleRef\.current/
+);
+assert.match(
+  source,
+  /getBestVisibleProductId\(\s*threshold,\s*window\.scrollY\s*\)/
+);
+assert.match(
+  source,
+  /shouldPreferTopAiLibrarianDwellReveal\(scrollY\)[\s\S]*rect\.top/
 );
 assert.match(source, /if \(!canScheduleReveal\(\)\) \{[\s\S]*clearReveal\(\);/);
 assert.match(source, /clearReveal\(\)/);
