@@ -1,4 +1,6 @@
 import {
+  IStatisticSitePageReferrer,
+  IStatisticSitePageReferrerSummary,
   IStatisticSitePageRoute,
   IStatisticSitePageRouteSummary,
   IStatisticSite,
@@ -53,6 +55,23 @@ export interface IGetStatisticSitePageRoutesParams {
   count_per_page?: number;
   start_date?: string;
   end_date?: string;
+  route_group?: string;
+}
+
+export interface IGetStatisticSitePageReferrersResponse {
+  total_count: number;
+  page: number;
+  count_per_page: number;
+  summary: IStatisticSitePageReferrerSummary;
+  results: IStatisticSitePageReferrer[];
+}
+
+export interface IGetStatisticSitePageReferrersParams {
+  page?: number;
+  count_per_page?: number;
+  start_date?: string;
+  end_date?: string;
+  referrer_group?: string;
   route_group?: string;
 }
 
