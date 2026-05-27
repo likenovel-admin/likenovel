@@ -1,3 +1,5 @@
+import type { MarketingAttribution } from "./marketingAttribution";
+
 export const SITE_PAGE_VIEW_TAXONOMY_VERSION = 1;
 
 export type SitePageViewRouteGroup =
@@ -41,6 +43,7 @@ export type BuildSitePageViewPayloadInput = {
   sessionId: string;
   eventId: string;
   occurredAt: string;
+  marketingAttribution?: MarketingAttribution | null;
 };
 
 export type SitePageViewPayload = {
@@ -54,6 +57,12 @@ export type SitePageViewPayload = {
   path: string;
   queryHash: string | null;
   referrerPath: string | null;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  externalReferrerHost: string | null;
+  externalReferrerGroup: string | null;
   source: "service-web";
   taxonomyVersion: number;
 };
@@ -177,6 +186,7 @@ export function buildSitePageViewPayload(
 ): SitePageViewPayload {
   const path = sanitizeSitePageViewPath(input.pathname);
   const meta = getSitePageViewRouteMeta(path);
+  const attribution = input.marketingAttribution;
   return {
     eventId: input.eventId,
     occurredAt: input.occurredAt,
@@ -188,6 +198,12 @@ export function buildSitePageViewPayload(
     path,
     queryHash: null,
     referrerPath: input.referrerPath ? sanitizeSitePageViewPath(input.referrerPath) : null,
+    utmSource: attribution?.utmSource ?? null,
+    utmMedium: attribution?.utmMedium ?? null,
+    utmCampaign: attribution?.utmCampaign ?? null,
+    utmContent: attribution?.utmContent ?? null,
+    externalReferrerHost: attribution?.externalReferrerHost ?? null,
+    externalReferrerGroup: attribution?.externalReferrerGroup ?? null,
     source: "service-web",
     taxonomyVersion: SITE_PAGE_VIEW_TAXONOMY_VERSION,
   };

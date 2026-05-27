@@ -32,6 +32,28 @@ export interface IStatisticSitePageRoute {
   short_dwell_count: number;
 }
 
+export interface IStatisticSitePageReferrerSummary {
+  page_view_count: number;
+  visitor_count: number;
+  session_count: number;
+}
+
+export interface IStatisticSitePageReferrer {
+  referrer_group: string;
+  external_referrer_host?: string | null;
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  utm_content?: string | null;
+  route_group: string;
+  route_name: string;
+  path_template: string;
+  landing_path: string;
+  page_view_count: number;
+  visitor_count: number;
+  session_count: number;
+}
+
 export interface IStatisticPayment {
   date: string;
   pay_count: number;

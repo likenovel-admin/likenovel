@@ -58,6 +58,10 @@ const data = {
           url: "/statistics/page-views",
         },
         {
+          title: "유입경로 분석",
+          url: "/statistics/referrers",
+        },
+        {
           title: "Payment",
           url: "/statistics/payment",
         },

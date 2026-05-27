@@ -4,12 +4,18 @@ import {
   buildSitePageViewPayload,
   shouldTrackSitePageViewPath,
 } from "@/utils/sitePageViewTaxonomy";
+import {
+  extractMarketingAttribution,
+  hasMarketingAttributionSignal,
+  type MarketingAttribution,
+} from "@/utils/marketingAttribution";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 const VISITOR_ID_KEY = "ln_site_pv_visitor_id";
 const SESSION_ID_KEY = "ln_site_pv_session_id";
 const LAST_PV_KEY = "ln_site_pv_last_key";
+const MARKETING_ATTRIBUTION_KEY = "ln_site_pv_marketing_attribution";
 const DEDUPE_WINDOW_MS = 2000;
 let memoryVisitorId: string | null = null;
 let memorySessionId: string | null = null;
@@ -88,6 +94,59 @@ function getAccessToken(): string | null {
   );
 }
 
+function parseStoredMarketingAttribution(rawValue: string | null): MarketingAttribution | null {
+  if (!rawValue) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(rawValue) as Partial<MarketingAttribution>;
+    return {
+      utmSource: typeof parsed.utmSource === "string" ? parsed.utmSource : null,
+      utmMedium: typeof parsed.utmMedium === "string" ? parsed.utmMedium : null,
+      utmCampaign: typeof parsed.utmCampaign === "string" ? parsed.utmCampaign : null,
+      utmContent: typeof parsed.utmContent === "string" ? parsed.utmContent : null,
+      externalReferrerHost:
+        typeof parsed.externalReferrerHost === "string"
+          ? parsed.externalReferrerHost
+          : null,
+      externalReferrerGroup:
+        typeof parsed.externalReferrerGroup === "string"
+          ? parsed.externalReferrerGroup
+          : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getSessionMarketingAttribution(): MarketingAttribution | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const sessionStorageRef = getBrowserStorage("session");
+  const currentAttribution = extractMarketingAttribution({
+    search: window.location.search,
+    referrer: document.referrer,
+    currentHost: window.location.host,
+  });
+
+  if (hasMarketingAttributionSignal(currentAttribution)) {
+    safeSetStorageItem(
+      sessionStorageRef,
+      MARKETING_ATTRIBUTION_KEY,
+      JSON.stringify(currentAttribution)
+    );
+    return currentAttribution;
+  }
+
+  return (
+    parseStoredMarketingAttribution(
+      safeGetStorageItem(sessionStorageRef, MARKETING_ATTRIBUTION_KEY)
+    ) || currentAttribution
+  );
+}
+
 function shouldSendPageView(currentKey: string, now: number): boolean {
   const sessionStorageRef = getBrowserStorage("session");
   const rawLast = safeGetStorageItem(sessionStorageRef, LAST_PV_KEY);
@@ -160,12 +219,13 @@ export function useSitePageViewTracker() {
       );
       const payload = buildSitePageViewPayload({
         pathname,
-        search: "",
+        search: typeof window !== "undefined" ? window.location.search : "",
         referrerPath: previousPathRef.current,
         visitorId,
         sessionId,
         eventId: randomEventId(),
         occurredAt: new Date().toISOString(),
+        marketingAttribution: getSessionMarketingAttribution(),
       });
 
       previousPathRef.current = pathname;

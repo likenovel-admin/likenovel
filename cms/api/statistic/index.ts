@@ -3,6 +3,8 @@
 import {
   IGetStatisticSiteAllResponse,
   IGetStatisticSiteParams,
+  IGetStatisticSitePageReferrersParams,
+  IGetStatisticSitePageReferrersResponse,
   IGetStatisticSitePageRoutesParams,
   IGetStatisticSitePageRoutesResponse,
   IGetStatisticSiteResponse,
@@ -78,6 +80,38 @@ export const getStatisticSitePageRoutesDownload = async (
 ) => {
   const res = await apiClient.request<IGetStatisticSitePageRoutesResponse>({
     url: "/v1/query/statistics/site-page-routes",
+    method: "GET",
+    queryParams: {
+      ...params,
+      page: -1,
+      count_per_page: -1,
+    },
+  });
+  return res;
+};
+
+export const useGetStatisticSitePageReferrers = (
+  params: IGetStatisticSitePageReferrersParams
+) => {
+  return useQuery<IGetStatisticSitePageReferrersResponse>({
+    queryKey: ["GetStatisticSitePageReferrers", JSON.stringify(params)],
+
+    queryFn: async () => {
+      const res = await apiClient.request<IGetStatisticSitePageReferrersResponse>({
+        url: "/v1/query/statistics/site-page-referrers",
+        method: "GET",
+        queryParams: params,
+      });
+      return res;
+    },
+  });
+};
+
+export const getStatisticSitePageReferrersDownload = async (
+  params: IGetStatisticSitePageReferrersParams
+) => {
+  const res = await apiClient.request<IGetStatisticSitePageReferrersResponse>({
+    url: "/v1/query/statistics/site-page-referrers",
     method: "GET",
     queryParams: {
       ...params,
