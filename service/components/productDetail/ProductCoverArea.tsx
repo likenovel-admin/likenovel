@@ -56,6 +56,7 @@ interface Props {
   firstEpisodeId?: number;
   firstEpisodeTitle?: string;
   entrySource?: ProductDetailEntrySource | null;
+  backFallbackPath?: string | null;
 }
 
 const ProductCoverArea = ({
@@ -70,6 +71,7 @@ const ProductCoverArea = ({
   firstEpisodeId,
   firstEpisodeTitle,
   entrySource,
+  backFallbackPath,
 }: Props) => {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -191,6 +193,11 @@ const ProductCoverArea = ({
 
     if (isAuthor) {
       router.push("/product/author");
+      return;
+    }
+
+    if (backFallbackPath) {
+      router.push(backFallbackPath);
       return;
     }
 

@@ -36,6 +36,7 @@ import { openAiLibrarianPanelOrLogin } from "@/utils/aiLibrarianPanel";
 import {
   consumeProductDetailEntrySource,
   getEffectiveProductDetailEntrySource,
+  getProductDetailMarketingBackFallbackPath,
   getProductDetailEntrySource,
   isProductDetailEntrySourceResolvedForProduct,
   ProductDetailEntrySourceState,
@@ -66,9 +67,12 @@ export default function ProductDetail() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const searchParamString = searchParams.toString();
   const entrySourceParam = searchParams.get("entrySource");
   const focusParam = searchParams.get("focus");
   const urlEntrySource = getProductDetailEntrySource(entrySourceParam);
+  const productDetailBackFallbackPath =
+    getProductDetailMarketingBackFallbackPath(searchParamString);
   const pathSegments = pathname.split("/");
   const productId = Number(pathSegments[pathSegments.length - 1]);
   const [entrySourceState, setEntrySourceState] =
@@ -104,6 +108,8 @@ export default function ProductDetail() {
   const { mutate: postAiSignalEvent } = usePostAiSignalEvent();
   const detailViewSignalKeyRef = useRef<string | null>(null);
   const aiLibrarianRef = useRef<HTMLDivElement>(null);
+  const marketingBackHistorySeededPathRef = useRef<string | null>(null);
+  const marketingBackHandledPathRef = useRef<string | null>(null);
 
   // Check if user has already received tickets for this product (using sessionStorage for current session)
   const ticketCheckKey = `rental_ticket_checked_${productId}`;
@@ -250,6 +256,61 @@ export default function ProductDetail() {
 
     return () => window.clearTimeout(timer);
   }, [focusParam, isSuccess]);
+
+  useEffect(() => {
+    if (
+      !productDetailBackFallbackPath ||
+      !pathname ||
+      !Number.isFinite(productId)
+    ) {
+      return;
+    }
+
+    const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (window.location.pathname !== pathname) {
+      return;
+    }
+
+    const currentState =
+      typeof window.history.state === "object" && window.history.state !== null
+        ? window.history.state
+        : null;
+    const isAlreadySeeded =
+      marketingBackHistorySeededPathRef.current === currentPath ||
+      currentState?.likenovelProductDetailMarketingBackSeeded === currentPath;
+
+    if (isAlreadySeeded) {
+      marketingBackHistorySeededPathRef.current = currentPath;
+    } else {
+      // Add a same-URL sentinel so browser Back fires popstate before leaving.
+      window.history.pushState(
+        {
+          ...(currentState ?? {}),
+          likenovelProductDetailMarketingBackSeeded: currentPath,
+        },
+        "",
+        currentPath
+      );
+      marketingBackHistorySeededPathRef.current = currentPath;
+    }
+
+    const handleMarketingBack = () => {
+      if (
+        marketingBackHandledPathRef.current === currentPath ||
+        window.location.pathname !== pathname
+      ) {
+        return;
+      }
+
+      marketingBackHandledPathRef.current = currentPath;
+      router.replace(productDetailBackFallbackPath);
+    };
+
+    window.addEventListener("popstate", handleMarketingBack);
+    return () => {
+      window.removeEventListener("popstate", handleMarketingBack);
+    };
+  }, [pathname, productDetailBackFallbackPath, productId, router]);
 
   useEffect(() => {
     logProductTrace(
@@ -675,6 +736,7 @@ export default function ProductDetail() {
             firstEpisodeId={firstEpisodeId}
             firstEpisodeTitle={firstEpisodeTitle}
             entrySource={viewerEntrySource}
+            backFallbackPath={productDetailBackFallbackPath}
           />
         </div>
         {productData && aiLibrarianCopy && (
