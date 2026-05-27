@@ -84,7 +84,8 @@ export const buildProductDetailPath = (
 };
 
 export const getProductDetailMarketingBackFallbackPath = (
-  search: string | null | undefined
+  search: string | null | undefined,
+  hasHiddenMarketingLanding: boolean = false
 ): string | null => {
   const queryString = (search || "").startsWith("?")
     ? (search || "").slice(1)
@@ -94,7 +95,9 @@ export const getProductDetailMarketingBackFallbackPath = (
     (key) => (params.get(key) || "").trim().length > 0
   );
 
-  return hasMarketingSignal ? PRODUCT_DETAIL_MARKETING_BACK_FALLBACK_PATH : null;
+  return hasMarketingSignal || hasHiddenMarketingLanding
+    ? PRODUCT_DETAIL_MARKETING_BACK_FALLBACK_PATH
+    : null;
 };
 
 export const getProductDetailEntrySource = (
