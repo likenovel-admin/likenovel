@@ -44,6 +44,12 @@ import {
   resolveProductDetailEntrySourceState,
 } from "@/utils/productPath";
 import {
+  getMarketingAttributionCookiePayload,
+  hasShortTrackingMarketingLandingForPath,
+  MARKETING_ATTRIBUTION_COOKIE_NAME,
+  MARKETING_ATTRIBUTION_STORAGE_KEY,
+} from "@/utils/marketingAttribution";
+import {
   endProductTrace,
   logProductTrace,
   startProductTrace,
@@ -71,8 +77,13 @@ export default function ProductDetail() {
   const entrySourceParam = searchParams.get("entrySource");
   const focusParam = searchParams.get("focus");
   const urlEntrySource = getProductDetailEntrySource(entrySourceParam);
+  const [hasHiddenMarketingLanding, setHasHiddenMarketingLanding] =
+    useState(false);
   const productDetailBackFallbackPath =
-    getProductDetailMarketingBackFallbackPath(searchParamString);
+    getProductDetailMarketingBackFallbackPath(
+      searchParamString,
+      hasHiddenMarketingLanding
+    );
   const pathSegments = pathname.split("/");
   const productId = Number(pathSegments[pathSegments.length - 1]);
   const [entrySourceState, setEntrySourceState] =
@@ -256,6 +267,36 @@ export default function ProductDetail() {
 
     return () => window.clearTimeout(timer);
   }, [focusParam, isSuccess]);
+
+  useEffect(() => {
+    if (!pathname || typeof document === "undefined") {
+      return;
+    }
+
+    const isMarketingLanding = hasShortTrackingMarketingLandingForPath(
+      document.cookie,
+      pathname
+    );
+    setHasHiddenMarketingLanding(isMarketingLanding);
+
+    if (!isMarketingLanding) {
+      return;
+    }
+
+    const attribution = getMarketingAttributionCookiePayload(document.cookie);
+    if (attribution && typeof window !== "undefined") {
+      try {
+        window.sessionStorage.setItem(
+          MARKETING_ATTRIBUTION_STORAGE_KEY,
+          JSON.stringify(attribution)
+        );
+      } catch {
+        // Attribution persistence must not block product rendering.
+      }
+    }
+
+    document.cookie = `${MARKETING_ATTRIBUTION_COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax`;
+  }, [pathname]);
 
   useEffect(() => {
     if (
