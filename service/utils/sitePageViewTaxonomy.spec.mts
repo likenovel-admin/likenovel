@@ -112,3 +112,31 @@ import {
   assert.equal(payload.source, "service-web");
   assert.equal(payload.taxonomyVersion, 1);
 }
+
+{
+  const payload = buildSitePageViewPayload({
+    pathname: "/product/1109",
+    search: "?utm_source=instagram",
+    referrerPath: null,
+    visitorId: "pv_visitor",
+    sessionId: "pvs_session",
+    eventId: "1ab1ef4f-a433-4777-a4a9-0d1ab2983b1a",
+    occurredAt: "2026-05-27T18:00:00.000+09:00",
+    marketingAttribution: {
+      utmSource: "instagram",
+      utmMedium: "social",
+      utmCampaign: "p1109_card",
+      utmContent: "card01",
+      externalReferrerHost: "instagram.com",
+      externalReferrerGroup: "instagram",
+    },
+  });
+
+  assert.equal(payload.routeGroup, "product_detail");
+  assert.equal(payload.utmSource, "instagram");
+  assert.equal(payload.utmMedium, "social");
+  assert.equal(payload.utmCampaign, "p1109_card");
+  assert.equal(payload.utmContent, "card01");
+  assert.equal(payload.externalReferrerHost, "instagram.com");
+  assert.equal(payload.externalReferrerGroup, "instagram");
+}
