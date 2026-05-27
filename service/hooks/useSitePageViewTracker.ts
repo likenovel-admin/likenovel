@@ -6,7 +6,10 @@ import {
 } from "@/utils/sitePageViewTaxonomy";
 import {
   extractMarketingAttribution,
+  getMarketingAttributionCookiePayload,
   hasMarketingAttributionSignal,
+  MARKETING_ATTRIBUTION_STORAGE_KEY,
+  parseMarketingAttributionValue,
   type MarketingAttribution,
 } from "@/utils/marketingAttribution";
 import { usePathname } from "next/navigation";
@@ -15,7 +18,6 @@ import { useEffect, useRef } from "react";
 const VISITOR_ID_KEY = "ln_site_pv_visitor_id";
 const SESSION_ID_KEY = "ln_site_pv_session_id";
 const LAST_PV_KEY = "ln_site_pv_last_key";
-const MARKETING_ATTRIBUTION_KEY = "ln_site_pv_marketing_attribution";
 const DEDUPE_WINDOW_MS = 2000;
 let memoryVisitorId: string | null = null;
 let memorySessionId: string | null = null;
@@ -94,31 +96,6 @@ function getAccessToken(): string | null {
   );
 }
 
-function parseStoredMarketingAttribution(rawValue: string | null): MarketingAttribution | null {
-  if (!rawValue) {
-    return null;
-  }
-  try {
-    const parsed = JSON.parse(rawValue) as Partial<MarketingAttribution>;
-    return {
-      utmSource: typeof parsed.utmSource === "string" ? parsed.utmSource : null,
-      utmMedium: typeof parsed.utmMedium === "string" ? parsed.utmMedium : null,
-      utmCampaign: typeof parsed.utmCampaign === "string" ? parsed.utmCampaign : null,
-      utmContent: typeof parsed.utmContent === "string" ? parsed.utmContent : null,
-      externalReferrerHost:
-        typeof parsed.externalReferrerHost === "string"
-          ? parsed.externalReferrerHost
-          : null,
-      externalReferrerGroup:
-        typeof parsed.externalReferrerGroup === "string"
-          ? parsed.externalReferrerGroup
-          : null,
-    };
-  } catch {
-    return null;
-  }
-}
-
 function getSessionMarketingAttribution(): MarketingAttribution | null {
   if (typeof window === "undefined") {
     return null;
@@ -134,15 +111,25 @@ function getSessionMarketingAttribution(): MarketingAttribution | null {
   if (hasMarketingAttributionSignal(currentAttribution)) {
     safeSetStorageItem(
       sessionStorageRef,
-      MARKETING_ATTRIBUTION_KEY,
+      MARKETING_ATTRIBUTION_STORAGE_KEY,
       JSON.stringify(currentAttribution)
     );
     return currentAttribution;
   }
 
+  const cookieAttribution = getMarketingAttributionCookiePayload(document.cookie);
+  if (hasMarketingAttributionSignal(cookieAttribution)) {
+    safeSetStorageItem(
+      sessionStorageRef,
+      MARKETING_ATTRIBUTION_STORAGE_KEY,
+      JSON.stringify(cookieAttribution)
+    );
+    return cookieAttribution;
+  }
+
   return (
-    parseStoredMarketingAttribution(
-      safeGetStorageItem(sessionStorageRef, MARKETING_ATTRIBUTION_KEY)
+    parseMarketingAttributionValue(
+      safeGetStorageItem(sessionStorageRef, MARKETING_ATTRIBUTION_STORAGE_KEY)
     ) || currentAttribution
   );
 }

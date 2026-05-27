@@ -7,6 +7,14 @@ export type MarketingAttribution = {
   externalReferrerGroup: string | null;
 };
 
+export type MarketingAttributionCookiePayload = MarketingAttribution & {
+  landingPath: string | null;
+};
+
+export const MARKETING_ATTRIBUTION_COOKIE_NAME = "ln_marketing_attribution";
+export const MARKETING_ATTRIBUTION_COOKIE_MAX_AGE_SECONDS = 120;
+export const MARKETING_ATTRIBUTION_STORAGE_KEY = "ln_site_pv_marketing_attribution";
+
 const SHORT_LINK_CHANNELS: Record<string, string> = {
   ig: "instagram",
   th: "threads",
@@ -139,7 +147,11 @@ function referrerGroupFromHost(host: string | null): string | null {
   return "other";
 }
 
-export function buildShortTrackingDestination(code: string): string | null {
+function parseShortTrackingCode(code: string): {
+  productId: number;
+  cardNo: number;
+  channel: string;
+} | null {
   const match = /^([a-z]+)([1-9]\d{0,9})c([1-9]\d{0,2})$/i.exec(code.trim());
   if (!match) {
     return null;
@@ -161,14 +173,36 @@ export function buildShortTrackingDestination(code: string): string | null {
     return null;
   }
 
-  const params = new URLSearchParams({
-    utm_source: channel,
-    utm_medium: "social",
-    utm_campaign: `p${productId}_card`,
-    utm_content: `card${String(cardNo).padStart(2, "0")}`,
-  });
+  return { productId, cardNo, channel };
+}
 
-  return `/product/${productId}?${params.toString()}`;
+export function buildShortTrackingAttribution(
+  code: string
+): MarketingAttributionCookiePayload | null {
+  const parsed = parseShortTrackingCode(code);
+  if (!parsed) {
+    return null;
+  }
+
+  const { productId, cardNo, channel } = parsed;
+  return {
+    utmSource: channel,
+    utmMedium: "social",
+    utmCampaign: `p${productId}_card`,
+    utmContent: `card${String(cardNo).padStart(2, "0")}`,
+    externalReferrerHost: null,
+    externalReferrerGroup: channel,
+    landingPath: `/product/${productId}`,
+  };
+}
+
+export function buildShortTrackingDestination(code: string): string | null {
+  const attribution = buildShortTrackingAttribution(code);
+  if (!attribution?.landingPath) {
+    return null;
+  }
+
+  return attribution.landingPath;
 }
 
 export function getForwardedRequestOrigin(request: {
@@ -193,6 +227,88 @@ export function buildShortTrackingRedirectUrl(
 ): string {
   const destination = buildShortTrackingDestination(code) || "/";
   return new URL(destination, getForwardedRequestOrigin(request)).toString();
+}
+
+function normalizeLandingPath(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const path = value.split("?")[0].split("#")[0].trim();
+  if (!path || !path.startsWith("/")) {
+    return null;
+  }
+  return path.slice(0, 255);
+}
+
+export function parseMarketingAttributionValue(
+  rawValue: string | null | undefined
+): MarketingAttributionCookiePayload | null {
+  if (!rawValue) {
+    return null;
+  }
+
+  let decoded = rawValue;
+  try {
+    decoded = decodeURIComponent(rawValue);
+  } catch {
+    decoded = rawValue;
+  }
+
+  try {
+    const parsed = JSON.parse(decoded) as Partial<MarketingAttributionCookiePayload>;
+    return {
+      utmSource: normalizeUtmSource(parsed.utmSource),
+      utmMedium: normalizeToken(parsed.utmMedium, 80),
+      utmCampaign: normalizeToken(parsed.utmCampaign, 120),
+      utmContent: normalizeToken(parsed.utmContent, 120),
+      externalReferrerHost:
+        typeof parsed.externalReferrerHost === "string"
+          ? compactText(parsed.externalReferrerHost, 255)
+          : null,
+      externalReferrerGroup: normalizeToken(parsed.externalReferrerGroup, 80),
+      landingPath: normalizeLandingPath(parsed.landingPath),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function encodeMarketingAttributionCookiePayload(
+  attribution: MarketingAttributionCookiePayload
+): string {
+  return JSON.stringify(attribution);
+}
+
+export function getMarketingAttributionCookiePayload(
+  cookieHeader: string | null | undefined
+): MarketingAttributionCookiePayload | null {
+  if (!cookieHeader) {
+    return null;
+  }
+
+  const cookiePrefix = `${MARKETING_ATTRIBUTION_COOKIE_NAME}=`;
+  const rawCookie = cookieHeader
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(cookiePrefix));
+
+  if (!rawCookie) {
+    return null;
+  }
+
+  return parseMarketingAttributionValue(rawCookie.slice(cookiePrefix.length));
+}
+
+export function hasShortTrackingMarketingLandingForPath(
+  cookieHeader: string | null | undefined,
+  pathname: string | null | undefined
+): boolean {
+  const payload = getMarketingAttributionCookiePayload(cookieHeader);
+  return Boolean(
+    payload?.landingPath &&
+      normalizeLandingPath(pathname) === payload.landingPath &&
+      hasMarketingAttributionSignal(payload)
+  );
 }
 
 export function extractMarketingAttribution(input: {
