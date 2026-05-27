@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  buildShortTrackingRedirectUrl,
   buildShortTrackingDestination,
   extractMarketingAttribution,
 } from "./marketingAttribution.ts";
@@ -35,6 +36,43 @@ import {
   assert.equal(buildShortTrackingDestination("xx1109c1"), null);
   assert.equal(buildShortTrackingDestination("ig0c1"), null);
   assert.equal(buildShortTrackingDestination("ig1109c0"), null);
+}
+
+{
+  const redirectUrl = buildShortTrackingRedirectUrl("ig1117c1", {
+    url: "https://0.0.0.0:3000/r/ig1117c1",
+    headers: {
+      get(name: string) {
+        return {
+          "x-forwarded-proto": "https",
+          "x-forwarded-host": "likenovel.net",
+          host: "0.0.0.0:3000",
+        }[name.toLowerCase()] || null;
+      },
+    },
+  });
+
+  assert.equal(
+    redirectUrl,
+    "https://likenovel.net/product/1117?utm_source=instagram&utm_medium=social&utm_campaign=p1117_card&utm_content=card01"
+  );
+}
+
+{
+  const redirectUrl = buildShortTrackingRedirectUrl("invalid", {
+    url: "https://0.0.0.0:3000/r/invalid",
+    headers: {
+      get(name: string) {
+        return {
+          "x-forwarded-proto": "https",
+          "x-forwarded-host": "likenovel.net",
+          host: "0.0.0.0:3000",
+        }[name.toLowerCase()] || null;
+      },
+    },
+  });
+
+  assert.equal(redirectUrl, "https://likenovel.net/");
 }
 
 {
