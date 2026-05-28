@@ -109,6 +109,7 @@ function getSessionMarketingAttribution(): MarketingAttribution | null {
     search: window.location.search,
     referrer: document.referrer,
     currentHost: window.location.host,
+    pathname: window.location.pathname,
   });
   const cookieAttribution = getMarketingAttributionCookiePayload(document.cookie);
   const storedAttribution = parseMarketingAttributionValue(

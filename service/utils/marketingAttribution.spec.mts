@@ -16,7 +16,7 @@ import {
 
   assert.equal(
     destination,
-    "/product/1109"
+    "/product/1109?lns=ig1109c1"
   );
 }
 
@@ -25,7 +25,7 @@ import {
 
   assert.equal(
     destination,
-    "/product/1109"
+    "/product/1109?lns=th1109c12"
   );
 }
 
@@ -34,7 +34,7 @@ import {
 
   assert.equal(
     destination,
-    "/product/1109"
+    "/product/1109?lns=x1109c1"
   );
 }
 
@@ -88,8 +88,44 @@ import {
 
   assert.equal(
     redirectUrl,
-    "https://likenovel.net/product/1117"
+    "https://likenovel.net/product/1117?lns=ig1117c1"
   );
+}
+
+{
+  const attribution = extractMarketingAttribution({
+    search: "?lns=x1126c1",
+    referrer: "https://t.co/abc123",
+    currentHost: "www.likenovel.net",
+    pathname: "/product/1126",
+  });
+
+  assert.deepEqual(attribution, {
+    utmSource: "x",
+    utmMedium: "social",
+    utmCampaign: "p1126_card",
+    utmContent: "card01",
+    externalReferrerHost: null,
+    externalReferrerGroup: "x",
+  });
+}
+
+{
+  const attribution = extractMarketingAttribution({
+    search: "?lns=x1126c1",
+    referrer: "https://t.co/abc123",
+    currentHost: "www.likenovel.net",
+    pathname: "/product/9999",
+  });
+
+  assert.deepEqual(attribution, {
+    utmSource: null,
+    utmMedium: null,
+    utmCampaign: null,
+    utmContent: null,
+    externalReferrerHost: "t.co",
+    externalReferrerGroup: "x",
+  });
 }
 
 {
