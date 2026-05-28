@@ -10,8 +10,11 @@ import {
   hasMarketingAttributionSignal,
   MARKETING_ATTRIBUTION_STORAGE_KEY,
   parseMarketingAttributionValue,
+  resolveSessionMarketingAttribution,
   type MarketingAttribution,
 } from "@/utils/marketingAttribution";
+import { resolveProductEntryAttribution } from "@/utils/productEntryAttribution";
+import { getProductDetailEntrySource } from "@/utils/productPath";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
@@ -107,31 +110,26 @@ function getSessionMarketingAttribution(): MarketingAttribution | null {
     referrer: document.referrer,
     currentHost: window.location.host,
   });
-
-  if (hasMarketingAttributionSignal(currentAttribution)) {
-    safeSetStorageItem(
-      sessionStorageRef,
-      MARKETING_ATTRIBUTION_STORAGE_KEY,
-      JSON.stringify(currentAttribution)
-    );
-    return currentAttribution;
-  }
-
   const cookieAttribution = getMarketingAttributionCookiePayload(document.cookie);
-  if (hasMarketingAttributionSignal(cookieAttribution)) {
+  const storedAttribution = parseMarketingAttributionValue(
+    safeGetStorageItem(sessionStorageRef, MARKETING_ATTRIBUTION_STORAGE_KEY)
+  );
+  const selectedAttribution = resolveSessionMarketingAttribution({
+    pathname: window.location.pathname,
+    currentAttribution,
+    cookieAttribution,
+    storedAttribution,
+  });
+
+  if (hasMarketingAttributionSignal(selectedAttribution)) {
     safeSetStorageItem(
       sessionStorageRef,
       MARKETING_ATTRIBUTION_STORAGE_KEY,
-      JSON.stringify(cookieAttribution)
+      JSON.stringify(selectedAttribution)
     );
-    return cookieAttribution;
   }
 
-  return (
-    parseMarketingAttributionValue(
-      safeGetStorageItem(sessionStorageRef, MARKETING_ATTRIBUTION_STORAGE_KEY)
-    ) || currentAttribution
-  );
+  return selectedAttribution;
 }
 
 function shouldSendPageView(currentKey: string, now: number): boolean {
@@ -204,15 +202,27 @@ export function useSitePageViewTracker() {
           memorySessionId = value;
         }
       );
+      const search = typeof window !== "undefined" ? window.location.search : "";
+      const marketingAttribution = getSessionMarketingAttribution();
+      const urlEntrySource = getProductDetailEntrySource(
+        new URLSearchParams(search).get("entrySource")
+      );
+      const productEntryAttribution = resolveProductEntryAttribution({
+        pathname,
+        referrerPath: previousPathRef.current,
+        entrySource: urlEntrySource,
+        marketingAttribution,
+      });
       const payload = buildSitePageViewPayload({
         pathname,
-        search: typeof window !== "undefined" ? window.location.search : "",
+        search,
         referrerPath: previousPathRef.current,
         visitorId,
         sessionId,
         eventId: randomEventId(),
         occurredAt: new Date().toISOString(),
-        marketingAttribution: getSessionMarketingAttribution(),
+        marketingAttribution,
+        productEntryAttribution,
       });
 
       previousPathRef.current = pathname;

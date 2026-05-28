@@ -7,6 +7,7 @@ import {
   extractMarketingAttribution,
   getMarketingAttributionCookiePayload,
   hasShortTrackingMarketingLandingForPath,
+  resolveSessionMarketingAttribution,
   MARKETING_ATTRIBUTION_COOKIE_NAME,
 } from "./marketingAttribution.ts";
 
@@ -35,6 +36,20 @@ import {
     destination,
     "/product/1109"
   );
+}
+
+{
+  const attribution = buildShortTrackingAttribution("x1126c1");
+
+  assert.deepEqual(attribution, {
+    utmSource: "x",
+    utmMedium: "social",
+    utmCampaign: "p1126_card",
+    utmContent: "card01",
+    externalReferrerHost: null,
+    externalReferrerGroup: "x",
+    landingPath: "/product/1126",
+  });
 }
 
 {
@@ -140,5 +155,100 @@ import {
 
   assert.equal(attribution.utmSource, null);
   assert.equal(attribution.externalReferrerHost, "t.co");
-  assert.equal(attribution.externalReferrerGroup, "twitter");
+  assert.equal(attribution.externalReferrerGroup, "x");
+}
+
+{
+  const attribution = extractMarketingAttribution({
+    search: "?utm_source=Twitter&utm_medium=social",
+    referrer: "https://t.co/abc123",
+    currentHost: "www.likenovel.net",
+  });
+
+  assert.equal(attribution.utmSource, "x");
+  assert.equal(attribution.externalReferrerGroup, "x");
+}
+
+{
+  const cookieHeader = `${MARKETING_ATTRIBUTION_COOKIE_NAME}=${encodeURIComponent(
+    JSON.stringify({
+      utmSource: "twitter",
+      utmMedium: "social",
+      utmCampaign: "p1126_card",
+      utmContent: "card01",
+      externalReferrerHost: "t.co",
+      externalReferrerGroup: "twitter",
+      landingPath: "/product/1126",
+    })
+  )}`;
+  const parsed = getMarketingAttributionCookiePayload(cookieHeader);
+
+  assert.equal(parsed?.utmSource, "x");
+  assert.equal(parsed?.externalReferrerGroup, "x");
+}
+
+{
+  const selected = resolveSessionMarketingAttribution({
+    pathname: "/product/1126",
+    currentAttribution: {
+      utmSource: null,
+      utmMedium: null,
+      utmCampaign: null,
+      utmContent: null,
+      externalReferrerHost: "t.co",
+      externalReferrerGroup: "x",
+    },
+    cookieAttribution: {
+      utmSource: "x",
+      utmMedium: "social",
+      utmCampaign: "p1126_card",
+      utmContent: "card01",
+      externalReferrerHost: null,
+      externalReferrerGroup: "x",
+      landingPath: "/product/1126",
+    },
+    storedAttribution: null,
+  });
+
+  assert.deepEqual(selected, {
+    utmSource: "x",
+    utmMedium: "social",
+    utmCampaign: "p1126_card",
+    utmContent: "card01",
+    externalReferrerHost: null,
+    externalReferrerGroup: "x",
+  });
+}
+
+{
+  const selected = resolveSessionMarketingAttribution({
+    pathname: "/product/1126",
+    currentAttribution: {
+      utmSource: "instagram",
+      utmMedium: "social",
+      utmCampaign: "p1126_card",
+      utmContent: "card02",
+      externalReferrerHost: "instagram.com",
+      externalReferrerGroup: "instagram",
+    },
+    cookieAttribution: {
+      utmSource: "x",
+      utmMedium: "social",
+      utmCampaign: "p1126_card",
+      utmContent: "card01",
+      externalReferrerHost: null,
+      externalReferrerGroup: "x",
+      landingPath: "/product/1126",
+    },
+    storedAttribution: null,
+  });
+
+  assert.deepEqual(selected, {
+    utmSource: "instagram",
+    utmMedium: "social",
+    utmCampaign: "p1126_card",
+    utmContent: "card02",
+    externalReferrerHost: "instagram.com",
+    externalReferrerGroup: "instagram",
+  });
 }

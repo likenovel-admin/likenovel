@@ -18,7 +18,7 @@ export const MARKETING_ATTRIBUTION_STORAGE_KEY = "ln_site_pv_marketing_attributi
 const SHORT_LINK_CHANNELS: Record<string, string> = {
   ig: "instagram",
   th: "threads",
-  x: "twitter",
+  x: "x",
 };
 
 const INTERNAL_HOST_SUFFIXES = ["likenovel.net", "likenovel.dev", "localhost"];
@@ -56,10 +56,18 @@ function normalizeUtmSource(value: string | null | undefined): string | null {
   if (source === "th") {
     return "threads";
   }
-  if (source === "x") {
-    return "twitter";
+  if (source === "x" || source === "twitter") {
+    return "x";
   }
   return source;
+}
+
+function normalizeReferrerGroupValue(value: string | null | undefined): string | null {
+  const group = normalizeToken(value, 80);
+  if (group === "twitter") {
+    return "x";
+  }
+  return group;
 }
 
 function stripCommonSubdomain(host: string): string {
@@ -130,7 +138,7 @@ function referrerGroupFromHost(host: string | null): string | null {
     return "direct";
   }
   if (host === "t.co" || host === "x.com" || host === "twitter.com") {
-    return "twitter";
+    return "x";
   }
   if (host === "instagram.com") {
     return "instagram";
@@ -265,7 +273,7 @@ export function parseMarketingAttributionValue(
         typeof parsed.externalReferrerHost === "string"
           ? compactText(parsed.externalReferrerHost, 255)
           : null,
-      externalReferrerGroup: normalizeToken(parsed.externalReferrerGroup, 80),
+      externalReferrerGroup: normalizeReferrerGroupValue(parsed.externalReferrerGroup),
       landingPath: normalizeLandingPath(parsed.landingPath),
     };
   } catch {
@@ -311,6 +319,50 @@ export function hasShortTrackingMarketingLandingForPath(
   );
 }
 
+function toMarketingAttribution(
+  attribution: MarketingAttribution | MarketingAttributionCookiePayload
+): MarketingAttribution {
+  return {
+    utmSource: attribution.utmSource,
+    utmMedium: attribution.utmMedium,
+    utmCampaign: attribution.utmCampaign,
+    utmContent: attribution.utmContent,
+    externalReferrerHost: attribution.externalReferrerHost,
+    externalReferrerGroup: attribution.externalReferrerGroup,
+  };
+}
+
+export function resolveSessionMarketingAttribution(input: {
+  pathname: string | null | undefined;
+  currentAttribution: MarketingAttribution | null;
+  cookieAttribution: MarketingAttributionCookiePayload | null;
+  storedAttribution: MarketingAttribution | null;
+}): MarketingAttribution | null {
+  const cookieAttribution = input.cookieAttribution;
+  const isCookieLanding = Boolean(
+    cookieAttribution?.landingPath &&
+      normalizeLandingPath(input.pathname) === cookieAttribution.landingPath
+  );
+
+  if (hasUtmAttributionSignal(input.currentAttribution)) {
+    return input.currentAttribution;
+  }
+
+  if (cookieAttribution && isCookieLanding && hasMarketingAttributionSignal(cookieAttribution)) {
+    return toMarketingAttribution(cookieAttribution);
+  }
+
+  if (hasMarketingAttributionSignal(input.currentAttribution)) {
+    return input.currentAttribution;
+  }
+
+  if (cookieAttribution && hasMarketingAttributionSignal(cookieAttribution)) {
+    return toMarketingAttribution(cookieAttribution);
+  }
+
+  return input.storedAttribution || input.currentAttribution;
+}
+
 export function extractMarketingAttribution(input: {
   search: string | null | undefined;
   referrer: string | null | undefined;
@@ -342,17 +394,23 @@ export function hasMarketingAttributionSignal(
   if (!attribution) {
     return false;
   }
-  if (
-    attribution.utmSource ||
-    attribution.utmMedium ||
-    attribution.utmCampaign ||
-    attribution.utmContent
-  ) {
+  if (hasUtmAttributionSignal(attribution)) {
     return true;
   }
   return Boolean(
     attribution.externalReferrerHost &&
       attribution.externalReferrerGroup &&
       !["direct", "internal"].includes(attribution.externalReferrerGroup)
+  );
+}
+
+function hasUtmAttributionSignal(
+  attribution: MarketingAttribution | null | undefined
+): boolean {
+  return Boolean(
+    attribution?.utmSource ||
+      attribution?.utmMedium ||
+      attribution?.utmCampaign ||
+      attribution?.utmContent
   );
 }
