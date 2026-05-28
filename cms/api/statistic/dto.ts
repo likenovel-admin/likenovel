@@ -73,6 +73,9 @@ export interface IGetStatisticSitePageReferrersParams {
   end_date?: string;
   referrer_group?: string;
   route_group?: string;
+  traffic_signal?: string;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
 }
 
 export interface IGetStatisticPaymentResponse {
