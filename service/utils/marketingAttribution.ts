@@ -98,8 +98,15 @@ function normalizeReferrerHost(referrer: string | null | undefined): string | nu
     if (host === "instagram.com" || host.endsWith(".instagram.com")) {
       return "instagram.com";
     }
-    if (host === "threads.net" || host.endsWith(".threads.net")) {
-      return "threads.net";
+    if (
+      host === "threads.net" ||
+      host.endsWith(".threads.net") ||
+      host === "threads.com" ||
+      host.endsWith(".threads.com")
+    ) {
+      return host.endsWith(".threads.com") || host === "threads.com"
+        ? "threads.com"
+        : "threads.net";
     }
     if (host === "naver.com" || host.endsWith(".naver.com")) {
       return "naver.com";
@@ -143,7 +150,7 @@ function referrerGroupFromHost(host: string | null): string | null {
   if (host === "instagram.com") {
     return "instagram";
   }
-  if (host === "threads.net") {
+  if (host === "threads.net" || host === "threads.com") {
     return "threads";
   }
   if (host === "naver.com") {
