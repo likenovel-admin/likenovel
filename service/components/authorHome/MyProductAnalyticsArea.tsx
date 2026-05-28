@@ -779,10 +779,7 @@ const MyProductAnalyticsArea = () => {
         <div className="border border-light-gray-300 rounded-[20px] bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-16pxr md:px-20pxr py-14pxr border-b border-light-gray-300">
             <div className="flex flex-col gap-4pxr">
-              <span className="text-16pxr font-semibold text-black-100">유입 경로별 전환</span>
-              <span className="text-12pxr text-dark-gray-300">
-                작가에게는 SNS 세부 채널을 묶어 소셜유입으로 보여줍니다.
-              </span>
+              <span className="text-16pxr font-semibold text-black-100">상세페이지 유입과 회차 진입</span>
               <span className="text-12pxr text-dark-gray-300">
                 구좌·검색·랭킹·직접 유입별로 상세페이지 진입 후 회차를 읽었는지 확인할 수 있습니다.
               </span>
@@ -798,7 +795,7 @@ const MyProductAnalyticsArea = () => {
             </div>
           ) : inflowDropoffError ? (
             <div className="px-20pxr py-32pxr text-14pxr text-red-500">
-              유입 경로별 전환 데이터를 불러오지 못했습니다.
+              상세페이지 유입 데이터를 불러오지 못했습니다.
             </div>
           ) : sourceGroupRows.length === 0 ? (
             <div className="px-20pxr py-32pxr text-14pxr text-dark-gray-300">
