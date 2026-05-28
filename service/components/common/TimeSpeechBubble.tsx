@@ -1,20 +1,33 @@
 import { useEffect, useState } from "react";
+import { getFormattedRankBasisTime } from "@/utils/rankingBasis";
 import Clock from "/public/images/clock-detail.svg";
 import SpeechBubble from "/public/images/speech-bubble-yellow.svg";
 
-const TimeSpeechBubble = () => {
+interface TimeSpeechBubbleProps {
+  mode?: "current" | "ranking";
+}
+
+const formatCurrentTime = (now: Date) => {
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+
+  return `${year}. ${month}. ${day} ${hours}:${minutes}`;
+};
+
+const TimeSpeechBubble = ({ mode = "current" }: TimeSpeechBubbleProps) => {
   const [currentTime, setCurrentTime] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const day = String(now.getDate()).padStart(2, "0");
-      const hours = String(now.getHours()).padStart(2, "0");
-      const minutes = String(now.getMinutes()).padStart(2, "0");
-      const formattedTime = `${year}. ${month}. ${day} ${hours}:${minutes}`;
+      const formattedTime =
+        mode === "ranking"
+          ? getFormattedRankBasisTime(now)
+          : formatCurrentTime(now);
       setCurrentTime(formattedTime);
       setLoading(false);
     };
@@ -23,7 +36,7 @@ const TimeSpeechBubble = () => {
     const interval = setInterval(updateTime, 60000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [mode]);
 
   return (
     <div className="relative flex">

@@ -81,7 +81,12 @@ const ProductArea = ({ data, pageType = "free" }: Props) => {
   return (
     <div className="flex flex-col mt-30pxr md:gap-20pxr">
       <div className="flex justify-between">
-        <MainHeader headerText="인기 TOP 50" hasTimeSpeechBubble hasGuide />
+        <MainHeader
+          headerText="인기 TOP 50"
+          hasTimeSpeechBubble
+          timeSpeechBubbleMode="ranking"
+          hasRankingGuide
+        />
         <ListTypeTab listType={listType} setListType={setListType} />
       </div>
       <div className="md:hidden w-[93%] ml-[16px] mt-10pxr border border-t-light-gray-400 border-b-0 border-l-0 border-r-0" />
