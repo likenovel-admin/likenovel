@@ -67,6 +67,45 @@ export interface IAuthorProductEpisodeDropoffParams {
   enabled?: boolean;
 }
 
+export interface IAuthorProductInflowDropoffSourceGroup {
+  product_id: number | null;
+  entry_source_group: string;
+  source_label: string;
+  detail_view_count: number;
+  detail_session_count: number;
+  detail_visitor_count: number;
+  login_user_count: number;
+  reader_session_count: number;
+  detail_exit_session_count: number;
+  read_conversion_rate: number | null;
+  detail_exit_rate: number | null;
+}
+
+export interface IAuthorProductInflowDropoffEpisodeRow {
+  product_id: number;
+  episode_id: number;
+  episode_no: number;
+  episode_title: string | null;
+  read_start_count: number;
+  episode_dropoff_count: number;
+  episode_dropoff_rate: number;
+}
+
+export interface IAuthorProductInflowDropoffResponse {
+  product_id: number | null;
+  start_date: string;
+  end_date: string;
+  source_groups: IAuthorProductInflowDropoffSourceGroup[];
+  episode_dropoffs: IAuthorProductInflowDropoffEpisodeRow[];
+}
+
+export interface IAuthorProductInflowDropoffParams {
+  productId?: number;
+  startDate: string;
+  endDate: string;
+  enabled?: boolean;
+}
+
 export type AuthorRecent24hRankStatus =
   | "reflected"
   | "pending"
