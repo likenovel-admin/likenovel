@@ -49,6 +49,8 @@ export interface IStatisticSitePageReferrer {
   route_name: string;
   path_template: string;
   landing_path: string;
+  first_seen_at?: string | null;
+  last_seen_at?: string | null;
   page_view_count: number;
   visitor_count: number;
   session_count: number;
