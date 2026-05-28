@@ -125,7 +125,7 @@ const columns: Column[] = [
     render: (value) => formatRouteGroup(value),
   },
   { header: "경로 템플릿", key: "path_template" },
-  { header: "랜딩/전환 경로", key: "landing_path" },
+  { header: "유입 후 기록 경로", key: "landing_path" },
   {
     header: "최근 유입",
     key: "last_seen_at",
@@ -211,7 +211,7 @@ export default function Page() {
         "경로 그룹",
         "경로 이름",
         "경로 템플릿",
-        "랜딩/전환 경로",
+        "유입 후 기록 경로",
         "최근 유입",
         "최초 유입",
         "PV",
@@ -390,6 +390,12 @@ export default function Page() {
             source를 우선으로, 없으면 외부 referrer 그룹으로 묶습니다. PV순은
             뷰어 반복 읽기에 왜곡될 수 있어 트래픽 규모 확인용으로만 선택해서
             봅니다.
+          </div>
+          <div className="mt-2 text-muted-foreground">
+            유입 후 기록 경로는 같은 유입 신호가 붙은 상태로 기록된 페이지
+            경로입니다. 게시글 링크를 누른 첫 화면뿐 아니라, 이후 홈, 로그인,
+            뷰어로 이동한 페이지뷰도 같은 유입 신호로 묶여 표시됩니다. 이
+            경로가 최종 도착지나 이탈 지점을 뜻하지는 않습니다.
           </div>
           <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             {referrerGroupOptions
