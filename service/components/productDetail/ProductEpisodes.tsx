@@ -11,6 +11,7 @@ import { formatKoreanNumber } from "@/utils/formatKoreanNumber";
 import { getEpisodeBadge } from "@/utils/getEpisodeBadge";
 import { getFormattingDate } from "@/utils/getFormattingDate";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
+import { buildEpisodeSummaryLabel } from "@/utils/episodeSummaryLabel";
 import type { ProductDetailEntrySource } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
 import Image from "next/image";
@@ -31,6 +32,7 @@ const PAGE_SIZE = 25;
 interface Props {
   priceType?: "free" | "paid";
   episodeCount?: number;
+  paidEpisodeNo?: number | null;
   productId: number;
   productTitle?: string;
   authorId?: number;
@@ -41,6 +43,7 @@ interface Props {
 
 const ProductEpisodes = ({
   episodeCount,
+  paidEpisodeNo,
   priceType,
   productId,
   productTitle,
@@ -68,6 +71,11 @@ const ProductEpisodes = ({
   const { setTypeModal } = useModalStore();
   const [isDescSort, setIsDescSort] = useState(true);
   const [visibleCount, setVisibleCount] = useState(10);
+  const episodeSummaryLabel = buildEpisodeSummaryLabel({
+    totalEpisodeCount: episodeCount,
+    productPriceType: priceType,
+    paidEpisodeNo,
+  });
 
   // 기다무 대여권 수 조회 (React Query가 ButtonBottom 호출과 중복 제거)
   const { data: ticketsData } = useGetAvailableTickets({
@@ -191,7 +199,12 @@ const ProductEpisodes = ({
   return (
     <div className="flex flex-col px-16pxr md:px-0">
       <div className="flex justify-between mt-30pxr md:mt-0 mb-18pxr">
-        <span className="text-18pxr md:text-22pxr font-bold">작품 회차</span>
+        <div className="flex flex-col gap-3pxr">
+          <span className="text-18pxr md:text-22pxr font-bold">작품 회차</span>
+          <span className="text-12pxr md:text-14pxr text-dark-gray-400">
+            {episodeSummaryLabel}
+          </span>
+        </div>
         <Button
           variant="secondary"
           size="sm"
