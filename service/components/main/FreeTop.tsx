@@ -78,6 +78,8 @@ const FreeTop = ({ data }: Props) => {
       <MainHeader
         headerText="인기 무료 Top"
         hasTimeSpeechBubble
+        timeSpeechBubbleMode="ranking"
+        hasRankingGuide
         hasMoreButton
         moreButtonOnClick={() => {
           router.push("/product/top50/free-top");
