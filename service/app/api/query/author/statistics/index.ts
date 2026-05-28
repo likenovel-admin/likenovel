@@ -5,6 +5,8 @@ import {
   IAuthorProductDetailFunnelResponse,
   IAuthorProductEpisodeDropoffParams,
   IAuthorProductEpisodeDropoffResponse,
+  IAuthorProductInflowDropoffParams,
+  IAuthorProductInflowDropoffResponse,
   IAuthorProductRecent24hParams,
   IAuthorProductRecent24hResponse,
 } from "./dto";
@@ -77,6 +79,38 @@ export const useProductEpisodeDropoffStatistics = ({
 
       const response = await instance.get(
         `/v1/query/partners/product-episode-dropoff-statistics?${params.toString()}`
+      );
+
+      return response.data;
+    },
+    enabled: enabled && !!startDate && !!endDate && typeof productId === "number",
+  });
+};
+
+export const useProductInflowDropoffStatistics = ({
+  productId,
+  startDate,
+  endDate,
+  enabled = true,
+}: IAuthorProductInflowDropoffParams) => {
+  return useQuery<IAuthorProductInflowDropoffResponse>({
+    queryKey: [
+      "productInflowDropoffStatistics",
+      productId ?? null,
+      startDate,
+      endDate,
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set("search_start_date", startDate);
+      params.set("search_end_date", endDate);
+
+      if (typeof productId === "number") {
+        params.set("product_id", String(productId));
+      }
+
+      const response = await instance.get(
+        `/v1/query/partners/product-inflow-dropoff-statistics?${params.toString()}`
       );
 
       return response.data;

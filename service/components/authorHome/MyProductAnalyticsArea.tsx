@@ -4,10 +4,12 @@ import { useGetMyProducts } from "@/app/api/query/author/product";
 import {
   useProductDetailFunnelStatistics,
   useProductEpisodeDropoffStatistics,
+  useProductInflowDropoffStatistics,
 } from "@/app/api/query/author/statistics";
 import {
   IAuthorProductDetailFunnelRow,
   IAuthorProductEpisodeDropoffRow,
+  IAuthorProductInflowDropoffSourceGroup,
 } from "@/app/api/query/author/statistics/dto";
 import Spinner from "@/components/common/Spinner";
 import DatePicker from "@/components/form/datepicker";
@@ -67,12 +69,38 @@ const sourceLabelMap: Record<string, string> = {
   cp_promotion: "CP 프로모션",
 };
 
+const sourceGroupLabelMap: Record<string, string> = {
+  social: "소셜유입",
+  recommend_slot: "구좌유입",
+  search: "검색유입",
+  ranking: "랭킹유입",
+  direct: "직접유입",
+  other: "기타",
+};
+
+const sourceGroupOrder = [
+  "social",
+  "recommend_slot",
+  "search",
+  "ranking",
+  "direct",
+  "other",
+] as const;
+
 const getSourceLabel = (entrySource: string | null) => {
   if (!entrySource) {
     return "직접 유입 또는 기타";
   }
 
   return sourceLabelMap[entrySource] ?? entrySource;
+};
+
+const getSourceGroupLabel = (row: IAuthorProductInflowDropoffSourceGroup) => {
+  return (
+    sourceGroupLabelMap[row.entry_source_group] ||
+    row.source_label ||
+    sourceGroupLabelMap.other
+  );
 };
 
 const getDominantDropoffBucketLabel = (
@@ -227,17 +255,21 @@ const MyProductAnalyticsArea = () => {
     );
   }, [defaultProductId]);
 
+  const appliedProductId = appliedFilters.productId
+    ? Number(appliedFilters.productId)
+    : undefined;
+  const appliedStartDateText = dayjs(appliedFilters.startDate).format("YYYY-MM-DD");
+  const appliedEndDateText = dayjs(appliedFilters.endDate).format("YYYY-MM-DD");
+
   const {
     data: funnelData,
     isLoading: isFunnelLoading,
     isFetching,
     error,
   } = useProductDetailFunnelStatistics({
-    productId: appliedFilters.productId
-      ? Number(appliedFilters.productId)
-      : undefined,
-    startDate: dayjs(appliedFilters.startDate).format("YYYY-MM-DD"),
-    endDate: dayjs(appliedFilters.endDate).format("YYYY-MM-DD"),
+    productId: appliedProductId,
+    startDate: appliedStartDateText,
+    endDate: appliedEndDateText,
     page,
     countPerPage: 100,
     enabled: hasProducts && !!appliedFilters.productId,
@@ -248,13 +280,22 @@ const MyProductAnalyticsArea = () => {
     isFetching: isEpisodeDropoffFetching,
     error: episodeDropoffError,
   } = useProductEpisodeDropoffStatistics({
-    productId: appliedFilters.productId
-      ? Number(appliedFilters.productId)
-      : undefined,
-    startDate: dayjs(appliedFilters.startDate).format("YYYY-MM-DD"),
-    endDate: dayjs(appliedFilters.endDate).format("YYYY-MM-DD"),
+    productId: appliedProductId,
+    startDate: appliedStartDateText,
+    endDate: appliedEndDateText,
     page: 1,
     countPerPage: 1000,
+    enabled: hasProducts && !!appliedFilters.productId,
+  });
+  const {
+    data: inflowDropoffData,
+    isLoading: isInflowDropoffLoading,
+    isFetching: isInflowDropoffFetching,
+    error: inflowDropoffError,
+  } = useProductInflowDropoffStatistics({
+    productId: appliedProductId,
+    startDate: appliedStartDateText,
+    endDate: appliedEndDateText,
     enabled: hasProducts && !!appliedFilters.productId,
   });
 
@@ -293,6 +334,40 @@ const MyProductAnalyticsArea = () => {
       }
     );
   }, [funnelData]);
+
+  const sourceGroupRows = useMemo(() => {
+    const source_groups = inflowDropoffData?.source_groups || [];
+    const orderIndex = new Map<string, number>(
+      sourceGroupOrder.map((source, index) => [source, index])
+    );
+
+    return [...source_groups].sort((a, b) => {
+      const sourceOrderDiff =
+        (orderIndex.get(a.entry_source_group) ?? sourceGroupOrder.length) -
+        (orderIndex.get(b.entry_source_group) ?? sourceGroupOrder.length);
+      if (sourceOrderDiff !== 0) {
+        return sourceOrderDiff;
+      }
+
+      return b.detail_session_count - a.detail_session_count;
+    });
+  }, [inflowDropoffData?.source_groups]);
+
+  const sourceGroupSummary = useMemo(() => {
+    return sourceGroupRows.reduce(
+      (acc, row) => {
+        acc.detailViewSessions += row.detail_session_count;
+        acc.detailToViewSessions += row.reader_session_count;
+        acc.detailExitSessions += row.detail_exit_session_count;
+        return acc;
+      },
+      {
+        detailViewSessions: 0,
+        detailToViewSessions: 0,
+        detailExitSessions: 0,
+      }
+    );
+  }, [sourceGroupRows]);
 
   const rows = useMemo(() => funnelData?.results || [], [funnelData?.results]);
   const episodeDropoffRows = useMemo(
@@ -333,6 +408,18 @@ const MyProductAnalyticsArea = () => {
     summary.episodeExitEvents > 0
       ? summary.weightedEpisodeExitProgress / summary.episodeExitEvents
       : null;
+  const hasSourceGroupSummary = sourceGroupRows.some(
+    (row) => row.detail_session_count > 0
+  );
+  const summaryDetailViewSessions = hasSourceGroupSummary
+    ? sourceGroupSummary.detailViewSessions
+    : summary.detailViewSessions;
+  const summaryDetailToViewSessions = hasSourceGroupSummary
+    ? sourceGroupSummary.detailToViewSessions
+    : summary.detailToViewSessions;
+  const summaryDetailExitSessions = hasSourceGroupSummary
+    ? sourceGroupSummary.detailExitSessions
+    : summary.detailExitSessions;
 
   const applyPresetRange = (days: number) => {
     const nextEndDate = buildInitialEndDate();
@@ -438,6 +525,34 @@ const MyProductAnalyticsArea = () => {
         </td>
         <td className="px-12pxr py-12pxr text-right">
           {getDominantDropoffBucketLabel(row)}
+        </td>
+      </tr>
+    );
+  };
+
+  const renderSourceGroupRow = (row: IAuthorProductInflowDropoffSourceGroup) => {
+    return (
+      <tr key={row.entry_source_group}>
+        <td className="px-12pxr py-12pxr whitespace-nowrap font-medium text-black-100">
+          {getSourceGroupLabel(row)}
+        </td>
+        <td className="px-12pxr py-12pxr text-right">
+          {formatNumber(row.detail_session_count)}
+        </td>
+        <td className="px-12pxr py-12pxr text-right">
+          {formatNumber(row.detail_visitor_count)}
+        </td>
+        <td className="px-12pxr py-12pxr text-right">
+          {formatNumber(row.reader_session_count)}
+        </td>
+        <td className="px-12pxr py-12pxr text-right">
+          {formatPercent(row.read_conversion_rate)}
+        </td>
+        <td className="px-12pxr py-12pxr text-right">
+          {formatNumber(row.detail_exit_session_count)}
+        </td>
+        <td className="px-12pxr py-12pxr text-right">
+          {formatPercent(row.detail_exit_rate)}
         </td>
       </tr>
     );
@@ -617,7 +732,7 @@ const MyProductAnalyticsArea = () => {
           <div className="border border-light-gray-300 rounded-[16px] p-16pxr bg-white">
             <div className="text-13pxr text-dark-gray-300">상세페이지 유입</div>
             <div className="mt-6pxr text-20pxr md:text-24pxr font-semibold text-black-100">
-              {formatNumber(summary.detailViewSessions)}
+              {formatNumber(summaryDetailViewSessions)}
             </div>
             <div className="mt-6pxr text-12pxr text-dark-gray-300">
               작품 상세페이지에 들어온 횟수입니다.
@@ -626,7 +741,7 @@ const MyProductAnalyticsArea = () => {
           <div className="border border-light-gray-300 rounded-[16px] p-16pxr bg-white">
             <div className="text-13pxr text-dark-gray-300">회차 유입</div>
             <div className="mt-6pxr text-20pxr md:text-24pxr font-semibold text-black-100">
-              {formatNumber(summary.detailToViewSessions)}
+              {formatNumber(summaryDetailToViewSessions)}
             </div>
             <div className="mt-6pxr text-12pxr text-dark-gray-300">
               상세페이지에서 실제 회차 화면으로 넘어간 횟수입니다.
@@ -635,7 +750,7 @@ const MyProductAnalyticsArea = () => {
           <div className="border border-light-gray-300 rounded-[16px] p-16pxr bg-white">
             <div className="text-13pxr text-dark-gray-300">회차 유입률</div>
             <div className="mt-6pxr text-20pxr md:text-24pxr font-semibold text-black-100">
-              {formatRate(summary.detailToViewSessions, summary.detailViewSessions)}
+              {formatRate(summaryDetailToViewSessions, summaryDetailViewSessions)}
             </div>
             <div className="mt-6pxr text-12pxr text-dark-gray-300">
               상세페이지 유입 대비 회차 유입 비율입니다.
@@ -644,7 +759,7 @@ const MyProductAnalyticsArea = () => {
           <div className="border border-light-gray-300 rounded-[16px] p-16pxr bg-white">
             <div className="text-13pxr text-dark-gray-300">상세페이지에서 나감</div>
             <div className="mt-6pxr text-20pxr md:text-24pxr font-semibold text-black-100">
-              {formatNumber(summary.detailExitSessions)}
+              {formatNumber(summaryDetailExitSessions)}
             </div>
             <div className="mt-6pxr text-12pxr text-dark-gray-300">
               회차로 넘어가지 않고 다른 곳으로 이동한 흐름입니다.
@@ -659,6 +774,97 @@ const MyProductAnalyticsArea = () => {
               회차에 들어온 뒤 평균적으로 어디쯤에서 멈췄는지 보여줍니다.
             </div>
           </div>
+        </div>
+
+        <div className="border border-light-gray-300 rounded-[20px] bg-white shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-16pxr md:px-20pxr py-14pxr border-b border-light-gray-300">
+            <div className="flex flex-col gap-4pxr">
+              <span className="text-16pxr font-semibold text-black-100">유입 경로별 전환</span>
+              <span className="text-12pxr text-dark-gray-300">
+                작가에게는 SNS 세부 채널을 묶어 소셜유입으로 보여줍니다.
+              </span>
+              <span className="text-12pxr text-dark-gray-300">
+                구좌·검색·랭킹·직접 유입별로 상세페이지 진입 후 회차를 읽었는지 확인할 수 있습니다.
+              </span>
+            </div>
+            <span className="text-13pxr text-dark-gray-300">
+              총 {formatNumber(sourceGroupRows.length)}개 그룹
+            </span>
+          </div>
+
+          {isInflowDropoffLoading || isInflowDropoffFetching ? (
+            <div className="w-full min-h-[220px] flex justify-center items-center">
+              <Spinner />
+            </div>
+          ) : inflowDropoffError ? (
+            <div className="px-20pxr py-32pxr text-14pxr text-red-500">
+              유입 경로별 전환 데이터를 불러오지 못했습니다.
+            </div>
+          ) : sourceGroupRows.length === 0 ? (
+            <div className="px-20pxr py-32pxr text-14pxr text-dark-gray-300">
+              선택한 기간에 유입 경로별 집계가 없습니다.
+            </div>
+          ) : (
+            <>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-13pxr text-left text-dark-gray-500">
+                  <thead className="bg-light-gray-100 text-dark-gray-400">
+                    <tr>
+                      <th className="px-12pxr py-12pxr font-medium">유입 그룹</th>
+                      <th className="px-12pxr py-12pxr font-medium text-right">상세 유입</th>
+                      <th className="px-12pxr py-12pxr font-medium text-right">방문자</th>
+                      <th className="px-12pxr py-12pxr font-medium text-right">회차 유입</th>
+                      <th className="px-12pxr py-12pxr font-medium text-right">회차 유입률</th>
+                      <th className="px-12pxr py-12pxr font-medium text-right">상세 이탈</th>
+                      <th className="px-12pxr py-12pxr font-medium text-right">상세 이탈률</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-light-gray-300">
+                    {sourceGroupRows.map(renderSourceGroupRow)}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="md:hidden flex flex-col divide-y divide-light-gray-300">
+                {sourceGroupRows.map((row) => (
+                  <div
+                    key={`${row.entry_source_group}-mobile`}
+                    className="p-16pxr flex flex-col gap-8pxr"
+                  >
+                    <div className="text-14pxr font-semibold text-black-100">
+                      {getSourceGroupLabel(row)}
+                    </div>
+                    <div className="grid grid-cols-2 gap-y-6pxr text-13pxr text-dark-gray-400">
+                      <span>상세 유입</span>
+                      <span className="text-right text-black-100">
+                        {formatNumber(row.detail_session_count)}
+                      </span>
+                      <span>방문자</span>
+                      <span className="text-right text-black-100">
+                        {formatNumber(row.detail_visitor_count)}
+                      </span>
+                      <span>회차 유입</span>
+                      <span className="text-right text-black-100">
+                        {formatNumber(row.reader_session_count)}
+                      </span>
+                      <span>회차 유입률</span>
+                      <span className="text-right text-black-100">
+                        {formatPercent(row.read_conversion_rate)}
+                      </span>
+                      <span>상세 이탈</span>
+                      <span className="text-right text-black-100">
+                        {formatNumber(row.detail_exit_session_count)}
+                      </span>
+                      <span>상세 이탈률</span>
+                      <span className="text-right text-black-100">
+                        {formatPercent(row.detail_exit_rate)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="border border-light-gray-300 rounded-[20px] bg-white shadow-sm overflow-hidden">

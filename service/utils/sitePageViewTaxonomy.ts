@@ -1,4 +1,5 @@
 import type { MarketingAttribution } from "./marketingAttribution";
+import type { ProductEntryAttribution } from "./productEntryAttribution";
 
 export const SITE_PAGE_VIEW_TAXONOMY_VERSION = 1;
 
@@ -44,6 +45,7 @@ export type BuildSitePageViewPayloadInput = {
   eventId: string;
   occurredAt: string;
   marketingAttribution?: MarketingAttribution | null;
+  productEntryAttribution?: ProductEntryAttribution | null;
 };
 
 export type SitePageViewPayload = {
@@ -63,6 +65,9 @@ export type SitePageViewPayload = {
   utmContent: string | null;
   externalReferrerHost: string | null;
   externalReferrerGroup: string | null;
+  productId: number | null;
+  entrySource: string | null;
+  entrySourceGroup: ProductEntryAttribution["entrySourceGroup"] | null;
   source: "service-web";
   taxonomyVersion: number;
 };
@@ -187,6 +192,9 @@ export function buildSitePageViewPayload(
   const path = sanitizeSitePageViewPath(input.pathname);
   const meta = getSitePageViewRouteMeta(path);
   const attribution = input.marketingAttribution;
+  const referrerPath = input.referrerPath ? sanitizeSitePageViewPath(input.referrerPath) : null;
+  const productEntryAttribution = input.productEntryAttribution;
+
   return {
     eventId: input.eventId,
     occurredAt: input.occurredAt,
@@ -197,13 +205,16 @@ export function buildSitePageViewPayload(
     pathTemplate: meta.pathTemplate,
     path,
     queryHash: null,
-    referrerPath: input.referrerPath ? sanitizeSitePageViewPath(input.referrerPath) : null,
+    referrerPath,
     utmSource: attribution?.utmSource ?? null,
     utmMedium: attribution?.utmMedium ?? null,
     utmCampaign: attribution?.utmCampaign ?? null,
     utmContent: attribution?.utmContent ?? null,
     externalReferrerHost: attribution?.externalReferrerHost ?? null,
     externalReferrerGroup: attribution?.externalReferrerGroup ?? null,
+    productId: productEntryAttribution?.productId ?? null,
+    entrySource: productEntryAttribution?.entrySource ?? null,
+    entrySourceGroup: productEntryAttribution?.entrySourceGroup ?? null,
     source: "service-web",
     taxonomyVersion: SITE_PAGE_VIEW_TAXONOMY_VERSION,
   };

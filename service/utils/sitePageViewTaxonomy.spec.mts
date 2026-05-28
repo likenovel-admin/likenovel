@@ -130,6 +130,11 @@ import {
       externalReferrerHost: "instagram.com",
       externalReferrerGroup: "instagram",
     },
+    productEntryAttribution: {
+      productId: 1109,
+      entrySource: "instagram",
+      entrySourceGroup: "social",
+    },
   });
 
   assert.equal(payload.routeGroup, "product_detail");
@@ -139,4 +144,28 @@ import {
   assert.equal(payload.utmContent, "card01");
   assert.equal(payload.externalReferrerHost, "instagram.com");
   assert.equal(payload.externalReferrerGroup, "instagram");
+  assert.equal(payload.productId, 1109);
+  assert.equal(payload.entrySource, "instagram");
+  assert.equal(payload.entrySourceGroup, "social");
+}
+
+{
+  const payload = buildSitePageViewPayload({
+    pathname: "/product/1109",
+    search: "",
+    referrerPath: "/product/search/result/normal",
+    visitorId: "pv_visitor",
+    sessionId: "pvs_session",
+    eventId: "9475cd9c-721d-48a4-aa1f-57cf92f7501b",
+    occurredAt: "2026-05-27T18:00:00.000+09:00",
+    productEntryAttribution: {
+      productId: 1109,
+      entrySource: "search_result",
+      entrySourceGroup: "search",
+    },
+  });
+
+  assert.equal(payload.productId, 1109);
+  assert.equal(payload.entrySource, "search_result");
+  assert.equal(payload.entrySourceGroup, "search");
 }
