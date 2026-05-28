@@ -54,6 +54,7 @@ const PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_KEY =
   "pending_product_detail_entry_source";
 const PENDING_PRODUCT_DETAIL_ENTRY_SOURCE_TTL_MS = 10 * 1000;
 const MARKETING_UTM_KEYS = [
+  "lns",
   "utm_source",
   "utm_medium",
   "utm_campaign",
