@@ -170,6 +170,17 @@ import {
 }
 
 {
+  const attribution = extractMarketingAttribution({
+    search: "",
+    referrer: "https://threads.com/@likenovel/post/abc",
+    currentHost: "www.likenovel.net",
+  });
+
+  assert.equal(attribution.externalReferrerHost, "threads.com");
+  assert.equal(attribution.externalReferrerGroup, "threads");
+}
+
+{
   const cookieHeader = `${MARKETING_ATTRIBUTION_COOKIE_NAME}=${encodeURIComponent(
     JSON.stringify({
       utmSource: "twitter",
