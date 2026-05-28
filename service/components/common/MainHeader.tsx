@@ -1,38 +1,93 @@
+"use client";
+
 import TimeSpeechBubble from "../common/TimeSpeechBubble";
 import ArrowRightSmall from "/public/images/arrow-right-small.svg";
-import QuestionMark from "/public/images/question-mark.svg";
 import type { ReactNode } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+
+const rankingGuideMessage = [
+  "랭킹 집계 기간: 매시 30분 기준 직전 24시간 조회수",
+  "랭킹 집계 기준: 최근 24시간 조회수 90% + 누적 조회수 10%",
+  "연재 Top은 공개 3화 이상, 최근 30일 내 공개 또는 예약 공개가 있는 연재중 작품만 포함됩니다.",
+];
+
 interface Props {
   headerText: ReactNode;
   textStyle?: string;
   hasTimeSpeechBubble?: boolean;
+  timeSpeechBubbleMode?: "current" | "ranking";
   hasMoreButton?: boolean;
   moreButtonOnClick?: () => void;
-  hasGuide?: boolean;
+  hasRankingGuide?: boolean;
 }
 const MainHeader = ({
   headerText,
   textStyle = "text-17pxr md:text-24pxr font-bold",
   hasTimeSpeechBubble = false,
+  timeSpeechBubbleMode = "current",
   hasMoreButton = false,
   moreButtonOnClick,
-  hasGuide = false,
+  hasRankingGuide = false,
 }: Props) => {
+  const tooltipId = useId();
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const guideRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!hasRankingGuide) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!guideRef.current) return;
+      if (!guideRef.current.contains(event.target as Node)) {
+        setIsGuideOpen(false);
+      }
+    };
+
+    window.addEventListener("pointerdown", onPointerDown, { capture: true });
+    return () =>
+      window.removeEventListener("pointerdown", onPointerDown, {
+        capture: true,
+      });
+  }, [hasRankingGuide]);
+
   return (
     <div className="flex justify-between">
       <div className="flex items-center gap-[8px] pl-16pxr md:pl-0">
         <span className={textStyle}>{headerText}</span>
-        {hasTimeSpeechBubble && <TimeSpeechBubble />}
-        {hasGuide && (
-          <>
-            {/* TODO: 가이드 추가 */}
+        {hasTimeSpeechBubble && (
+          <TimeSpeechBubble mode={timeSpeechBubbleMode} />
+        )}
+        {hasRankingGuide && (
+          <div ref={guideRef} className="relative flex items-center">
             <button
-              className="flex justify-center items-center w-[25px] h-[25px] rounded-full border border-light-gray-600 hover:bg-light-gray-100"
-              onClick={() => {}}
+              type="button"
+              aria-label="랭킹 산정 기준 보기"
+              aria-describedby={isGuideOpen ? tooltipId : undefined}
+              aria-expanded={isGuideOpen}
+              className="flex justify-center items-center w-[18px] h-[18px] rounded-full border border-light-gray-600 bg-white text-12pxr font-bold leading-none text-dark-gray-500 hover:bg-light-gray-100"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setIsGuideOpen((prev) => !prev);
+              }}
             >
-              <QuestionMark className="w-[8px] h-[12px] text-dark-gray-500" />
+              <span className="relative top-[-1px]">i</span>
             </button>
-          </>
+            {isGuideOpen && (
+              <div
+                id={tooltipId}
+                role="tooltip"
+                className="absolute z-20 top-full right-[-8px] mt-8pxr w-[260px] rounded-[10px] bg-black-100 p-10pxr text-left text-12pxr font-medium leading-[17px] text-white shadow-sm"
+              >
+                {rankingGuideMessage.map((message) => (
+                  <span key={message} className="block">
+                    {message}
+                  </span>
+                ))}
+                <div className="absolute -top-[4px] right-[13px] h-8pxr w-8pxr rotate-45 bg-black-100" />
+              </div>
+            )}
+          </div>
         )}
       </div>
       {hasMoreButton && (

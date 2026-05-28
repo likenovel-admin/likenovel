@@ -68,6 +68,8 @@ const PaidTop = ({ data }: Props) => {
         headerText="유료 Top"
         textStyle="text-17pxr md:text-24pxr font-bold text-white"
         hasTimeSpeechBubble
+        timeSpeechBubbleMode="ranking"
+        hasRankingGuide
         hasMoreButton
         moreButtonOnClick={() => {
           router.push("/product/top50/paid-top");
