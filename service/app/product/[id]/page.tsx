@@ -878,6 +878,7 @@ export default function ProductDetail() {
               notices={noticeData || []}
               priceType={productData?.priceType}
               episodeCount={episodeCount}
+              paidEpisodeNo={productData?.paidEpisodeNo}
               waitForFreeYn={productData?.badge?.waitForFreeYn || productData?.badge?.waitingForFreeYn}
               entrySource={viewerEntrySource}
             />
