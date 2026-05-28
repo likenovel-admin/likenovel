@@ -15,6 +15,7 @@ import { IProduct } from "@/types";
 import { getLatestEpisodeDate } from "@/utils/getLatestEpisodeDate";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
 import { getUpdateFrequency } from "@/utils/getUpdateFrequency";
+import { formatPercentMetric } from "@/utils/formatProductMetric";
 import {
   type AiProductBrief,
   buildAiLibrarianCopy,
@@ -822,7 +823,7 @@ const ProductListCard = ({
                     </span>
                     <div className="flex gap-4pxr">
                       <span className="text-13pxr text-dark-gray-500">
-                        {data.trendindex.readThroughRate ? `${Number(data.trendindex.readThroughRate).toFixed(1)}%` : '-'}
+                        {formatPercentMetric(data.trendindex.readThroughRate)}
                       </span>
                       <div className="mt-4pxr">
                         <RankIndicator
@@ -917,7 +918,7 @@ const ProductListCard = ({
                 <div className="flex justify-between gap-20pxr">
                   <span className="text-13pxr text-dark-gray-300">연독률</span>
                   <span className="text-13pxr text-dark-gray-500">
-                    {data.trendindex.readThroughRate ? `${Number(data.trendindex.readThroughRate).toFixed(1)}%` : '-'}
+                    {formatPercentMetric(data.trendindex.readThroughRate)}
                   </span>
                 </div>
                 <div className="flex justify-between gap-20pxr">
@@ -994,7 +995,7 @@ const ProductListCard = ({
                     연독률
                   </span>
                   <span className="text-11pxr text-dark-gray-500">
-                    {data.trendindex.readThroughRate ? `${Number(data.trendindex.readThroughRate).toFixed(1)}%` : '-'}
+                    {formatPercentMetric(data.trendindex.readThroughRate)}
                   </span>
                 </div>
                 <div className="flex justify-between gap-16pxr">
