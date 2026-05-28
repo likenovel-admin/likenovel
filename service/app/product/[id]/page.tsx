@@ -50,6 +50,11 @@ import {
   MARKETING_ATTRIBUTION_STORAGE_KEY,
 } from "@/utils/marketingAttribution";
 import {
+  resolveProductDetailSignalEntrySource,
+  resolveProductEntryAttribution,
+  type ProductEntryAttribution,
+} from "@/utils/productEntryAttribution";
+import {
   endProductTrace,
   logProductTrace,
   startProductTrace,
@@ -79,6 +84,9 @@ export default function ProductDetail() {
   const urlEntrySource = getProductDetailEntrySource(entrySourceParam);
   const [hasHiddenMarketingLanding, setHasHiddenMarketingLanding] =
     useState(false);
+  const [marketingLandingChecked, setMarketingLandingChecked] = useState(false);
+  const [marketingProductEntryAttribution, setMarketingProductEntryAttribution] =
+    useState<ProductEntryAttribution | null>(null);
   const productDetailBackFallbackPath =
     getProductDetailMarketingBackFallbackPath(
       searchParamString,
@@ -95,6 +103,10 @@ export default function ProductDetail() {
     urlEntrySource,
     entrySourceState,
     productId
+  );
+  const detailSignalEntrySource = resolveProductDetailSignalEntrySource(
+    entrySource,
+    marketingProductEntryAttribution
   );
   const entrySourceResolved = isProductDetailEntrySourceResolvedForProduct(
     entrySourceState,
@@ -278,8 +290,10 @@ export default function ProductDetail() {
       pathname
     );
     setHasHiddenMarketingLanding(isMarketingLanding);
+    setMarketingLandingChecked(true);
 
     if (!isMarketingLanding) {
+      setMarketingProductEntryAttribution(null);
       return;
     }
 
@@ -293,10 +307,19 @@ export default function ProductDetail() {
       } catch {
         // Attribution persistence must not block product rendering.
       }
+
+      setMarketingProductEntryAttribution(
+        resolveProductEntryAttribution({
+          pathname,
+          referrerPath: null,
+          entrySource: urlEntrySource,
+          marketingAttribution: attribution,
+        })
+      );
     }
 
     document.cookie = `${MARKETING_ATTRIBUTION_COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax`;
-  }, [pathname]);
+  }, [pathname, urlEntrySource]);
 
   useEffect(() => {
     if (
@@ -464,7 +487,7 @@ export default function ProductDetail() {
       return;
     }
 
-    if (!entrySourceResolved) {
+    if (!entrySourceResolved || !marketingLandingChecked) {
       return;
     }
 
@@ -482,7 +505,9 @@ export default function ProductDetail() {
       {
         product_id: productData.productId,
         event_type: "product_detail_view",
-        event_payload: entrySource ? { entry_source: entrySource } : undefined,
+        event_payload: detailSignalEntrySource
+          ? { entry_source: detailSignalEntrySource }
+          : undefined,
       },
       {
         onError: (error) => {
@@ -492,9 +517,10 @@ export default function ProductDetail() {
     );
   }, [
     canUseUserScope,
-    entrySource,
+    detailSignalEntrySource,
     entrySourceResolved,
     isSuccess,
+    marketingLandingChecked,
     postAiSignalEvent,
     productData?.privateYn,
     productData?.productId,
