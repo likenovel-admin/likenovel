@@ -14,6 +14,7 @@ export type MarketingAttributionCookiePayload = MarketingAttribution & {
 export const MARKETING_ATTRIBUTION_COOKIE_NAME = "ln_marketing_attribution";
 export const MARKETING_ATTRIBUTION_COOKIE_MAX_AGE_SECONDS = 120;
 export const MARKETING_ATTRIBUTION_STORAGE_KEY = "ln_site_pv_marketing_attribution";
+export const SHORT_TRACKING_QUERY_PARAM = "lns";
 
 const SHORT_LINK_CHANNELS: Record<string, string> = {
   ig: "instagram",
@@ -162,12 +163,22 @@ function referrerGroupFromHost(host: string | null): string | null {
   return "other";
 }
 
+function normalizeShortTrackingCode(code: string | null | undefined): string | null {
+  const normalized = normalizeToken(code, 40);
+  return normalized || null;
+}
+
 function parseShortTrackingCode(code: string): {
   productId: number;
   cardNo: number;
   channel: string;
 } | null {
-  const match = /^([a-z]+)([1-9]\d{0,9})c([1-9]\d{0,2})$/i.exec(code.trim());
+  const normalizedCode = normalizeShortTrackingCode(code);
+  if (!normalizedCode) {
+    return null;
+  }
+
+  const match = /^([a-z]+)([1-9]\d{0,9})c([1-9]\d{0,2})$/i.exec(normalizedCode);
   if (!match) {
     return null;
   }
@@ -216,8 +227,15 @@ export function buildShortTrackingDestination(code: string): string | null {
   if (!attribution?.landingPath) {
     return null;
   }
+  const normalizedCode = normalizeShortTrackingCode(code);
+  if (!normalizedCode) {
+    return null;
+  }
 
-  return attribution.landingPath;
+  const params = new URLSearchParams({
+    [SHORT_TRACKING_QUERY_PARAM]: normalizedCode,
+  });
+  return `${attribution.landingPath}?${params.toString()}`;
 }
 
 export function getForwardedRequestOrigin(request: {
@@ -314,6 +332,42 @@ export function getMarketingAttributionCookiePayload(
   return parseMarketingAttributionValue(rawCookie.slice(cookiePrefix.length));
 }
 
+export function getShortTrackingMarketingAttributionFromSearch(
+  search: string | null | undefined,
+  pathname?: string | null | undefined
+): MarketingAttributionCookiePayload | null {
+  const queryString = (search || "").startsWith("?")
+    ? (search || "").slice(1)
+    : search || "";
+  const params = new URLSearchParams(queryString);
+  const attribution = buildShortTrackingAttribution(
+    params.get(SHORT_TRACKING_QUERY_PARAM) || ""
+  );
+  if (!attribution) {
+    return null;
+  }
+  const normalizedPath = normalizeLandingPath(pathname);
+  if (normalizedPath && attribution.landingPath !== normalizedPath) {
+    return null;
+  }
+  return attribution;
+}
+
+export function stripShortTrackingQueryFromCurrentUrl() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(SHORT_TRACKING_QUERY_PARAM)) {
+    return;
+  }
+
+  url.searchParams.delete(SHORT_TRACKING_QUERY_PARAM);
+  const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState(window.history.state, "", nextUrl);
+}
+
 export function hasShortTrackingMarketingLandingForPath(
   cookieHeader: string | null | undefined,
   pathname: string | null | undefined
@@ -374,11 +428,20 @@ export function extractMarketingAttribution(input: {
   search: string | null | undefined;
   referrer: string | null | undefined;
   currentHost: string | null | undefined;
+  pathname?: string | null | undefined;
 }): MarketingAttribution {
   const search = (input.search || "").startsWith("?")
     ? (input.search || "").slice(1)
     : input.search || "";
   const params = new URLSearchParams(search);
+  const shortTrackingAttribution = getShortTrackingMarketingAttributionFromSearch(
+    search,
+    input.pathname
+  );
+  if (shortTrackingAttribution) {
+    return toMarketingAttribution(shortTrackingAttribution);
+  }
+
   const currentHost = normalizeCurrentHost(input.currentHost);
   const referrerHost = normalizeReferrerHost(input.referrer);
   const internalReferrer = isInternalHost(referrerHost, currentHost);
