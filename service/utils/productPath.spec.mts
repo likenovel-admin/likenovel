@@ -45,6 +45,12 @@ assert.equal(
 );
 
 assert.equal(
+  getProductDetailMarketingBackFallbackPath("?lns=x1126c1"),
+  PRODUCT_DETAIL_MARKETING_BACK_FALLBACK_PATH,
+  "short tracking query landings should use an internal back fallback"
+);
+
+assert.equal(
   getProductDetailMarketingBackFallbackPath("entrySource=ai_taste_section"),
   null,
   "internal entry source links should not override normal product back behavior"

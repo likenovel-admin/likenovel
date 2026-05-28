@@ -45,9 +45,11 @@ import {
 } from "@/utils/productPath";
 import {
   getMarketingAttributionCookiePayload,
+  getShortTrackingMarketingAttributionFromSearch,
   hasShortTrackingMarketingLandingForPath,
   MARKETING_ATTRIBUTION_COOKIE_NAME,
   MARKETING_ATTRIBUTION_STORAGE_KEY,
+  stripShortTrackingQueryFromCurrentUrl,
 } from "@/utils/marketingAttribution";
 import {
   resolveProductDetailSignalEntrySource,
@@ -289,15 +291,25 @@ export default function ProductDetail() {
       document.cookie,
       pathname
     );
-    setHasHiddenMarketingLanding(isMarketingLanding);
+    const shortTrackingAttribution =
+      typeof window !== "undefined"
+        ? getShortTrackingMarketingAttributionFromSearch(
+            window.location.search,
+            pathname
+          )
+        : null;
+    const hasShortTrackingQueryLanding = Boolean(shortTrackingAttribution);
+    setHasHiddenMarketingLanding(isMarketingLanding || hasShortTrackingQueryLanding);
     setMarketingLandingChecked(true);
 
-    if (!isMarketingLanding) {
+    if (!isMarketingLanding && !hasShortTrackingQueryLanding) {
       setMarketingProductEntryAttribution(null);
       return;
     }
 
-    const attribution = getMarketingAttributionCookiePayload(document.cookie);
+    const attribution =
+      shortTrackingAttribution ||
+      getMarketingAttributionCookiePayload(document.cookie);
     if (attribution && typeof window !== "undefined") {
       try {
         window.sessionStorage.setItem(
@@ -319,6 +331,7 @@ export default function ProductDetail() {
     }
 
     document.cookie = `${MARKETING_ATTRIBUTION_COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax`;
+    stripShortTrackingQueryFromCurrentUrl();
   }, [pathname, urlEntrySource]);
 
   useEffect(() => {
