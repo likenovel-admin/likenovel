@@ -6,12 +6,16 @@ const source = readFileSync(
   "utf8"
 );
 
-assert.match(source, /max-h-\[112px\]/);
+assert.match(source, /max-h-\[152px\]/);
 assert.match(source, /max-h-0 pt-0/);
 assert.match(source, /className = ""/);
 assert.match(source, /flex flex-col gap-4pxr/);
 assert.match(source, /text-10pxr leading-\[13px\][\s\S]*AI 사서/);
 assert.match(source, /chips\?: string\[\]/);
+assert.match(source, /onAskMore\?: \(\) => void/);
+assert.match(source, /AI사서에게 더 물어보기/);
+assert.match(source, /self-center/);
+assert.match(source, /event\.stopPropagation\(\);[\s\S]*onAskMore\(\)/);
 assert.match(source, /AI_LIBRARIAN_LIST_TAG_CHIP_CLASS/);
 assert.match(source, /px-6pxr py-2pxr/);
 assert.match(source, /text-9pxr leading-\[12px\]/);

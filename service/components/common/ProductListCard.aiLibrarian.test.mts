@@ -8,7 +8,16 @@ const source = readFileSync(
 
 assert.match(source, /aiLibrarianBrief\s+\?\s+buildAiLibrarianCopy/);
 assert.match(source, /Boolean\(aiLibrarianCopy\)/);
+assert.match(source, /useChatStore/);
+assert.match(source, /openAiLibrarianPanel/);
+assert.doesNotMatch(source, /openAiLibrarianPanelOrLogin/);
+assert.match(source, /setAiLibrarianPanelOpen/);
+assert.match(source, /requestProductQuestion/);
+assert.match(source, /handleAskAiLibrarianMore/);
+assert.doesNotMatch(source, /isAuthenticated: false/);
+assert.match(source, /이 작품 어떤 작품인지 알려줘/);
 assert.match(source, /previewLines=\{aiLibrarianCopy\.previewLines\}/);
+assert.match(source, /onAskMore=\{handleAskAiLibrarianMore\}/);
 assert.match(source, /className="hidden md:block"/);
 assert.match(source, /className="md:hidden px-\[16px\]"/);
 assert.match(

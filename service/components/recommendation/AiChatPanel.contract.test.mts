@@ -17,14 +17,17 @@ assert.match(source, /className=\{`fixed \$\{floatingButtonBottomClassName\}/);
 assert.match(source, /right-4 md:right-6 z-40/);
 assert.doesNotMatch(source, /right-4 md:right-6 z-\[70\] w-\[50px\]/);
 assert.match(source, /aria-label=\{isOpen \? "AI 사서 닫기" : "AI 사서 열기"\}/);
-assert.match(source, /openAiLibrarianPanelOrLogin/);
+assert.match(source, /openAiLibrarianPanel/);
+assert.doesNotMatch(source, /openAiLibrarianPanelOrLogin/);
 assert.match(source, /consumeQueuedAiLibrarianProductQuestion/);
 assert.match(source, /pendingProductQuestion/);
 assert.match(source, /consumePendingProductQuestion/);
 assert.match(source, /handleRecommend\(undefined, pendingProductQuestion\.prompt/);
+assert.match(source, /contextProductId\?: number/);
+assert.match(source, /current_product_id: options\?\.contextProductId \?\? pageContext\.current_product_id/);
 assert.match(
   source,
-  /const queuedProductQuestion = pageContext\.current_product_id\s*\?\s*consumeQueuedAiLibrarianProductQuestion\(\s*pageContext\.current_product_id\s*\)/
+  /const queuedProductQuestion = consumeQueuedAiLibrarianProductQuestion\(pageContext\.current_product_id\)/
 );
 assert.match(source, /if \(shouldOpenAfterLogin\) \{/);
 assert.match(source, /if \(queuedProductQuestion\) \{/);

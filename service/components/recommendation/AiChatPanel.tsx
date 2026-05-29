@@ -13,8 +13,7 @@ import {
 import { removeLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
 import {
   consumeQueuedAiLibrarianProductQuestion,
-  hasAiLibrarianAuthToken,
-  openAiLibrarianPanelOrLogin,
+  openAiLibrarianPanel,
   redirectToAiLibrarianLogin,
 } from "@/utils/aiLibrarianPanel";
 import ProductStateBadge from "@/components/common/ProductStateBadge";
@@ -42,7 +41,7 @@ const parsePositiveId = (value?: string) => {
 };
 
 const AiChatPanel = () => {
-  const { isAuthenticated, user, accessToken } = useAuthStore();
+  const { user, accessToken } = useAuthStore();
   const adultYn: "Y" | "N" = user?.isOnAdult ? "Y" : "N";
   const pathname = usePathname();
   const router = useRouter();
@@ -117,6 +116,7 @@ const AiChatPanel = () => {
       options?: {
         trigger?: "manual" | "browsing";
         browsedProductIds?: number[];
+        contextProductId?: number;
         skipUserMessage?: boolean;
         resetSession?: boolean;
       }
@@ -158,6 +158,7 @@ const AiChatPanel = () => {
             trigger,
             browsed_product_ids: contextBrowsedIds,
             ...pageContext,
+            current_product_id: options?.contextProductId ?? pageContext.current_product_id,
           },
           preset: preset ?? null,
           exclude_product_ids: options?.resetSession ? [] : excludeIds,
@@ -236,18 +237,16 @@ const AiChatPanel = () => {
       setIsOpen(false);
       return;
     }
-    openAiLibrarianPanelOrLogin({ isAuthenticated, router, setIsOpen });
+    openAiLibrarianPanel({ setIsOpen });
   };
 
   useEffect(() => {
     if (!isOpen || isBusy || !pendingProductQuestion) return;
-    if (pageContext.current_product_id !== pendingProductQuestion.productId) {
-      return;
-    }
 
     consumePendingProductQuestion();
     handleRecommend(undefined, pendingProductQuestion.prompt, {
       trigger: "manual",
+      contextProductId: pendingProductQuestion.productId,
       resetSession: true,
     });
   }, [
@@ -255,20 +254,15 @@ const AiChatPanel = () => {
     handleRecommend,
     isBusy,
     isOpen,
-    pageContext.current_product_id,
     pendingProductQuestion,
   ]);
 
   // 로그인 후 자동 열기
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!isAuthenticated && !hasAiLibrarianAuthToken()) return;
-
     const shouldOpenAfterLogin =
       localStorage.getItem(STORAGE_KEYS.AI_RECOMMEND_OPEN_AFTER_LOGIN) === "Y";
-    const queuedProductQuestion = pageContext.current_product_id
-      ? consumeQueuedAiLibrarianProductQuestion(pageContext.current_product_id)
-      : null;
+    const queuedProductQuestion = consumeQueuedAiLibrarianProductQuestion(pageContext.current_product_id);
 
     if (shouldOpenAfterLogin) {
       setIsOpen(true);
@@ -279,12 +273,11 @@ const AiChatPanel = () => {
       setIsOpen(true);
       requestProductQuestion(queuedProductQuestion);
     }
-  }, [isAuthenticated, pageContext.current_product_id, pathname, requestProductQuestion, setIsOpen]);
+  }, [pageContext.current_product_id, pathname, requestProductQuestion, setIsOpen]);
 
   // 브라우징 트리거
   useEffect(() => {
-    const isAuthNow = isAuthenticated || hasAiLibrarianAuthToken();
-    if (!isAuthNow || !isOpen || !showBadge) return;
+    if (!isOpen || !showBadge) return;
     if (browsedProductIds.length < 3) return;
 
     consumeBadge();
@@ -301,7 +294,6 @@ const AiChatPanel = () => {
     browsedProductIds,
     consumeBadge,
     handleRecommend,
-    isAuthenticated,
     isOpen,
     showBadge,
   ]);

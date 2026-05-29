@@ -10,10 +10,7 @@ type AiLibrarianRouter = {
 };
 
 interface OpenAiLibrarianPanelOptions {
-  isAuthenticated: boolean;
-  router: AiLibrarianRouter;
   setIsOpen: (isOpen: boolean) => void;
-  pendingProductQuestion?: AiLibrarianProductQuestion;
 }
 
 export interface AiLibrarianProductQuestion {
@@ -72,21 +69,9 @@ export const redirectToAiLibrarianLogin = (router: AiLibrarianRouter) => {
   router.push("/login?modal=open", { scroll: false });
 };
 
-export const openAiLibrarianPanelOrLogin = ({
-  isAuthenticated,
-  router,
+export const openAiLibrarianPanel = ({
   setIsOpen,
-  pendingProductQuestion,
 }: OpenAiLibrarianPanelOptions) => {
-  const isAuthNow = isAuthenticated || hasAiLibrarianAuthToken();
-  if (!isAuthNow) {
-    if (pendingProductQuestion) {
-      queueAiLibrarianProductQuestionForLogin(pendingProductQuestion);
-    }
-    redirectToAiLibrarianLogin(router);
-    return false;
-  }
-
   setIsOpen(true);
   return true;
 };
