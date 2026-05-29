@@ -32,7 +32,7 @@ import {
   buildAiLibrarianCopy,
   shouldFocusAiLibrarian,
 } from "@/utils/aiLibrarian";
-import { openAiLibrarianPanelOrLogin } from "@/utils/aiLibrarianPanel";
+import { openAiLibrarianPanel } from "@/utils/aiLibrarianPanel";
 import {
   consumeProductDetailEntrySource,
   getEffectiveProductDetailEntrySource,
@@ -258,13 +258,9 @@ export default function ProductDetail() {
         ? `${productData.title} 이 작품 어떤 작품인지 알려줘`
         : "이 작품 어떤 작품인지 알려줘",
     };
-    const shouldAskAiLibrarian = openAiLibrarianPanelOrLogin({
-      isAuthenticated,
-      router,
+    openAiLibrarianPanel({
       setIsOpen: setAiLibrarianPanelOpen,
-      pendingProductQuestion: productQuestion,
     });
-    if (!shouldAskAiLibrarian) return;
 
     requestProductQuestion(productQuestion);
   };
