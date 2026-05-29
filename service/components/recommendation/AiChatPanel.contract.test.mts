@@ -24,7 +24,9 @@ assert.match(source, /pendingProductQuestion/);
 assert.match(source, /consumePendingProductQuestion/);
 assert.match(source, /handleRecommend\(undefined, pendingProductQuestion\.prompt/);
 assert.match(source, /contextProductId\?: number/);
+assert.match(source, /focusProductCard\?: boolean/);
 assert.match(source, /current_product_id: options\?\.contextProductId \?\? pageContext\.current_product_id/);
+assert.match(source, /focus_product_card: Boolean\(options\?\.focusProductCard\)/);
 assert.match(
   source,
   /const queuedProductQuestion = consumeQueuedAiLibrarianProductQuestion\(pageContext\.current_product_id\)/
@@ -33,6 +35,7 @@ assert.match(source, /if \(shouldOpenAfterLogin\) \{/);
 assert.match(source, /if \(queuedProductQuestion\) \{/);
 assert.match(source, /requestProductQuestion\(queuedProductQuestion\)/);
 assert.match(source, /resetSession: true/);
+assert.match(source, /focusProductCard: true/);
 assert.match(source, /exclude_product_ids: options\?\.resetSession \? \[\] : excludeIds/);
 assert.doesNotMatch(source, /exclude_product_ids: excludeIds/);
 assert.match(source, /className="fixed inset-0 z-\[70\] bg-black\/30"/);

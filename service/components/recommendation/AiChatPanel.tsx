@@ -117,6 +117,7 @@ const AiChatPanel = () => {
         trigger?: "manual" | "browsing";
         browsedProductIds?: number[];
         contextProductId?: number;
+        focusProductCard?: boolean;
         skipUserMessage?: boolean;
         resetSession?: boolean;
       }
@@ -159,6 +160,7 @@ const AiChatPanel = () => {
             browsed_product_ids: contextBrowsedIds,
             ...pageContext,
             current_product_id: options?.contextProductId ?? pageContext.current_product_id,
+            focus_product_card: Boolean(options?.focusProductCard),
           },
           preset: preset ?? null,
           exclude_product_ids: options?.resetSession ? [] : excludeIds,
@@ -247,6 +249,7 @@ const AiChatPanel = () => {
     handleRecommend(undefined, pendingProductQuestion.prompt, {
       trigger: "manual",
       contextProductId: pendingProductQuestion.productId,
+      focusProductCard: true,
       resetSession: true,
     });
   }, [
