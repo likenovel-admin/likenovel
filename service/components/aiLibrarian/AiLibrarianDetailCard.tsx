@@ -1,6 +1,5 @@
 "use client";
 
-import Button from "@/components/common/Button";
 import { ONBOARDING_SELECTED_TAG_CHIP_CLASS } from "@/components/recommendation/tagChipStyles";
 import type { AiLibrarianCopy } from "@/utils/aiLibrarian";
 import { PRODUCT_DETAIL_AI_LIBRARIAN_FOCUS } from "@/utils/aiLibrarian";
@@ -52,15 +51,13 @@ export default function AiLibrarianDetailCard({ copy, onAskMore }: Props) {
 
       {onAskMore && (
         <div className="mt-14pxr flex justify-center">
-          <Button
+          <button
             type="button"
-            variant="blueBorder"
-            size="sm"
             onClick={onAskMore}
-            className="min-w-[188px] text-primary-100"
+            className="rounded-full bg-primary-100 px-10pxr py-4pxr text-11pxr font-semibold leading-[15px] text-white"
           >
             AI사서에게 더 물어볼까요?
-          </Button>
+          </button>
         </div>
       )}
     </section>
