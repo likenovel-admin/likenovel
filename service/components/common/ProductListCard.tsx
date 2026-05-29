@@ -8,6 +8,7 @@ import { useAdultCoverImage } from "@/hooks/useAdultCoverImage";
 import { useAiLibrarianDwellReveal } from "@/hooks/useAiLibrarianDwellReveal";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useAuthStore from "@/store/authStore";
+import useChatStore from "@/store/chatStore";
 import useConfirmStore from "@/store/confirmStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
@@ -26,6 +27,7 @@ import {
   ProductDetailEntrySource,
   setPendingProductDetailEntrySource,
 } from "@/utils/productPath";
+import { openAiLibrarianPanel } from "@/utils/aiLibrarianPanel";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -90,6 +92,10 @@ const ProductListCard = ({
   const { setToast } = useToastStore();
   const updateConversionProductMutation = useUpdateConversionProduct();
   const { user } = useAuthStore();
+  const setAiLibrarianPanelOpen = useChatStore((state) => state.setIsOpen);
+  const requestProductQuestion = useChatStore(
+    (state) => state.requestProductQuestion
+  );
   const aiLibrarianCopy = useMemo(
     () =>
       aiLibrarianBrief
@@ -147,6 +153,17 @@ const ProductListCard = ({
       setPendingProductDetailEntrySource(data.productId, entrySource);
     }
     router.push(buildProductDetailAiLibrarianPath(data.productId));
+  };
+  const handleAskAiLibrarianMore = () => {
+    openAiLibrarianPanel({
+      setIsOpen: setAiLibrarianPanelOpen,
+    });
+    requestProductQuestion({
+      productId: data.productId,
+      prompt: data.title
+        ? `${data.title} 이 작품 어떤 작품인지 알려줘`
+        : "이 작품 어떤 작품인지 알려줘",
+    });
   };
 
   useEffect(() => {
@@ -692,6 +709,7 @@ const ProductListCard = ({
                   chips={aiLibrarianCopy.chips}
                   isVisible={isAiLibrarianRevealed}
                   onClick={navigateToAiLibrarianDetail}
+                  onAskMore={handleAskAiLibrarianMore}
                 />
               </div>
             )}
@@ -1063,6 +1081,7 @@ const ProductListCard = ({
             chips={aiLibrarianCopy.chips}
             isVisible={isAiLibrarianRevealed}
             onClick={navigateToAiLibrarianDetail}
+            onAskMore={handleAskAiLibrarianMore}
           />
         </div>
       )}

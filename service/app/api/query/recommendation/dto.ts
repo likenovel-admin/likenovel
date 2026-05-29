@@ -130,6 +130,7 @@ export interface IAiChatRequest {
     pathname?: string;
     current_product_id?: number;
     current_episode_id?: number;
+    focus_product_card?: boolean;
   };
   preset?: "stacked-chapters" | "good-schedule" | "completed" | "trending" | null;
   exclude_product_ids?: number[];
