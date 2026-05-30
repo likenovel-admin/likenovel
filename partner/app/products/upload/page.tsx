@@ -52,6 +52,7 @@ import {
   showAlert,
 } from "@/lib/utils";
 import { prepareCoverImageForUpload } from "@/lib/coverImageUpload";
+import { getPrimaryGenreOptions, getSubGenreOptions } from "@/lib/genreOptions";
 import { ChevronLeft, ImagePlus, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -307,15 +308,12 @@ export default function ProductUploadPage() {
   const episodeTitleExcelInputRef = useRef<HTMLInputElement | null>(null);
 
   const primaryGenres = useMemo(
-    () => genres?.filter((genre) => genre.major_genre_yn === "Y") ?? [],
+    () => getPrimaryGenreOptions(genres ?? []),
     [genres]
   );
   const subGenres = useMemo(
-    () =>
-      primaryGenres.filter(
-        (genre) => String(genre.keyword_id) !== form.primaryGenreId
-      ),
-    [form.primaryGenreId, primaryGenres]
+    () => getSubGenreOptions(genres ?? [], form.primaryGenreId),
+    [form.primaryGenreId, genres]
   );
 
   const episodes = useMemo(() => {

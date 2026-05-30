@@ -40,6 +40,7 @@ import {
 } from "@/lib/utils";
 import { IUpdateProductRequest } from "@/api/product/dto";
 import { downloadExcel } from "@/lib/excelDownload";
+import { getPrimaryGenreOptions, getSubGenreOptions } from "@/lib/genreOptions";
 import { format } from "date-fns";
 import { useProfile } from "@/hooks/useProfile";
 
@@ -90,8 +91,7 @@ function AdminPage({ product }: PropsType) {
   const primaryGenreList = useMemo(
     () =>
       genres
-        ? genres
-            .filter((genre) => genre.major_genre_yn === "Y")
+        ? getPrimaryGenreOptions(genres)
             .map((item) => ({
               value: item.keyword_id + "",
               label: item.keyword_name,
@@ -102,14 +102,13 @@ function AdminPage({ product }: PropsType) {
   const subGenreList = useMemo(
     () =>
       genres
-        ? genres
-            .filter((genre) => genre.major_genre_yn === "Y")
+        ? getSubGenreOptions(genres, primaryGenreId)
             .map((item) => ({
               value: item.keyword_id + "",
               label: item.keyword_name,
             }))
         : [],
-    [genres]
+    [genres, primaryGenreId]
   );
   const cpList = useMemo(
     () =>
@@ -590,8 +589,7 @@ function AuthorPage({ product }: PropsType) {
   const primaryGenreList = useMemo(
     () =>
       genres
-        ? genres
-            .filter((genre) => genre.major_genre_yn === "Y")
+        ? getPrimaryGenreOptions(genres)
             .map((item) => ({
               value: item.keyword_id + "",
               label: item.keyword_name,
@@ -602,14 +600,13 @@ function AuthorPage({ product }: PropsType) {
   const subGenreList = useMemo(
     () =>
       genres
-        ? genres
-            .filter((genre) => genre.major_genre_yn === "Y")
+        ? getSubGenreOptions(genres, primaryGenreId)
             .map((item) => ({
               value: item.keyword_id + "",
               label: item.keyword_name,
             }))
         : [],
-    [genres]
+    [genres, primaryGenreId]
   );
 
   useEffect(() => {
