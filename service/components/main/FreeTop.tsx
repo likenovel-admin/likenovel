@@ -158,7 +158,7 @@ const FreeTop = ({ data }: Props) => {
             {(currentProducts as unknown as IProduct[]).map((product, index) => (
               <div
                 key={`${product.productId}-${index}`}
-                className="flex w-full min-w-0 h-[116px] border border-light-gray-400 shadow-sm rounded-[10px] cursor-pointer relative bg-white overflow-hidden"
+                className="flex w-full min-w-0 h-[116px] rounded-[10px] cursor-pointer relative bg-white overflow-hidden"
                 onClick={() => {
                   setPendingProductDetailEntrySource(
                     product.productId,
@@ -184,7 +184,7 @@ const FreeTop = ({ data }: Props) => {
 
                 <div className="flex flex-col justify-between flex-1 min-w-0 pt-10pxr pb-10pxr pl-10pxr pr-8pxr">
                   <div className="min-w-0">
-                    <div className="relative text-14pxr font-semibold leading-[18px] line-clamp-2">
+                    <div className="relative text-13pxr font-semibold leading-[17px] line-clamp-2">
                       {product.title}
                       {getIsNewEpisode(
                         product.properties?.latestEpisodeDate || ""
@@ -194,31 +194,16 @@ const FreeTop = ({ data }: Props) => {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center mt-6pxr min-w-0">
-                      {product.genre?.slice(0, 2).map((item, idx) => (
-                        <div className="flex items-center min-w-0" key={idx}>
-                          <span className="text-12pxr text-primary-100 line-clamp-1">
-                            {item}
-                          </span>
-                          {idx === 0 &&
-                            product.genre &&
-                            product.genre[1] &&
-                            product.genre[1] !== "" && (
-                              <div className="w-3pxr h-3pxr bg-primary-100 rounded-full mx-2" />
-                            )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-8pxr min-w-0">
-                    <div className="min-w-0">
+                    <div className="mt-5pxr min-w-0">
                       <UserNickname
                         userNickname={product.authorNickname || ""}
                         product={product as unknown as IProduct}
                         textStyle="text-12pxr text-dark-gray-300"
                       />
                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-end min-w-0">
                     <InterestBadge
                       product={product as unknown as IProduct}
                       width={14}

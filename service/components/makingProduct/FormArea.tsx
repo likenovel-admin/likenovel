@@ -18,6 +18,7 @@ import NewDirectInputSearchTag from "@/components/makingProduct/NewDirectInputSe
 import useConfirmStore from "@/store/confirmStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
+import { getPrimaryGenreOptions, getSubGenreOptions } from "@/utils/genreOptions";
 import { getUser } from "@/utils/getUser";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -115,7 +116,8 @@ const FormArea = ({ productId }: Props) => {
     !productId && !!currentUser
   );
   const canCreateNormal = canCreateNormalData?.can_create_normal ?? false;
-  const genreOptions = genresData?.data?.map((genre) => genre.genre) ?? [];
+  const allGenreOptions = genresData?.data?.map((genre) => genre.genre) ?? [];
+  const genreOptions = getPrimaryGenreOptions(allGenreOptions);
 
   const methods = useForm<IMakeProductForm>({
     mode: "onChange",
@@ -212,9 +214,7 @@ const FormArea = ({ productId }: Props) => {
   const isWebsochatDisabled = websochatEnabledYn === "N";
   const shouldShowWebsochatHiddenSetting =
     !productId || data?.data.priceType === "free";
-  const subGenreOptions = genreOptions.filter(
-    (genre) => genre !== primaryGenreValue
-  );
+  const subGenreOptions = getSubGenreOptions(allGenreOptions, primaryGenreValue);
   const isMonopolyLocked = Boolean(
     productId &&
       (data?.data.priceType === "paid" ||
