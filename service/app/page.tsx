@@ -32,58 +32,61 @@ import {
   ONBOARDING_STATUS_CHANGED_EVENT,
 } from "@/constants/onboarding";
 import useAuthStore from "@/store/authStore";
+import { getHomeQueryState } from "@/utils/homeQueryState";
 import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 
 export default function Home() {
-  const { user, isAuthenticated, accessToken } = useAuthStore();
+  const { user, isAuthenticated, accessToken, isAuthInitialized } = useAuthStore();
   const adultYn = user?.isOnAdult ? "Y" : "N";
-  const canUseTasteRecommend = Boolean(isAuthenticated || accessToken || user?.userId);
-  const canUseInterestDropSoon = Boolean(
-    isAuthenticated || accessToken || user?.userId
-  );
-  const interestDropSoonCacheIdentity =
-    user?.userId != null
-      ? `user:${user.userId}`
-      : accessToken
-        ? `token:${accessToken.slice(-16)}`
-        : "guest";
-  const mainProductCacheIdentity = interestDropSoonCacheIdentity;
-  const tasteRecommendCacheIdentity =
-    user?.userId != null
-      ? `user:${user.userId}`
-      : accessToken
-        ? `token:${accessToken.slice(-16)}`
-        : "guest";
+  const homeQueryState = getHomeQueryState({
+    isAuthInitialized,
+    isAuthenticated,
+    accessToken,
+    userId: user?.userId,
+  });
+  const canUseTasteRecommend = homeQueryState.canUseUserScopedQueries;
+  const canUseInterestDropSoon = homeQueryState.canUseUserScopedQueries;
+  const mainProductCacheIdentity = homeQueryState.productCacheIdentity;
+  const userScopedCacheIdentity =
+    homeQueryState.userScopedCacheIdentity ?? "guest";
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasFirstLoginOnboarding, setHasFirstLoginOnboarding] = useState(false);
 
   const { data, isSuccess } = useSelectProducts(
     adultYn,
-    mainProductCacheIdentity
+    mainProductCacheIdentity,
+    homeQueryState.enabled
   );
   const { data: suggestProductsData } = useSelectMainSuggestProducts(
     adultYn,
-    mainProductCacheIdentity
+    mainProductCacheIdentity,
+    homeQueryState.enabled
   );
   const { data: mainRuleSlotsData } = useSelectMainRuleSlots(
     adultYn,
-    mainProductCacheIdentity
+    mainProductCacheIdentity,
+    homeQueryState.enabled
   );
   const { data: latestUpdateData } = useSelectLatestUpdateProducts(
     adultYn,
-    mainProductCacheIdentity
+    mainProductCacheIdentity,
+    homeQueryState.enabled
   );
   const { data: interestDropSoonData } =
     useSelectInterestDropSoonUpdateProducts(
       adultYn,
-      canUseInterestDropSoon,
-      interestDropSoonCacheIdentity
+      homeQueryState.enabled && canUseInterestDropSoon,
+      userScopedCacheIdentity
     );
-  const { data: directRecommendData } = useGetDirectRecommend(adultYn);
+  const { data: directRecommendData } = useGetDirectRecommend(
+    adultYn,
+    homeQueryState.enabled,
+    mainProductCacheIdentity
+  );
   const { data: tasteRecommendationsData } = useGetTasteRecommendations(
     adultYn,
-    canUseTasteRecommend,
-    tasteRecommendCacheIdentity
+    homeQueryState.enabled && canUseTasteRecommend,
+    userScopedCacheIdentity
   );
 
   useEffect(() => {

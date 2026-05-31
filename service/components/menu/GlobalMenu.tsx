@@ -5,7 +5,6 @@ import useOutsideListener from "@/hooks/useOutsideListener";
 import useAuthStore from "@/store/authStore";
 import useToastStore from "@/store/toastStore";
 import { IRole } from "@/types";
-import { getUser } from "@/utils/getUser";
 import { setLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -31,7 +30,11 @@ const GlobalMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuthStore((state) => ({ user: state.user }));
   const { isAuthenticated } = useAuthStore();
-  const { data: userInfo } = useSelectUserInfo(user?.userId ?? 0);
+  const userId = user?.userId;
+  const { data: userInfo } = useSelectUserInfo(
+    userId,
+    isAuthenticated && Boolean(userId)
+  );
   useEffect(() => {
     setIsOpen(false);
   }, [device]);
@@ -90,13 +93,15 @@ const GlobalMenu = () => {
 
 const GlobalMenuModal = ({ isOpen, setIsOpen, onClose }: CommonModalProps) => {
   const router = useRouter();
-  const user = getUser();
   const { setToast } = useToastStore();
   const [animationOpen, setAnimationOpen] = useState(false);
   const [modalRef, setModalRef] = useState<HTMLDivElement | null>(null);
-  const { refreshToken, signOut } = useAuthStore();
+  const { refreshToken, signOut, user } = useAuthStore();
   const { mutateAsync, isPending } = useSignOut();
-  const { data: userInfo } = useSelectUserInfo(user?.userId ?? 0);
+  const { data: userInfo } = useSelectUserInfo(
+    user?.userId,
+    isOpen && Boolean(user?.userId)
+  );
 
   const handleSignOut = async () => {
     try {

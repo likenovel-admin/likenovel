@@ -22,7 +22,8 @@ export const PUBLIC_PRODUCT_GC_TIME_MS = 30 * 60 * 1000;
 
 export const useSelectProducts = (
   adult_yn?: string,
-  cacheIdentity: string = "guest"
+  cacheIdentity: string = "guest",
+  enabled: boolean = true
 ): any => {
   /**
    * 메인 TOP 구좌에서 노출 가능한 최대치(모바일 40개 요구사항)를 만족하기 위해
@@ -42,6 +43,7 @@ export const useSelectProducts = (
     },
     staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
     gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
+    enabled,
   });
 
   const freeTopsProducts = useQuery<IUseSelectProductsResponse, unknown>({
@@ -54,6 +56,7 @@ export const useSelectProducts = (
     },
     staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
     gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
+    enabled,
   });
 
   const publisherPromotionProducts = useQuery<
@@ -69,6 +72,7 @@ export const useSelectProducts = (
     },
     staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
     gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
+    enabled,
   });
 
   const paidTopsProducts = useQuery<IUseSelectProductsResponse, unknown>({
@@ -81,6 +85,7 @@ export const useSelectProducts = (
     },
     staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
     gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
+    enabled,
   });
 
   return {
@@ -169,7 +174,8 @@ export const useSelectProductDetail = (productId: number) => {
 
 export const useSelectMainSuggestProducts = (
   adult_yn?: string,
-  cacheIdentity: string = "guest"
+  cacheIdentity: string = "guest",
+  enabled: boolean = true
 ) => {
   const adultYnParam = adult_yn || "N";
   return useQuery<IUseSelectSuggestMainProductsResponse, unknown>({
@@ -182,6 +188,7 @@ export const useSelectMainSuggestProducts = (
     },
     staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
     gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
+    enabled,
   });
 };
 
@@ -220,7 +227,8 @@ export const useGetProductsAdminGift = (enabled: boolean) => {
 
 export const useSelectLatestUpdateProducts = (
   adult_yn?: string,
-  cacheIdentity: string = "guest"
+  cacheIdentity: string = "guest",
+  enabled: boolean = true
 ) => {
   const adultYnParam = adult_yn || "N";
   return useQuery<IUseSelectProductsResponse, unknown>({
@@ -233,12 +241,14 @@ export const useSelectLatestUpdateProducts = (
     },
     staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
     gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
+    enabled,
   });
 };
 
 export const useSelectMainRuleSlots = (
   adult_yn?: string,
-  cacheIdentity: string = "guest"
+  cacheIdentity: string = "guest",
+  enabled: boolean = true
 ) => {
   const adultYnParam = adult_yn || "N";
   return useQuery<IUseSelectMainRuleSlotsResponse, unknown>({
@@ -251,6 +261,7 @@ export const useSelectMainRuleSlots = (
     },
     staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
     gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
+    enabled,
   });
 };
 
@@ -710,15 +721,20 @@ export const useGetSuggestByRecentViewed = (adult_yn?: string) => {
   });
 };
 
-export const useGetDirectRecommend = (adult_yn?: string) => {
+export const useGetDirectRecommend = (
+  adult_yn?: string,
+  enabled: boolean = true,
+  cacheIdentity: string = "guest"
+) => {
   const adultYnParam = adult_yn || "N";
   return useQuery<IGetDirectRecommendResponse>({
-    queryKey: ["getDirectRecommend", adultYnParam],
+    queryKey: ["getDirectRecommend", adultYnParam, cacheIdentity],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/products/direct-recommend?adult_yn=${adultYnParam}`
       );
       return response.data;
     },
+    enabled,
   });
 };

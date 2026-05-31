@@ -44,6 +44,8 @@ const useInitializeAuth = () => {
   }, [setState]);
 
   useEffect(() => {
+    if (data === undefined) return;
+
     /**
      * 서버 유저 동기화(Defensive)
      * - 백엔드 `/v1/query/user`는 비로그인 상태에서도 200 + 빈 data({})를 반환할 수 있습니다.

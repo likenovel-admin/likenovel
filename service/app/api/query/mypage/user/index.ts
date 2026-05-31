@@ -17,14 +17,27 @@ import {
   ISelectUserProfilesResponse,
   ISelectUserPromotionIssuanceStatusResponse,
 } from "./dto";
+import {
+  getUserInfoQueryIdentity,
+  shouldEnableUserInfoQuery,
+  USER_INFO_QUERY_STALE_TIME_MS,
+} from "@/utils/userInfoQueryState";
 
-export const useSelectUserInfo = (userId?: number) => {
+export const useSelectUserInfo = (userId?: number, enabled = true) => {
+  const requiresValidUserId = userId !== undefined;
+
   return useQuery<ISelectUserInfoResponse>({
-    queryKey: ["selectUserInfo", userId],
+    queryKey: ["selectUserInfo", getUserInfoQueryIdentity(userId)],
     queryFn: async () => {
       const response = await instance.get("/v1/query/user/info");
       return response.data;
     },
+    enabled: shouldEnableUserInfoQuery({
+      enabled,
+      requiresValidUserId,
+      userId,
+    }),
+    staleTime: USER_INFO_QUERY_STALE_TIME_MS,
   });
 };
 
