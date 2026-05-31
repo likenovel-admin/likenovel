@@ -185,7 +185,7 @@ const FreeTop = ({ data }: Props) => {
                   {getIsNewEpisode(
                     product.properties?.latestEpisodeDate || ""
                   ) && (
-                    <div className="absolute top-4pxr right-4pxr scale-[0.85] origin-top-right">
+                    <div className="absolute bottom-4pxr left-4pxr scale-[0.85] origin-bottom-left">
                       <SquareBadge type="up" />
                     </div>
                   )}
