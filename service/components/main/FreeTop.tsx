@@ -167,34 +167,36 @@ const FreeTop = ({ data }: Props) => {
                   router.push(buildProductDetailPath(product.productId));
                 }}
               >
-                {renderAdultCoverImage(
-                  product,
-                  72,
-                  104,
-                  "object-cover w-[72px] h-[104px] rounded-l-[10px]",
-                  {
-                    optimized: true,
-                    sizes: "72px",
-                  }
-                )}
-                {/* PC 랭킹 배지: 커버 좌상단에 딱 맞게 오버레이 */}
-                <div className="absolute top-0 left-0 scale-[0.8] origin-top-left">
-                  <RankingBadge rank={product.rank?.currentRank || 0} />
+                <div className="relative shrink-0 w-[72px] h-[104px]">
+                  {renderAdultCoverImage(
+                    product,
+                    72,
+                    104,
+                    "object-cover w-[72px] h-[104px] rounded-l-[10px]",
+                    {
+                      optimized: true,
+                      sizes: "72px",
+                    }
+                  )}
+                  {/* PC 랭킹 배지: 커버 좌상단에 딱 맞게 오버레이 */}
+                  <div className="absolute top-0 left-0 scale-[0.8] origin-top-left">
+                    <RankingBadge rank={product.rank?.currentRank || 0} />
+                  </div>
+                  {getIsNewEpisode(
+                    product.properties?.latestEpisodeDate || ""
+                  ) && (
+                    <div className="absolute top-4pxr right-4pxr scale-[0.85] origin-top-right">
+                      <SquareBadge type="up" />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col justify-between flex-1 min-w-0 pt-10pxr pb-10pxr pl-10pxr pr-8pxr">
                   <div className="min-w-0">
                     <div className="relative text-13pxr font-semibold leading-[17px] line-clamp-2">
                       {product.title}
-                      {getIsNewEpisode(
-                        product.properties?.latestEpisodeDate || ""
-                      ) && (
-                        <span className="inline-block ml-[4px] align-middle">
-                          <SquareBadge type="up" />
-                        </span>
-                      )}
                     </div>
-                    <div className="mt-5pxr min-w-0">
+                    <div className="mt-3pxr min-w-0">
                       <UserNickname
                         userNickname={product.authorNickname || ""}
                         product={product as unknown as IProduct}
