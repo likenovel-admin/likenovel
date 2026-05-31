@@ -33,8 +33,8 @@ assert.doesNotMatch(
 
 assert.match(
   pcBlock,
-  /absolute top-4pxr right-4pxr/,
-  "PC FreeTop UP badge should be overlaid on the cover",
+  /absolute bottom-4pxr left-4pxr/,
+  "PC FreeTop UP badge should be overlaid on the cover lower-left",
 );
 
 assert.doesNotMatch(
