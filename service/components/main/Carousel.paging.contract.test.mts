@@ -3,43 +3,29 @@ import { readFileSync } from "node:fs";
 
 const source = readFileSync(new URL("./Carousel.tsx", import.meta.url), "utf8");
 
+assert.doesNotMatch(source, /getBannerCarouselPageSize/);
 assert.match(
   source,
-  /getBannerCarouselPageSize/,
-  "Carousel should use the shared banner carousel page-size helper",
+  /slidesToShow:\s*1/,
+  "banner carousel should show one focused banner instead of 3-up pages",
 );
 assert.match(
   source,
-  /slidesToScroll:\s*pageSize/,
-  "desktop carousel arrows/autoplay should advance by one visible page",
+  /centerMode:\s*!\s*isSingle/,
+  "banner carousel should use the previous one-card center mode",
 );
 assert.match(
   source,
-  /centerMode:\s*count\s*>\s*1/,
-  "mobile carousel should center the active banner card while showing side peeks",
+  /src=\{isTablet\s*\?\s*panel\.mobileImgPath\s*:\s*panel\.pcImgPath\}/,
+  "single-banner carousel should keep the previous pc/mobile image fallback",
 );
 assert.match(
   source,
-  /centerPadding:\s*count\s*>\s*1\s*\?\s*"32px"\s*:\s*"0px"/,
-  "mobile carousel should use fixed side padding for centered banner peeks",
-);
-assert.match(
-  source,
-  /getBannerCarouselPageStartIndex/,
-  "dot navigation should jump to the first slide of each 3-card page",
-);
-assert.match(
-  source,
-  /Array\.from\(\{\s*length:\s*pageCount\s*\}\)/,
-  "dot count should be page-based, not one dot per banner",
-);
-assert.match(
-  source,
-  /src=\{panel\.pcImgPath\}/,
-  "unified carousel banners should use the same uploaded image on every viewport",
+  /primaryPanels\.map\(\(_, index\)/,
+  "dot navigation should be per banner, not per 3-card page",
 );
 assert.doesNotMatch(
   source,
-  /isTablet\s*\?\s*panel\.mobileImgPath\s*:\s*panel\.pcImgPath/,
-  "unified carousel banners should not switch to a separate mobile image",
+  /Array\.from\(\{\s*length:\s*pageCount\s*\}\)/,
+  "dot count should not be page-based after 3-up rollback",
 );
