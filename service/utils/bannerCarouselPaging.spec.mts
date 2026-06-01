@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   getBannerCarouselActivePage,
+  getBannerCarouselMobileCenterPadding,
   getBannerCarouselPageCount,
   getBannerCarouselPageSize,
   getBannerCarouselPageStartIndex,
@@ -26,3 +27,7 @@ assert.equal(getBannerCarouselActivePage(0, 6), 0);
 assert.equal(getBannerCarouselActivePage(2, 6), 0);
 assert.equal(getBannerCarouselActivePage(3, 6), 1);
 assert.equal(getBannerCarouselActivePage(5, 6), 1);
+
+assert.equal(getBannerCarouselMobileCenterPadding(390), 32);
+assert.equal(getBannerCarouselMobileCenterPadding(768), 202);
+assert.equal(getBannerCarouselMobileCenterPadding(1023), 330);
