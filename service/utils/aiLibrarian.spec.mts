@@ -77,6 +77,20 @@ assert.equal(aiCopy.points.some((point) => point.includes("진실 추적")), tru
 assert.deepEqual(aiCopy.chips.slice(0, 4), ["마법", "세계관", "성장", "마법 도서관"]);
 assert.equal(aiCopy.chips.includes("동료"), false);
 
+const longDetailCopy = buildAiLibrarianCopy(fantasyProduct, {
+  ...aiBrief,
+  hook:
+    "전직 검도선수이자 해장국집 사장이 뼈 수집가로 각성해 몬스터의 뼈로 맛과 버프 효과를 지닌 요리를 개발하며 성장하는 이야기입니다.",
+  premise:
+    "각성자와 게이트가 등장하는 현대 판타지 세계에서 전통 해장국집을 운영하는 주인공이 각성한 뼈 수집가 능력으로 몬스터 재료를 활용한 요리를 개발하며 손님과 동료를 넓혀가는 출발점을 보여줍니다.",
+});
+
+assert.equal(longDetailCopy.preview.includes("…"), true);
+assert.equal(longDetailCopy.intro.includes("…"), false);
+assert.equal(longDetailCopy.points[0].includes("…"), false);
+assert.match(longDetailCopy.intro, /성장하는 이야기입니다/);
+assert.match(longDetailCopy.points[0], /출발점을 보여줍니다/);
+
 const aiOnlyChipCopy = buildAiLibrarianCopy(
   {
     ...fantasyProduct,
