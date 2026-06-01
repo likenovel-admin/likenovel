@@ -34,6 +34,7 @@
     "dayjs": "^1.11.13",
     "dayjs-plugin-utc": "^0.1.2",
     "es-toolkit": "^1.17.0",
+    "html-to-image": "^1.11.13",
     "iconv-lite": "^0.6.3",
     "iron-session": "^8.0.4",
     "next": "^14.2.20",

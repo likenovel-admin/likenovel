@@ -58,10 +58,12 @@ const Carousel = ({ primaryPanels }: Props) => {
       {
         breakpoint: 1024,
         settings: {
-          slidesToShow: count > 1 ? 1.2 : 1,
+          slidesToShow: 1,
           slidesToScroll: pageSize,
           infinite: canSlide,
           autoplay: canSlide,
+          centerMode: count > 1,
+          centerPadding: count > 1 ? "32px" : "0px",
         },
       },
     ],
