@@ -1,6 +1,15 @@
 import { normalizeUrl } from "@/utils/common";
+import {
+  getBannerCarouselActivePage,
+  getBannerCarouselPageCount,
+  getBannerCarouselPageSize,
+  getBannerCarouselPageStartIndex,
+} from "@/utils/bannerCarouselPaging";
 import { useEffect, useRef, useState } from "react";
 import Slider from "react-slick";
+import ArrowLeftMedium from "/public/images/arrow-left-medium.svg";
+import ArrowRightMedium from "/public/images/arrow-right-medium.svg";
+
 export interface PrimaryPanel {
   pcImgPath: string;
   mobileImgPath: string;
@@ -17,270 +26,135 @@ export interface PrimaryPanel {
   mobileOverlayImgPath?: string;
   linkPath: string;
 }
+
 interface Props {
   primaryPanels: PrimaryPanel[];
-  contained?: boolean;
 }
 
-const Carousel = ({ primaryPanels, contained }: Props) => {
-  const [isMobile, setIsMobile] = useState(false);
-  const [isTablet, setIsTablet] = useState(false);
-  const [animation, setAnimation] = useState(true);
-  const [showBanner, setShowBanner] = useState(false);
-  const [showOverlay, setShowOverlay] = useState(false);
+const Carousel = ({ primaryPanels }: Props) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const sliderRef = useRef<any>(null);
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
 
-  const isSingle = primaryPanels.length <= 1;
+  const count = primaryPanels.length;
+  const pageSize = getBannerCarouselPageSize(count);
+  const pageCount = getBannerCarouselPageCount(count);
+  const canSlide = count > pageSize;
+  const desktopSlidesToShow = count >= pageSize ? pageSize : Math.max(count, 1);
+  const activePage = getBannerCarouselActivePage(currentSlide, count);
+
   const settings = {
-    className: "center",
-    centerMode: !isSingle,
-    infinite: !isSingle,
-    centerPadding: "0",
-    slidesToShow: 1,
+    infinite: canSlide,
     speed: 400,
-    autoplay: !isSingle,
+    slidesToShow: desktopSlidesToShow,
+    slidesToScroll: pageSize,
+    autoplay: canSlide,
     autoplaySpeed: 5000,
     arrows: false,
-    beforeChange: (current: number, next: number) => {
-      setAnimation(false);
-      setShowBanner(false);
-      setShowOverlay(false);
-    },
-    afterChange: (current: number) => {
-      if (primaryPanels.length == 0) {
-        return;
-      }
-      setCurrentSlide(current);
-      if (primaryPanels[current].textType) {
-        setShowBanner(true);
-        setAnimation(true);
-      } else {
-        setShowBanner(false);
-        setAnimation(false);
-      }
-      setShowOverlay(true);
-    },
+    centerMode: false,
+    afterChange: (current: number) => setCurrentSlide(current),
     responsive: [
       {
-        breakpoint: 768,
+        breakpoint: 1024,
         settings: {
-          centerPadding: "15px",
-        },
-      },
-      {
-        breakpoint: 1025,
-        settings: {
-          centerPadding: "15%",
+          slidesToShow: count > 1 ? 1.2 : 1,
+          slidesToScroll: pageSize,
+          infinite: canSlide,
+          autoplay: canSlide,
         },
       },
     ],
   };
 
   useEffect(() => {
-    const checkMobile = () => {
-      // TODO: 우선 모바일 이미지를 테블릿 사이즈일 때로 설정하기로 협의했는데, 추후 변경될 수 있음
-      setIsMobile(window.innerWidth < 768);
-      setIsTablet(window.innerWidth < 1025);
-    };
-
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-
-    return () => {
-      window.removeEventListener("resize", checkMobile);
-    };
-  }, []);
-
-  useEffect(() => {
     setCurrentSlide(0);
-    setShowBanner(true);
-    setShowOverlay(true);
-  }, []);
+  }, [count]);
+
+  if (count === 0) return null;
 
   const SliderComponent = Slider as any;
 
   return (
-    <div className="overflow-hidden">
-    <div className={`slider-container relative h-[350px] md:h-[400px]${contained ? " slider-contained" : ""}`}>
-      <SliderComponent ref={sliderRef} {...settings}>
-        {primaryPanels.map((panel, index) => (
-          <div
-            key={index}
-            className="relative w-full focus:outline-none cursor-pointer"
-            onMouseDown={(e) => {
-              isDragging.current = false;
-              dragStartX.current = e.clientX;
-            }}
-            onMouseMove={(e) => {
-              if (Math.abs(e.clientX - dragStartX.current) > 5) {
-                isDragging.current = true;
-              }
-            }}
-            onClick={() => {
-              if (isDragging.current) return;
-              if (panel.linkPath) {
-                const normalizedUrl = normalizeUrl(panel.linkPath);
-                window.open(normalizedUrl, "_blank");
-              }
-            }}
-          >
-            <div className="relative h-[350px] md:h-[400px] lg:h-[400px]">
-              {/* 백그라운드 이미지 */}
-              <img
-                src={isTablet ? panel.mobileImgPath : panel.pcImgPath}
-                alt={`image_${index}`}
-                style={{ objectFit: "cover", width: "100%", height: "100%" }}
-                className="rounded-[30px] z-0"
-              />
-              {/* 텍스트 이미지 */}
-              {currentSlide === index &&
-                showBanner &&
-                // 텍스트 이미지가 있는 경우
-                (panel.textType === "img" ? (
-                  <div
-                    className={`absolute top-0 left-0 z-50 ${
-                      animation ? "animate-fadeUp" : ""
-                    }`}
-                  >
-                    <img
-                      src={
-                        isTablet
-                          ? panel.mobileTextImgPath ?? ""
-                          : panel.textImgPath ?? ""
-                      }
-                      style={{
-                        objectFit: "cover",
-                        width: "100%",
-                        height: "100%",
-                      }}
-                      alt={`text_image_${index}`}
-                      width={isMobile ? 400 : 900}
-                      height={400}
-                    />
-                  </div>
-                ) : (
-                  // 텍스트 이미지가 없는 경우
-                  <>
-                    <div
-                      className={`flex flex-col gap-9pxr md:gap-11pxr absolute left-20pxr md:left-53pxr ${
-                        panel.textPosition === "leftTop"
-                          ? "top-[35px] md:top-[53px]"
-                          : "top-[180px]"
-                      } text-white z-50 ${animation ? "animate-fadeUp" : ""}`}
-                    >
-                      {primaryPanels[index].topText ? (
-                        <div className="flex justify-center items-center py-0.5 px-2 max-w-fit bg-[#AF49FF] rounded-full">
-                          <span className="text-13pxr font-semibold">
-                            {primaryPanels[index].topText}
-                          </span>
-                        </div>
-                      ) : null}
-                      <span
-                        className="text-20pxr md:text-32pxr leading-7 md:leading-10 font-semibold"
-                        dangerouslySetInnerHTML={{
-                          __html:
-                            primaryPanels[index].middleText?.replace(
-                              /\n/g,
-                              "<br />"
-                            ) || "",
-                        }}
-                      />
-                      <span
-                        className="text-12pxr md:text-16pxr leading-19pxr md:leading-23pxr text-[#ADBDE8]"
-                        dangerouslySetInnerHTML={{
-                          __html:
-                            primaryPanels[index].bottomText?.replace(
-                              /\n/g,
-                              "<br />"
-                            ) || "",
-                        }}
-                      />
-                    </div>
-                  </>
-                ))}
-              {/* 커스텀 오버레이 */}
-              {currentSlide === index &&
-              panel.overlayYn === "Y" &&
-              showOverlay ? (
-                // 이미지 오버레이인 경우
-                panel.overlayType === "img" ? (
-                  <img
-                    src={
-                      isTablet
-                        ? panel.mobileOverlayImgPath ?? ""
-                        : panel.overlayImgPath ?? ""
-                    }
-                    alt={`overlay_image_${index}`}
-                    style={{
-                      objectFit: "cover",
-                      width: "100%",
-                      height: "100%",
-                    }}
-                    className="rounded-[30px] z-40 animate-slideInFromLeft"
-                  />
-                ) : (
-                  // 그라데이션 오버레이인 경우
-                  <div className="absolute top-0 left-0 w-full h-full">
-                    <img
-                      src={
-                        isTablet
-                          ? panel.mobileOverlayImgPath ?? ""
-                          : panel.overlayImgPath ?? ""
-                      }
-                      style={{
-                        objectFit: "cover",
-                        width: "100%",
-                        height: "100%",
-                      }}
-                      alt={`overlay_image_${index}`}
-                      className="rounded-[30px] animate-fadeIn"
-                      loading="eager"
-                    />
-                  </div>
-                )
-              ) : // 디폴트 오버레이
-              currentSlide === index &&
-                panel.overlayYn === "N" &&
-                showOverlay ? (
-                <div className="absolute top-0 left-0 rounded-[30px] w-[60%] md:w-[50%] lg:w-[40%] h-full z-40 animate-fadeIn bg-gradient-to-r from-black to-transparent via-black/80" />
-              ) : (
-                // 가운데 영역이 아닌 경우 (양 사이드)
-                <div
-                  className="absolute top-0 left-0 rounded-[30px] w-full h-full z-40"
-                  style={{
-                    background: isTablet || currentSlide === index ? "transparent" : "rgba(0, 0, 0, 0.5)",
-                  }}
+    <div className="w-full">
+      <div className="slider-container relative">
+        <SliderComponent ref={sliderRef} {...settings}>
+          {primaryPanels.map((panel, index) => (
+            <div key={index} className="focus:outline-none">
+              <div
+                className="px-[4.5px] cursor-pointer"
+                onMouseDown={(e) => {
+                  isDragging.current = false;
+                  dragStartX.current = e.clientX;
+                }}
+                onMouseMove={(e) => {
+                  if (Math.abs(e.clientX - dragStartX.current) > 5) {
+                    isDragging.current = true;
+                  }
+                }}
+                onClick={() => {
+                  if (isDragging.current) return;
+                  if (panel.linkPath) {
+                    window.open(normalizeUrl(panel.linkPath), "_blank");
+                  }
+                }}
+              >
+                <img
+                  src={panel.pcImgPath}
+                  alt={`banner_${index}`}
+                  className="w-full aspect-[364/414] object-cover rounded-[20px]"
                 />
-              )}
+              </div>
             </div>
-          </div>
-        ))}
-      </SliderComponent>
-    </div>
-    {/* 인디케이터 — 배너 아래 */}
-    {primaryPanels.length > 1 && (
-      <div className="relative flex justify-center gap-[8px] items-center py-[10px]">
-        {primaryPanels.map((_, index) => (
-          <button
-            key={index}
-            type="button"
-            onClick={() => sliderRef.current?.slickGoTo(index)}
-            className="flex items-center cursor-pointer p-[4px]"
-          >
-            <span
-              className={`block h-[6px] rounded-full transition-all ${
-                currentSlide === index
-                  ? "w-[28px] bg-[#0255d9]"
-                  : "w-[10px] bg-gray-300"
-              }`}
-            />
-          </button>
-        ))}
+          ))}
+        </SliderComponent>
+
+        {canSlide && (
+          <>
+            <button
+              type="button"
+              aria-label="이전 배너"
+              onClick={() => sliderRef.current?.slickPrev()}
+              className="hidden md:flex absolute top-1/2 left-[-20px] -translate-y-1/2 z-50 w-[40px] h-[40px] items-center justify-center rounded-full bg-white border border-[#F0F0F0] shadow-[2px_4px_8px_0_rgba(0,0,0,0.06)]"
+            >
+              <ArrowLeftMedium className="w-[9px] h-[16px] text-[#333333]" />
+            </button>
+            <button
+              type="button"
+              aria-label="다음 배너"
+              onClick={() => sliderRef.current?.slickNext()}
+              className="hidden md:flex absolute top-1/2 right-[-20px] -translate-y-1/2 z-50 w-[40px] h-[40px] items-center justify-center rounded-full bg-white border border-[#F0F0F0] shadow-[2px_4px_8px_0_rgba(0,0,0,0.06)]"
+            >
+              <ArrowRightMedium className="w-[9px] h-[16px] text-[#333333]" />
+            </button>
+          </>
+        )}
       </div>
-    )}
+
+      {pageCount > 1 && (
+        <div className="relative flex justify-center gap-[8px] items-center py-[10px]">
+          {Array.from({ length: pageCount }).map((_, pageIndex) => (
+            <button
+              key={pageIndex}
+              type="button"
+              onClick={() =>
+                sliderRef.current?.slickGoTo(
+                  getBannerCarouselPageStartIndex(pageIndex),
+                )
+              }
+              className="flex items-center cursor-pointer p-[4px]"
+            >
+              <span
+                className={`block h-[6px] rounded-full transition-all ${
+                  activePage === pageIndex
+                    ? "w-[28px] bg-[#0255d9]"
+                    : "w-[10px] bg-gray-300"
+                }`}
+              />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

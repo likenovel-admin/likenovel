@@ -6,6 +6,7 @@ import CommonTable, { Column } from "@/components/common/CommonTable";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import { Button } from "@/components/ui/button";
 import { bannerPosition } from "@/enums/banner";
+import { usesUnifiedBannerImage } from "@/lib/bannerImagePolicy";
 import {
   catchErrorMessage,
   confirm,
@@ -72,21 +73,28 @@ export default function BannersTable({
     {
       header: "썸네일",
       key: "image_path",
-      render: (_, row: IBanner) => (
-        <div className="flex items-center gap-2">
-          <BannerThumbnailPreview
-            src={row.image_path}
-            label="PC"
-            alt={`${row.title} PC 배너`}
-          />
-          <BannerThumbnailPreview
-            src={row.mobile_image_path}
-            label="MO"
-            alt={`${row.title} 모바일 배너`}
-            className="h-10 w-8"
-          />
-        </div>
-      ),
+      render: (_, row: IBanner) => {
+        const positionValue = `${row.position}${row.division ? `-${row.division}` : ""}`;
+        const isUnified = usesUnifiedBannerImage(positionValue);
+
+        return (
+          <div className="flex items-center gap-2">
+            <BannerThumbnailPreview
+              src={row.image_path}
+              label={isUnified ? "IMG" : "PC"}
+              alt={`${row.title} 배너`}
+            />
+            {!isUnified && (
+              <BannerThumbnailPreview
+                src={row.mobile_image_path}
+                label="MO"
+                alt={`${row.title} 모바일 배너`}
+                className="h-10 w-8"
+              />
+            )}
+          </div>
+        );
+      },
     },
     {
       header: "노출 기간",

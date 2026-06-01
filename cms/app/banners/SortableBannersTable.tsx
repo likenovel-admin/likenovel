@@ -19,6 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import BannerThumbnailPreview from "@/app/banners/BannerThumbnailPreview";
 import { bannerPosition } from "@/enums/banner";
+import { usesUnifiedBannerImage } from "@/lib/bannerImagePolicy";
 import { formatDateRange } from "@/lib/utils";
 import {
   Table,
@@ -69,6 +70,8 @@ function SortableBannerRow({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+  const positionValue = `${row.position}${row.division ? `-${row.division}` : ""}`;
+  const isUnified = usesUnifiedBannerImage(positionValue);
 
   return (
     <TableRow ref={setNodeRef} style={style}>
@@ -105,15 +108,17 @@ function SortableBannerRow({
         <div className="flex items-center gap-2">
           <BannerThumbnailPreview
             src={row.image_path}
-            label="PC"
-            alt={`${row.title} PC 배너`}
+            label={isUnified ? "IMG" : "PC"}
+            alt={`${row.title} 배너`}
           />
-          <BannerThumbnailPreview
-            src={row.mobile_image_path}
-            label="MO"
-            alt={`${row.title} 모바일 배너`}
-            className="h-10 w-8"
-          />
+          {!isUnified && (
+            <BannerThumbnailPreview
+              src={row.mobile_image_path}
+              label="MO"
+              alt={`${row.title} 모바일 배너`}
+              className="h-10 w-8"
+            />
+          )}
         </div>
       </TableCell>
       <TableCell>{formatDateRange(row.show_start_date, row.show_end_date)}</TableCell>
