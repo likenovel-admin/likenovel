@@ -5,28 +5,28 @@ const source = readFileSync(new URL("./Carousel.tsx", import.meta.url), "utf8");
 
 assert.match(
   source,
-  /getBannerCarouselPageSize/,
-  "Carousel should use the shared banner carousel page-size helper",
+  /BANNER_CAROUSEL_CARD_WIDTH/,
+  "Carousel should keep each banner card on the fixed 364px width contract",
 );
 assert.match(
   source,
-  /slidesToScroll:\s*pageSize/,
-  "desktop carousel arrows/autoplay should advance by one visible page",
+  /BANNER_CAROUSEL_CARD_HEIGHT/,
+  "Carousel should keep each banner card on the fixed 414px height contract",
 );
 assert.match(
   source,
-  /centerMode:\s*count\s*>\s*1/,
-  "mobile carousel should center the active banner card while showing side peeks",
+  /getBannerCarouselVisibleCount/,
+  "Carousel should reduce visible card count instead of shrinking cards",
 );
 assert.match(
   source,
-  /getBannerCarouselMobileCenterPadding/,
-  "mobile carousel should use the shared center-padding calculator",
+  /getBannerCarouselViewportWidth/,
+  "Carousel viewport should be sized from fixed card width and gap",
 );
 assert.match(
   source,
-  /centerPadding:\s*responsiveCenterPadding/,
-  "responsive carousel should use the shared mobile center-padding value",
+  /ResizeObserver/,
+  "Carousel should measure available width and choose 3/2/1 visible fixed cards",
 );
 assert.match(
   source,
@@ -42,6 +42,21 @@ assert.match(
   source,
   /src=\{panel\.pcImgPath\}/,
   "unified carousel banners should use the same uploaded image on every viewport",
+);
+assert.match(
+  source,
+  /width:\s*BANNER_CAROUSEL_CARD_WIDTH/,
+  "banner img width should be fixed, not inherited from slide width",
+);
+assert.match(
+  source,
+  /height:\s*BANNER_CAROUSEL_CARD_HEIGHT/,
+  "banner img height should be fixed, not inherited from slide width",
+);
+assert.doesNotMatch(
+  source,
+  /react-slick/,
+  "fixed-size carousel should not use react-slick because it divides slide widths from the viewport",
 );
 assert.doesNotMatch(
   source,

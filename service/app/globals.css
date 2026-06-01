@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "../node_modules/slick-carousel/slick/slick.css";
-@import "../node_modules/slick-carousel/slick/slick-theme.css";
-
 :root {
   --foreground-rgb: #111317;
   --background-rgb: #ffffff;
@@ -87,59 +84,6 @@ html {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
-  }
-}
-
-@layer slick {
-  .slider-container {
-    width: 100%;
-    max-width: 1120px;
-    margin: auto;
-  }
-
-  .slick-list {
-    overflow: visible !important;
-    height: 400px !important;
-  }
-
-  .slick-slide {
-    height: 400px !important;
-  }
-
-  @media (max-width: 767px) {
-    .slick-list {
-      height: 350px !important;
-    }
-
-    .slick-slide {
-      height: 350px !important;
-    }
-  }
-
-  @media (min-width: 1025px) {
-    .slick-slide {
-      padding: 0 8px;
-    }
-  }
-
-  .slick-center {
-    min-width: 300px;
-  }
-
-  .slider-contained .slick-list {
-    overflow: hidden !important;
-    border-radius: 30px;
-  }
-
-  @media (max-width: 1024px) {
-    .slick-list {
-      overflow: hidden !important;
-      border-radius: 30px;
-    }
-
-    .slick-slide {
-      padding-right: 5px;
-    }
   }
 }
 
