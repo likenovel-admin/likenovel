@@ -129,10 +129,7 @@ const ProductListCard = ({
     type: "normal",
     isOpen: false,
   });
-  const canShowApplyNormalButton =
-    data.priceType === "free" &&
-    data.productType === "free" &&
-    data.state?.canApplyForNormal === true;
+  const canShowApplyNormalButton = false;
   const canShowApplyPaidButton =
     data.priceType === "free" &&
     data.productType === "normal" &&
