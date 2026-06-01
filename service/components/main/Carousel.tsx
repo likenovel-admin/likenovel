@@ -1,6 +1,7 @@
 import { normalizeUrl } from "@/utils/common";
 import {
   getBannerCarouselActivePage,
+  getBannerCarouselMobileCenterPadding,
   getBannerCarouselPageCount,
   getBannerCarouselPageSize,
   getBannerCarouselPageStartIndex,
@@ -33,6 +34,7 @@ interface Props {
 
 const Carousel = ({ primaryPanels }: Props) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [mobileCenterPadding, setMobileCenterPadding] = useState("32px");
   const sliderRef = useRef<any>(null);
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
@@ -43,6 +45,7 @@ const Carousel = ({ primaryPanels }: Props) => {
   const canSlide = count > pageSize;
   const desktopSlidesToShow = count >= pageSize ? pageSize : Math.max(count, 1);
   const activePage = getBannerCarouselActivePage(currentSlide, count);
+  const responsiveCenterPadding = count > 1 ? mobileCenterPadding : "0px";
 
   const settings = {
     infinite: canSlide,
@@ -63,11 +66,23 @@ const Carousel = ({ primaryPanels }: Props) => {
           infinite: canSlide,
           autoplay: canSlide,
           centerMode: count > 1,
-          centerPadding: count > 1 ? "32px" : "0px",
+          centerPadding: responsiveCenterPadding,
         },
       },
     ],
   };
+
+  useEffect(() => {
+    const updateMobileCenterPadding = () => {
+      setMobileCenterPadding(
+        `${getBannerCarouselMobileCenterPadding(window.innerWidth)}px`,
+      );
+    };
+
+    updateMobileCenterPadding();
+    window.addEventListener("resize", updateMobileCenterPadding);
+    return () => window.removeEventListener("resize", updateMobileCenterPadding);
+  }, []);
 
   useEffect(() => {
     setCurrentSlide(0);

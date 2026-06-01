@@ -20,8 +20,13 @@ assert.match(
 );
 assert.match(
   source,
-  /centerPadding:\s*count\s*>\s*1\s*\?\s*"32px"\s*:\s*"0px"/,
-  "mobile carousel should use fixed side padding for centered banner peeks",
+  /getBannerCarouselMobileCenterPadding/,
+  "mobile carousel should use the shared center-padding calculator",
+);
+assert.match(
+  source,
+  /centerPadding:\s*responsiveCenterPadding/,
+  "responsive carousel should use the shared mobile center-padding value",
 );
 assert.match(
   source,
