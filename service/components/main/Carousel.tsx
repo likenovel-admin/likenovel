@@ -1,13 +1,14 @@
 import { normalizeUrl } from "@/utils/common";
 import {
-  getBannerCarouselActivePage,
-  getBannerCarouselMobileCenterPadding,
+  BANNER_CAROUSEL_CARD_GAP,
+  BANNER_CAROUSEL_CARD_HEIGHT,
+  BANNER_CAROUSEL_CARD_WIDTH,
   getBannerCarouselPageCount,
-  getBannerCarouselPageSize,
   getBannerCarouselPageStartIndex,
+  getBannerCarouselViewportWidth,
+  getBannerCarouselVisibleCount,
 } from "@/utils/bannerCarouselPaging";
 import { useEffect, useRef, useState } from "react";
-import Slider from "react-slick";
 import ArrowLeftMedium from "/public/images/arrow-left-medium.svg";
 import ArrowRightMedium from "/public/images/arrow-right-medium.svg";
 
@@ -32,120 +33,141 @@ interface Props {
   primaryPanels: PrimaryPanel[];
 }
 
+const DEFAULT_AVAILABLE_WIDTH = getBannerCarouselViewportWidth(3);
+
 const Carousel = ({ primaryPanels }: Props) => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [mobileCenterPadding, setMobileCenterPadding] = useState("32px");
-  const sliderRef = useRef<any>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [availableWidth, setAvailableWidth] = useState(DEFAULT_AVAILABLE_WIDTH);
+  const viewportMeasureRef = useRef<HTMLDivElement | null>(null);
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
 
   const count = primaryPanels.length;
-  const pageSize = getBannerCarouselPageSize(count);
-  const pageCount = getBannerCarouselPageCount(count);
-  const canSlide = count > pageSize;
-  const desktopSlidesToShow = count >= pageSize ? pageSize : Math.max(count, 1);
-  const activePage = getBannerCarouselActivePage(currentSlide, count);
-  const responsiveCenterPadding = count > 1 ? mobileCenterPadding : "0px";
-
-  const settings = {
-    infinite: canSlide,
-    speed: 400,
-    slidesToShow: desktopSlidesToShow,
-    slidesToScroll: pageSize,
-    autoplay: canSlide,
-    autoplaySpeed: 5000,
-    arrows: false,
-    centerMode: false,
-    afterChange: (current: number) => setCurrentSlide(current),
-    responsive: [
-      {
-        breakpoint: 1024,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: pageSize,
-          infinite: canSlide,
-          autoplay: canSlide,
-          centerMode: count > 1,
-          centerPadding: responsiveCenterPadding,
-        },
-      },
-    ],
-  };
+  const visibleCount = getBannerCarouselVisibleCount(availableWidth, count);
+  const pageCount = getBannerCarouselPageCount(count, visibleCount);
+  const canSlide = pageCount > 1;
+  const viewportWidth = getBannerCarouselViewportWidth(visibleCount);
+  const startIndex = getBannerCarouselPageStartIndex(
+    currentPage,
+    count,
+    visibleCount,
+  );
+  const translateX =
+    startIndex * (BANNER_CAROUSEL_CARD_WIDTH + BANNER_CAROUSEL_CARD_GAP);
 
   useEffect(() => {
-    const updateMobileCenterPadding = () => {
-      setMobileCenterPadding(
-        `${getBannerCarouselMobileCenterPadding(window.innerWidth)}px`,
-      );
+    const target = viewportMeasureRef.current;
+    if (!target) return;
+
+    const updateAvailableWidth = () => {
+      setAvailableWidth(target.getBoundingClientRect().width);
     };
 
-    updateMobileCenterPadding();
-    window.addEventListener("resize", updateMobileCenterPadding);
-    return () => window.removeEventListener("resize", updateMobileCenterPadding);
+    updateAvailableWidth();
+
+    const resizeObserver = new ResizeObserver(updateAvailableWidth);
+    resizeObserver.observe(target);
+
+    return () => resizeObserver.disconnect();
   }, []);
 
   useEffect(() => {
-    setCurrentSlide(0);
-  }, [count]);
+    setCurrentPage((page) => Math.min(page, Math.max(pageCount - 1, 0)));
+  }, [pageCount]);
+
+  useEffect(() => {
+    if (!canSlide) return;
+
+    const timer = window.setInterval(() => {
+      setCurrentPage((page) => (page + 1) % pageCount);
+    }, 5000);
+
+    return () => window.clearInterval(timer);
+  }, [canSlide, pageCount]);
 
   if (count === 0) return null;
 
-  const SliderComponent = Slider as any;
+  const goToPreviousPage = () => {
+    if (!canSlide) return;
+    setCurrentPage((page) => (page - 1 + pageCount) % pageCount);
+  };
+
+  const goToNextPage = () => {
+    if (!canSlide) return;
+    setCurrentPage((page) => (page + 1) % pageCount);
+  };
 
   return (
     <div className="w-full">
-      <div className="slider-container relative">
-        <SliderComponent ref={sliderRef} {...settings}>
-          {primaryPanels.map((panel, index) => (
-            <div key={index} className="focus:outline-none">
-              <div
-                className="px-[4.5px] cursor-pointer"
-                onMouseDown={(e) => {
-                  isDragging.current = false;
-                  dragStartX.current = e.clientX;
-                }}
-                onMouseMove={(e) => {
-                  if (Math.abs(e.clientX - dragStartX.current) > 5) {
-                    isDragging.current = true;
-                  }
-                }}
-                onClick={() => {
-                  if (isDragging.current) return;
-                  if (panel.linkPath) {
-                    window.open(normalizeUrl(panel.linkPath), "_blank");
-                  }
-                }}
-              >
-                <img
-                  src={panel.pcImgPath}
-                  alt={`banner_${index}`}
-                  className="w-full aspect-[364/414] object-cover rounded-[20px]"
-                />
-              </div>
+      <div ref={viewportMeasureRef} className="w-full flex justify-center">
+        <div
+          className="banner-carousel relative max-w-full"
+          style={{ width: viewportWidth }}
+        >
+          <div className="overflow-hidden">
+            <div
+              className="flex transition-transform duration-300 ease-out"
+              style={{
+                gap: BANNER_CAROUSEL_CARD_GAP,
+                transform: `translateX(-${translateX}px)`,
+              }}
+            >
+              {primaryPanels.map((panel, index) => (
+                <div
+                  key={index}
+                  className="shrink-0 cursor-pointer"
+                  style={{ width: BANNER_CAROUSEL_CARD_WIDTH }}
+                  onMouseDown={(e) => {
+                    isDragging.current = false;
+                    dragStartX.current = e.clientX;
+                  }}
+                  onMouseMove={(e) => {
+                    if (Math.abs(e.clientX - dragStartX.current) > 5) {
+                      isDragging.current = true;
+                    }
+                  }}
+                  onClick={() => {
+                    if (isDragging.current) return;
+                    if (panel.linkPath) {
+                      window.open(normalizeUrl(panel.linkPath), "_blank");
+                    }
+                  }}
+                >
+                  <img
+                    src={panel.pcImgPath}
+                    alt={`banner_${index}`}
+                    className="object-cover rounded-[20px]"
+                    style={{
+                      width: BANNER_CAROUSEL_CARD_WIDTH,
+                      height: BANNER_CAROUSEL_CARD_HEIGHT,
+                    }}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-        </SliderComponent>
+          </div>
 
-        {canSlide && (
-          <>
-            <button
-              type="button"
-              aria-label="이전 배너"
-              onClick={() => sliderRef.current?.slickPrev()}
-              className="hidden md:flex absolute top-1/2 left-[-20px] -translate-y-1/2 z-50 w-[40px] h-[40px] items-center justify-center rounded-full bg-white border border-[#F0F0F0] shadow-[2px_4px_8px_0_rgba(0,0,0,0.06)]"
-            >
-              <ArrowLeftMedium className="w-[9px] h-[16px] text-[#333333]" />
-            </button>
-            <button
-              type="button"
-              aria-label="다음 배너"
-              onClick={() => sliderRef.current?.slickNext()}
-              className="hidden md:flex absolute top-1/2 right-[-20px] -translate-y-1/2 z-50 w-[40px] h-[40px] items-center justify-center rounded-full bg-white border border-[#F0F0F0] shadow-[2px_4px_8px_0_rgba(0,0,0,0.06)]"
-            >
-              <ArrowRightMedium className="w-[9px] h-[16px] text-[#333333]" />
-            </button>
-          </>
-        )}
+          {canSlide && (
+            <>
+              <button
+                type="button"
+                aria-label="이전 배너"
+                onClick={goToPreviousPage}
+                className="hidden md:flex absolute top-1/2 left-[-20px] -translate-y-1/2 z-50 w-[40px] h-[40px] items-center justify-center rounded-full bg-white border border-[#F0F0F0] shadow-[2px_4px_8px_0_rgba(0,0,0,0.06)]"
+              >
+                <ArrowLeftMedium className="w-[9px] h-[16px] text-[#333333]" />
+              </button>
+              <button
+                type="button"
+                aria-label="다음 배너"
+                onClick={goToNextPage}
+                className="hidden md:flex absolute top-1/2 right-[-20px] -translate-y-1/2 z-50 w-[40px] h-[40px] items-center justify-center rounded-full bg-white border border-[#F0F0F0] shadow-[2px_4px_8px_0_rgba(0,0,0,0.06)]"
+              >
+                <ArrowRightMedium className="w-[9px] h-[16px] text-[#333333]" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {pageCount > 1 && (
@@ -154,16 +176,12 @@ const Carousel = ({ primaryPanels }: Props) => {
             <button
               key={pageIndex}
               type="button"
-              onClick={() =>
-                sliderRef.current?.slickGoTo(
-                  getBannerCarouselPageStartIndex(pageIndex),
-                )
-              }
+              onClick={() => setCurrentPage(pageIndex)}
               className="flex items-center cursor-pointer p-[4px]"
             >
               <span
                 className={`block h-[6px] rounded-full transition-all ${
-                  activePage === pageIndex
+                  currentPage === pageIndex
                     ? "w-[28px] bg-[#0255d9]"
                     : "w-[10px] bg-gray-300"
                 }`}
