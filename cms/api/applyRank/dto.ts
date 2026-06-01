@@ -25,3 +25,15 @@ export interface IDenyApplyRankResponse {
     message: string;
   };
 }
+
+export interface IApplyPaidConversionRequest {
+  id: string;
+  paidEpisodeNo: number;
+}
+
+export interface IApplyPaidConversionResponse {
+  data: {
+    productId: number;
+    paidEpisodeNo: number;
+  };
+}

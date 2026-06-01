@@ -2,6 +2,8 @@
 
 import {
   IAcceptApplyRankResponse,
+  IApplyPaidConversionRequest,
+  IApplyPaidConversionResponse,
   IDenyApplyRankResponse,
   IGetApplyRankParams,
   IGetApplyRankResponse,
@@ -41,6 +43,24 @@ export const useDenyApplyRank = () => {
       return await apiClient.request<IDenyApplyRankResponse>({
         url: `/v1/command/admins/apply-rank-up/${id}/deny`,
         method: "POST",
+      });
+    },
+  });
+};
+
+export const useApplyPaidConversion = () => {
+  return useMutation<
+    IApplyPaidConversionResponse,
+    Error,
+    IApplyPaidConversionRequest
+  >({
+    mutationFn: async ({ id, paidEpisodeNo }) => {
+      return await apiClient.request<IApplyPaidConversionResponse>({
+        url: `/v1/command/admins/apply-rank-up/${id}/apply-paid`,
+        method: "POST",
+        body: {
+          paid_episode_no: paidEpisodeNo,
+        },
       });
     },
   });
