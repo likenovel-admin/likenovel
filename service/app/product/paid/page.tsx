@@ -26,12 +26,7 @@ export default function Paid() {
     <>
       {isSuccess ? (
         <div className="relative w-full flex flex-col max-w-[1120px] mx-auto">
-          {hasBanners && (
-            <>
-              <div className="bg-black-100 h-[385px] w-[100vw] absolute top-[-20px] left-1/2 -translate-x-1/2"></div>
-              <Carousel primaryPanels={banners} contained />
-            </>
-          )}
+          {hasBanners && <Carousel primaryPanels={banners} />}
           <div
             className={`w-full flex flex-col ${
               hasBanners ? "mt-70pxr md:mt-[100px]" : "mt-24pxr md:mt-40pxr"
