@@ -1,37 +1,52 @@
 export const BANNER_CAROUSEL_DESKTOP_PAGE_SIZE = 3;
-export const BANNER_CAROUSEL_MOBILE_MIN_CENTER_PADDING = 32;
-export const BANNER_CAROUSEL_MOBILE_MAX_CENTER_PADDING = 330;
 export const BANNER_CAROUSEL_CARD_WIDTH = 364;
+export const BANNER_CAROUSEL_CARD_HEIGHT = 414;
+export const BANNER_CAROUSEL_CARD_GAP = 9;
 
-export function getBannerCarouselPageSize(panelCount: number): number {
-  return BANNER_CAROUSEL_DESKTOP_PAGE_SIZE;
-}
-
-export function getBannerCarouselPageCount(panelCount: number): number {
+export function getBannerCarouselVisibleCount(
+  availableWidth: number,
+  panelCount: number,
+): number {
   if (panelCount <= 0) return 0;
 
-  return Math.ceil(
-    panelCount / getBannerCarouselPageSize(panelCount),
+  const visibleCount = Math.floor(
+    (availableWidth + BANNER_CAROUSEL_CARD_GAP) /
+      (BANNER_CAROUSEL_CARD_WIDTH + BANNER_CAROUSEL_CARD_GAP),
+  );
+
+  return Math.max(
+    1,
+    Math.min(BANNER_CAROUSEL_DESKTOP_PAGE_SIZE, panelCount, visibleCount),
   );
 }
 
-export function getBannerCarouselPageStartIndex(pageIndex: number): number {
-  return pageIndex * BANNER_CAROUSEL_DESKTOP_PAGE_SIZE;
-}
+export function getBannerCarouselViewportWidth(visibleCount: number): number {
+  if (visibleCount <= 0) return 0;
 
-export function getBannerCarouselActivePage(slideIndex: number, panelCount: number): number {
-  const pageSize = getBannerCarouselPageSize(panelCount);
-
-  return Math.floor(slideIndex / pageSize);
-}
-
-export function getBannerCarouselMobileCenterPadding(viewportWidth: number): number {
-  const centeredPadding = Math.round(
-    (viewportWidth - BANNER_CAROUSEL_CARD_WIDTH) / 2,
+  return (
+    visibleCount * BANNER_CAROUSEL_CARD_WIDTH +
+    (visibleCount - 1) * BANNER_CAROUSEL_CARD_GAP
   );
+}
+
+export function getBannerCarouselPageCount(
+  panelCount: number,
+  visibleCount = BANNER_CAROUSEL_DESKTOP_PAGE_SIZE,
+): number {
+  if (panelCount <= 0 || visibleCount <= 0) return 0;
+
+  return Math.ceil(panelCount / visibleCount);
+}
+
+export function getBannerCarouselPageStartIndex(
+  pageIndex: number,
+  panelCount: number,
+  visibleCount = BANNER_CAROUSEL_DESKTOP_PAGE_SIZE,
+): number {
+  if (panelCount <= 0 || visibleCount <= 0) return 0;
 
   return Math.min(
-    BANNER_CAROUSEL_MOBILE_MAX_CENTER_PADDING,
-    Math.max(BANNER_CAROUSEL_MOBILE_MIN_CENTER_PADDING, centeredPadding),
+    pageIndex * visibleCount,
+    Math.max(panelCount - visibleCount, 0),
   );
 }
