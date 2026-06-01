@@ -98,47 +98,24 @@ html {
   }
 
   .slick-list {
-    overflow: visible !important;
-    height: 400px !important;
+    overflow: hidden !important;
+  }
+
+  .slick-track {
+    display: flex !important;
+  }
+
+  .slick-slide > div {
+    height: 100%;
   }
 
   .slick-slide {
-    height: 400px !important;
+    height: auto !important;
   }
 
-  @media (max-width: 767px) {
-    .slick-list {
-      height: 350px !important;
-    }
-
-    .slick-slide {
-      height: 350px !important;
-    }
-  }
-
-  @media (min-width: 1025px) {
-    .slick-slide {
-      padding: 0 8px;
-    }
-  }
-
-  .slick-center {
-    min-width: 300px;
-  }
-
-  .slider-contained .slick-list {
-    overflow: hidden !important;
-    border-radius: 30px;
-  }
-
-  @media (max-width: 1024px) {
+  @media (max-width: 1023px) {
     .slick-list {
       overflow: hidden !important;
-      border-radius: 30px;
-    }
-
-    .slick-slide {
-      padding-right: 5px;
     }
   }
 }

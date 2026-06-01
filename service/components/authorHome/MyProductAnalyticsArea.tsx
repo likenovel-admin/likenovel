@@ -5,6 +5,7 @@ import {
   useProductDetailFunnelStatistics,
   useProductEpisodeDropoffStatistics,
   useProductInflowDropoffStatistics,
+  useProductRecent24hStatistics,
 } from "@/app/api/query/author/statistics";
 import {
   IAuthorProductDetailFunnelRow,
@@ -18,9 +19,30 @@ import { IProduct } from "@/types";
 import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 import Recent24hAnalyticsArea from "./Recent24hAnalyticsArea";
+import ReaderJourneyFunnel from "./ReaderJourneyFunnel";
+import SourceConversionBars from "./SourceConversionBars";
+import ChartTableToggle from "./ChartTableToggle";
+import EpisodeDropoffCurve from "./EpisodeDropoffCurve";
+import AuthorReportModal from "./AuthorReportModal";
+import AuthorShareReport from "./AuthorShareReport";
+import Recent24hShareReport from "./Recent24hShareReport";
+import useModalStore from "@/store/modalStore";
+import {
+  SAMPLE_PRODUCT_ID,
+  SAMPLE_PRODUCT_SELECT_VALUE,
+  SAMPLE_PRODUCT_TITLE,
+  sampleEpisodeDropoffs,
+  sampleFunnelRows,
+  sampleFunnelSummary,
+  sampleRecent24h,
+  sampleSourceGroups,
+} from "./sampleProductAnalytics.mock";
 
 const DEFAULT_RANGE_DAYS = 29;
 const MAX_RANGE_DAYS = 90;
+// 기본값 판정: 5화 이상 + 실제 유입(30일) 이만큼 쌓인 작품이 있으면 그 작품을, 없으면 샘플을 기본으로 보여준다
+const SUBSTANTIAL_EPISODE_COUNT = 5;
+const MIN_MEANINGFUL_VIEWS = 30;
 const RANGE_PRESET_OPTIONS = [
   { label: "최근 7일", days: 6 },
   { label: "최근 30일", days: 29 },
@@ -38,11 +60,20 @@ const formatPercent = (value: number | null | undefined) => {
 };
 
 const formatRate = (numerator: number, denominator: number) => {
-  if (!denominator) {
-    return "0.0%";
+  if (denominator <= 0) {
+    return "-";
   }
 
   return `${((numerator / denominator) * 100).toFixed(1)}%`;
+};
+
+const getSelectProductId = (value: string) => {
+  if (!value || value === SAMPLE_PRODUCT_SELECT_VALUE) {
+    return undefined;
+  }
+
+  const productId = Number(value);
+  return Number.isFinite(productId) ? productId : undefined;
 };
 
 const sourceLabelMap: Record<string, string> = {
@@ -185,6 +216,8 @@ const MyProductAnalyticsArea = () => {
   );
   const [draftEndDate, setDraftEndDate] = useState<Date | null>(buildInitialEndDate());
   const [page, setPage] = useState(1);
+  const [sourceView, setSourceView] = useState<"chart" | "table">("chart");
+  const [episodeView, setEpisodeView] = useState<"chart" | "table">("chart");
   const [appliedFilters, setAppliedFilters] = useState({
     productId: "",
     startDate: buildInitialStartDate(),
@@ -192,9 +225,24 @@ const MyProductAnalyticsArea = () => {
   });
 
   const { data: myProductsData, isLoading: isProductsLoading } = useGetMyProducts();
+  const setModal = useModalStore((state) => state.setModal);
+  const isSelectedSample = selectedProductId === SAMPLE_PRODUCT_SELECT_VALUE;
+  const selectedLiveProductId = getSelectProductId(selectedProductId);
+  const { data: recent24hLiveData } = useProductRecent24hStatistics({
+    productId: selectedLiveProductId,
+    enabled:
+      activeSubTab === "recent24h" && !!selectedLiveProductId && !isSelectedSample,
+  });
+  const recent24hReportData = isSelectedSample
+    ? sampleRecent24h
+    : recent24hLiveData;
   const products = useMemo(
     () => myProductsData?.data?.products || [],
     [myProductsData]
+  );
+  const productsWithOpenEpisodes = useMemo(
+    () => products.filter((product) => (product.totalOpenEpisodeCount ?? 0) >= 1),
+    [products]
   );
   const hasProducts = products.length > 0;
   const initialSeedStartDate = useMemo(
@@ -215,34 +263,42 @@ const MyProductAnalyticsArea = () => {
     countPerPage: 1000,
     enabled: hasProducts && !appliedFilters.productId,
   });
-  const productIdsWithAnalyticsData = useMemo(() => {
+  const productViewTotals = useMemo(() => {
     const rows = defaultProductSeedData?.results || [];
-    return new Set(rows.map((row) => row.product_id));
+    const totals = new Map<number, number>();
+    rows.forEach((row) => {
+      totals.set(
+        row.product_id,
+        (totals.get(row.product_id) || 0) + row.detail_view_session_count
+      );
+    });
+    return totals;
   }, [defaultProductSeedData]);
   const defaultProductId = useMemo(() => {
-    if (!products.length) {
-      return "";
-    }
-
     if (isDefaultProductSeedLoading) {
       return "";
     }
 
-    const seededProducts = products.filter((product) =>
-      productIdsWithAnalyticsData.has(product.productId)
-    );
-    const candidateProducts = seededProducts.length > 0 ? seededProducts : products;
+    // 5화 이상 + 실제 유입이 쌓인 작품이 있으면 그 작품(유입 많은 순), 없으면(거의 빈 장표) 풍부한 샘플을 기본값으로
+    const eligible = productsWithOpenEpisodes
+      .map((product) => ({
+        product,
+        views: productViewTotals.get(product.productId) || 0,
+        episodes: getProductEpisodeCount(product),
+      }))
+      .filter(
+        (item) =>
+          item.episodes >= SUBSTANTIAL_EPISODE_COUNT &&
+          item.views >= MIN_MEANINGFUL_VIEWS
+      )
+      .sort((a, b) => b.views - a.views);
 
-    const sorted = [...candidateProducts].sort((a, b) => {
-      const episodeDiff = getProductEpisodeCount(b) - getProductEpisodeCount(a);
-      if (episodeDiff !== 0) {
-        return episodeDiff;
-      }
-      return a.productId - b.productId;
-    });
+    if (eligible.length === 0) {
+      return SAMPLE_PRODUCT_SELECT_VALUE;
+    }
 
-    return String(sorted[0]?.productId ?? "");
-  }, [isDefaultProductSeedLoading, productIdsWithAnalyticsData, products]);
+    return String(eligible[0].product.productId);
+  }, [isDefaultProductSeedLoading, productViewTotals, productsWithOpenEpisodes]);
 
   useEffect(() => {
     if (!defaultProductId) {
@@ -255,11 +311,11 @@ const MyProductAnalyticsArea = () => {
     );
   }, [defaultProductId]);
 
-  const appliedProductId = appliedFilters.productId
-    ? Number(appliedFilters.productId)
-    : undefined;
+  const appliedProductId = getSelectProductId(appliedFilters.productId);
   const appliedStartDateText = dayjs(appliedFilters.startDate).format("YYYY-MM-DD");
   const appliedEndDateText = dayjs(appliedFilters.endDate).format("YYYY-MM-DD");
+  const isSampleSelected =
+    appliedFilters.productId === SAMPLE_PRODUCT_SELECT_VALUE;
 
   const {
     data: funnelData,
@@ -272,7 +328,18 @@ const MyProductAnalyticsArea = () => {
     endDate: appliedEndDateText,
     page,
     countPerPage: 100,
-    enabled: hasProducts && !!appliedFilters.productId,
+    enabled: hasProducts && !!appliedFilters.productId && !isSampleSelected,
+  });
+  const {
+    data: funnelSummaryData,
+    isLoading: isFunnelSummaryLoading,
+  } = useProductDetailFunnelStatistics({
+    productId: appliedProductId,
+    startDate: appliedStartDateText,
+    endDate: appliedEndDateText,
+    page: 1,
+    countPerPage: 1000,
+    enabled: hasProducts && !!appliedFilters.productId && !isSampleSelected,
   });
   const {
     data: episodeDropoffData,
@@ -285,7 +352,7 @@ const MyProductAnalyticsArea = () => {
     endDate: appliedEndDateText,
     page: 1,
     countPerPage: 1000,
-    enabled: hasProducts && !!appliedFilters.productId,
+    enabled: hasProducts && !!appliedFilters.productId && !isSampleSelected,
   });
   const {
     data: inflowDropoffData,
@@ -296,22 +363,41 @@ const MyProductAnalyticsArea = () => {
     productId: appliedProductId,
     startDate: appliedStartDateText,
     endDate: appliedEndDateText,
-    enabled: hasProducts && !!appliedFilters.productId,
+    enabled: hasProducts && !!appliedFilters.productId && !isSampleSelected,
   });
 
   const productOptions = useMemo<CommonSelectItem[]>(() => {
-    return products.map((product) => ({
+    // 공개 회차가 1개 이상인 작품만 노출 (회차 없는 작품은 빈 장표라 제외)
+    const options = productsWithOpenEpisodes.map((product) => ({
       label: product.title,
       value: String(product.productId),
     }));
-  }, [products]);
+    options.unshift({
+      label: `${SAMPLE_PRODUCT_TITLE} (예시)`,
+      value: SAMPLE_PRODUCT_SELECT_VALUE,
+    });
+    return options;
+  }, [productsWithOpenEpisodes]);
 
   const productTitleMap = useMemo(() => {
-    return new Map(products.map((product) => [product.productId, product.title]));
+    const map = new Map<number, string>(
+      products.map((product) => [product.productId, product.title])
+    );
+    return map;
   }, [products]);
 
+  const getProductTitle = (productId: number) => {
+    if (isSampleSelected && productId === SAMPLE_PRODUCT_ID) {
+      return `${SAMPLE_PRODUCT_TITLE} (예시)`;
+    }
+
+    return productTitleMap.get(productId) || `작품 ${productId}`;
+  };
+
   const summary = useMemo(() => {
-    const results = funnelData?.results || [];
+    const results = isSampleSelected
+      ? sampleFunnelRows
+      : funnelSummaryData?.results || [];
 
     return results.reduce(
       (acc, row) => {
@@ -333,10 +419,12 @@ const MyProductAnalyticsArea = () => {
         weightedEpisodeExitProgress: 0,
       }
     );
-  }, [funnelData]);
+  }, [funnelSummaryData?.results, isSampleSelected]);
 
   const sourceGroupRows = useMemo(() => {
-    const source_groups = inflowDropoffData?.source_groups || [];
+    const source_groups = isSampleSelected
+      ? sampleSourceGroups
+      : inflowDropoffData?.source_groups || [];
     const orderIndex = new Map<string, number>(
       sourceGroupOrder.map((source, index) => [source, index])
     );
@@ -351,28 +439,16 @@ const MyProductAnalyticsArea = () => {
 
       return b.detail_session_count - a.detail_session_count;
     });
-  }, [inflowDropoffData?.source_groups]);
+  }, [inflowDropoffData?.source_groups, isSampleSelected]);
 
-  const sourceGroupSummary = useMemo(() => {
-    return sourceGroupRows.reduce(
-      (acc, row) => {
-        acc.detailViewSessions += row.detail_session_count;
-        acc.detailToViewSessions += row.reader_session_count;
-        acc.detailExitSessions += row.detail_exit_session_count;
-        return acc;
-      },
-      {
-        detailViewSessions: 0,
-        detailToViewSessions: 0,
-        detailExitSessions: 0,
-      }
-    );
-  }, [sourceGroupRows]);
-
-  const rows = useMemo(() => funnelData?.results || [], [funnelData?.results]);
+  const rows = useMemo(
+    () => (isSampleSelected ? sampleFunnelRows : funnelData?.results || []),
+    [funnelData?.results, isSampleSelected]
+  );
   const episodeDropoffRows = useMemo(
-    () => episodeDropoffData?.results || [],
-    [episodeDropoffData?.results]
+    () =>
+      isSampleSelected ? sampleEpisodeDropoffs : episodeDropoffData?.results || [],
+    [episodeDropoffData?.results, isSampleSelected]
   );
   const topDropoffRow = useMemo(
     () => getTopDropoffRow(episodeDropoffRows),
@@ -397,7 +473,9 @@ const MyProductAnalyticsArea = () => {
 
     return `이 회차는 진입 후 ${formatPercent(topDropoffRow.episode_dropoff_rate)}가 여기서 멈췄습니다.`;
   }, [topDropoffRow]);
-  const totalCount = funnelData?.total_count || 0;
+  const totalCount = isSampleSelected
+    ? sampleFunnelRows.length
+    : funnelData?.total_count || 0;
   const countPerPage = funnelData?.count_per_page || 100;
   const totalPages = Math.max(1, Math.ceil(totalCount / countPerPage));
   const dateRangeValidationMessage = getDateRangeValidationMessage(
@@ -408,24 +486,30 @@ const MyProductAnalyticsArea = () => {
     summary.episodeExitEvents > 0
       ? summary.weightedEpisodeExitProgress / summary.episodeExitEvents
       : null;
-  const hasSourceGroupSummary = sourceGroupRows.some(
-    (row) => row.detail_session_count > 0
-  );
-  const summaryDetailViewSessions = hasSourceGroupSummary
-    ? sourceGroupSummary.detailViewSessions
-    : summary.detailViewSessions;
-  const summaryDetailToViewSessions = hasSourceGroupSummary
-    ? sourceGroupSummary.detailToViewSessions
-    : summary.detailToViewSessions;
-  const summaryDetailExitSessions = hasSourceGroupSummary
-    ? sourceGroupSummary.detailExitSessions
-    : summary.detailExitSessions;
+  const summaryDetailViewSessions = summary.detailViewSessions;
+  const summaryDetailToViewSessions = summary.detailToViewSessions;
+  const summaryDetailExitSessions = summary.detailExitSessions;
+  const firstEpisodeCompleteCount = useMemo(() => {
+    const firstEpisode = episodeDropoffRows.find((row) => row.episode_no === 1);
+    return firstEpisode ? firstEpisode.near_complete_count : null;
+  }, [episodeDropoffRows]);
+  const funnelFirstEpisodeCompleteCount = isSampleSelected
+    ? firstEpisodeCompleteCount
+    : null;
+  const hasFunnelData = summaryDetailViewSessions > 0;
 
   const applyPresetRange = (days: number) => {
     const nextEndDate = buildInitialEndDate();
     const nextStartDate = dayjs(nextEndDate).subtract(days, "day").startOf("day").toDate();
     setDraftStartDate(nextStartDate);
     setDraftEndDate(nextEndDate);
+    // 프리셋은 즉시 적용 (조회 버튼 없이 기간이 바로 반영되게)
+    setPage(1);
+    setAppliedFilters({
+      productId: selectedProductId,
+      startDate: nextStartDate,
+      endDate: nextEndDate,
+    });
   };
 
   const handleApplyFilters = () => {
@@ -443,6 +527,17 @@ const MyProductAnalyticsArea = () => {
     });
   };
 
+  const handleChangeSubTab = (nextSubTab: "recent24h" | "inflowDropoff") => {
+    setActiveSubTab(nextSubTab);
+    if (nextSubTab === "inflowDropoff") {
+      setPage(1);
+      setAppliedFilters((prev) => ({
+        ...prev,
+        productId: selectedProductId || defaultProductId || prev.productId,
+      }));
+    }
+  };
+
   const handleResetFilters = () => {
     const nextStartDate = buildInitialStartDate();
     const nextEndDate = buildInitialEndDate();
@@ -458,6 +553,53 @@ const MyProductAnalyticsArea = () => {
     });
   };
 
+  const handleOpenReport = () => {
+    if (activeSubTab === "recent24h") {
+      const title =
+        (selectedLiveProductId
+          ? productTitleMap.get(selectedLiveProductId)
+          : undefined) ||
+        (isSelectedSample ? `${SAMPLE_PRODUCT_TITLE} (예시)` : "내 작품");
+      setModal(
+        <AuthorReportModal
+          fileName={`likenovel-24h-${selectedProductId || "sample"}`}
+        >
+          <Recent24hShareReport
+            productTitle={title}
+            isSample={isSelectedSample}
+            data={recent24hReportData}
+          />
+        </AuthorReportModal>
+      );
+      return;
+    }
+
+    const reportTitle =
+      (appliedProductId ? productTitleMap.get(appliedProductId) : undefined) ||
+      (isSampleSelected ? `${SAMPLE_PRODUCT_TITLE} (예시)` : "내 작품");
+    setModal(
+      <AuthorReportModal
+        fileName={`likenovel-report-${appliedProductId ?? "sample"}`}
+      >
+        <AuthorShareReport
+          productTitle={reportTitle}
+          periodLabel={
+            isSampleSelected
+              ? "예시 데이터"
+              : `${appliedStartDateText} ~ ${appliedEndDateText}`
+          }
+          isSample={isSampleSelected}
+          detailInflow={summaryDetailViewSessions}
+          episodeEntry={summaryDetailToViewSessions}
+          firstEpisodeComplete={funnelFirstEpisodeCompleteCount}
+          sourceGroups={sourceGroupRows}
+          episodeDropoffs={episodeDropoffRows}
+          getSourceLabel={getSourceGroupLabel}
+        />
+      </AuthorReportModal>
+    );
+  };
+
   const renderTableRow = (row: IAuthorProductDetailFunnelRow) => {
     return (
       <tr key={`${row.detail_entry_date}-${row.product_id}-${row.entry_source ?? "__null__"}`}>
@@ -467,7 +609,7 @@ const MyProductAnalyticsArea = () => {
         <td className="px-12pxr py-12pxr whitespace-nowrap">
           <div className="flex flex-col">
             <span className="font-medium text-black-100">
-              {productTitleMap.get(row.product_id) || `작품 ${row.product_id}`}
+          {getProductTitle(row.product_id)}
             </span>
             <span className="text-12pxr text-dark-gray-300">ID {row.product_id}</span>
           </div>
@@ -566,27 +708,6 @@ const MyProductAnalyticsArea = () => {
     );
   }
 
-  if (!hasProducts) {
-    return (
-      <div className="w-full h-auto">
-        <div className="flex flex-col w-full max-w-[1120px] mx-auto px-16pxr md:px-0 pt-24pxr md:pt-30pxr pb-20pxr gap-16pxr">
-          <div className="flex flex-col gap-6pxr">
-            <span className="text-18pxr md:text-22pxr font-semibold text-black-100">
-              작품별분석
-            </span>
-            <span className="text-13pxr md:text-14pxr text-dark-gray-300">
-              작품 상세페이지를 본 뒤 독자가 실제로 읽기를 시작했는지, 어디에서 멈췄는지 확인할 수 있습니다.
-            </span>
-          </div>
-
-          <div className="border border-light-gray-300 rounded-[20px] bg-white shadow-sm px-20pxr py-32pxr text-14pxr text-dark-gray-300">
-            등록된 작품이 없습니다.
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full h-auto">
       <div className="flex flex-col w-full max-w-[1120px] mx-auto px-16pxr md:px-0 pt-24pxr md:pt-30pxr pb-20pxr gap-16pxr">
@@ -602,7 +723,7 @@ const MyProductAnalyticsArea = () => {
         <div className="flex border-b border-light-gray-300">
           <button
             type="button"
-            onClick={() => setActiveSubTab("recent24h")}
+            onClick={() => handleChangeSubTab("recent24h")}
             className={`h-[42px] px-14pxr text-14pxr font-medium border-b-2 ${
               activeSubTab === "recent24h"
                 ? "border-black-100 text-black-100"
@@ -613,7 +734,7 @@ const MyProductAnalyticsArea = () => {
           </button>
           <button
             type="button"
-            onClick={() => setActiveSubTab("inflowDropoff")}
+            onClick={() => handleChangeSubTab("inflowDropoff")}
             className={`h-[42px] px-14pxr text-14pxr font-medium border-b-2 ${
               activeSubTab === "inflowDropoff"
                 ? "border-black-100 text-black-100"
@@ -621,6 +742,26 @@ const MyProductAnalyticsArea = () => {
             }`}
           >
             유입/이탈
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenReport}
+            aria-label="리포트 이미지"
+            className="ml-auto self-center mr-2pxr w-[34px] h-[34px] flex items-center justify-center rounded-[8px] text-dark-gray-500 hover:bg-light-gray-200"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
           </button>
         </div>
 
@@ -640,7 +781,8 @@ const MyProductAnalyticsArea = () => {
               </div>
             </div>
             <Recent24hAnalyticsArea
-              productId={selectedProductId ? Number(selectedProductId) : undefined}
+              productId={selectedLiveProductId}
+              isSample={isSelectedSample}
             />
           </>
         ) : (
@@ -715,18 +857,54 @@ const MyProductAnalyticsArea = () => {
             </button>
           </div>
           <div className="mt-10pxr flex items-center justify-between gap-10pxr flex-wrap">
-            <span className="text-12pxr text-dark-gray-300">
-              최근 7일, 30일, 90일을 빠르게 조회할 수 있습니다.
-            </span>
-            {dateRangeValidationMessage ? (
-              <span className="text-12pxr text-red-500">{dateRangeValidationMessage}</span>
-            ) : (
+            {isSampleSelected ? (
               <span className="text-12pxr text-dark-gray-300">
-                조회 기간은 최대 90일까지 선택할 수 있습니다.
+                예시 데이터는 기간 설정과 무관하게 고정 표시돼요. 실제 작품을 선택하면 기간별로 조회됩니다.
               </span>
+            ) : (
+              <>
+                <span className="text-12pxr text-dark-gray-300">
+                  최근 7일, 30일, 90일은 누르면 바로 적용돼요.
+                </span>
+                {dateRangeValidationMessage ? (
+                  <span className="text-12pxr text-red-500">{dateRangeValidationMessage}</span>
+                ) : (
+                  <span className="text-12pxr text-dark-gray-300">
+                    조회 기간은 최대 90일까지 선택할 수 있습니다.
+                  </span>
+                )}
+              </>
             )}
           </div>
         </div>
+
+        {isSampleSelected ? (
+          <div className="rounded-[10px] bg-light-gray-100 px-16pxr py-10pxr text-12pxr text-dark-gray-400">
+            아래는 예시(샘플) 작품 데이터입니다. 위 작품 선택에서 본인 작품을 고르면 실제 데이터로 바뀝니다.
+          </div>
+        ) : null}
+        {hasFunnelData ? (
+          <ReaderJourneyFunnel
+            detailInflow={summaryDetailViewSessions}
+            episodeEntry={summaryDetailToViewSessions}
+            firstEpisodeComplete={funnelFirstEpisodeCompleteCount}
+            isSample={isSampleSelected}
+          />
+        ) : !isInflowDropoffLoading && !isFunnelLoading && !isFunnelSummaryLoading ? (
+          <div className="flex flex-col gap-8pxr">
+            {!isSampleSelected ? (
+              <div className="rounded-[10px] bg-light-gray-100 px-16pxr py-10pxr text-12pxr text-dark-gray-400">
+                아직 조회 기간에 충분한 유입 데이터가 없어, 화면 이해를 돕기 위한 예시 독자 여정을 보여드립니다. 실제 수치가 아닙니다.
+              </div>
+            ) : null}
+            <ReaderJourneyFunnel
+              detailInflow={sampleFunnelSummary.detailInflow}
+              episodeEntry={sampleFunnelSummary.episodeEntry}
+              firstEpisodeComplete={sampleFunnelSummary.firstEpisodeComplete}
+              isSample
+            />
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-10pxr">
           <div className="border border-light-gray-300 rounded-[16px] p-16pxr bg-white">
@@ -753,7 +931,9 @@ const MyProductAnalyticsArea = () => {
               {formatRate(summaryDetailToViewSessions, summaryDetailViewSessions)}
             </div>
             <div className="mt-6pxr text-12pxr text-dark-gray-300">
-              상세페이지 유입 대비 회차 유입 비율입니다.
+              {summaryDetailViewSessions > 0
+                ? "상세페이지 유입 대비 회차 유입 비율입니다."
+                : "데이터가 없어 산출할 수 없습니다."}
             </div>
           </div>
           <div className="border border-light-gray-300 rounded-[16px] p-16pxr bg-white">
@@ -784,9 +964,12 @@ const MyProductAnalyticsArea = () => {
                 구좌·검색·랭킹·직접 유입별로 상세페이지 진입 후 회차를 읽었는지 확인할 수 있습니다.
               </span>
             </div>
-            <span className="text-13pxr text-dark-gray-300">
-              총 {formatNumber(sourceGroupRows.length)}개 그룹
-            </span>
+            <div className="flex items-center gap-8pxr">
+              <ChartTableToggle value={sourceView} onChange={setSourceView} />
+              <span className="text-13pxr text-dark-gray-300">
+                총 {formatNumber(sourceGroupRows.length)}개 그룹
+              </span>
+            </div>
           </div>
 
           {isInflowDropoffLoading || isInflowDropoffFetching ? (
@@ -801,6 +984,11 @@ const MyProductAnalyticsArea = () => {
             <div className="px-20pxr py-32pxr text-14pxr text-dark-gray-300">
               선택한 기간에 유입 경로별 집계가 없습니다.
             </div>
+          ) : sourceView === "chart" ? (
+            <SourceConversionBars
+              rows={sourceGroupRows}
+              getLabel={getSourceGroupLabel}
+            />
           ) : (
             <>
               <div className="hidden md:block overflow-x-auto">
@@ -887,9 +1075,12 @@ const MyProductAnalyticsArea = () => {
                 </>
               ) : null}
             </div>
-            <span className="text-13pxr text-dark-gray-300">
-              총 {formatNumber(episodeDropoffRows.length)}개 회차
-            </span>
+            <div className="flex items-center gap-8pxr shrink-0">
+              <ChartTableToggle value={episodeView} onChange={setEpisodeView} />
+              <span className="text-13pxr text-dark-gray-300">
+                총 {formatNumber(episodeDropoffRows.length)}개 회차
+              </span>
+            </div>
           </div>
 
           {isEpisodeDropoffLoading || isEpisodeDropoffFetching ? (
@@ -904,6 +1095,8 @@ const MyProductAnalyticsArea = () => {
             <div className="px-20pxr py-32pxr text-14pxr text-dark-gray-300">
               선택한 기간에 회차별 읽다 나감 데이터가 없습니다.
             </div>
+          ) : episodeView === "chart" ? (
+            <EpisodeDropoffCurve rows={episodeDropoffRows} />
           ) : (
             <>
               <div className="hidden md:block overflow-x-auto">
@@ -1025,7 +1218,7 @@ const MyProductAnalyticsArea = () => {
                     <div className="flex items-start justify-between gap-10pxr">
                       <div className="flex flex-col">
                         <span className="text-14pxr font-semibold text-black-100">
-                          {productTitleMap.get(row.product_id) || `작품 ${row.product_id}`}
+                          {getProductTitle(row.product_id)}
                         </span>
                         <span className="text-12pxr text-dark-gray-300">
                           {row.detail_entry_date} · {getSourceLabel(row.entry_source)}

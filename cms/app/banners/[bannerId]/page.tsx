@@ -23,6 +23,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { bannerPositions } from "@/constants/banner";
+import {
+  getMobileBannerImageGuide,
+  getPrimaryBannerImageGuide,
+  shouldShowMobileBannerImageUpload,
+  usesUnifiedBannerImage as isUnifiedBannerImagePosition,
+} from "@/lib/bannerImagePolicy";
 import { prepareBannerImageForUpload } from "@/lib/imageOptimize";
 import { catchErrorMessage, getFileName, showAlert } from "@/lib/utils";
 import { format } from "date-fns";
@@ -51,14 +57,8 @@ export default function Page() {
   const [mobileImage, setMobileImage] = useState<File | null>(null);
   const [showOrder, setShowOrder] = useState<string>("");
 
-  const getBannerSpec = (pos: string) => {
-    if (pos === "main-top" || pos === "paid" || pos === "review")
-      return { pc: "1100x400", mobile: "400x350" };
-    if (pos === "main-mid") return { pc: "1080x116", mobile: null };
-    if (pos === "viewer") return { pc: "839x122", mobile: "375x122" };
-    return null;
-  };
-  const spec = getBannerSpec(position);
+  const usesUnifiedBannerImage = isUnifiedBannerImagePosition(position);
+  const showMobileImageUpload = shouldShowMobileBannerImageUpload(position);
 
   const { data, isLoading, isFetching } = useGetBannerDetail(bannerId || "");
   const updateBanner = useEditBanner();
@@ -107,8 +107,8 @@ export default function Page() {
       return;
     }
 
-    if (!mobileImage && !data?.mobile_image_id) {
-      showAlert("알림", "모바일 배너 이미지를 업로드해주세요.", "확인");
+    if (showMobileImageUpload && !mobileImage && !data?.mobile_image_id) {
+      showAlert("알림", "이 위치는 모바일용 이미지를 업로드해주세요.", "확인");
       return;
     }
 
@@ -150,7 +150,9 @@ export default function Page() {
 
     // upload mobile image
     let mobileImageId = data?.mobile_image_id || null;
-    if (mobileImage) {
+    if (usesUnifiedBannerImage) {
+      mobileImageId = image ? imageId : data?.mobile_image_id || imageId;
+    } else if (mobileImage) {
       const uploadMobileImage = await prepareBannerImageForUpload(mobileImage);
       const res = await createUpload.mutateAsync(
         {
@@ -311,16 +313,16 @@ export default function Page() {
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableHead className="require">배너 이미지 (PC)</TableHead>
+                <TableHead className="require">
+                  {usesUnifiedBannerImage ? "배너 이미지" : "배너 이미지 (PC)"}
+                </TableHead>
                 <TableCell>
                   <FileUpload
                     fileName={getFileName(image || "", data?.file_name || "")}
                     onFileChange={setImage}
                     accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
                   />
-                  {spec
-                    ? `PC: ${spec.pc}, 포멧: jpg|png|gif|webp`
-                    : "포멧: jpg|png|gif|webp"}
+                  {getPrimaryBannerImageGuide(position)}
                 </TableCell>
               </TableRow>
               {(image || data?.file_name) && (
@@ -338,38 +340,40 @@ export default function Page() {
                   </TableCell>
                 </TableRow>
               )}
-              <TableRow>
-                <TableHead className="require">배너 이미지 (모바일)</TableHead>
-                <TableCell>
-                  <FileUpload
-                    fileName={getFileName(
-                      mobileImage || "",
-                      data?.mobile_file_name || "",
-                    )}
-                    onFileChange={setMobileImage}
-                    accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
-                  />
-                  {spec
-                    ? spec.mobile
-                      ? `Mobile: ${spec.mobile}, 포멧: jpg|png|gif|webp`
-                      : "이 위치는 모바일 이미지를 사용하지 않습니다"
-                    : "포멧: jpg|png|gif|webp"}
-                </TableCell>
-              </TableRow>
-              {(mobileImage || data?.mobile_file_name) && (
-                <TableRow>
-                  <TableCell colSpan={2}>
-                    <img
-                      src={
-                        mobileImage
-                          ? URL.createObjectURL(mobileImage)
-                          : data?.mobile_image_path || ""
-                      }
-                      alt="모바일 배너 미리보기"
-                      className="max-h-[180px] rounded border"
-                    />
-                  </TableCell>
-                </TableRow>
+              {showMobileImageUpload && (
+                <>
+                  <TableRow>
+                    <TableHead className="require">
+                      배너 이미지 (모바일)
+                    </TableHead>
+                    <TableCell>
+                      <FileUpload
+                        fileName={getFileName(
+                          mobileImage || "",
+                          data?.mobile_file_name || "",
+                        )}
+                        onFileChange={setMobileImage}
+                        accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
+                      />
+                      {getMobileBannerImageGuide(position)}
+                    </TableCell>
+                  </TableRow>
+                  {(mobileImage || data?.mobile_file_name) && (
+                    <TableRow>
+                      <TableCell colSpan={2}>
+                        <img
+                          src={
+                            mobileImage
+                              ? URL.createObjectURL(mobileImage)
+                              : data?.mobile_image_path || ""
+                          }
+                          alt="모바일 배너 미리보기"
+                          className="max-h-[180px] rounded border"
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </>
               )}
             </TableBody>
           </Table>
