@@ -5,6 +5,7 @@ import {
   AuthorRecent24hRankStatus,
   IAuthorProductRecent24hEpisodeRow,
 } from "@/app/api/query/author/statistics/dto";
+import { sampleRecent24h } from "./sampleProductAnalytics.mock";
 import Spinner from "@/components/common/Spinner";
 import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
@@ -15,6 +16,7 @@ type SortType = "recent24h" | "episodeNo";
 
 interface Props {
   productId?: number;
+  isSample?: boolean;
 }
 
 const formatNumber = (value: number | null | undefined) =>
@@ -86,13 +88,19 @@ const buildSegmentRows = (episodes: IAuthorProductRecent24hEpisodeRow[]) => {
   ];
 };
 
-const Recent24hAnalyticsArea = ({ productId }: Props) => {
+const Recent24hAnalyticsArea = ({ productId, isSample = false }: Props) => {
   const [sortType, setSortType] = useState<SortType>("recent24h");
   const [page, setPage] = useState(1);
-  const { data, isLoading, isFetching, error } = useProductRecent24hStatistics({
+  const {
+    data: liveData,
+    isLoading,
+    isFetching,
+    error,
+  } = useProductRecent24hStatistics({
     productId,
-    enabled: typeof productId === "number",
+    enabled: typeof productId === "number" && !isSample,
   });
+  const data = isSample ? sampleRecent24h : liveData;
 
   useEffect(() => {
     setPage(1);
@@ -137,7 +145,7 @@ const Recent24hAnalyticsArea = ({ productId }: Props) => {
     : undefined;
   const hasUnavailableState = !!error || !data;
 
-  if (!productId) {
+  if (!productId && !isSample) {
     return (
       <div className="border border-light-gray-300 rounded-[10px] bg-white px-18pxr py-28pxr text-14pxr text-dark-gray-300">
         작품을 선택해 주세요.
@@ -155,6 +163,12 @@ const Recent24hAnalyticsArea = ({ productId }: Props) => {
 
   return (
     <div className="flex flex-col gap-14pxr">
+      {isSample ? (
+        <div className="rounded-[10px] bg-light-gray-100 px-16pxr py-10pxr text-12pxr text-dark-gray-400">
+          화면 이해를 돕기 위한 예시 데이터입니다. 실제 작품의 최근 24시간 수치가 아닙니다.
+        </div>
+      ) : null}
+
       {hasUnavailableState ? (
         <div className="border border-light-gray-300 rounded-[10px] bg-white px-18pxr py-16pxr text-13pxr text-dark-gray-400">
           최근 24시간 집계가 아직 준비되지 않았습니다. Top50 랭킹에는 아직 반영되지 않습니다.
@@ -202,17 +216,31 @@ const Recent24hAnalyticsArea = ({ productId }: Props) => {
           </div>
           <div className="px-16pxr py-16pxr">
             {data?.hourly?.length ? (
-              <div className="flex items-end gap-4pxr h-[128px]">
-                {data.hourly.map((row) => (
-                  <div
-                    key={row.hourLabel}
-                    className="flex-1 min-w-[4px] bg-dark-gray-700 rounded-t-[2px]"
-                    style={{
-                      height: `${Math.max(4, (row.countHit / maxHourlyCount) * 120)}px`,
-                    }}
-                    title={`${row.hourLabel} ${formatNumber(row.countHit)}`}
-                  />
-                ))}
+              <div>
+                <div className="flex items-end gap-4pxr h-[128px]">
+                  {data.hourly.map((row) => (
+                    <div
+                      key={row.hourLabel}
+                      className="flex-1 min-w-[4px] bg-dark-gray-700 rounded-t-[2px]"
+                      style={{
+                        height: `${Math.max(4, (row.countHit / maxHourlyCount) * 120)}px`,
+                      }}
+                      title={`${row.hourLabel} ${formatNumber(row.countHit)}`}
+                    />
+                  ))}
+                </div>
+                <div className="flex gap-4pxr mt-6pxr">
+                  {data.hourly.map((row, idx) => (
+                    <span
+                      key={`hour-label-${row.hourLabel}`}
+                      className="flex-1 min-w-[4px] text-center text-10pxr text-dark-gray-300 whitespace-nowrap"
+                    >
+                      {idx % 6 === 0 || idx === data.hourly.length - 1
+                        ? row.hourLabel
+                        : ""}
+                    </span>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="h-[128px] flex items-center text-13pxr text-dark-gray-300">

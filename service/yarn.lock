@@ -4898,6 +4898,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"html-to-image@npm:^1.11.13":
+  version: 1.11.13
+  resolution: "html-to-image@npm:1.11.13"
+  checksum: 10c0/03bd7192d87b99499e37ff12a8e2b41ddce4cf8e33a93dfadff18df0f213434c7f1ba8328db2158f4805da07b7aec3c90aec3152908281153217e86784218b10
+  languageName: node
+  linkType: hard
+
 "http-cache-semantics@npm:^4.1.1":
   version: 4.2.0
   resolution: "http-cache-semantics@npm:4.2.0"
@@ -5572,6 +5579,7 @@ __metadata:
     es-toolkit: "npm:^1.17.0"
     eslint: "npm:^8"
     eslint-config-next: "npm:14.2.5"
+    html-to-image: "npm:^1.11.13"
     iconv-lite: "npm:^0.6.3"
     iron-session: "npm:^8.0.4"
     msw: "npm:^2.3.5"
