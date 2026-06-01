@@ -149,8 +149,8 @@ const buildBriefCopy = (
 
   const points = [
     premise
-      ? `이야기의 출발점은 ${clampSentence(premise, 86)}`
-      : `초반 훅은 ${clampSentence(hook, 86)}`,
+      ? `이야기의 출발점은 ${premise}`
+      : `초반 훅은 ${hook}`,
     protagonistType && protagonistGoal
       ? `주인공은 ${protagonistType} 축으로 ${protagonistGoal}을 향해 움직입니다.`
       : protagonistGoal
@@ -164,9 +164,7 @@ const buildBriefCopy = (
   return {
     preview: clampSentence(previewBase, MAX_PREVIEW_LENGTH),
     previewLines,
-    intro: `${clampSentence(hook || premise, 118)}${
-      mood ? ` ${mood} 결이 강하게 깔려 있어요.` : ""
-    }`,
+    intro: `${hook || premise}${mood ? ` ${mood} 결이 강하게 깔려 있어요.` : ""}`,
     points,
     chips,
   };
