@@ -3,6 +3,7 @@ import {
   useSelectStoragePath,
 } from "@/app/api/query/author/episode";
 import useToastStore from "@/store/toastStore";
+import { recoverPlainTextFromClipboardHtml } from "@/utils/clipboardPlainTextRecovery";
 import { plainTextToTiptapParagraphs } from "@/utils/plainTextToTiptapParagraphs";
 import { prepareWebpUpload } from "@/utils/webpUpload";
 import Bold from "@tiptap/extension-bold";
@@ -102,11 +103,19 @@ const Editor = ({ value, onChange, preferPlainTextPaste = false }: Props) => {
       handlePaste: (_view, event) => {
         const pastedText = event.clipboardData?.getData("text/plain") || "";
         const pastedHtml = event.clipboardData?.getData("text/html") || "";
+        const textForPlainPaste =
+          recoverPlainTextFromClipboardHtml(pastedHtml, pastedText) ||
+          pastedText;
+        const shouldPastePlainText =
+          textForPlainPaste.length > 0 && (preferPlainTextPaste || !pastedHtml);
+        const textForCharLimit = shouldPastePlainText
+          ? textForPlainPaste
+          : pastedText;
         const currentCharCount = editor?.storage.characterCount.characters() || 0;
-        const totalChars = currentCharCount + pastedText.length;
+        const totalChars = currentCharCount + textForCharLimit.length;
 
         // Check if pasting would exceed limit
-        if (totalChars > MAX_CHARACTERS) {
+        if (textForCharLimit && totalChars > MAX_CHARACTERS) {
           event.preventDefault();
           setToast({
             message: `텍스트가 ${MAX_CHARACTERS.toLocaleString()}자를 초과했습니다.`,
@@ -117,9 +126,9 @@ const Editor = ({ value, onChange, preferPlainTextPaste = false }: Props) => {
 
         // 회차 원고는 문서/웹에서 복사해도 plain text 개행을 SSOT로 삼는다.
         // Word/Docs/브라우저는 text/html을 함께 넣어 기본 paste가 빈 줄을 접을 수 있다.
-        if (pastedText && (!pastedHtml || preferPlainTextPaste)) {
+        if (shouldPastePlainText) {
           event.preventDefault();
-          pastePlainTextPreserveNewlines(pastedText);
+          pastePlainTextPreserveNewlines(textForPlainPaste);
           return true;
         }
 

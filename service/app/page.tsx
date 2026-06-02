@@ -10,6 +10,7 @@ import MiddleBanner from "@/components/main/MiddleBanner";
 import MiddleMenu from "@/components/main/MiddleMenu";
 import PaidTop from "@/components/main/PaidTop";
 import RecentlyView from "@/components/main/RecentlyView";
+import SingleSlot from "@/components/main/SingleSlot";
 import Footer from "@/components/menu/Footer";
 import GlobalNav from "@/components/menu/GlobalNav";
 import TasteSection from "@/components/recommendation/TasteSection";
@@ -18,6 +19,7 @@ import { IProduct } from "@/types";
 import { useEffect, useMemo, useState } from "react";
 import {
   useGetDirectRecommend,
+  useGetMainSingleSlots,
   useSelectInterestDropSoonUpdateProducts,
   useSelectLatestUpdateProducts,
   useSelectMainRuleSlots,
@@ -79,6 +81,11 @@ export default function Home() {
       userScopedCacheIdentity
     );
   const { data: directRecommendData } = useGetDirectRecommend(
+    adultYn,
+    homeQueryState.enabled,
+    mainProductCacheIdentity
+  );
+  const { data: mainSingleSlotsData } = useGetMainSingleSlots(
     adultYn,
     homeQueryState.enabled,
     mainProductCacheIdentity
@@ -162,6 +169,18 @@ export default function Home() {
     }
     return mixed;
   }, [featureSections, tasteSections]);
+  const mainSingleSlotsByKey = useMemo(() => {
+    return new Map(
+      (mainSingleSlotsData?.data ?? []).map((slot) => [slot.slotKey, slot])
+    );
+  }, [mainSingleSlotsData]);
+  const beforePaidTopSingleSlot = mainSingleSlotsByKey.get("before_paid_top");
+  const betweenDirectRecommendFirstSingleSlot = mainSingleSlotsByKey.get(
+    "between_direct_recommend_1"
+  );
+  const betweenDirectRecommendSecondSingleSlot = mainSingleSlotsByKey.get(
+    "between_direct_recommend_2"
+  );
 
   const freeTopProducts: IProduct[] = [];
   const paidTopProducts: IProduct[] = [];
@@ -205,6 +224,9 @@ export default function Home() {
                 ))}
               </div>
             )}
+            {beforePaidTopSingleSlot && (
+              <SingleSlot slot={beforePaidTopSingleSlot} />
+            )}
             <div className="w-full mt-30pxr md:mt-80pxr bg-[#212123]">
               <PaidTop data={paidTopProducts} />
             </div>
@@ -219,19 +241,28 @@ export default function Home() {
                 title={data?.publisherPromotionTitle}
                 entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.HOME_CP_PROMOTION}
               />
-              {mixedSections.map((item, index) =>
-                item.type === "feature" ? (
-                  <BottomProducts
-                    key={`feature-${index}-${item.section.suggestTitle || item.section.suggestId}`}
-                    suggestionData={item.section}
-                  />
-                ) : (
-                  <TasteSection
-                    key={`ai-${index}-${item.section.dimension || item.section.title || index}`}
-                    section={item.section}
-                  />
-                )
+              {betweenDirectRecommendFirstSingleSlot && (
+                <SingleSlot slot={betweenDirectRecommendFirstSingleSlot} />
               )}
+              {mixedSections.map((item, index) => (
+                <div
+                  key={`${item.type}-${index}-${
+                    item.type === "feature"
+                      ? item.section.suggestTitle || item.section.suggestId
+                      : item.section.dimension || item.section.title || index
+                  }`}
+                  className="contents"
+                >
+                  {item.type === "feature" ? (
+                    <BottomProducts suggestionData={item.section} />
+                  ) : (
+                    <TasteSection section={item.section} />
+                  )}
+                  {index === 0 && betweenDirectRecommendSecondSingleSlot && (
+                    <SingleSlot slot={betweenDirectRecommendSecondSingleSlot} />
+                  )}
+                </div>
+              ))}
               {/* TODO: 관심 끊기기 임박 작품 api 연결 */}
               <BottomProducts
                 suggestionData={{
