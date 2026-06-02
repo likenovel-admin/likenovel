@@ -1,4 +1,4 @@
-const WEBP_QUALITY = 0.82;
+const BANNER_WEBP_QUALITY = 0.92;
 const COVER_WEBP_QUALITY = 0.92;
 const WEBP_MIME_TYPE = "image/webp";
 export const PRODUCT_COVER_MAX_IMAGE_DIMENSION = 1024;
@@ -64,7 +64,7 @@ const loadImageBitmap = (file: File): Promise<HTMLImageElement> => {
 
 const canvasToWebpBlob = (
   canvas: HTMLCanvasElement,
-  quality = WEBP_QUALITY,
+  quality: number,
 ): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -116,7 +116,7 @@ export async function prepareBannerImageForUpload(
     }
 
     context.drawImage(image, 0, 0);
-    const blob = await canvasToWebpBlob(canvas);
+    const blob = await canvasToWebpBlob(canvas, BANNER_WEBP_QUALITY);
     const fileName = replaceExtensionWithWebp(file.name);
 
     return {
