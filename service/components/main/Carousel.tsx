@@ -3,12 +3,19 @@ import {
   BANNER_CAROUSEL_CARD_GAP,
   BANNER_CAROUSEL_CARD_HEIGHT,
   BANNER_CAROUSEL_CARD_WIDTH,
+  BANNER_CAROUSEL_DESKTOP_AUTO_ROTATE_INTERVAL_MS,
+  BANNER_CAROUSEL_MOBILE_BREAKPOINT,
+  BANNER_CAROUSEL_MOBILE_AUTO_ROTATE_INTERVAL_MS,
+  getBannerCarouselMobileCardHeight,
+  getBannerCarouselMobileCardWidth,
+  getBannerCarouselMobileTrackPanelIndexes,
+  getBannerCarouselMobileTranslateX,
   getBannerCarouselPageCount,
   getBannerCarouselPageStartIndex,
   getBannerCarouselViewportWidth,
   getBannerCarouselVisibleCount,
 } from "@/utils/bannerCarouselPaging";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import ArrowLeftMedium from "/public/images/arrow-left-medium.svg";
 import ArrowRightMedium from "/public/images/arrow-right-medium.svg";
 
@@ -41,19 +48,49 @@ const Carousel = ({ primaryPanels }: Props) => {
   const viewportMeasureRef = useRef<HTMLDivElement | null>(null);
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
+  const dragCurrentX = useRef(0);
 
   const count = primaryPanels.length;
   const visibleCount = getBannerCarouselVisibleCount(availableWidth, count);
-  const pageCount = getBannerCarouselPageCount(count, visibleCount);
+  const isMobile = availableWidth < BANNER_CAROUSEL_MOBILE_BREAKPOINT;
+  const pageCount = isMobile
+    ? count
+    : getBannerCarouselPageCount(count, visibleCount);
   const canSlide = pageCount > 1;
-  const viewportWidth = getBannerCarouselViewportWidth(visibleCount);
+  const desktopViewportWidth = getBannerCarouselViewportWidth(visibleCount);
+  const mobileCardWidth = getBannerCarouselMobileCardWidth(availableWidth);
+  const mobileCardHeight = getBannerCarouselMobileCardHeight(mobileCardWidth);
+  const viewportWidth = isMobile ? availableWidth : desktopViewportWidth;
+  const mobileTrackPanelIndexes =
+    getBannerCarouselMobileTrackPanelIndexes(count);
+  const renderedPanels = isMobile
+    ? mobileTrackPanelIndexes.map((panelIndex, renderIndex) => ({
+        panel: primaryPanels[panelIndex],
+        panelIndex,
+        renderIndex,
+      }))
+    : primaryPanels.map((panel, panelIndex) => ({
+        panel,
+        panelIndex,
+        renderIndex: panelIndex,
+      }));
   const startIndex = getBannerCarouselPageStartIndex(
     currentPage,
     count,
     visibleCount,
   );
-  const translateX =
+  const desktopTranslateX =
     startIndex * (BANNER_CAROUSEL_CARD_WIDTH + BANNER_CAROUSEL_CARD_GAP);
+  const mobileTranslateX = getBannerCarouselMobileTranslateX(
+    currentPage,
+    mobileCardWidth,
+  );
+  const translateX = isMobile ? mobileTranslateX : desktopTranslateX;
+  const cardWidth = isMobile ? mobileCardWidth : BANNER_CAROUSEL_CARD_WIDTH;
+  const cardHeight = isMobile ? mobileCardHeight : BANNER_CAROUSEL_CARD_HEIGHT;
+  const autoRotateIntervalMs = isMobile
+    ? BANNER_CAROUSEL_MOBILE_AUTO_ROTATE_INTERVAL_MS
+    : BANNER_CAROUSEL_DESKTOP_AUTO_ROTATE_INTERVAL_MS;
 
   useEffect(() => {
     const target = viewportMeasureRef.current;
@@ -80,10 +117,10 @@ const Carousel = ({ primaryPanels }: Props) => {
 
     const timer = window.setInterval(() => {
       setCurrentPage((page) => (page + 1) % pageCount);
-    }, 5000);
+    }, autoRotateIntervalMs);
 
     return () => window.clearInterval(timer);
-  }, [canSlide, pageCount]);
+  }, [autoRotateIntervalMs, canSlide, pageCount]);
 
   if (count === 0) return null;
 
@@ -95,6 +132,33 @@ const Carousel = ({ primaryPanels }: Props) => {
   const goToNextPage = () => {
     if (!canSlide) return;
     setCurrentPage((page) => (page + 1) % pageCount);
+  };
+
+  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    isDragging.current = false;
+    dragStartX.current = e.clientX;
+    dragCurrentX.current = e.clientX;
+  };
+
+  const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    dragCurrentX.current = e.clientX;
+    if (Math.abs(e.clientX - dragStartX.current) > 5) {
+      isDragging.current = true;
+    }
+  };
+
+  const handlePointerUp = () => {
+    if (!isDragging.current) return;
+
+    const deltaX = dragCurrentX.current - dragStartX.current;
+    if (Math.abs(deltaX) < 50) return;
+
+    if (deltaX < 0) {
+      goToNextPage();
+      return;
+    }
+
+    goToPreviousPage();
   };
 
   return (
@@ -109,22 +173,21 @@ const Carousel = ({ primaryPanels }: Props) => {
               className="flex transition-transform duration-300 ease-out"
               style={{
                 gap: BANNER_CAROUSEL_CARD_GAP,
-                transform: `translateX(-${translateX}px)`,
+                transform: `translateX(${
+                  isMobile ? translateX : -translateX
+                }px)`,
               }}
             >
-              {primaryPanels.map((panel, index) => (
+              {renderedPanels.map(({ panel, panelIndex, renderIndex }) => (
                 <div
-                  key={index}
+                  key={`${panelIndex}-${renderIndex}`}
                   className="shrink-0 cursor-pointer"
-                  style={{ width: BANNER_CAROUSEL_CARD_WIDTH }}
-                  onMouseDown={(e) => {
+                  style={{ width: cardWidth, touchAction: "pan-y" }}
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  onPointerCancel={() => {
                     isDragging.current = false;
-                    dragStartX.current = e.clientX;
-                  }}
-                  onMouseMove={(e) => {
-                    if (Math.abs(e.clientX - dragStartX.current) > 5) {
-                      isDragging.current = true;
-                    }
                   }}
                   onClick={() => {
                     if (isDragging.current) return;
@@ -135,11 +198,11 @@ const Carousel = ({ primaryPanels }: Props) => {
                 >
                   <img
                     src={panel.pcImgPath}
-                    alt={`banner_${index}`}
+                    alt={`banner_${panelIndex}`}
                     className="object-cover rounded-[20px]"
                     style={{
-                      width: BANNER_CAROUSEL_CARD_WIDTH,
-                      height: BANNER_CAROUSEL_CARD_HEIGHT,
+                      width: cardWidth,
+                      height: cardHeight,
                     }}
                   />
                 </div>

@@ -143,3 +143,16 @@ export interface IGetDirectRecommendResponse {
     productList: IProduct[];
   }[];
 }
+
+export interface IMainSingleSlotItem {
+  singleSlotId: number;
+  slotKey: string;
+  slotName: string;
+  slotOrder: number;
+  summaryText: string;
+  product: IProduct;
+}
+
+export interface IGetMainSingleSlotsResponse {
+  data: IMainSingleSlotItem[];
+}

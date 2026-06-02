@@ -170,6 +170,10 @@ const data = {
           title: "직접 추천구좌 관리",
           url: "/exposure-accounts/direct-recommend",
         },
+        {
+          title: "단일구좌 관리",
+          url: "/exposure-accounts/main-single-slots",
+        },
       ],
     },
     {
