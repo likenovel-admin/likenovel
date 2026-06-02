@@ -32,7 +32,7 @@ assert.deepEqual(calculateImageResizeDimensions(3000, 1200, 1024), {
 });
 
 assert.match(source, /blob\.type !== WEBP_MIME_TYPE/);
-assert.match(source, /const BANNER_WEBP_QUALITY = 0\.92/);
+assert.match(source, /const BANNER_WEBP_QUALITY = 0\.95/);
 assert.match(source, /const COVER_WEBP_QUALITY = 0\.92/);
 assert.match(
   bannerUploadSource,
