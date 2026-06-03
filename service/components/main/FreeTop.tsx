@@ -122,6 +122,13 @@ const FreeTop = ({ data }: Props) => {
                       sizes: "56px",
                     }
                   )}
+                  {getIsNewEpisode(
+                    product.properties?.latestEpisodeDate || ""
+                  ) && (
+                    <div className="absolute bottom-2pxr left-2pxr scale-[0.72] origin-bottom-left">
+                      <SquareBadge type="up" />
+                    </div>
+                  )}
                   <div className="absolute -top-4pxr -left-4pxr">
                     <span className="inline-flex items-center justify-center w-[20px] h-[20px] rounded-full bg-black/70 text-white text-11pxr font-semibold">
                       {product.rank?.currentRank || 0}

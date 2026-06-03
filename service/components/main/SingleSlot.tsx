@@ -16,9 +16,9 @@ interface Props {
 }
 
 const SINGLE_SLOT_TITLE_MARQUEE_GAP = 48;
-const SINGLE_SLOT_TITLE_MIN_DURATION_SEC = 8;
-const SINGLE_SLOT_TITLE_MAX_DURATION_SEC = 18;
-const SINGLE_SLOT_TITLE_PIXELS_PER_SEC = 28;
+const SINGLE_SLOT_TITLE_MIN_DURATION_SEC = 6;
+const SINGLE_SLOT_TITLE_MAX_DURATION_SEC = 14;
+const SINGLE_SLOT_TITLE_PIXELS_PER_SEC = 44;
 
 const getSingleSlotTitleDuration = (distance: number) => {
   return Math.min(
@@ -156,8 +156,8 @@ const SingleSlot = ({ slot }: Props) => {
                   unoptimized={isDefaultCoverImage}
                   className="block object-cover w-full h-full"
                 />
-                {/* ThumbnailTopBadge > UP */}
-                <div className="absolute top-[5px] left-[5px]">
+                {/* Thumbnail badge */}
+                <div className="absolute bottom-[5px] left-[5px]">
                   <SquareBadge type="up" />
                 </div>
               </div>

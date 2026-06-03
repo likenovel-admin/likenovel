@@ -26,6 +26,11 @@ assert.match(
 );
 assert.match(
   source,
+  /absolute bottom-\[5px\] left-\[5px\]/,
+  "SingleSlot UP badge should stay at the bottom-left of the cover like other home cards",
+);
+assert.match(
+  source,
   /aria-hidden/,
   "Duplicated marquee text should be hidden from assistive technology",
 );
