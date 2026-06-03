@@ -66,16 +66,26 @@ CURSOR_CHAT_MEMENTO_RECOVERY.md
 *.md
 !README.md
 !**/README.md
+!/AGENTS.md
+!/CLAUDE.md
 !DEPLOYMENT.md
 !.claude/skills/**/*.md
 !.claude/commands/**/*.md
 !.claude/agents/**/*.md
 architecture.md
+!architecture.md
 backend-api.md
 cms-app.md
 partner-app.md
 service-app.md
-docs/
+docs/*
+!docs/deployment-runbook.md
+!docs/batch-system-architecture.md
+!docs/ai-chat-freeform-contract.md
+!docs/project-analysis-2026-02-18.md
+!docs/project-architecture-full.md
+!docs/wiki/
+!docs/wiki/**
 
 # --- Dev tools / scripts (local only) ---
 codex-share/
