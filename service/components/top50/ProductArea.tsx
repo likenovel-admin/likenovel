@@ -12,8 +12,15 @@ import Spinner from "../common/Spinner";
 interface Props {
   data: IProduct[] | null;
   pageType: "free" | "paid";
+  isRankHistoryTriggerVisible?: boolean;
+  onOpenRankHistory?: () => void;
 }
-const ProductArea = ({ data, pageType = "free" }: Props) => {
+const ProductArea = ({
+  data,
+  pageType = "free",
+  isRankHistoryTriggerVisible = false,
+  onOpenRankHistory,
+}: Props) => {
   const allProducts = useMemo(() => data ?? [], [data]);
   const ITEMS_PER_LOAD = 20;
   const observerTarget = useRef<HTMLDivElement>(null);
@@ -85,6 +92,11 @@ const ProductArea = ({ data, pageType = "free" }: Props) => {
           headerText="인기 TOP 50"
           hasTimeSpeechBubble
           timeSpeechBubbleMode="ranking"
+          timeSpeechBubbleOnClick={
+            isRankHistoryTriggerVisible ? onOpenRankHistory : undefined
+          }
+          timeSpeechBubbleAriaLabel="시간대별 랭킹 보기"
+          timeSpeechBubbleShowActionIndicator={isRankHistoryTriggerVisible}
           hasRankingGuide
         />
         <ListTypeTab listType={listType} setListType={setListType} />

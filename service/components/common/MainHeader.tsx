@@ -16,18 +16,28 @@ interface Props {
   textStyle?: string;
   hasTimeSpeechBubble?: boolean;
   timeSpeechBubbleMode?: "current" | "ranking";
+  timeSpeechBubbleOnClick?: () => void;
+  timeSpeechBubbleAriaLabel?: string;
+  timeSpeechBubbleShowActionIndicator?: boolean;
   hasMoreButton?: boolean;
   moreButtonOnClick?: () => void;
   hasRankingGuide?: boolean;
+  rankingGuideAction?: ReactNode;
+  rightAction?: ReactNode;
 }
 const MainHeader = ({
   headerText,
   textStyle = "text-17pxr md:text-24pxr font-bold",
   hasTimeSpeechBubble = false,
   timeSpeechBubbleMode = "current",
+  timeSpeechBubbleOnClick,
+  timeSpeechBubbleAriaLabel,
+  timeSpeechBubbleShowActionIndicator = false,
   hasMoreButton = false,
   moreButtonOnClick,
   hasRankingGuide = false,
+  rankingGuideAction,
+  rightAction,
 }: Props) => {
   const tooltipId = useId();
   const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -52,10 +62,15 @@ const MainHeader = ({
 
   return (
     <div className="flex justify-between">
-      <div className="flex items-center gap-[8px] pl-16pxr md:pl-0">
+      <div className="flex items-center gap-8pxr pl-16pxr md:pl-0">
         <span className={textStyle}>{headerText}</span>
         {hasTimeSpeechBubble && (
-          <TimeSpeechBubble mode={timeSpeechBubbleMode} />
+          <TimeSpeechBubble
+            mode={timeSpeechBubbleMode}
+            onClick={timeSpeechBubbleOnClick}
+            ariaLabel={timeSpeechBubbleAriaLabel}
+            showActionIndicator={timeSpeechBubbleShowActionIndicator}
+          />
         )}
         {hasRankingGuide && (
           <div ref={guideRef} className="relative flex items-center">
@@ -64,14 +79,16 @@ const MainHeader = ({
               aria-label="랭킹 산정 기준 보기"
               aria-describedby={isGuideOpen ? tooltipId : undefined}
               aria-expanded={isGuideOpen}
-              className="flex justify-center items-center w-[18px] h-[18px] rounded-full border border-light-gray-600 bg-white text-12pxr font-bold leading-none text-dark-gray-500 hover:bg-light-gray-100"
+              className="flex h-[28px] w-[28px] items-center justify-center"
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 setIsGuideOpen((prev) => !prev);
               }}
             >
-              <span className="relative top-[-1px]">i</span>
+              <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full border border-light-gray-600 bg-white text-13pxr font-semibold leading-none text-dark-gray-500 hover:bg-light-gray-100">
+                i
+              </span>
             </button>
             {isGuideOpen && (
               <div
@@ -89,17 +106,23 @@ const MainHeader = ({
             )}
           </div>
         )}
+        {rankingGuideAction}
       </div>
-      {hasMoreButton && (
-        <button
-          className="flex items-center gap-8pxr p-2"
-          onClick={moreButtonOnClick}
-        >
-          <span className="text-dark-gray-300 text-14pxr font-medium pr-16pxr md:pr-0">
-            더보기
-          </span>
-          <ArrowRightSmall className="text-dark-gray-300 hidden md:block" />
-        </button>
+      {(rightAction || hasMoreButton) && (
+        <div className="flex items-center gap-12pxr pr-16pxr md:pr-0">
+          {rightAction}
+          {hasMoreButton && (
+            <button
+              className="flex items-center gap-8pxr p-2"
+              onClick={moreButtonOnClick}
+            >
+              <span className="text-dark-gray-300 text-14pxr font-medium">
+                더보기
+              </span>
+              <ArrowRightSmall className="text-dark-gray-300 hidden md:block" />
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

@@ -13,6 +13,7 @@ import ErrorArea from "../common/ErrorArea";
 import InterestBadge from "../common/InterestBadge";
 import MainHeader from "../common/MainHeader";
 import RankingBadge from "../common/RankingBadge";
+import RankHistoryModal from "../top50/RankHistoryModal";
 import SquareBadge from "../common/SquareBadge";
 import UserNickname from "../common/UserNickname";
 
@@ -32,11 +33,32 @@ const DESKTOP_PAGE_SIZE = DESKTOP_PAGE_COLS * DESKTOP_PAGE_ROWS; // 15
 // 모바일(md 미만): 문피아 스타일에 맞게 "2열 x 4행"이 보이도록 구성(가로 스와이프)
 const MOBILE_GRID_COLS_VISIBLE = 2;
 const MOBILE_GRID_ROWS = 4;
+const RANK_HISTORY_VISIBLE_FROM_KST = "2026-06-03";
+
+const getTodayDateString = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = `${today.getMonth() + 1}`.padStart(2, "0");
+  const day = `${today.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getKstDateString = () => {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return formatter.format(new Date());
+};
 
 const FreeTop = ({ data }: Props) => {
   const router = useRouter();
   const renderAdultCoverImage = useAdultCoverImage();
   const [currentPage, setCurrentPage] = useState(0);
+  const [isRankHistoryOpen, setIsRankHistoryOpen] = useState(false);
+  const [rankHistoryDate, setRankHistoryDate] = useState(getTodayDateString);
 
   if (!data || !data.length) {
     return <ErrorArea />;
@@ -52,6 +74,8 @@ const FreeTop = ({ data }: Props) => {
 
   const totalItems = desktopProducts.length;
   const lastPage = Math.ceil(totalItems / DESKTOP_PAGE_SIZE) - 1;
+  const isRankHistoryTriggerVisible =
+    getKstDateString() >= RANK_HISTORY_VISIBLE_FROM_KST;
 
   const handleNextPage = () => {
     setCurrentPage(currentPage >= lastPage ? 0 : currentPage + 1);
@@ -79,6 +103,13 @@ const FreeTop = ({ data }: Props) => {
         headerText="인기 무료 Top"
         hasTimeSpeechBubble
         timeSpeechBubbleMode="ranking"
+        timeSpeechBubbleOnClick={
+          isRankHistoryTriggerVisible
+            ? () => setIsRankHistoryOpen(true)
+            : undefined
+        }
+        timeSpeechBubbleAriaLabel="시간대별 랭킹 보기"
+        timeSpeechBubbleShowActionIndicator={isRankHistoryTriggerVisible}
         hasRankingGuide
         hasMoreButton
         moreButtonOnClick={() => {
@@ -235,6 +266,13 @@ const FreeTop = ({ data }: Props) => {
           </div>
         </div>
       </div>
+      <RankHistoryModal
+        open={isRankHistoryOpen}
+        area="freeSerialTop"
+        date={rankHistoryDate}
+        onDateChange={setRankHistoryDate}
+        onClose={() => setIsRankHistoryOpen(false)}
+      />
     </div>
   );
 };

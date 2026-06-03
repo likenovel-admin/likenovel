@@ -7,9 +7,10 @@ import {
 import Spinner from "@/components/common/Spinner";
 import Tab from "@/components/common/Tab";
 import ProductArea from "@/components/top50/ProductArea";
+import RankHistoryModal from "@/components/top50/RankHistoryModal";
 import useAuthStore from "@/store/authStore";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const TOP50_TABS: Array<{ label: string; value: TTop50Area; href: string }> = [
   {
@@ -29,18 +30,42 @@ const TOP50_TABS: Array<{ label: string; value: TTop50Area; href: string }> = [
   },
 ];
 
+const RANK_HISTORY_VISIBLE_FROM_KST = "2026-06-03";
+
 interface Props {
   initialArea: TTop50Area;
 }
+
+const getTodayDateString = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = `${today.getMonth() + 1}`.padStart(2, "0");
+  const day = `${today.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getKstDateString = () => {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return formatter.format(new Date());
+};
 
 export default function Top50Page({ initialArea }: Props) {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
   const { data, isPending, refetch } = useSelectTop50Products(initialArea);
+  const [isRankHistoryOpen, setIsRankHistoryOpen] = useState(false);
+  const [rankHistoryDate, setRankHistoryDate] = useState(getTodayDateString);
 
   const products = useMemo(() => {
     return data?.data.filter((item) => item.area === initialArea) ?? [];
   }, [data, initialArea]);
+  const isRankHistoryTriggerVisible =
+    getKstDateString() >= RANK_HISTORY_VISIBLE_FROM_KST;
 
   useEffect(() => {
     refetch();
@@ -72,8 +97,17 @@ export default function Top50Page({ initialArea }: Props) {
         <ProductArea
           data={products}
           pageType={initialArea === "freeSerialTop" ? "free" : "paid"}
+          isRankHistoryTriggerVisible={isRankHistoryTriggerVisible}
+          onOpenRankHistory={() => setIsRankHistoryOpen(true)}
         />
       )}
+      <RankHistoryModal
+        open={isRankHistoryOpen}
+        area={initialArea}
+        date={rankHistoryDate}
+        onDateChange={setRankHistoryDate}
+        onClose={() => setIsRankHistoryOpen(false)}
+      />
     </div>
   );
 }
