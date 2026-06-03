@@ -127,6 +127,15 @@ task explicitly updates every reference.
 
 ## LOCAL/SENSITIVE REFERENCE
 
+- `backend-api.md`
+- `service-app.md`
+- `partner-app.md`
+- `cms-app.md`
+  - Local-only orientation notes ignored by git.
+  - They may help in this workstation, but do not rely on them in fresh clones
+    or current handoffs. Use code, tracked README files, and current wiki/runbook
+    pages first.
+
 - `MEMORY.md`
   - Legacy local generated memory index.
   - It may be mojibake or stale. Use root `CLAUDE.md`, `AGENTS.md`, and

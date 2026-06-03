@@ -36,13 +36,14 @@
   - `likenovel-service-api/likenovel-service-api/fastapi_be_server/app/services/`
   - `likenovel-service-api/likenovel-service-api/fastapi_be_server/app/schemas/`
   - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/init/`
-- Orientation guide: `backend-api.md`
+- Orientation: use the code paths above. Local-only `backend-api.md` may exist in
+  this workspace, but it is not a git-tracked current SSOT.
 
 ## Apps
 
-- User web: `service/`, `service-app.md`, `service/README.md`
-- Partner: `partner/`, `partner-app.md`, `partner/README.md`
-- CMS: `cms/`, `cms-app.md`, `cms/README.md`
+- User web: `service/`, `service/README.md`
+- Partner: `partner/`, `partner/README.md`
+- CMS: `cms/`, `cms/README.md`
 - Architecture overview: `architecture.md` (orientation only; execution runbook still wins)
 
 ## AI And Websochat

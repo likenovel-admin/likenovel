@@ -642,7 +642,7 @@ Legacy PM2 dev/prod env copy flows are preserved only as historical reference in
 갱신 대상:
 - 운영 절차: `docs/deployment-runbook.md`
 - agent/작업 규칙: 루트 `AGENTS.md`
-- API/기능 계약: 해당 `docs/*contract*.md`, `backend-api.md`, 또는 기능별 설계 문서
+- API/기능 계약: 해당 `docs/*contract*.md`, tracked 기능별 설계 문서, 또는 backend code/schema readback. Local-only `backend-api.md`가 있더라도 current handoff 기준으로 단독 사용하지 않는다.
 - 디자인/UI 계약: `/home/hongsan/.claude/projects/-home-hongsan-work-likenovel/memory/design-system.md` 또는 관련 QA 문서
 - DB/배치 정책: schema/runbook/verified-index 관련 문서
 - 검증된 현재 상태: `/home/hongsan/.claude/projects/-home-hongsan-work-likenovel/memory/verified-index.md`
