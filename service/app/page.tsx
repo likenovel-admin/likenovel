@@ -225,7 +225,9 @@ export default function Home() {
               </div>
             )}
             {beforePaidTopSingleSlot && (
-              <SingleSlot slot={beforePaidTopSingleSlot} />
+              <div className="mt-44pxr md:mt-70pxr">
+                <SingleSlot slot={beforePaidTopSingleSlot} />
+              </div>
             )}
             <div className="w-full mt-30pxr md:mt-80pxr bg-[#212123]">
               <PaidTop data={paidTopProducts} />
