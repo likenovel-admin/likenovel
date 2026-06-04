@@ -37,10 +37,16 @@ assert.match(
   "PC FreeTop UP badge should be overlaid on the cover lower-left",
 );
 
-assert.doesNotMatch(
+assert.match(
+  mobileBlock,
+  /absolute bottom-2pxr left-2pxr scale-\[0\.72\] origin-bottom-left/,
+  "mobile FreeTop UP badge should be overlaid small on the cover lower-left",
+);
+
+assert.match(
   mobileBlock,
   /<SquareBadge type="up" \/>/,
-  "mobile FreeTop cards should not render the UP badge",
+  "mobile FreeTop cards should render the UP badge for updated products",
 );
 
 const titleIndex = pcBlock.indexOf("{product.title}");

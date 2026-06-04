@@ -243,9 +243,6 @@ export default function Home() {
                 title={data?.publisherPromotionTitle}
                 entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.HOME_CP_PROMOTION}
               />
-              {betweenDirectRecommendFirstSingleSlot && (
-                <SingleSlot slot={betweenDirectRecommendFirstSingleSlot} />
-              )}
               {mixedSections.map((item, index) => (
                 <div
                   key={`${item.type}-${index}-${
@@ -260,7 +257,10 @@ export default function Home() {
                   ) : (
                     <TasteSection section={item.section} />
                   )}
-                  {index === 0 && betweenDirectRecommendSecondSingleSlot && (
+                  {index === 0 && betweenDirectRecommendFirstSingleSlot && (
+                    <SingleSlot slot={betweenDirectRecommendFirstSingleSlot} />
+                  )}
+                  {index === 2 && betweenDirectRecommendSecondSingleSlot && (
                     <SingleSlot slot={betweenDirectRecommendSecondSingleSlot} />
                   )}
                 </div>
