@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getFormattedRankBasisTime } from "@/utils/rankingBasis";
-import ArrowRightSmall from "/public/images/arrow-right-small.svg";
+import ArrowRightMedium from "/public/images/arrow-right-medium.svg";
 import Clock from "/public/images/clock-detail.svg";
 
 interface TimeSpeechBubbleProps {
@@ -51,7 +51,7 @@ const TimeSpeechBubble = ({
     return (
       <div
         className={`h-[24px] md:h-[28px] ${
-          showActionIndicator ? "w-[154px] md:w-[188px]" : "w-[140px] md:w-[172px]"
+          showActionIndicator ? "w-[144px] md:w-[178px]" : "w-[140px] md:w-[172px]"
         }`}
       />
     );
@@ -59,13 +59,13 @@ const TimeSpeechBubble = ({
 
   const content = (
     <>
-      <span className="absolute bottom-[1px] left-[-2px] h-[9px] w-[9px] rotate-[-22deg] rounded-[1px] bg-[#FFD339]" />
+      <span className="absolute left-[-4px] top-1/2 -translate-y-1/2 h-[10px] w-[5px] bg-[#FFD339] [clip-path:polygon(0_50%,100%_0,100%_100%)]" />
       <Clock className="relative z-10 h-[12px] w-[13px] md:h-[13px] md:w-[14px] shrink-0" />
       <span className="relative z-10 whitespace-nowrap text-[10px] md:text-[12px] font-medium leading-none">
         {currentTime} 기준
       </span>
       {showActionIndicator && (
-        <ArrowRightSmall className="relative z-10 h-[11px] w-[6px] md:h-[13px] md:w-[7px] shrink-0 overflow-visible text-[#281E06]" />
+        <ArrowRightMedium className="relative z-10 h-[8px] w-[5px] md:h-[10px] md:w-[6px] shrink-0 overflow-visible -translate-y-[0.6px] text-[#281E06]" />
       )}
     </>
   );
@@ -73,7 +73,7 @@ const TimeSpeechBubble = ({
   const baseClassName =
     `relative inline-flex h-[24px] md:h-[28px] items-center gap-5pxr rounded-full bg-[#FFD339] ${
       showActionIndicator
-        ? "pl-10pxr pr-20pxr md:pl-12pxr md:pr-22pxr"
+        ? "pl-10pxr pr-11pxr md:pl-12pxr md:pr-13pxr"
         : "px-10pxr md:px-12pxr"
     } text-[#281E06]`;
 

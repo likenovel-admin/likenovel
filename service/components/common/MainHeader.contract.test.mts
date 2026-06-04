@@ -50,18 +50,18 @@ assert.match(
 );
 assert.match(
   timeSpeechBubbleSource,
-  /showActionIndicator[\s\S]*pr-20pxr[\s\S]*md:pr-22pxr/,
-  "time speech bubble should reserve extra right padding when the action arrow is shown"
+  /showActionIndicator[\s\S]*pr-11pxr[\s\S]*md:pr-13pxr/,
+  "time speech bubble should anchor the action arrow near the right edge, not float it with oversized right padding"
 );
 assert.match(
   timeSpeechBubbleSource,
-  /ArrowRightSmall/,
-  "time speech bubble action indicator should use the existing bold small arrow asset"
+  /ArrowRightMedium/,
+  "time speech bubble action indicator should use the thin medium arrow asset"
 );
 assert.match(
   timeSpeechBubbleSource,
-  /md:h-\[13px\] md:w-\[7px\]/,
-  "time speech bubble action indicator should keep the small arrow at a legible size"
+  /md:h-\[10px\] md:w-\[6px\]/,
+  "time speech bubble action indicator should keep the thin arrow at a legible size"
 );
 assert.match(
   timeSpeechBubbleSource,
