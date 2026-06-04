@@ -85,6 +85,35 @@ html {
   .text-balance {
     text-wrap: balance;
   }
+
+  @keyframes single-slot-title-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(
+        calc(var(--single-slot-title-marquee-distance, 0px) * -1)
+      );
+    }
+  }
+
+  .single-slot-title-marquee {
+    animation: single-slot-title-marquee
+      var(--single-slot-title-marquee-duration, 12s) linear infinite;
+    will-change: transform;
+  }
+
+  .single-slot-title-marquee:hover {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .single-slot-title-marquee {
+      animation: none;
+      transform: none;
+      will-change: auto;
+    }
+  }
 }
 
 @layer scroll {
