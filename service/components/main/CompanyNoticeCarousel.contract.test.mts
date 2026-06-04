@@ -57,8 +57,13 @@ assert.doesNotMatch(
 );
 assert.match(
   componentSource,
-  /L6HeQiMCSziLoNswCiCTaQ\.webp[\s\S]*?\/product\/customer-service\/notice\/5[\s\S]*?8tgpcio9TbuweVtilwaXUQ\.webp[\s\S]*?\/product\/customer-service\/notice\/36[\s\S]*?vsJV-rkOQWK5P1rgqoNSoQ\.webp[\s\S]*?\/product\/customer-service\/notice\/40[\s\S]*?qdCb-kRCQ9yGD4aTrJfCAg\.webp[\s\S]*?\/product\/customer-service\/notice\/38[\s\S]*?uBydaISGQb-BrxRDCQUQww\.webp[\s\S]*?\/product\/customer-service\/notice\/32[\s\S]*?WVhvGyWPSFK_5Dl1rF29GQ\.webp[\s\S]*?\/product\/customer-service\/notice\/6/,
-  "company notice carousel should keep the uploaded notice images and links in the requested order",
+  /L6HeQiMCSziLoNswCiCTaQ\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/5[\s\S]*?8tgpcio9TbuweVtilwaXUQ\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/36[\s\S]*?vsJV-rkOQWK5P1rgqoNSoQ\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/40[\s\S]*?qdCb-kRCQ9yGD4aTrJfCAg\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/38[\s\S]*?uBydaISGQb-BrxRDCQUQww\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/32[\s\S]*?WVhvGyWPSFK_5Dl1rF29GQ\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/6/,
+  "company notice carousel should keep the uploaded notice images and prod links in the requested order",
+);
+assert.doesNotMatch(
+  componentSource,
+  /linkPath:\s*"\/product\/customer-service\/notice\//,
+  "company notice carousel should not use localhost-relative notice links",
 );
 assert.match(
   componentSource,

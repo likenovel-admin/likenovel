@@ -32,37 +32,37 @@ export const COMPANY_NOTICE_ITEMS: CompanyNoticeItem[] = [
   {
     id: 1,
     imageSrc: "https://cdn.likenovel.net/user/L6HeQiMCSziLoNswCiCTaQ.webp",
-    linkPath: "/product/customer-service/notice/5",
+    linkPath: "https://www.likenovel.net/product/customer-service/notice/5",
     ariaLabel: "연재 및 유료화 정책 안내 공지",
   },
   {
     id: 2,
     imageSrc: "https://cdn.likenovel.net/user/8tgpcio9TbuweVtilwaXUQ.webp",
-    linkPath: "/product/customer-service/notice/36",
+    linkPath: "https://www.likenovel.net/product/customer-service/notice/36",
     ariaLabel: "AI 사서 미리보기 오픈 공지",
   },
   {
     id: 3,
     imageSrc: "https://cdn.likenovel.net/user/vsJV-rkOQWK5P1rgqoNSoQ.webp",
-    linkPath: "/product/customer-service/notice/40",
+    linkPath: "https://www.likenovel.net/product/customer-service/notice/40",
     ariaLabel: "일반연재 승급 자동화 공지",
   },
   {
     id: 4,
     imageSrc: "https://cdn.likenovel.net/user/qdCb-kRCQ9yGD4aTrJfCAg.webp",
-    linkPath: "/product/customer-service/notice/38",
+    linkPath: "https://www.likenovel.net/product/customer-service/notice/38",
     ariaLabel: "작품 분석 기능 강화 공지",
   },
   {
     id: 5,
     imageSrc: "https://cdn.likenovel.net/user/uBydaISGQb-BrxRDCQUQww.webp",
-    linkPath: "/product/customer-service/notice/32",
+    linkPath: "https://www.likenovel.net/product/customer-service/notice/32",
     ariaLabel: "웹소챗 미리보기 오픈 공지",
   },
   {
     id: 6,
     imageSrc: "https://cdn.likenovel.net/user/WVhvGyWPSFK_5Dl1rF29GQ.webp",
-    linkPath: "/product/customer-service/notice/6",
+    linkPath: "https://www.likenovel.net/product/customer-service/notice/6",
     ariaLabel: "서비스 개편 안내 공지",
   },
 ];
