@@ -15,6 +15,7 @@ import CircleArrow from "../common/CircleArrow";
 import ErrorArea from "../common/ErrorArea";
 import MainHeader from "../common/MainHeader";
 import RankingBadge from "../common/RankingBadge";
+import RankHistoryModal from "../top50/RankHistoryModal";
 import SquareBadge from "../common/SquareBadge";
 import UserNickname from "../common/UserNickname";
 interface Props {
@@ -22,12 +23,33 @@ interface Props {
 }
 
 const PAGE_SIZE = 6;
+const RANK_HISTORY_VISIBLE_FROM_KST = "2026-06-03";
+
+const getTodayDateString = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = `${today.getMonth() + 1}`.padStart(2, "0");
+  const day = `${today.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getKstDateString = () => {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return formatter.format(new Date());
+};
 
 const PaidTop = ({ data }: Props) => {
   const router = useRouter();
   const renderAdultCoverImage = useAdultCoverImage();
   const device = useMediaDevice();
   const [currentPage, setCurrentPage] = useState(0);
+  const [isRankHistoryOpen, setIsRankHistoryOpen] = useState(false);
+  const [rankHistoryDate, setRankHistoryDate] = useState(getTodayDateString);
 
   if (!data || !data.length) {
     return <ErrorArea />;
@@ -53,6 +75,8 @@ const PaidTop = ({ data }: Props) => {
 
   // New logic: Calculate max index
   const lastPage = Math.max(0, totalItems - PAGE_SIZE);
+  const isRankHistoryTriggerVisible =
+    getKstDateString() >= RANK_HISTORY_VISIBLE_FROM_KST;
 
   const handleNextPage = () => {
     setCurrentPage(currentPage >= lastPage ? 0 : currentPage + 1);
@@ -69,6 +93,13 @@ const PaidTop = ({ data }: Props) => {
         textStyle="text-17pxr md:text-24pxr font-bold text-white"
         hasTimeSpeechBubble
         timeSpeechBubbleMode="ranking"
+        timeSpeechBubbleOnClick={
+          isRankHistoryTriggerVisible
+            ? () => setIsRankHistoryOpen(true)
+            : undefined
+        }
+        timeSpeechBubbleAriaLabel="시간대별 랭킹 보기"
+        timeSpeechBubbleShowActionIndicator={isRankHistoryTriggerVisible}
         hasRankingGuide
         hasMoreButton
         moreButtonOnClick={() => {
@@ -155,6 +186,13 @@ const PaidTop = ({ data }: Props) => {
           </div>
         </div>
       </div>
+      <RankHistoryModal
+        open={isRankHistoryOpen}
+        area="paidSerialTop"
+        date={rankHistoryDate}
+        onDateChange={setRankHistoryDate}
+        onClose={() => setIsRankHistoryOpen(false)}
+      />
     </div>
   );
 };

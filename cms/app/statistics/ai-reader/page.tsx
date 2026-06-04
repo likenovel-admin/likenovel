@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PageHeader from "@/components/ui/page-header";
 import { SidebarInset } from "@/components/ui/sidebar";
+import { Textarea } from "@/components/ui/textarea";
 import { formatAiReaderDisplayName } from "@/lib/ai-reader-display-name";
 import { calculatePageCount, cn } from "@/lib/utils";
 import {
@@ -217,6 +218,9 @@ const getScheduleEndDateInput = (startDateInput: string, durationDays: number) =
 const MAX_AI_READER_AGENT_COUNT = 100;
 const AI_READER_EFFECTS_PER_PAGE = 20;
 const AI_READER_PRESET_STORAGE_KEY = "likenovel.cms.aiReader.customPresets.v1";
+const AI_READER_NICKNAME_POOL_STORAGE_KEY = "likenovel.cms.aiReader.profileNicknamePool.v1";
+const AI_READER_NICKNAME_PATTERN = /^[가-힣a-zA-Z0-9]+$/;
+const FORBIDDEN_AI_READER_NICKNAME_TERMS = ["디씨", "주갤", "주갤러"];
 const AI_READER_DURATION_OPTIONS = [
   { days: 1, label: "오늘만" },
   { days: 3, label: "3일" },
@@ -393,6 +397,45 @@ const writeCustomPresets = (presets: AiReaderPreset[]) => {
   window.localStorage.setItem(AI_READER_PRESET_STORAGE_KEY, JSON.stringify(presets));
 };
 
+const readProfileNicknamePoolInput = () => {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem(AI_READER_NICKNAME_POOL_STORAGE_KEY) || "";
+};
+
+const writeProfileNicknamePoolInput = (value: string) => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(AI_READER_NICKNAME_POOL_STORAGE_KEY, value);
+};
+
+const parseProfileNicknamePoolInput = (value: string) => {
+  const seen = new Set<string>();
+  const nicknames: string[] = [];
+  const invalidNicknames: string[] = [];
+  const forbiddenNicknames: string[] = [];
+  value
+    .split(/[\n,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .forEach((nickname) => {
+      if (seen.has(nickname)) return;
+      seen.add(nickname);
+      if (!AI_READER_NICKNAME_PATTERN.test(nickname)) {
+        invalidNicknames.push(nickname);
+        return;
+      }
+      if (FORBIDDEN_AI_READER_NICKNAME_TERMS.some((term) => nickname.includes(term))) {
+        forbiddenNicknames.push(nickname);
+        return;
+      }
+      nicknames.push(nickname);
+    });
+  return {
+    nicknames,
+    invalidNicknames,
+    forbiddenNicknames,
+  };
+};
+
 type LastDryRun = {
   emailPrefix: string;
   agentCount: number;
@@ -409,6 +452,7 @@ type LastDryRun = {
   immediateScheduleStartAt: string | null;
   ageGroupRatios: RatioMap;
   genderRatios: RatioMap;
+  profileNicknamePool: string[];
   token: string;
   availableUserCount: number;
   missingUserCount: number;
@@ -462,6 +506,7 @@ export default function Page() {
   const [immediateBatchIntervalInput, setImmediateBatchIntervalInput] = useState("10");
   const [ageGroupRatios, setAgeGroupRatios] = useState<RatioMap>(defaultAgeGroupRatios);
   const [genderRatios, setGenderRatios] = useState<RatioMap>(defaultGenderRatios);
+  const [profileNicknamePoolInput, setProfileNicknamePoolInput] = useState("");
   const [lastDryRun, setLastDryRun] = useState<LastDryRun | null>(null);
   const [lastResumeDryRun, setLastResumeDryRun] = useState<LastResumeDryRun | null>(null);
   const [operationMessage, setOperationMessage] = useState<string | null>(null);
@@ -471,6 +516,7 @@ export default function Page() {
 
   useEffect(() => {
     setCustomPresets(readCustomPresets());
+    setProfileNicknamePoolInput(readProfileNicknamePoolInput());
   }, []);
 
   const queryParams = useMemo<IGetStatisticAiReaderEngagementParams>(
@@ -542,6 +588,13 @@ export default function Page() {
       return [];
     }
   }, [activeHoursInput]);
+  const profileNicknamePoolResult = useMemo(
+    () => parseProfileNicknamePoolInput(profileNicknamePoolInput),
+    [profileNicknamePoolInput]
+  );
+  const profileNicknamePoolValue = profileNicknamePoolResult.nicknames;
+  const invalidProfileNicknameCount =
+    profileNicknamePoolResult.invalidNicknames.length + profileNicknamePoolResult.forbiddenNicknames.length;
   const selectedPreset = useMemo(
     () => allPresets.find((preset) => preset.id === selectedPresetId),
     [allPresets, selectedPresetId]
@@ -612,6 +665,7 @@ export default function Page() {
       && JSON.stringify(lastDryRun.timeBlocks) === JSON.stringify(apiTimeBlocks)
       && JSON.stringify(lastDryRun.ageGroupRatios) === JSON.stringify(ageGroupRatios)
       && JSON.stringify(lastDryRun.genderRatios) === JSON.stringify(genderRatios)
+      && JSON.stringify(lastDryRun.profileNicknamePool) === JSON.stringify(profileNicknamePoolValue)
   );
   const hasMatchingDryRun = Boolean(
     hasSameBootstrapDryRunInput
@@ -851,6 +905,14 @@ export default function Page() {
         setOperationMessage("연령/성별 비율 합계는 각각 100이어야 합니다.");
         return;
       }
+      if (invalidProfileNicknameCount > 0) {
+        const invalidPreview = [
+          ...profileNicknamePoolResult.invalidNicknames,
+          ...profileNicknamePoolResult.forbiddenNicknames,
+        ].slice(0, 3).join(", ");
+        setOperationMessage(`닉네임 후보를 확인하세요: ${invalidPreview}`);
+        return;
+      }
       if (apply && !hasMatchingDryRun) {
         setOperationMessage(
           bootstrapDryRunBlockMessage
@@ -885,6 +947,7 @@ export default function Page() {
         immediate_schedule_start_at: apply ? lastDryRun?.immediateScheduleStartAt || undefined : undefined,
         age_group_ratios: ageGroupRatios,
         gender_ratios: genderRatios,
+        profile_nickname_pool: profileNicknamePoolValue,
         dry_run_token: apply ? lastDryRun?.token : undefined,
       });
       const immediateScheduleRows = countImmediateScheduleRows(result.immediate_schedule_preview);
@@ -909,6 +972,7 @@ export default function Page() {
           immediateScheduleStartAt: result.immediate_schedule_start_at || null,
           ageGroupRatios: { ...ageGroupRatios },
           genderRatios: { ...genderRatios },
+          profileNicknamePool: [...profileNicknamePoolValue],
           token: result.dry_run_token || "",
           availableUserCount: Number(result.available_user_count || 0),
           missingUserCount: Number(result.missing_user_count || 0),
@@ -2573,6 +2637,38 @@ export default function Page() {
                 >
                   2. 투입 적용
                 </Button>
+              </div>
+            </div>
+            <div className="mt-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-[11px] text-muted-foreground">추가 닉네임 후보 풀</span>
+                <Textarea
+                  className="min-h-[108px] text-xs"
+                  placeholder={"새후보1\nNightReader77\n종가매수러2"}
+                  value={profileNicknamePoolInput}
+                  onChange={(e) => {
+                    const nextValue = e.target.value;
+                    setProfileNicknamePoolInput(nextValue);
+                    writeProfileNicknamePoolInput(nextValue);
+                    resetDryRun();
+                  }}
+                />
+              </label>
+              <div
+                className={`mt-1 text-[11px] ${
+                  invalidProfileNicknameCount > 0 ? "text-destructive" : "text-muted-foreground"
+                }`}
+              >
+                기본 100개 + 추가 {numberFormat(profileNicknamePoolValue.length)}개
+                {invalidProfileNicknameCount > 0 && (
+                  <>
+                    {" "}
+                    / 제외 불가 {numberFormat(invalidProfileNicknameCount)}개:{" "}
+                    {[...profileNicknamePoolResult.invalidNicknames, ...profileNicknamePoolResult.forbiddenNicknames]
+                      .slice(0, 5)
+                      .join(", ")}
+                  </>
+                )}
               </div>
             </div>
             {lastDryRun && (

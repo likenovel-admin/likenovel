@@ -72,6 +72,7 @@ export interface IAiReaderBootstrapRequest {
   immediate_schedule_start_at?: string;
   age_group_ratios?: Record<string, number>;
   gender_ratios?: Record<string, number>;
+  profile_nickname_pool?: string[];
   dry_run_token?: string;
 }
 
