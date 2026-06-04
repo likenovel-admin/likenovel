@@ -21,7 +21,11 @@ const top50ProductAreaSource = readFileSync(
 assert.match(mainHeaderSource, /rankingGuideMessage/);
 assert.match(mainHeaderSource, /랭킹 집계 기간/);
 assert.match(mainHeaderSource, /랭킹 집계 기준/);
-assert.match(mainHeaderSource, />\s*i\s*<\/span>/);
+assert.match(
+  mainHeaderSource,
+  /ExclamationMark/,
+  "ranking guide icon should reuse the existing exclamation mark asset"
+);
 assert.match(
   mainHeaderSource,
   /h-\[28px\].*w-\[28px\]/s,
@@ -29,8 +33,13 @@ assert.match(
 );
 assert.match(
   mainHeaderSource,
-  /h-\[22px\].*w-\[22px\]/s,
-  "ranking guide visible circle should stay compact inside the alignment wrapper"
+  /h-\[16px\].*w-\[16px\]/s,
+  "ranking guide visible circle should use the existing thin tooltip icon size"
+);
+assert.doesNotMatch(
+  mainHeaderSource,
+  />\s*i\s*<\/span>/,
+  "ranking guide icon should not use a raw text i"
 );
 assert.doesNotMatch(
   mainHeaderSource,
@@ -67,6 +76,11 @@ assert.match(
   timeSpeechBubbleSource,
   /overflow-visible/,
   "time speech bubble action indicator should avoid clipping the arrow glyph"
+);
+assert.doesNotMatch(
+  timeSpeechBubbleSource,
+  /ArrowRightMedium[^\n]*-translate-y/,
+  "time speech bubble action indicator should stay vertically centered with the time text"
 );
 assert.doesNotMatch(
   timeSpeechBubbleSource,

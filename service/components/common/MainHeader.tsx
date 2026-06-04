@@ -2,6 +2,7 @@
 
 import TimeSpeechBubble from "../common/TimeSpeechBubble";
 import ArrowRightSmall from "/public/images/arrow-right-small.svg";
+import ExclamationMark from "/public/images/exclamation-mark.svg";
 import type { ReactNode } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 
@@ -86,8 +87,16 @@ const MainHeader = ({
                 setIsGuideOpen((prev) => !prev);
               }}
             >
-              <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full border border-light-gray-600 bg-white text-13pxr font-semibold leading-none text-dark-gray-500 hover:bg-light-gray-100">
-                i
+              <span
+                className={`flex h-[16px] w-[16px] items-center justify-center rounded-full border border-light-gray-600 ${
+                  isGuideOpen
+                    ? "bg-black-100 hover:bg-dark-gray-600"
+                    : "bg-white hover:bg-light-gray-100"
+                }`}
+              >
+                <ExclamationMark
+                  className={isGuideOpen ? "text-white" : "text-dark-gray-300"}
+                />
               </span>
             </button>
             {isGuideOpen && (

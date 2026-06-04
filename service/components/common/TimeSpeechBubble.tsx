@@ -65,7 +65,7 @@ const TimeSpeechBubble = ({
         {currentTime} 기준
       </span>
       {showActionIndicator && (
-        <ArrowRightMedium className="relative z-10 h-[8px] w-[5px] md:h-[10px] md:w-[6px] shrink-0 overflow-visible -translate-y-[0.6px] text-[#281E06]" />
+        <ArrowRightMedium className="relative z-10 h-[8px] w-[5px] md:h-[10px] md:w-[6px] shrink-0 overflow-visible text-[#281E06]" />
       )}
     </>
   );
