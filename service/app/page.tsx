@@ -4,6 +4,7 @@ import Spinner from "@/components/common/Spinner";
 import BottomBanner from "@/components/main/BottomBanner";
 import BottomProducts from "@/components/main/BottomProducts";
 import Carousel from "@/components/main/Carousel";
+import CompanyNoticeCarousel from "@/components/main/CompanyNoticeCarousel";
 import CPPromotion from "@/components/main/CPPromotion";
 import FreeTop from "@/components/main/FreeTop";
 import MiddleBanner from "@/components/main/MiddleBanner";
@@ -254,6 +255,7 @@ export default function Home() {
             <div className="w-full mt-30pxr md:mt-80pxr bg-[#212123]">
               <PaidTop data={paidTopProducts} />
             </div>
+            <CompanyNoticeCarousel />
             <div className="w-full">
               <MiddleBanner
                 secondaryPanels={data?.banners?.secondaryPanels ?? []}
