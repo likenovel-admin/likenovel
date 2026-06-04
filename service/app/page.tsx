@@ -169,6 +169,10 @@ export default function Home() {
     }
     return mixed;
   }, [featureSections, tasteSections]);
+  const visibleMixedSections = useMemo(
+    () => mixedSections.filter((item) => item.section.products.length > 0),
+    [mixedSections]
+  );
   const mainSingleSlotsByKey = useMemo(() => {
     return new Map(
       (mainSingleSlotsData?.data ?? []).map((slot) => [slot.slotKey, slot])
@@ -195,6 +199,24 @@ export default function Home() {
   const cpPromotionProducts = Array.isArray(data?.publisherPromotionProducts)
     ? data.publisherPromotionProducts.slice(0, 12)
     : [];
+  const hasCpPromotionProducts = cpPromotionProducts.length > 0;
+  const latestUpdateProducts = latestUpdateData?.data || [];
+  const hasLatestUpdateProducts = latestUpdateProducts.length > 0;
+  const interestDropSoonProducts = interestDropSoonData?.data || [];
+  const hasInterestDropSoonProducts =
+    canUseInterestDropSoon && interestDropSoonProducts.length > 0;
+  const firstSingleSlotAfterMixedIndex = 0;
+  const secondSingleSlotAfterMixedIndex = hasCpPromotionProducts ? 1 : 2;
+  const shouldRenderFirstSingleSlotAfterLatest =
+    Boolean(betweenDirectRecommendFirstSingleSlot) &&
+    !hasCpPromotionProducts &&
+    visibleMixedSections.length === 0 &&
+    hasLatestUpdateProducts;
+  const shouldRenderSecondSingleSlotAfterLatest =
+    Boolean(betweenDirectRecommendSecondSingleSlot) &&
+    visibleMixedSections.length <= secondSingleSlotAfterMixedIndex &&
+    hasLatestUpdateProducts &&
+    !shouldRenderFirstSingleSlotAfterLatest;
 
   const recommendProducts = Array.isArray(data?.topsProducts)
     ? data.topsProducts.slice(0, 8)
@@ -266,27 +288,41 @@ export default function Home() {
                 </div>
               ))}
               {/* TODO: 관심 끊기기 임박 작품 api 연결 */}
-              <BottomProducts
-                suggestionData={{
-                  products: latestUpdateData?.data || [],
-                  suggestId: 0,
-                  suggestName: "",
-                  suggestTarget: "",
-                  suggestTitle: "최신 업데이트 작품",
-                }}
-                key="suggest"
-              />
-              {canUseInterestDropSoon && (
-                <BottomProducts
-                  suggestionData={{
-                    products: interestDropSoonData?.data || [],
-                    suggestId: 0,
-                    suggestName: "",
-                    suggestTarget: "",
-                    suggestTitle: "관심 끊기기 임박",
-                  }}
-                  key="interest"
-                />
+              {hasLatestUpdateProducts && (
+                <div data-home-section="latest-update" className="contents">
+                  <BottomProducts
+                    suggestionData={{
+                      products: latestUpdateProducts,
+                      suggestId: 0,
+                      suggestName: "",
+                      suggestTarget: "",
+                      suggestTitle: "최신 업데이트 작품",
+                    }}
+                    key="suggest"
+                  />
+                  {shouldRenderFirstSingleSlotAfterLatest &&
+                    betweenDirectRecommendFirstSingleSlot && (
+                      <SingleSlot slot={betweenDirectRecommendFirstSingleSlot} />
+                    )}
+                  {shouldRenderSecondSingleSlotAfterLatest &&
+                    betweenDirectRecommendSecondSingleSlot && (
+                      <SingleSlot slot={betweenDirectRecommendSecondSingleSlot} />
+                    )}
+                </div>
+              )}
+              {hasInterestDropSoonProducts && (
+                <div data-home-section="interest-drop-soon" className="contents">
+                  <BottomProducts
+                    suggestionData={{
+                      products: interestDropSoonProducts,
+                      suggestId: 0,
+                      suggestName: "",
+                      suggestTarget: "",
+                      suggestTitle: "관심 끊기기 임박",
+                    }}
+                    key="interest"
+                  />
+                </div>
               )}
             </div>
             <div className="w-full mt-[67px]">

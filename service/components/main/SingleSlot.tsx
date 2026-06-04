@@ -122,7 +122,10 @@ const SingleSlot = ({ slot }: Props) => {
 
   return (
     // OneadayBox
-    <div className="w-full max-w-[1120px] mx-auto px-16pxr md:px-0 pt-22pxr md:pt-46pxr">
+    <div
+      data-main-single-slot={slot.slotKey}
+      className="w-full max-w-[1120px] mx-auto px-16pxr md:px-0 pt-22pxr md:pt-46pxr"
+    >
       {/* OneadayBoxWrap */}
       <div className="w-full">
         {/* OneadayBoxInner */}
