@@ -35,6 +35,20 @@ const normalizePositiveInt = (value?: number | string | null) => {
   return undefined;
 };
 
+export const calculateProductDetailActiveSeconds = (
+  sourceChangedAt: number,
+  evaluatedAt: number,
+  frozenActiveSeconds?: number
+) => {
+  if (Number.isFinite(frozenActiveSeconds)) {
+    return Math.max(0, Math.floor(frozenActiveSeconds as number));
+  }
+  if (!Number.isFinite(sourceChangedAt) || !Number.isFinite(evaluatedAt)) {
+    return 0;
+  }
+  return Math.max(0, Math.floor((evaluatedAt - sourceChangedAt) / 1000));
+};
+
 export const createFunnelRouteContext = (
   pathname: string,
   searchParams?: URLSearchParams | ReadonlyURLSearchParams
