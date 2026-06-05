@@ -91,6 +91,25 @@ assert.equal(longDetailCopy.points[0].includes("…"), false);
 assert.match(longDetailCopy.intro, /성장하는 이야기입니다/);
 assert.match(longDetailCopy.points[0], /출발점을 보여줍니다/);
 
+const mixedEndingCopy = buildAiLibrarianCopy(fantasyProduct, {
+  ...aiBrief,
+  hook:
+    "히어로 조직의 리더가 갑작스럽게 은퇴를 선언하자, 동료들이 그를 막기 위해 납치하고 설득하는 과정에서 조직의 비밀과 개인의 트라우마가 드러난다.",
+  premise:
+    "현대 사회에서 색채를 잃어 자살 직전의 사람들의 무의식을 치유하는 히어로 조직의 리더가 은퇴를 선언하며 숨겨진 진실이 펼쳐진다.",
+  protagonistType: "은퇴를 원하는 히어로",
+  protagonistGoal: "차원이동",
+  mood: "신비롭고 긴장감 있는 분위기",
+});
+
+const mixedEndingText = [mixedEndingCopy.intro, ...mixedEndingCopy.points].join(" ");
+
+assert.match(mixedEndingCopy.points[1], /움직여요\./);
+assert.doesNotMatch(
+  mixedEndingText,
+  /움직입니다|가깝습니다|만듭니다|좋습니다/,
+);
+
 const aiOnlyChipCopy = buildAiLibrarianCopy(
   {
     ...fantasyProduct,
