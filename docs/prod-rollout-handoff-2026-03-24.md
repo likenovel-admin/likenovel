@@ -1,5 +1,9 @@
 # Prod Rollout Handoff 2026-03-24
 
+> Status: SNAPSHOT - DO NOT EXECUTE AS CURRENT PROD RUNBOOK
+> This was a point-in-time rollout handoff for the 2026-03-24 migration set.
+> Current deploy/DB validation gates live in `docs/deployment-runbook.md`.
+
 배포 담당: Claude
 
 목적:

@@ -1,7 +1,11 @@
 ---
-description: How to setup CI/CD (Bitbucket pipelines, Dockerfile, deploy scripts)
-auto_execution_mode: 1
+description: LEGACY external CI/CD template. Do not execute for LikeNovel.
+auto_execution_mode: 0
 ---
+
+> Status: LEGACY TEMPLATE - DO NOT EXECUTE FOR LIKENOVEL
+> This document references another project/template (`cclime`) and is not a LikeNovel deploy guide.
+> Use root `CLAUDE.md`, `AGENTS.md`, and `docs/deployment-runbook.md`.
 
 This is step by step ci/cd setup, cclime-backend-renewal is the project name, please replace it with user's prompt
 Refer to the environment and handle properly, default development, user can prompt staging or production (rare case)
