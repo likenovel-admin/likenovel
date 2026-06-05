@@ -117,13 +117,14 @@ task explicitly updates every reference.
 - `docs/batch-drift-matrix-live.md`
   - Point-in-time local vs live batch comparison.
 
-## BOILERPLATE - NOT DEPLOY GUIDES
+## CURRENT GUIDES - NOT DEPLOY RUNBOOKS
 
 - `service/README.md`
 - `partner/README.md`
 - `cms/README.md`
-  - Create-next-app style orientation only.
-  - Do not use their Vercel/deployment text for LikeNovel operations.
+  - Current local app orientation for the three frontends.
+  - Do not use these README files as deployment runbooks for LikeNovel operations.
+  - Use `docs/deployment-runbook.md` before deploy, DB, cron, batch, or runtime changes.
 
 ## LOCAL/SENSITIVE REFERENCE
 
@@ -144,3 +145,16 @@ task explicitly updates every reference.
 - `docs/runtime-accounts.local.md`
   - Local account/runtime reference.
   - Verify current account state before use and never treat it as public deployment documentation.
+
+## BACKUP ARCHIVES
+
+- `/mnt/c/Users/Hongsan/Documents/카카오톡 받은 파일/likenovel-memory.tar.gz`
+  - Historical local memory/document bundle shared in early May 2026.
+  - Contains local orientation notes such as `backend-api.md`, `service-app.md`, `partner-app.md`, `cms-app.md`, `architecture.md`, feedback notes, and old work history.
+  - Do not bulk-import these files as current SSOT. Restore only a named file after code/runbook readback and classify it here.
+  - Optional local extracted reference copy: `docs/reference/backup-memory/` (ignored by git).
+  - If that local copy exists, use `docs/reference/backup-memory/README.md` before reading individual files.
+
+- `/mnt/c/Users/Hongsan/Documents/카카오톡 받은 파일/likenovel-local-env.tar.gz`
+  - Local env backup containing frontend `.env` files.
+  - Do not commit or quote values from this archive. Use it only for key-level comparison or local recovery when explicitly requested.

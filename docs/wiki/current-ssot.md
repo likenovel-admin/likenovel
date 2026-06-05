@@ -46,6 +46,7 @@
 - Partner: `partner/`, `partner/README.md`
 - CMS: `cms/`, `cms/README.md`
 - CMS site notice SOP: `docs/cms-notice-runbook.md`
+- Design system: `docs/design-system.md`
 - Architecture overview: `architecture.md` (orientation only; execution runbook still wins)
 
 ## AI And Websochat

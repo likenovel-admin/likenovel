@@ -15,8 +15,11 @@ Do not use nested legacy `CLAUDE.md` files as the main project runbook.
 3. For deploy, DB, cron, or batch work, read both:
    - `docs/wiki/deployment-and-batch.md`
    - `docs/deployment-runbook.md`
-4. For freeform AI chat work, read `docs/ai-chat-freeform-contract.md`.
-5. For design/UI work, read `/home/hongsan/.claude/projects/-home-hongsan-work-likenovel/memory/design-system.md`.
+4. For freeform AI chat work, read both:
+   - `docs/ai-chat-freeform-contract.md`
+   - `docs/ai-chat-freeform-state-machine.md`
+5. For design/UI work, read `docs/design-system.md`.
+   If it is missing, fallback to `/home/hongsan/.claude/projects/-home-hongsan-work-likenovel/memory/design-system.md` and report that the repo copy is missing.
 
 ## Rules
 

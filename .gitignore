@@ -83,6 +83,8 @@ docs/*
 !docs/deployment-runbook.md
 !docs/batch-system-architecture.md
 !docs/ai-chat-freeform-contract.md
+!docs/ai-chat-freeform-state-machine.md
+!docs/design-system.md
 !docs/project-analysis-2026-02-18.md
 !docs/project-architecture-full.md
 !docs/wiki/

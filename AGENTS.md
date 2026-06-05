@@ -5,6 +5,7 @@
 ## 0) Language And Communication
 
 - 항상 한국어로 답한다.
+- 항상 존댓말을 쓰고, 사용자를 `형` 등 호칭으로 부르지 않는다. 과거 자기 출력 이력을 확인 없이 단정하지 않는다.
 - 짧고 실행 중심적으로 말한다.
 - 요구사항이 충돌하면 가장 최신의 명시 지시를 따른다.
 - 검증하지 못한 범위는 `미검증`으로 분리한다.
@@ -32,6 +33,7 @@
   3. `docs/wiki/README.md`
   4. 배포/DB/cron/batch 작업이면 `docs/wiki/deployment-and-batch.md`와 `docs/deployment-runbook.md`
 - `docs/wiki/`는 인덱스다. 실제 실행은 linked runbook/source file과 코드 readback 후에만 한다.
+- tracked runbook에 없는 과거 맥락은 로컬 reference `docs/reference/backup-memory/README.md`를 확인할 수 있다. 이는 historical/local reference이며, current 사실로 말하기 전에 코드/런타임으로 검증하고 민감정보는 인용하지 않는다.
 - `likenovel-service-api/likenovel-service-api/CLAUDE.md`는 legacy backend deploy 메모다. 현재 실행 런북으로 쓰지 않는다.
 
 ## 2) Project Map
@@ -88,6 +90,7 @@ docker compose up -d --build cms       # http://localhost:3002
 - 중요한 error를 조용히 무시하지 않는다.
 - 위험한 path에는 명시적 guard와 이해 가능한 log를 둔다.
 - 성공처럼 보이는 것보다 실제 사용자 목표 충족을 우선한다.
+- fix, 정책, 분기 조건 권고는 관련 코드 fact를 본문까지 확인한 후에 단정한다. billing/quota/auth 같은 다단계 로직은 frontend hint와 backend authoritative check를 분리해 모든 조건을 잡고, 한 조건만 보고 단순화하지 않는다.
 - 검증, 배포, cleanup, monitoring, root cause 확정은 실제로 수행하고 evidence를 확인한 경우에만 주장한다.
 - 어려운 검증을 쉬운 proxy check로 대체하지 않는다. proxy만 수행했다면 반드시 `proxy check`라고 말한다.
 - uncertainty, partial failure, skipped test, stale assumption, 불편한 evidence를 숨기지 않는다.
@@ -168,7 +171,8 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
   - agent/작업 규칙: `AGENTS.md`
   - Claude entry: `CLAUDE.md`
   - deploy/DB/cron/batch: `docs/deployment-runbook.md`, `docs/wiki/deployment-and-batch.md`
-  - freeform AI chat: `docs/ai-chat-freeform-contract.md`
+  - freeform AI chat: `docs/ai-chat-freeform-contract.md`, `docs/ai-chat-freeform-state-machine.md`
+  - UI/design system: `docs/design-system.md`
   - current/legacy 분류: `docs/wiki/README.md`, `docs/wiki/current-ssot.md`, `docs/wiki/legacy-and-snapshot-docs.md`
   - DB schema: backend migration/source, tracked schema docs where present
 - local-only 문서가 읽히더라도 current SSOT로 취급하지 않는다. 파일 존재와 git tracking을 분리해서 보고한다.
@@ -250,6 +254,7 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
 - 같은 파일을 여러 에이전트가 동시에 수정하지 않는다.
 - 외부 CLI/provider가 설치, 로그인, 권한 문제로 실행 불가하면 가장하지 말고 blocker와 다음 조치를 짧게 보고한다.
 - 병렬 결과를 병합하기 전에는 충돌 파일, 중복 수정, 테스트 누락을 확인한다.
+- 여러 에이전트가 움직인 경우 최종 응답에 각 역할의 결과, 변경 파일, 검증 결과, 남은 리스크를 합쳐 보고한다.
 
 ## 14) Browser Verification
 
