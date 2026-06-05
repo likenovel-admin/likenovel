@@ -1,5 +1,9 @@
 ## 배포/CI-CD 가이드 (GitHub Actions, dev/prod 브랜치)
 
+> Status: CURRENT BACKGROUND, NOT EXECUTION SSOT
+> Execution SSOT: `docs/deployment-runbook.md` and root `AGENTS.md`.
+> Use this file for frontend Docker/staging background only. Backend deploy, DB channel, cron, and batch runtime path decisions must be checked in the current runbook and source scripts.
+
 이 레포는 zip 기반으로 넘어온 코드를 **GitHub Actions**로 빌드/배포할 수 있게 정리하는 것을 목표로 합니다.
 
 현재 운영(ln-web)은 **Docker Compose 기반**이므로, 이 문서는 “스테이징 분리”와 “Docker 기반 CI/CD”를 우선으로 다룹니다.
@@ -332,6 +336,14 @@ sudo systemctl reload nginx
 ---
 
 ## (중요) 스테이징에서 “작품등록/유료전환(결제)”을 안전하게 테스트하려면: API/DB 분리
+> LEGACY MANUAL STAGING PLAN - NOT CURRENT BACKEND DEV DEPLOYMENT PATH
+> Current backend dev deployment uses the backend submodule `dev` branch,
+> `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml`,
+> CodeDeploy, `likenovel-api-dev.service`, and
+> `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`.
+> Do not run the PM2 commands below unless a separate live server readback proves
+> that this legacy manual staging path is the intended recovery target.
+
 현재 dev 웹(`likenovel.dev`)은 프론트가 분리되어 있어도, **API가 운영(`api.likenovel.net`)을 바라보면 DB가 공유**됩니다.  
 이 상태에서 dev에서 작품을 등록하거나 유료 전환/결제를 테스트하면 **운영 DB에 데이터가 들어갈 수 있습니다.**
 
@@ -557,6 +569,12 @@ Nginx(원본)에서도 Host 기반으로 아래처럼 분기되어야 합니다.
 - `service/ENV.example`
 
 ### 5) EC2 런타임에서 환경변수는 어디에 두나요? (중요)
+> LEGACY TROUBLESHOOTING ONLY - NOT CURRENT DEPLOYMENT PATH
+> Current frontend deployment is Docker/ECR through `.github/workflows/docker-dev.yml`
+> and `.github/workflows/docker-prod.yml`, then Docker Compose on ln-web.
+> Do not run PM2 commands from this section before checking `docs/deployment-runbook.md`,
+> `docs/wiki/deployment-and-batch.md`, and live Docker Compose/container state.
+
 GitHub Actions는 **빌드용으로만** `service/.env.production`을 생성합니다.  
 하지만 zip 번들에는 `**/.env` / `**/.env.*`가 **제외**되므로, EC2 런타임에서 사용할 환경변수는 **서버에 별도로 존재**해야 합니다.
 
@@ -575,7 +593,16 @@ cd /home/ln-admin/likenovel/service
 ls -la .env*
 ```
 
-대부분은 **PM2/도커/시스템 서비스 환경변수**로 주입되어 있습니다. 아래 순서대로 확인하세요.
+이 섹션은 오래된 PM2 기반 troubleshooting을 포함한다. 현재 ln-web 표준은 Docker Compose이므로 먼저 Docker/container 상태를 확인하고, PM2는 legacy 프로세스가 실제로 살아 있다는 readback이 있을 때만 본다.
+
+Docker Compose 기준 확인:
+
+```bash
+sudo docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
+sudo docker inspect <container> --format '{{ index .Config.Labels "com.docker.compose.project.config_files" }}'
+```
+
+Legacy PM2 확인이 필요한 경우에만:
 
 ```bash
 pm2 list
@@ -588,18 +615,13 @@ pm2 describe <name-or-id>
 pm2 env <id> | grep -E "NEXT_PUBLIC_|API_SERVER_URI|IRON_SESSION|NICE_"
 ```
 
-PM2가 비어 있으면(또는 프론트가 PM2가 아닐 수 있으므로) 어떤 프로세스가 포트를 잡고 있는지부터 확인하세요:
+PM2가 비어 있으면 현재 표준 Docker 경로일 가능성이 높다. 어떤 프로세스가 포트를 잡고 있는지부터 확인하세요:
 
 ```bash
 sudo ss -ltnp | egrep ':(80|443|3000|3001|3002)\b'
 ```
 
-`docker-proxy`가 잡혀 있으면 Docker 기반입니다. 이 경우 Docker Compose 파일 위치는 아래처럼 확인됩니다:
-
-```bash
-sudo docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
-sudo docker inspect <container> --format '{{ index .Config.Labels "com.docker.compose.project.config_files" }}'
-```
+`docker-proxy`가 잡혀 있으면 Docker 기반입니다. 이 경우 위 Docker Compose file readback을 우선합니다.
 
 > `pm2 restart`만 하면 기존 env를 그대로 유지합니다.  
 > env를 바꿔야 하면 “어디에 env를 저장할지(파일 vs PM2)” 전략을 먼저 정하고 적용하세요.
@@ -617,5 +639,3 @@ chmod 600 .env.production
 ```
 
 내용은 `service/ENV.example`를 기준으로, dev 도메인(`likenovel.dev`) 값을 채우면 됩니다.
-
-

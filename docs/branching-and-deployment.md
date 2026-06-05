@@ -1,5 +1,9 @@
 # 브랜칭 & 배포 & 인프라 가이드
 
+> Status: HISTORICAL GUIDE - VERIFY BEFORE USE
+> Current branch/deploy SSOT: `AGENTS.md`, `CLAUDE.md`, `docs/deployment-runbook.md`, and `docs/wiki/deployment-and-batch.md`.
+> This document may contain stale runtime notes such as PM2-era backend wording.
+
 Last updated: 2026-05-22
 
 ---
