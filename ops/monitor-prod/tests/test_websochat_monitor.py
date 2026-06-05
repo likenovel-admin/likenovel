@@ -14,6 +14,14 @@ class WebsochatMonitorTest(unittest.TestCase):
         self.assertIn("p.open_yn='Y'", script)
         self.assertIn("p.blind_yn='N'", script)
 
+    def test_context_missing_counts_only_active_episode_summaries(self) -> None:
+        repo_root = Path(__file__).resolve().parents[3]
+        script = (repo_root / "ops" / "monitor-prod" / "checks" / "websochat.sh").read_text(encoding="utf-8")
+
+        self.assertIn("sacs.summary_type='episode_summary'", script)
+        self.assertIn("sacs.is_active='Y'", script)
+        self.assertIn("sacs.scope_key=CONCAT('episode:', pe.episode_id)", script)
+
 
 if __name__ == "__main__":
     unittest.main()
