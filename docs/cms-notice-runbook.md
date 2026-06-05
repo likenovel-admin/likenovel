@@ -26,8 +26,12 @@ site notices.
 - Public notice query routes:
   - `GET /v1/query/notices`
   - `GET /v1/query/notices/{notice_id}`
-- Backend schema allows free `subject`, `content`, `primary_yn`, `use_yn`:
-  `likenovel-service-api/likenovel-service-api/fastapi_be_server/app/schemas/notice.py`
+- CMS command schema uses `subject`, `content`, `primary_yn`, and optional
+  `file_id`:
+  `likenovel-service-api/likenovel-service-api/fastapi_be_server/app/schemas/admin.py`
+- CMS service persists site notices in `tb_notice` and sets `use_yn=Y` on
+  create:
+  `likenovel-service-api/likenovel-service-api/fastapi_be_server/app/services/admin/admin_system_service.py`
 
 The title prefix rules below are operational conventions, not backend-enforced
 enum validation. Keep them unless code or an explicit user instruction changes
@@ -96,7 +100,8 @@ the UI reflects an API/DB change.
 
 Report the layers separately:
 
-- API/DB layer: route called, notice id, `subject`, `primary_yn`, `use_yn`.
+- API/DB layer: route called, notice id, `subject`, `primary_yn`, optional
+  `file_id`, and DB `use_yn` when read back.
 - CMS UI layer: CMS URL, visible title, primary check mark after refresh.
 - Public UI layer, when relevant: `GET /v1/query/notices` or actual user-facing
 notice page/readback.
