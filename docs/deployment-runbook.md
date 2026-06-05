@@ -401,6 +401,26 @@ Story context 비용 가드:
 
 `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`는 `/home/ln-admin/likenovel/api/batch`를 `/home/ln-admin/likenovel/batch`로 복사하고, prod main rule slot/story context 일부 cron만 보장한다. 전체 cron 상태의 SSOT는 배포 후 `crontab -l` readback이다.
 
+## 6.5 Batch Log Triage
+
+배치 정상 판정은 로그 파일 존재나 오래된 `grep ERROR` 총합만으로 하지 않는다.
+
+1. 먼저 실제 런타임 경로를 확인한다.
+   - Docker: `/app/logs/*.log`
+   - Dev 서버: `/home/ln-admin/likenovel/batch-dev/*.log`
+   - Prod 서버: `/home/ln-admin/likenovel/batch/*.log`
+2. 관련 로그마다 마지막 error 계열 줄과 마지막 success 계열 줄을 비교한다.
+3. 최소 검색어:
+   - `ERROR`
+   - `Traceback`
+   - `1205`
+   - `timeout`
+   - `deadlock`
+   - `lock wait`
+4. `completed`, `DONE`, `RELEASE_LOCK`, `completed_yn='Y'` 같은 success marker가 마지막 error보다 뒤에 있어도 같은 batch/run window인지 확인한다.
+5. `processlist`에서 batch query가 60초 이상 active이면 정상 완료가 아니라 active/risky로 보고한다.
+6. `BASH_ENV`나 cron shell 동작을 bash 수동 실행 결과만으로 단정해 batch source를 고치지 않는다. 실제 cron 실행, 로그, DB row/readback을 함께 본다.
+
 ---
 
 ## 7) Legacy 경로 (기본 비권장)
@@ -590,6 +610,51 @@ docker compose up -d --force-recreate api
 - `service/Dockerfile`
 - `partner/Dockerfile`
 - `cms/Dockerfile`
+
+### 10.2.1 Frontend Local Env Key Inventory
+
+Do not document secret values. This list is a key-name inventory only, verified
+against the May backup `likenovel-local-env.tar.gz` and the current local
+`.env` files on 2026-06-06.
+
+`service/.env` keys:
+
+- `API_SERVER_URI`
+- `IRON_SESSION_PASSWORD`
+- `NEXT_PUBLIC_API_SERVER_URI`
+- `NEXT_PUBLIC_APPLE_CLIENT_ID`
+- `NEXT_PUBLIC_APPLE_SIGNIN_REDIRECT_URI`
+- `NEXT_PUBLIC_APPLE_SIGNUP_REDIRECT_URI`
+- `NEXT_PUBLIC_GOOGLE_CLIENT_ID`
+- `NEXT_PUBLIC_GOOGLE_SIGNIN_REDIRECT_URI`
+- `NEXT_PUBLIC_GOOGLE_SIGNUP_REDIRECT_URI`
+- `NEXT_PUBLIC_KAKAO_CLIENT_ID`
+- `NEXT_PUBLIC_KAKAO_SIGNIN_REDIRECT_URI`
+- `NEXT_PUBLIC_KAKAO_SIGNUP_REDIRECT_URI`
+- `NEXT_PUBLIC_NAVER_CLIENT_ID`
+- `NEXT_PUBLIC_NAVER_SIGNIN_REDIRECT_URI`
+- `NEXT_PUBLIC_NAVER_SIGNUP_REDIRECT_URI`
+- `NEXT_PUBLIC_PARTNER_SITE_URL`
+- `NEXT_PUBLIC_PORTONE_CHANNEL_KEY`
+- `NEXT_PUBLIC_PORTONE_STORE_ID`
+- `NEXT_PUBLIC_WWW_SERVER_URI`
+- `NICE_CLIENT_ID`
+- `NICE_CLIENT_SECRET`
+- `NICE_PRODUCT_ID`
+- `NICE_RETURN_URL`
+
+`partner/.env` keys:
+
+- `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_CMS_SITE_URL`
+- `NEXT_PUBLIC_HOST_CDN_URL`
+- `NEXT_PUBLIC_HOST_PARTNER_URL`
+- `NEXT_PUBLIC_USER_SITE_URL`
+
+`cms/.env` keys:
+
+- `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_PARTNER_SITE_URL`
 
 ## 10.3 Backend env 파일 (fastapi_be_server)
 

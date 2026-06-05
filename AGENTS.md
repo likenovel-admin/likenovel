@@ -59,6 +59,7 @@ docker compose up -d --build cms       # http://localhost:3002
 - 사용자가 `3000`을 말하면 `likenovel-service-local` 컨테이너 기준으로 확인한다. 임시 포트로 우회하지 않는다.
 - 다른 포트가 필요하면 먼저 이유와 현재 점유 프로세스를 readback한다.
 - `npm run dev`, `yarn dev`, `pnpm dev`, `bun dev`는 사용자가 명시하거나 runbook이 해당 경로를 요구할 때만 쓴다.
+- Docker rebuild 후에는 `docker ps`와 해당 localhost URL 응답을 확인한다.
 
 ## 4) Change Policy
 
@@ -70,6 +71,8 @@ docker compose up -d --build cms       # http://localhost:3002
 - 기능 브랜치에는 해당 기능, 버그픽스, 배포 가능한 review 단위에 필요한 commit만 포함한다.
 - staging 전 branch purpose를 한 문장으로 말하고, 변경 파일이 그 목적에 맞는지 확인한다.
 - unrelated work가 보이면 멈추고 별도 브랜치로 분리하거나 unstaged로 둔다. 이미 local에 있다는 이유로 섞지 않는다.
+- `hotfix`, `긴급`, `prod 수정`, `빨리 고쳐` 성격이면 요청 범위 밖의 refactor, 스타일 수치 변경, SSOT 추출을 하지 않는다.
+- 병렬/반복 shell 명령이나 destructive 명령은 각 명령의 working directory를 명시적으로 고정한다.
 
 ## 5) Edit Gate
 
@@ -154,6 +157,8 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
 - `localhost:3806` Docker MySQL은 별도 로컬 격리 DB다. 기본 검증 채널로 가정하지 않는다.
 - DB/cron/batch 작업 전에는 `docs/wiki/deployment-and-batch.md`, `docs/deployment-runbook.md`, backend batch source를 읽는다.
 - batch/log 판정은 최근성, exit code, DB row/readback 기준으로 한다. 타임스탬프 없는 grep으로 정상/실패를 단정하지 않는다.
+- batch 정상 판정 전에는 `ERROR`, `Traceback`, `1205`, `timeout`, `deadlock`와 마지막 성공 marker를 함께 확인한다.
+- processlist에서 batch query가 60초 이상 active이면 정상 완료로 보고하지 않는다.
 
 ## 9) Documentation Rules
 
@@ -196,6 +201,8 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
 - proxy check는 proxy라고 말한다.
 - UNKNOWN을 정상으로 해석하지 않는다.
 - 실제 readback 가능한 항목은 현재 코드, runtime, DB, API, browser, git 상태에서 확인하고 과거 기억이나 의도로 대체하지 않는다.
+- 데이터 변경은 DB/API 저장 확인과 CMS/service UI 확인을 분리해서 보고한다.
+- 공지, 안내, FAQ, 릴리즈 노트, 이메일에서 UI 문구를 인용할 때는 실제 컴포넌트/route의 표시 문자열을 먼저 확인한다.
 
 ## 12) Review Priority
 
@@ -259,6 +266,9 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
 - 작가명/닉네임/이메일/product_id는 exact match다.
 - direct/feature slot 운영은 slot id/name/order/product_ids와 public 노출을 readback한다.
 - AI/websochat 작업은 main path, fallback path, system reply path를 분리해서 본다.
+- AI/추천/취향 기능은 7축 DNA codebook, `tb_user_ai_signal_event`, `tb_user_taste_factor_score`, 기존 `recommendation_service`를 먼저 확인한다. 별도 취향 모델이나 자체 추천 테이블을 새로 만들려면 이유를 명시하고 사용자 확인을 받는다.
+- 라이크노벨 장르/독자 분포는 일반 한국 웹소설 시장 가정으로 단정하지 않는다. 코드/DB의 16개 장르, 7축 DNA, 실제 통계를 우선한다.
+- CMS 사이트 공지는 `docs/cms-notice-runbook.md`를 먼저 읽고, 제목 prefix/장애-해결 쌍/primary 기준을 확인한다.
 - 비용 큰 local cron/batch는 기본 off로 두고, 실행 전 비용/DB 채널/대상 범위를 명시한다.
 
 ## 16) Stop Rules

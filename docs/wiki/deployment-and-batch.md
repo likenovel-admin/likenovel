@@ -109,3 +109,30 @@ selects env by runtime directory:
   then compare with `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`.
 - Batch docs must be refreshed whenever cron timing, lock behavior, max parallel,
   cost gates, runtime paths, or output tables change.
+
+## Batch Log Triage
+
+Batch status is not proven by a single `grep ERROR` count or an old accumulated
+log. Check freshness and relative order:
+
+1. Confirm the target runtime path first:
+   - Docker: `/app/logs/*.log`
+   - Dev server: `/home/ln-admin/likenovel/batch-dev/*.log`
+   - Prod server: `/home/ln-admin/likenovel/batch/*.log`
+2. For each relevant log, compare the last error line and the last success line.
+3. Search for lock and database contention markers:
+   - `ERROR`
+   - `Traceback`
+   - `1205`
+   - `timeout`
+   - `deadlock`
+   - `lock wait`
+4. Treat a later success marker as recovery evidence only when it belongs to the
+same batch/run window. Do not use stale historical success to override a fresh
+error.
+5. If processlist shows a batch query active for 60 seconds or more, report it
+as active/risky, not normal.
+
+Current batch sources use `completed`, `DONE`, `RELEASE_LOCK`, `completed_yn`,
+`[ERROR]`, advisory locks, and MySQL `GET_LOCK`/`RELEASE_LOCK` patterns. Read
+the specific script/SQL before interpreting a log.

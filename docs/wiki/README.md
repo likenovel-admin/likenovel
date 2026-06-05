@@ -28,6 +28,7 @@ marked as an absolute server path.
 - [Legacy And Snapshot Docs](legacy-and-snapshot-docs.md)
 - [Deployment And Batch](deployment-and-batch.md)
 - [AI And Websochat](ai-and-websochat.md)
+- [CMS Notice Runbook](../cms-notice-runbook.md)
 
 ## Rules
 

@@ -1,8 +1,9 @@
 # Current SSOT
 
 > Status: CURRENT SSOT INDEX
-> Last verified: 2026-06-03
-> Code readback: 2026-06-03 for deploy, DB, cron, and batch anchors
+> Last verified: 2026-06-06
+> Code readback: 2026-06-03 for deploy, DB, cron, and batch anchors;
+> 2026-06-06 for CMS notice anchors
 
 ## Work Rules
 
@@ -44,6 +45,7 @@
 - User web: `service/`, `service/README.md`
 - Partner: `partner/`, `partner/README.md`
 - CMS: `cms/`, `cms/README.md`
+- CMS site notice SOP: `docs/cms-notice-runbook.md`
 - Architecture overview: `architecture.md` (orientation only; execution runbook still wins)
 
 ## AI And Websochat

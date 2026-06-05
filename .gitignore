@@ -79,6 +79,7 @@ cms-app.md
 partner-app.md
 service-app.md
 docs/*
+!docs/cms-notice-runbook.md
 !docs/deployment-runbook.md
 !docs/batch-system-architecture.md
 !docs/ai-chat-freeform-contract.md
