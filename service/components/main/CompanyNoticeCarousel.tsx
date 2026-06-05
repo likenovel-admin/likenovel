@@ -151,14 +151,6 @@ const CompanyNoticeCarousel = ({
     });
   };
 
-  const goToTrackIndex = (nextTrackIndex: number) => {
-    if (!canSlide) return;
-
-    setIsTransitionEnabled(true);
-    setTrackIndex(nextTrackIndex);
-    setAutoRotateResetKey((key) => key + 1);
-  };
-
   const handleTrackTransitionEnd = () => {
     if (!canSlide) return;
 
@@ -371,28 +363,6 @@ const CompanyNoticeCarousel = ({
           )}
         </div>
       </div>
-
-      {pageCount > 1 && (
-        <div className="flex justify-center gap-[8px] py-[12px]">
-          {Array.from({ length: pageCount }).map((_, pageIndex) => (
-            <button
-              key={pageIndex}
-              type="button"
-              aria-label={`${pageIndex + 1}번째 회사 공지 페이지`}
-              onClick={() => goToTrackIndex(loopBuffer + pageIndex)}
-              className="flex cursor-pointer items-center p-[4px]"
-            >
-              <span
-                className={`block h-[6px] rounded-full transition-all ${
-                  currentPage === pageIndex
-                    ? "w-[28px] bg-[#0255D9]"
-                    : "w-[10px] bg-[#D6D9E0]"
-                }`}
-              />
-            </button>
-          ))}
-        </div>
-      )}
     </section>
   );
 };

@@ -125,6 +125,11 @@ assert.match(
   /pageCount > 1/,
   "controls should only render when the carousel can page",
 );
+assert.doesNotMatch(
+  componentSource,
+  /번째 회사 공지 페이지|Array\.from\(\{ length: pageCount \}\)|goToTrackIndex/,
+  "company notice carousel should not render dot pagination",
+);
 assert.match(
   componentSource,
   /items\.slice\(-loopBuffer\)[\s\S]*items\.slice\(0,\s*loopBuffer\)/,
