@@ -158,6 +158,7 @@ FROM (
   LEFT JOIN tb_story_agent_context_summary sacs
     ON sacs.product_id=p.product_id
    AND sacs.summary_type='episode_summary'
+   AND sacs.is_active='Y'
    AND sacs.scope_key=CONCAT('episode:', pe.episode_id)
   WHERE p.price_type='free'
     AND p.open_yn='Y'
