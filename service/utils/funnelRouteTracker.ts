@@ -1,4 +1,5 @@
 import {
+  calculateProductDetailActiveSeconds,
   createFunnelRouteContext,
   type FunnelRouteContext,
   type FunnelTrackedPageType,
@@ -27,6 +28,8 @@ export interface ProductDetailTransitionDecision {
   destinationPath: string;
   destinationPageType: FunnelTrackedPageType;
   destinationProductId?: number;
+  sourceChangedAt: number;
+  activeSeconds: number;
   status: ProductDetailTransitionStatus;
   reason:
     | "same_product_detail"
@@ -45,6 +48,8 @@ export interface ProductDetailExitCandidate {
   destinationPath: string;
   destinationPageType: FunnelTrackedPageType;
   destinationProductId?: number;
+  sourceChangedAt: number;
+  activeSeconds: number;
   reason:
     | "different_product_detail"
     | "different_product_viewer"
@@ -217,6 +222,8 @@ const toProductDetailExitCandidate = (
     destinationPath: decision.destinationPath,
     destinationPageType: decision.destinationPageType,
     destinationProductId: decision.destinationProductId,
+    sourceChangedAt: decision.sourceChangedAt,
+    activeSeconds: decision.activeSeconds,
     reason: decision.reason,
     evaluatedAt: decision.evaluatedAt,
   };
@@ -241,21 +248,34 @@ const isResumePendingPath = (pathname: string) =>
 const createBaseProductDetailTransitionDecision = (
   sourceProductId: number,
   sourcePath: string,
+  sourceChangedAt: number,
   current: FunnelRouteContext,
-  destinationProductId?: number
-) => ({
-  sourceProductId,
-  sourcePath,
-  destinationPath: current.fullPath,
-  destinationPageType: current.pageType,
-  destinationProductId,
-  evaluatedAt: Date.now(),
-});
+  destinationProductId?: number,
+  frozenActiveSeconds?: number
+) => {
+  const evaluatedAt = Date.now();
+  return {
+    sourceProductId,
+    sourcePath,
+    destinationPath: current.fullPath,
+    destinationPageType: current.pageType,
+    destinationProductId,
+    sourceChangedAt,
+    activeSeconds: calculateProductDetailActiveSeconds(
+      sourceChangedAt,
+      evaluatedAt,
+      frozenActiveSeconds
+    ),
+    evaluatedAt,
+  };
+};
 
 const evaluateProductDetailTransitionDecision = (
   sourceProductId: number,
   sourcePath: string,
-  current: FunnelRouteContext
+  sourceChangedAt: number,
+  current: FunnelRouteContext,
+  frozenActiveSeconds?: number
 ): ProductDetailTransitionDecision => {
   const destinationProductId =
     current.pageType === "viewer"
@@ -266,8 +286,10 @@ const evaluateProductDetailTransitionDecision = (
   const base = createBaseProductDetailTransitionDecision(
     sourceProductId,
     sourcePath,
+    sourceChangedAt,
     current,
-    destinationProductId
+    destinationProductId,
+    frozenActiveSeconds
   );
 
   if (current.pageType === "product_detail") {
@@ -336,6 +358,7 @@ const createProductDetailTransitionDecision = (
   return evaluateProductDetailTransitionDecision(
     previous.productId,
     previous.fullPath,
+    previous.changedAt,
     current
   );
 };
@@ -358,7 +381,9 @@ const advancePendingProductDetailTransitionDecision = (
   return evaluateProductDetailTransitionDecision(
     existingDecision.sourceProductId,
     existingDecision.sourcePath,
-    current
+    existingDecision.sourceChangedAt,
+    current,
+    existingDecision.activeSeconds
   );
 };
 

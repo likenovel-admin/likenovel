@@ -136,6 +136,10 @@ const data = {
           url: "/products/ai-metadata",
         },
         {
+          title: "AI 활용 동의 현황",
+          url: "/products/ai-consent",
+        },
+        {
           title: "AI 온보딩 작품",
           url: "/products/ai-onboarding",
         },

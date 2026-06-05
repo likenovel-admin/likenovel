@@ -71,6 +71,7 @@ export const useProductDetailExitSignal = () => {
       {
         product_id: candidate.sourceProductId,
         event_type: "product_detail_exit",
+        active_seconds: Math.max(0, Math.floor(candidate.activeSeconds || 0)),
         event_payload: {
           source_path: candidate.sourcePath,
           destination_path: candidate.destinationPath,
