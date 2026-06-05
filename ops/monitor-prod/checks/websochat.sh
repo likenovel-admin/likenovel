@@ -133,7 +133,14 @@ UNION ALL SELECT 'USAGE_24H', COUNT(*) FROM tb_story_agent_usage_log WHERE creat
 UNION ALL SELECT 'FALLBACK_1H', COUNT(*) FROM tb_story_agent_usage_log WHERE created_date >= DATE_SUB(NOW(), INTERVAL 1 HOUR) AND fallback_used='Y'
 UNION ALL SELECT 'FALLBACK_24H', COUNT(*) FROM tb_story_agent_usage_log WHERE created_date >= DATE_SUB(NOW(), INTERVAL 24 HOUR) AND fallback_used='Y'
 UNION ALL SELECT 'INCOMPLETE_USAGE_24H', COUNT(*) FROM tb_story_agent_usage_log WHERE created_date >= DATE_SUB(NOW(), INTERVAL 24 HOUR) AND (user_message_id IS NULL OR assistant_message_id IS NULL)
-UNION ALL SELECT 'CONTEXT_FAILED', COUNT(*) FROM tb_story_agent_context_product WHERE context_status='failed';
+UNION ALL
+SELECT 'CONTEXT_FAILED', COUNT(*)
+FROM tb_story_agent_context_product sacp
+JOIN tb_product p ON p.product_id=sacp.product_id
+WHERE sacp.context_status='failed'
+  AND p.price_type='free'
+  AND p.open_yn='Y'
+  AND p.blind_yn='N';
 SQL
 mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -D "$DB_NAME" -N -B 2>/dev/null <<'SQL' | awk -F'\t' '{print $1"="$2}'
 SELECT 'CONTEXT_MISSING_PRODUCTS', COUNT(*)
