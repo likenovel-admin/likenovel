@@ -123,25 +123,28 @@ ssh -i /home/hongsan/.ssh/ln_kp.pem -o IdentitiesOnly=yes \
 
 ## 4) 로컬 구동 표준
 
-## 4.1 User Web만 빠르게 실행 (Windows)
-PowerShell:
+## 4.1 프론트 로컬 검증 표준 (Docker)
 
-```powershell
-cd c:\Users\Hongsan\Downloads\likenovel
-powershell -ExecutionPolicy Bypass -File .\scripts\user-web-dev.ps1 -Port 3000
-```
-
-참조: `scripts/user-web-dev.ps1`
-이 스크립트는 `service/`에서 `corepack enable`, `yarn --immutable`, `yarn dev`를 실행한다.
-
-## 4.2 프론트 3개(User/Partner/CMS) 한 번에 로컬 실행 (Docker)
 사전조건:
 - `service/.env`, `partner/.env`, `cms/.env` 준비
+
+기본 포트:
+- service: `http://localhost:3000`
+- partner: `http://localhost:3001`
+- cms: `http://localhost:3002`
 
 실행:
 
 ```bash
-cd C:\Users\Hongsan\Downloads\likenovel
+cd /home/hongsan/work/likenovel
+docker compose up -d --build service
+docker compose up -d --build partner
+docker compose up -d --build cms
+```
+
+전체 재빌드가 필요하면:
+
+```bash
 docker compose up -d --build
 ```
 
@@ -151,7 +154,23 @@ docker compose up -d --build
 docker compose down
 ```
 
-참조: `docker-compose.yml`
+참조: root `docker-compose.yml`.
+
+사용자가 `3000`에서 확인하겠다고 하면 `likenovel-service-local` 컨테이너를 rebuild/readback한다. 다른 임시 포트로 우회하지 않는다.
+
+## 4.2 User Web dev server 예외 경로 (명시 요청 시)
+
+Hot reload 자체가 목적이거나 사용자가 dev server를 명시한 경우에만 쓴다.
+
+PowerShell:
+
+```powershell
+cd c:\Users\Hongsan\Downloads\likenovel
+powershell -ExecutionPolicy Bypass -File .\scripts\user-web-dev.ps1 -Port 3000
+```
+
+참조: `scripts/user-web-dev.ps1`.
+이 스크립트는 `service/`에서 `corepack enable`, `yarn --immutable`, `yarn dev`를 실행한다.
 
 ## 4.3 Backend API 로컬 실행
 옵션 A: 전체 의존성 포함(Docker Compose)
