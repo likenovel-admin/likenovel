@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "PORT=3002 next start",
     "lint": "next lint",
-    "test:contracts": "node --experimental-strip-types app/banners/BannerUnifiedImage.contract.test.mts"
+    "test:contracts": "node --experimental-strip-types app/banners/BannerUnifiedImage.contract.test.mts && node --experimental-strip-types app/products/ai-consent/page.contract.test.mts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

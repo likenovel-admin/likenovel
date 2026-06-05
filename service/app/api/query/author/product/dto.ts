@@ -38,6 +38,8 @@ export interface IMakeProductRequest {
   cp_contract_yn: "Y" | "N";
   cp_nickname?: string | null;
   websochat_enabled_yn?: "Y" | "N";
+  ai_content_service_enabled_yn?: "Y" | "N";
+  ai_external_promotion_yn?: "Y" | "N";
   product_type?: "normal" | null;
 }
 
@@ -73,6 +75,8 @@ export interface IMakingProductObject {
   paidApplyStatus?: "review" | "accepted" | "denied" | null;
   productType?: "normal" | null;
   websochatEnabledYn?: "Y" | "N";
+  aiContentServiceEnabledYn?: "Y" | "N";
+  aiExternalPromotionYn?: "Y" | "N";
 }
 export interface ISelectMakingProductResponse {
   data: IMakingProductObject;
