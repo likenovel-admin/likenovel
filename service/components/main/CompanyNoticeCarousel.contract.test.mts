@@ -17,6 +17,11 @@ assert.match(
 );
 assert.match(
   componentSource,
+  /getCompanyNoticeCarouselLoopBuffer/,
+  "company notice carousel should use loop buffer clones for infinite one-card sliding",
+);
+assert.match(
+  componentSource,
   /COMPANY_NOTICE_CAROUSEL_DESKTOP_MAX_WIDTH/,
   "company notice carousel should keep the 1120px desktop contract centralized",
 );
@@ -57,8 +62,13 @@ assert.doesNotMatch(
 );
 assert.match(
   componentSource,
-  /L6HeQiMCSziLoNswCiCTaQ\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/5[\s\S]*?8tgpcio9TbuweVtilwaXUQ\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/36[\s\S]*?vsJV-rkOQWK5P1rgqoNSoQ\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/40[\s\S]*?qdCb-kRCQ9yGD4aTrJfCAg\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/38[\s\S]*?uBydaISGQb-BrxRDCQUQww\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/32[\s\S]*?WVhvGyWPSFK_5Dl1rF29GQ\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/6/,
-  "company notice carousel should keep the uploaded notice images and prod links in the requested order",
+  /L6HeQiMCSziLoNswCiCTaQ\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/5[\s\S]*?8tgpcio9TbuweVtilwaXUQ\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/36[\s\S]*?vsJV-rkOQWK5P1rgqoNSoQ\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/40[\s\S]*?company-notice-ai-consent\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/43[\s\S]*?qdCb-kRCQ9yGD4aTrJfCAg\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/38[\s\S]*?uBydaISGQb-BrxRDCQUQww\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/32[\s\S]*?WVhvGyWPSFK_5Dl1rF29GQ\.webp[\s\S]*?https:\/\/www\.likenovel\.net\/product\/customer-service\/notice\/6/,
+  "company notice carousel should keep the notice images and prod links in the requested order",
+);
+assert.match(
+  componentSource,
+  /ariaLabel:\s*"홍보 콘텐츠 게재 동의 안내 공지"/,
+  "company notice carousel should name the AI consent notice card",
 );
 assert.doesNotMatch(
   componentSource,
@@ -114,6 +124,51 @@ assert.match(
   componentSource,
   /pageCount > 1/,
   "controls should only render when the carousel can page",
+);
+assert.match(
+  componentSource,
+  /items\.slice\(-loopBuffer\)[\s\S]*items\.slice\(0,\s*loopBuffer\)/,
+  "company notice carousel should render head and tail clones for infinite looping",
+);
+assert.match(
+  componentSource,
+  /const isVisibleCard =[\s\S]*renderIndex >= trackIndex[\s\S]*renderIndex < trackIndex \+ visibleCount/,
+  "company notice carousel should know which rendered cards are currently visible",
+);
+assert.match(
+  componentSource,
+  /aria-hidden=\{!isVisibleCard\}/,
+  "company notice carousel should hide offscreen cards from assistive technologies",
+);
+assert.match(
+  componentSource,
+  /tabIndex=\{isVisibleCard \? undefined : -1\}/,
+  "company notice carousel should only focus currently visible card links",
+);
+assert.match(
+  componentSource,
+  /setTrackIndex\(\(index\)\s*=>\s*index \+ 1\)/,
+  "next and auto rotation should advance one card at a time",
+);
+assert.match(
+  componentSource,
+  /setTrackIndex\(\(index\)\s*=>\s*index - 1\)/,
+  "previous arrow should move back one card at a time",
+);
+assert.match(
+  componentSource,
+  /autoRotateResetKey/,
+  "manual company notice carousel movement should reset auto rotation timing",
+);
+assert.match(
+  componentSource,
+  /setAutoRotateResetKey\(\(key\)\s*=>\s*key \+ 1\)/,
+  "manual carousel controls should restart the auto rotation interval",
+);
+assert.match(
+  componentSource,
+  /onTransitionEnd=\{handleTrackTransitionEnd\}/,
+  "company notice carousel should reset clone positions after transition for infinite looping",
 );
 assert.doesNotMatch(
   componentSource,

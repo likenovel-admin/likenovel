@@ -5,10 +5,11 @@ import {
   COMPANY_NOTICE_CAROUSEL_AUTO_ROTATE_INTERVAL_MS,
   COMPANY_NOTICE_CAROUSEL_CARD_GAP,
   COMPANY_NOTICE_CAROUSEL_DESKTOP_MAX_WIDTH,
+  COMPANY_NOTICE_CAROUSEL_DESKTOP_PAGE_SIZE,
   COMPANY_NOTICE_CAROUSEL_MOBILE_BREAKPOINT,
   getCompanyNoticeCarouselCardMetrics,
+  getCompanyNoticeCarouselLoopBuffer,
   getCompanyNoticeCarouselPageCount,
-  getCompanyNoticeCarouselPageStartIndex,
   getCompanyNoticeCarouselViewportWidth,
   getCompanyNoticeCarouselVisibleCount,
 } from "@/utils/companyNoticeCarouselLayout";
@@ -48,6 +49,12 @@ export const COMPANY_NOTICE_ITEMS: CompanyNoticeItem[] = [
     ariaLabel: "일반연재 승급 자동화 공지",
   },
   {
+    id: 43,
+    imageSrc: "/images/company-notice-ai-consent.webp",
+    linkPath: "https://www.likenovel.net/product/customer-service/notice/43",
+    ariaLabel: "홍보 콘텐츠 게재 동의 안내 공지",
+  },
+  {
     id: 4,
     imageSrc: "https://cdn.likenovel.net/user/qdCb-kRCQ9yGD4aTrJfCAg.webp",
     linkPath: "https://www.likenovel.net/product/customer-service/notice/38",
@@ -73,11 +80,18 @@ const CompanyNoticeCarousel = ({
   const [availableWidth, setAvailableWidth] = useState(
     COMPANY_NOTICE_CAROUSEL_DESKTOP_MAX_WIDTH,
   );
-  const [currentPage, setCurrentPage] = useState(0);
+  const [trackIndex, setTrackIndex] = useState(() =>
+    items.length > COMPANY_NOTICE_CAROUSEL_DESKTOP_PAGE_SIZE
+      ? COMPANY_NOTICE_CAROUSEL_DESKTOP_PAGE_SIZE
+      : 0,
+  );
+  const [isTransitionEnabled, setIsTransitionEnabled] = useState(true);
+  const [autoRotateResetKey, setAutoRotateResetKey] = useState(0);
   const measureRef = useRef<HTMLDivElement | null>(null);
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
   const dragCurrentX = useRef(0);
+  const restoreTransitionFrame = useRef<number | null>(null);
 
   const count = items.length;
   const isMobile = availableWidth < COMPANY_NOTICE_CAROUSEL_MOBILE_BREAKPOINT;
@@ -97,13 +111,70 @@ const CompanyNoticeCarousel = ({
     viewportWidth,
     visibleCount,
   );
-  const startIndex = getCompanyNoticeCarouselPageStartIndex(
-    currentPage,
-    count,
-    visibleCount,
-  );
+  const loopBuffer = getCompanyNoticeCarouselLoopBuffer(count, visibleCount);
+  const currentPage =
+    canSlide && count > 0
+      ? ((trackIndex - loopBuffer) % count + count) % count
+      : 0;
+  const renderedItems = canSlide
+    ? [
+        ...items.slice(-loopBuffer).map((item, index) => ({
+          item,
+          renderKey: `head-${index}-${item.id}`,
+        })),
+        ...items.map((item, index) => ({
+          item,
+          renderKey: `item-${index}-${item.id}`,
+        })),
+        ...items.slice(0, loopBuffer).map((item, index) => ({
+          item,
+          renderKey: `tail-${index}-${item.id}`,
+        })),
+      ]
+    : items.map((item, index) => ({
+        item,
+        renderKey: `item-${index}-${item.id}`,
+      }));
   const translateX =
-    startIndex * (cardWidth + COMPANY_NOTICE_CAROUSEL_CARD_GAP);
+    trackIndex * (cardWidth + COMPANY_NOTICE_CAROUSEL_CARD_GAP);
+
+  const restoreTransitionOnNextFrame = () => {
+    if (restoreTransitionFrame.current !== null) {
+      window.cancelAnimationFrame(restoreTransitionFrame.current);
+    }
+
+    restoreTransitionFrame.current = window.requestAnimationFrame(() => {
+      restoreTransitionFrame.current = window.requestAnimationFrame(() => {
+        setIsTransitionEnabled(true);
+        restoreTransitionFrame.current = null;
+      });
+    });
+  };
+
+  const goToTrackIndex = (nextTrackIndex: number) => {
+    if (!canSlide) return;
+
+    setIsTransitionEnabled(true);
+    setTrackIndex(nextTrackIndex);
+    setAutoRotateResetKey((key) => key + 1);
+  };
+
+  const handleTrackTransitionEnd = () => {
+    if (!canSlide) return;
+
+    if (trackIndex >= loopBuffer + count) {
+      setIsTransitionEnabled(false);
+      setTrackIndex(loopBuffer + currentPage);
+      restoreTransitionOnNextFrame();
+      return;
+    }
+
+    if (trackIndex < loopBuffer) {
+      setIsTransitionEnabled(false);
+      setTrackIndex(loopBuffer + currentPage);
+      restoreTransitionOnNextFrame();
+    }
+  };
 
   useEffect(() => {
     const target = measureRef.current;
@@ -127,29 +198,55 @@ const CompanyNoticeCarousel = ({
   }, []);
 
   useEffect(() => {
-    setCurrentPage((page) => Math.min(page, Math.max(pageCount - 1, 0)));
-  }, [pageCount]);
+    if (restoreTransitionFrame.current !== null) {
+      window.cancelAnimationFrame(restoreTransitionFrame.current);
+      restoreTransitionFrame.current = null;
+    }
+
+    setIsTransitionEnabled(false);
+    setTrackIndex(loopBuffer);
+
+    restoreTransitionFrame.current = window.requestAnimationFrame(() => {
+      restoreTransitionFrame.current = window.requestAnimationFrame(() => {
+        setIsTransitionEnabled(true);
+        restoreTransitionFrame.current = null;
+      });
+    });
+  }, [count, loopBuffer]);
+
+  useEffect(() => {
+    return () => {
+      if (restoreTransitionFrame.current !== null) {
+        window.cancelAnimationFrame(restoreTransitionFrame.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!canSlide) return;
 
     const timer = window.setInterval(() => {
-      setCurrentPage((page) => (page + 1) % pageCount);
+      setIsTransitionEnabled(true);
+      setTrackIndex((index) => index + 1);
     }, COMPANY_NOTICE_CAROUSEL_AUTO_ROTATE_INTERVAL_MS);
 
     return () => window.clearInterval(timer);
-  }, [canSlide, pageCount]);
+  }, [canSlide, autoRotateResetKey]);
 
   if (count === 0) return null;
 
   const goToPreviousPage = () => {
     if (!canSlide) return;
-    setCurrentPage((page) => (page - 1 + pageCount) % pageCount);
+    setIsTransitionEnabled(true);
+    setTrackIndex((index) => index - 1);
+    setAutoRotateResetKey((key) => key + 1);
   };
 
   const goToNextPage = () => {
     if (!canSlide) return;
-    setCurrentPage((page) => (page + 1) % pageCount);
+    setIsTransitionEnabled(true);
+    setTrackIndex((index) => index + 1);
+    setAutoRotateResetKey((key) => key + 1);
   };
 
   const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
@@ -191,51 +288,64 @@ const CompanyNoticeCarousel = ({
         <div className="relative max-w-full" style={{ width: viewportWidth }}>
           <div className="overflow-hidden">
             <div
-              className="flex transition-transform duration-300 ease-out"
+              className={`flex ${
+                isTransitionEnabled
+                  ? "transition-transform duration-300 ease-out"
+                  : ""
+              }`}
               style={{
                 gap: COMPANY_NOTICE_CAROUSEL_CARD_GAP,
                 transform: `translateX(-${translateX}px)`,
               }}
+              onTransitionEnd={handleTrackTransitionEnd}
             >
-              {items.map((item) => (
-                <article
-                  key={item.id}
-                  className="relative shrink-0 overflow-hidden rounded-[8px] bg-[#171719]"
-                  style={{
-                    width: cardWidth,
-                    aspectRatio: "2 / 1",
-                    touchAction: "pan-y",
-                  }}
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                  onPointerCancel={() => {
-                    isDragging.current = false;
-                  }}
-                >
-                  <a
-                    href={normalizeUrl(item.linkPath)}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={item.ariaLabel}
-                    className="relative block h-full w-full cursor-pointer"
-                    onClick={(event) => {
-                      if (isDragging.current) {
-                        event.preventDefault();
-                      }
+              {renderedItems.map(({ item, renderKey }, renderIndex) => {
+                const isVisibleCard =
+                  renderIndex >= trackIndex &&
+                  renderIndex < trackIndex + visibleCount;
+
+                return (
+                  <article
+                    key={renderKey}
+                    aria-hidden={!isVisibleCard}
+                    className="relative shrink-0 overflow-hidden rounded-[8px] bg-[#171719]"
+                    style={{
+                      width: cardWidth,
+                      aspectRatio: "2 / 1",
+                      touchAction: "pan-y",
+                    }}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={() => {
+                      isDragging.current = false;
                     }}
                   >
-                    <Image
-                      src={item.imageSrc}
-                      alt=""
-                      fill
-                      sizes="(max-width: 767px) 100vw, 367px"
-                      className="absolute inset-0 h-full w-full object-cover"
-                      aria-hidden="true"
-                    />
-                  </a>
-                </article>
-              ))}
+                    <a
+                      href={normalizeUrl(item.linkPath)}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={item.ariaLabel}
+                      tabIndex={isVisibleCard ? undefined : -1}
+                      className="relative block h-full w-full cursor-pointer"
+                      onClick={(event) => {
+                        if (isDragging.current) {
+                          event.preventDefault();
+                        }
+                      }}
+                    >
+                      <Image
+                        src={item.imageSrc}
+                        alt=""
+                        fill
+                        sizes="(max-width: 767px) 100vw, 367px"
+                        className="absolute inset-0 h-full w-full object-cover"
+                        aria-hidden="true"
+                      />
+                    </a>
+                  </article>
+                );
+              })}
             </div>
           </div>
 
@@ -269,7 +379,7 @@ const CompanyNoticeCarousel = ({
               key={pageIndex}
               type="button"
               aria-label={`${pageIndex + 1}번째 회사 공지 페이지`}
-              onClick={() => setCurrentPage(pageIndex)}
+              onClick={() => goToTrackIndex(loopBuffer + pageIndex)}
               className="flex cursor-pointer items-center p-[4px]"
             >
               <span
