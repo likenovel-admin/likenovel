@@ -42,4 +42,6 @@ assert.match(dto, /aiExternalPromotionYn\?: "Y" \| "N"/);
 
 assert.match(terms, /홍보·광고 목적 AI 생성 콘텐츠의 제작 및 게재/);
 assert.match(terms, /외부 채널 게재 동의는 제④항의 작품별 개별 동의와 별도로 구분/);
-assert.match(terms, /미응답 작품은 홍보·광고 목적 AI 생성 콘텐츠 외부 채널 게재에 동의하지 않은 것으로 처리/);
+assert.match(terms, /동의한 것으로 기본 설정/);
+assert.match(terms, /작품 수정 화면에서 언제든 제②항 제8호의 홍보·광고 목적/);
+assert.doesNotMatch(terms, /미응답 작품은[\s\S]*?동의하지 않은 것으로 처리/);
