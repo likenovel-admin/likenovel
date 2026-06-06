@@ -118,7 +118,7 @@ docker compose up -d --build cms       # http://localhost:3002
 - docs cleanup, legacy note, local runbook edit, formatting cleanup, unrelated test, submodule pointer drift를 기능 브랜치에 섞지 않는다.
 - root repo와 backend submodule 상태를 분리해서 읽는다.
 - active worktree가 dirty이면 worktree로 분리해서 작업할 수 있다.
-- 이 repo는 linked worktree에서 push hook이 막힐 수 있다. 그 경우 primary checkout에서 exact ref를 push한다.
+- 이 repo는 linked worktree에서 push hook이 막힌다. linked worktree에서 push를 시도하지 말고, commit SHA를 만든 뒤 primary checkout에서 `git push origin <sha>:dev` 또는 `git push origin <sha>:prod`처럼 exact ref로 push한다.
 - worktree에서 만든 unrelated change는 staging하지 않는다.
 - submodule pointer 변경은 `git diff --submodule=log` readback 후에만 stage한다.
 
@@ -137,6 +137,16 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
 - `dev`/`prod`는 작업 브랜치가 아니라 배포 환경 브랜치다.
 - `git push --force` 금지.
 - push 전에는 `git show --stat HEAD`, staged file names, submodule diff가 mixed bag이 아님을 확인한다.
+
+## 6.1) Deploy Merge Conflict Stop Rules
+
+- dev/prod 반영 중 conflict가 나면 "새 설계/새 문서 내용"을 즉석에서 쓰지 않는다.
+- conflict resolution은 이미 리뷰된 한쪽 내용 선택, submodule pointer align, 단순 중복 제거처럼 기계적으로 설명 가능한 최소 조치만 한다.
+- 문서 add/add conflict가 semantic merge를 요구하면 배포 중에 새 blended 문서를 만들지 말고 멈춰서 사용자에게 선택지를 보고한다.
+- submodule conflict는 target 환경에 맞는 remote SHA만 사용한다.
+  - dev root pointer: backend `origin/dev`
+  - prod root pointer: backend workflow 완료 후 다시 fetch한 backend `origin/prod`
+- backend prod workflow가 `version update` 커밋을 만든 경우, root prod pointer는 그 최신 backend `origin/prod` SHA로 맞춘다. 중간 merge SHA나 backend dev SHA를 넣으면 downgrade다.
 
 ## 7) Deployment And Runtime Gates
 
