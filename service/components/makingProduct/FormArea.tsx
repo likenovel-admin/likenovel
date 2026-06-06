@@ -1323,20 +1323,44 @@ const FormArea = ({ productId }: Props) => {
                     />
                   </>
                 )}
-                <div className="flex flex-col gap-14pxr rounded-[8px] border border-light-gray-500 p-16pxr">
-                  <div>
-                    <p className="text-13pxr md:text-16pxr text-dark-gray-500 font-semibold">
-                      {productId ? "AI 설정" : "3단계 AI 활용 동의"}
-                    </p>
-                    <p className="mt-6pxr text-12pxr leading-[1.6] text-dark-gray-300">
-                      선택하지 않아도 작품 등록은 가능합니다.
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-6pxr">
-                    <Controller
-                      name="aiExternalPromotionYn"
-                      control={control}
-                      render={({ field }) => (
+                <div className="flex flex-col gap-4pxr">
+                  <Controller
+                    name="agree"
+                    control={control}
+                    rules={
+                      productId
+                        ? undefined
+                        : {
+                            required: "이용약관에 동의해주세요.",
+                          }
+                    }
+                    render={({ field }) => (
+                      <Checkbox
+                        label={
+                          <div className="flex">
+                            <span>라이크노벨&nbsp;</span>
+                            <span
+                              className="underline font-semibold"
+                              onClick={handleOpenTermsOfUse}
+                            >
+                              이용약관
+                            </span>
+                            <span>에 동의합니다.</span>
+                          </div>
+                        }
+                        labelId="agree"
+                        labelStyle="text-14pxr"
+                        checked={productId ? true : field.value}
+                        disabled={!!productId}
+                        {...field}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="aiExternalPromotionYn"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex flex-col gap-4pxr">
                         <Checkbox
                           label="(선택) 작품홍보·광고 목적 AI생성 콘텐츠 제작 및 게재 동의(서비스 내 메인 배너, 공식 소셜콘텐츠)"
                           labelId="aiExternalPromotionYn"
@@ -1349,48 +1373,13 @@ const FormArea = ({ productId }: Props) => {
                           name={field.name}
                           ref={field.ref}
                         />
-                      )}
-                    />
-                    <p className="text-12pxr leading-[1.6] text-dark-gray-300">
-                      (*미선택 시 서비스 내외 작품 홍보가 일부 제한됩니다)
-                    </p>
-                  </div>
-                  <p className="text-12pxr leading-[1.6] text-dark-gray-300">
-                    나중에 {"마이페이지 > 작품 관리 > AI 설정"}에서 변경 가능합니다.
-                  </p>
+                        <p className="text-12pxr leading-[1.6] text-dark-gray-300">
+                          (*미선택 시 서비스 내외 작품 홍보가 일부 제한됩니다)
+                        </p>
+                      </div>
+                    )}
+                  />
                 </div>
-                <Controller
-                  name="agree"
-                  control={control}
-                  rules={
-                    productId
-                      ? undefined
-                      : {
-                          required: "이용약관에 동의해주세요.",
-                        }
-                  }
-                  render={({ field }) => (
-                    <Checkbox
-                      label={
-                        <div className="flex">
-                          <span>라이크노벨&nbsp;</span>
-                          <span
-                            className="underline font-semibold"
-                            onClick={handleOpenTermsOfUse}
-                          >
-                            이용약관
-                          </span>
-                          <span>에 동의합니다.</span>
-                        </div>
-                      }
-                      labelId="agree"
-                      labelStyle="text-14pxr"
-                      checked={productId ? true : field.value}
-                      disabled={!!productId}
-                      {...field}
-                    />
-                  )}
-                />
               </section>
             </>
           )}
