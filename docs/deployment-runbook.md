@@ -105,6 +105,42 @@ ssh -i /home/hongsan/.ssh/ln_kp.pem -o IdentitiesOnly=yes \
 
 위 hard gate 전부가 끝나기 전에는 "배포 완료"라고 말하지 않는다.
 
+## 2.2 Dirty Worktree 배포 통합 경로
+
+현재 checkout에 unrelated local change가 남아 있으면 `dev`/`prod`를 직접 checkout하지 않는다.
+단, root repo는 linked worktree에서 push hook이 막히므로 아래 순서를 고정한다.
+
+1. 임시 linked worktree는 merge commit 생성과 검증에만 사용한다.
+2. linked worktree에서 `git push`를 시도하지 않는다.
+3. merge commit SHA를 만든 뒤 primary checkout에서 exact ref로 push한다.
+
+```bash
+git push origin <merge_sha>:dev
+git push origin <merge_sha>:prod
+```
+
+Submodule pointer가 포함되면 아래를 먼저 확인한다.
+
+```bash
+git diff --submodule=log -- likenovel-service-api/likenovel-service-api
+git -C likenovel-service-api/likenovel-service-api merge-base --is-ancestor <pointer_sha> origin/<target>
+```
+
+의도된 pointer push일 때만 해당 명령 1회에 한해 `ALLOW_SUBMODULE_POINTER_PUSH=1`을 붙인다.
+
+## 2.3 Deploy Merge Conflict Stop Rules
+
+dev/prod 반영 중 conflict resolution은 배포를 위한 최소 정합화만 허용한다.
+
+- 코드 conflict: 이미 검증한 feature diff와 target branch diff를 읽고, 새 동작을 만들지 않는다.
+- 문서 conflict: 배포 중에 새 blended 문서를 작성하지 않는다. add/add 또는 의미 병합이 필요하면 중단하고 사용자에게 선택지를 보고한다.
+- submodule conflict:
+  - root dev는 backend `origin/dev` SHA를 가리킨다.
+  - root prod는 backend prod workflow 완료 후 다시 fetch한 backend `origin/prod` SHA를 가리킨다.
+  - backend prod workflow가 `version update` 커밋을 만들면 그 최신 SHA가 root prod pointer의 기준이다.
+
+이 규칙을 어기면 배포 성공 여부와 무관하게 `부분 조치`로 보고하고, 새로 작성한 conflict resolution 내용을 별도 review 대상으로 분리한다.
+
 ---
 
 ## 3) 환경별 기본 매핑
