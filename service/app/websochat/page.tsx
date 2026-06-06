@@ -4198,6 +4198,8 @@ export default function WebsochatPage() {
       appendModeNotice(blockedNotice);
       return;
     }
+    const shouldAutoSendViewerLaunch =
+      pendingLaunchPayload.launchSource === "viewer_bottom_nav";
     setPendingLaunchPayload(null);
     setActiveShortcutPrompt(
       launchActionModeKey === "rp" || (launchActionModeKey === "qa" && !launchQaActionKey)
@@ -4234,7 +4236,9 @@ export default function WebsochatPage() {
       if (pendingLaunchPayload.launchSource === "product_detail_mini_preview") {
         setDraft(normalizeWebsochatMessageContent(pendingLaunchPayload.action.prompt));
       }
-      return;
+      if (!shouldAutoSendViewerLaunch) {
+        return;
+      }
     }
     const noticeId = appendModeNotice(
       buildWebsochatModeSwitchNotice({
