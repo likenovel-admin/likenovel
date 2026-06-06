@@ -152,12 +152,12 @@ const buildBriefCopy = (
       ? `이야기의 출발점은 ${premise}`
       : `초반 훅은 ${hook}`,
     protagonistType && protagonistGoal
-      ? `주인공은 ${protagonistType} 축으로 ${protagonistGoal}을 향해 움직입니다.`
+      ? `주인공은 ${protagonistType} 축으로 ${protagonistGoal}을 향해 움직여요.`
       : protagonistGoal
-      ? `주인공의 동력은 ${protagonistGoal}에 가깝습니다.`
+      ? `주인공의 동력은 ${protagonistGoal}에 가까워요.`
       : mood
-      ? `${mood} 분위기가 작품의 첫인상을 만듭니다.`
-      : "인물의 목표와 세계의 압박을 따라가며 읽기 좋습니다.",
+      ? `${mood} 분위기가 작품의 첫인상을 만들어요.`
+      : "인물의 목표와 세계의 압박을 따라가며 읽기 좋아요.",
     tasteLine,
   ];
 

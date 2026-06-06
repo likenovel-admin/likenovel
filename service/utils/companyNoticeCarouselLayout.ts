@@ -63,7 +63,7 @@ export function getCompanyNoticeCarouselPageCount(
 ): number {
   if (itemCount <= 0 || visibleCount <= 0) return 0;
 
-  return Math.ceil(itemCount / visibleCount);
+  return itemCount > visibleCount ? itemCount : 1;
 }
 
 export function getCompanyNoticeCarouselPageStartIndex(
@@ -72,6 +72,17 @@ export function getCompanyNoticeCarouselPageStartIndex(
   visibleCount: number,
 ): number {
   if (itemCount <= 0 || visibleCount <= 0) return 0;
+  if (itemCount <= visibleCount) return 0;
 
-  return Math.min(pageIndex * visibleCount, Math.max(itemCount - 1, 0));
+  return ((pageIndex % itemCount) + itemCount) % itemCount;
+}
+
+export function getCompanyNoticeCarouselLoopBuffer(
+  itemCount: number,
+  visibleCount: number,
+): number {
+  if (itemCount <= 0 || visibleCount <= 0) return 0;
+  if (itemCount <= visibleCount) return 0;
+
+  return visibleCount;
 }

@@ -6,6 +6,7 @@ import {
   COMPANY_NOTICE_CAROUSEL_DESKTOP_PAGE_SIZE,
   COMPANY_NOTICE_CAROUSEL_MOBILE_BREAKPOINT,
   getCompanyNoticeCarouselCardMetrics,
+  getCompanyNoticeCarouselLoopBuffer,
   getCompanyNoticeCarouselPageCount,
   getCompanyNoticeCarouselPageStartIndex,
   getCompanyNoticeCarouselVisibleCount,
@@ -37,15 +38,22 @@ assert.deepEqual(getCompanyNoticeCarouselCardMetrics(390, 1), {
   height: 195,
 });
 
-assert.equal(getCompanyNoticeCarouselPageCount(5, 3), 2);
+assert.equal(getCompanyNoticeCarouselPageCount(5, 3), 5);
 assert.equal(getCompanyNoticeCarouselPageCount(5, 1), 5);
 assert.equal(getCompanyNoticeCarouselPageCount(1, 3), 1);
 assert.equal(getCompanyNoticeCarouselPageCount(0, 3), 0);
 
 assert.equal(getCompanyNoticeCarouselPageStartIndex(0, 5, 3), 0);
-assert.equal(getCompanyNoticeCarouselPageStartIndex(1, 5, 3), 3);
+assert.equal(getCompanyNoticeCarouselPageStartIndex(1, 5, 3), 1);
+assert.equal(getCompanyNoticeCarouselPageStartIndex(5, 5, 3), 0);
+assert.equal(getCompanyNoticeCarouselPageStartIndex(-1, 5, 3), 4);
 assert.equal(
   getCompanyNoticeCarouselPageStartIndex(1, 4, 3),
-  3,
-  "last desktop page may intentionally show a single remaining card",
+  1,
+  "desktop company notice carousel should advance one card at a time",
 );
+
+assert.equal(getCompanyNoticeCarouselLoopBuffer(5, 3), 3);
+assert.equal(getCompanyNoticeCarouselLoopBuffer(5, 1), 1);
+assert.equal(getCompanyNoticeCarouselLoopBuffer(3, 3), 0);
+assert.equal(getCompanyNoticeCarouselLoopBuffer(0, 3), 0);
