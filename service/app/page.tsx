@@ -7,6 +7,7 @@ import Carousel from "@/components/main/Carousel";
 import CompanyNoticeCarousel from "@/components/main/CompanyNoticeCarousel";
 import CPPromotion from "@/components/main/CPPromotion";
 import FreeTop from "@/components/main/FreeTop";
+import HomeTicker from "@/components/main/HomeTicker";
 import MiddleBanner from "@/components/main/MiddleBanner";
 import MiddleMenu from "@/components/main/MiddleMenu";
 import PaidTop from "@/components/main/PaidTop";
@@ -20,6 +21,7 @@ import { IProduct } from "@/types";
 import { useEffect, useMemo, useState } from "react";
 import {
   useGetDirectRecommend,
+  useGetHomeTicker,
   useGetMainSingleSlots,
   useSelectInterestDropSoonUpdateProducts,
   useSelectLatestUpdateProducts,
@@ -82,6 +84,14 @@ export default function Home() {
       userScopedCacheIdentity
     );
   const { data: directRecommendData } = useGetDirectRecommend(
+    adultYn,
+    homeQueryState.enabled,
+    mainProductCacheIdentity
+  );
+  const {
+    data: homeTickerData,
+    isSuccess: isHomeTickerSuccess,
+  } = useGetHomeTicker(
     adultYn,
     homeQueryState.enabled,
     mainProductCacheIdentity
@@ -232,6 +242,14 @@ export default function Home() {
             <Carousel primaryPanels={data?.banners?.primaryPanels ?? []} />
             <div className="w-full max-w-[1120px] mx-auto flex flex-col md:mt-35pxr">
               <MiddleMenu />
+              {isHomeTickerSuccess && homeTickerData && (
+                <div className="mt-24pxr md:mt-35pxr">
+                  <HomeTicker
+                    items={homeTickerData.items}
+                    rotateEveryMs={homeTickerData.rotateEveryMs}
+                  />
+                </div>
+              )}
               <div className="flex flex-col mt-30pxr md:mt-80pxr gap-70pxr">
                 <FreeTop data={freeTopProducts} />
                 <RecentlyView />

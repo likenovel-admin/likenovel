@@ -6,6 +6,7 @@ import {
   IGetAvailableTicketsResponse,
   IGetDirectRecommendResponse,
   IGetEpisodeProductParams,
+  IGetHomeTickerResponse,
   IGetMainSingleSlotsResponse,
   IGetRecentProductResponse,
   IPublisherPromotionProductsResponse,
@@ -20,6 +21,7 @@ import {
 
 export const PUBLIC_PRODUCT_STALE_TIME_MS = 5 * 60 * 1000;
 export const PUBLIC_PRODUCT_GC_TIME_MS = 30 * 60 * 1000;
+const HOME_TICKER_STALE_TIME_MS = 60 * 1000;
 
 export const useSelectProducts = (
   adult_yn?: string,
@@ -736,6 +738,27 @@ export const useGetDirectRecommend = (
       );
       return response.data;
     },
+    enabled,
+  });
+};
+
+export const useGetHomeTicker = (
+  adult_yn?: string,
+  enabled: boolean = true,
+  cacheIdentity: string = "guest"
+) => {
+  const adultYnParam = adult_yn || "N";
+  return useQuery<IGetHomeTickerResponse>({
+    queryKey: ["getHomeTicker", adultYnParam, cacheIdentity],
+    queryFn: async () => {
+      const response = await instance.get(
+        `/v1/query/products/home-ticker?adult_yn=${adultYnParam}`
+      );
+      return response.data;
+    },
+    staleTime: HOME_TICKER_STALE_TIME_MS,
+    refetchInterval: HOME_TICKER_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
     enabled,
   });
 };

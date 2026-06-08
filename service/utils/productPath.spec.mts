@@ -71,6 +71,14 @@ assert.equal(
 );
 
 assert.equal(
+  getProductDetailEntrySource(
+    new URLSearchParams("entrySource=home_ticker").get("entrySource")
+  ),
+  PRODUCT_DETAIL_ENTRY_SOURCE.HOME_TICKER,
+  "home ticker should be a valid product detail entry source"
+);
+
+assert.equal(
   getEffectiveProductDetailEntrySource(
     PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION,
     { productId: 634, entrySource: null },

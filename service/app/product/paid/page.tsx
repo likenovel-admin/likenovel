@@ -18,7 +18,7 @@ export default function Paid() {
     ? data.publisherPromotionProducts.slice(0, 12)
     : [];
   const hasPublisherPromotion = cpPromotionProducts.length > 0;
-  const [activeTab, setActiveTab] = useState("end");
+  const [activeTab, setActiveTab] = useState("ongoing");
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };

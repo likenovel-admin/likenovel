@@ -69,13 +69,26 @@ const ProductEpisodes = ({
     user?.userRole === "admin";
   const canSeeEpisodeStats = !!user && (isAuthor || isAdminCPEditor);
   const { setTypeModal } = useModalStore();
-  const [isDescSort, setIsDescSort] = useState(true);
+  const hasResolvedPriceType = priceType === "paid" || priceType === "free";
+  const defaultIsDescSort = priceType !== "paid";
+  const sortReadyKey = hasResolvedPriceType ? `${productId}:${priceType}` : "";
+  const [isDescSort, setIsDescSort] = useState(defaultIsDescSort);
+  const [sortReadyFor, setSortReadyFor] = useState(sortReadyKey);
   const [visibleCount, setVisibleCount] = useState(10);
+  const isEpisodeQueryEnabled =
+    hasResolvedPriceType && sortReadyFor === sortReadyKey;
   const episodeSummaryLabel = buildEpisodeSummaryLabel({
     totalEpisodeCount: episodeCount,
     productPriceType: priceType,
     paidEpisodeNo,
   });
+
+  useEffect(() => {
+    if (!hasResolvedPriceType) return;
+    setIsDescSort(defaultIsDescSort);
+    setVisibleCount(10);
+    setSortReadyFor(sortReadyKey);
+  }, [defaultIsDescSort, hasResolvedPriceType, sortReadyKey]);
 
   // 기다무 대여권 수 조회 (React Query가 ButtonBottom 호출과 중복 제거)
   const { data: ticketsData } = useGetAvailableTickets({
@@ -125,7 +138,8 @@ const ProductEpisodes = ({
     1,
     PAGE_SIZE,
     "episodeNo",
-    isDescSort ? "desc" : "asc"
+    isDescSort ? "desc" : "asc",
+    isEpisodeQueryEnabled
   );
 
   const allEpisodes = useMemo(() => {
