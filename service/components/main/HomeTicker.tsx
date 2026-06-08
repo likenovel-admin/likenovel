@@ -111,7 +111,7 @@ const HomeTicker = ({ items, rotateEveryMs }: HomeTickerProps) => {
   };
 
   const content = (
-    <div className="flex min-h-[52px] w-full items-center gap-10pxr rounded-none bg-[#6D2DE2] px-16pxr py-12pxr text-white shadow-[0_8px_18px_rgba(109,45,226,0.22)] md:min-h-[58px] md:px-28pxr">
+    <div className="flex min-h-[52px] w-full items-center gap-10pxr rounded-none bg-primary-100 px-16pxr py-12pxr text-white shadow-[0_2px_8px_rgba(23,107,242,0.16)] md:min-h-[58px] md:px-28pxr">
       <span className="shrink-0 rounded-full bg-white/20 px-10pxr py-4pxr text-12pxr font-bold leading-[16px]">
         LIVE
       </span>
@@ -127,7 +127,7 @@ const HomeTicker = ({ items, rotateEveryMs }: HomeTickerProps) => {
         <button
           type="button"
           onClick={handleClick}
-          className="block w-full text-left transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6D2DE2]"
+          className="block w-full text-left transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100"
           aria-label={`${activeItem.message} 작품 보기`}
         >
           {content}

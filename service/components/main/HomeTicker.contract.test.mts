@@ -111,6 +111,21 @@ assert.match(
   "HomeTicker should expose a stable placement marker"
 );
 assert.match(
+  componentSource,
+  /bg-primary-100/,
+  "HomeTicker should use the service primary blue background"
+);
+assert.match(
+  componentSource,
+  /focus-visible:outline-primary-100/,
+  "HomeTicker focus outline should use the service primary blue"
+);
+assert.doesNotMatch(
+  componentSource,
+  /6D2DE2|109,45,226/,
+  "HomeTicker should not use the previous purple color"
+);
+assert.match(
   productPathSource,
   /HOME_TICKER: "home_ticker"/,
   "productPath should expose HOME_TICKER entry source"
