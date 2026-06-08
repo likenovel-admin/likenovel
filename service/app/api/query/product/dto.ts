@@ -144,6 +144,29 @@ export interface IGetDirectRecommendResponse {
   }[];
 }
 
+export type HomeTickerFreshness =
+  | "weekly"
+  | "near_real_time"
+  | "ranking_snapshot"
+  | "metric_snapshot"
+  | "trend_snapshot"
+  | "fallback";
+
+export interface IHomeTickerItem {
+  type: string;
+  message: string;
+  productId: number | null;
+  priority: number;
+  freshness: HomeTickerFreshness;
+}
+
+export interface IGetHomeTickerResponse {
+  asOf: string;
+  refreshAfterSeconds: number;
+  rotateEveryMs: number;
+  items: IHomeTickerItem[];
+}
+
 export interface IMainSingleSlotItem {
   singleSlotId: number;
   slotKey: string;
