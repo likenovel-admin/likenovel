@@ -14,7 +14,8 @@ export const useSelectEpisodes = (
   page: number,
   limit: number,
   orderBy: "episodeNo" | "date",
-  orderDir: "asc" | "desc"
+  orderDir: "asc" | "desc",
+  enabled = true
 ) => {
   return useInfiniteQuery<IUseSelectEpisodesResponse, unknown>({
     queryKey: [
@@ -40,6 +41,7 @@ export const useSelectEpisodes = (
       return lastPage.data.episodes.length === 0 ? undefined : nextPage;
     },
     initialPageParam: 1,
+    enabled: enabled && !!productId,
   });
 };
 
