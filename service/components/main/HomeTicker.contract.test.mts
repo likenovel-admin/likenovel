@@ -111,6 +111,21 @@ assert.match(
 );
 assert.match(
   componentSource,
+  /text-12pxr font-semibold leading-\[18px\] md:text-17pxr md:leading-\[24px\]/,
+  "HomeTicker should use smaller mobile message text for long product titles"
+);
+assert.match(
+  componentSource,
+  /const splitTickerProductTitle = \(message: string\)/,
+  "HomeTicker should split bracketed product titles from engagement messages"
+);
+assert.match(
+  componentSource,
+  /max-w-\[clamp\(70px,28vw,140px\)\][\s\S]*md:max-w-none/,
+  "HomeTicker should shorten product titles flexibly by mobile viewport width"
+);
+assert.match(
+  componentSource,
   /key=\{`home-ticker-\$\{activeIndex\}-\$\{activeItem\.message\}`\}/,
   "HomeTicker should remount the text line when the active message changes"
 );

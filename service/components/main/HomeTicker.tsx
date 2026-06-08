@@ -43,6 +43,17 @@ const normalizeTickerItem = (item: IHomeTickerItem): IHomeTickerItem | null => {
   };
 };
 
+const splitTickerProductTitle = (message: string) => {
+  const match = message.match(/^(.*?)<([^<>]+)>(.*)$/);
+  if (!match) return null;
+
+  return {
+    prefix: match[1],
+    title: match[2],
+    suffix: match[3],
+  };
+};
+
 const usePrefersReducedMotion = () => {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
@@ -84,6 +95,7 @@ const HomeTicker = ({ items, rotateEveryMs }: HomeTickerProps) => {
   const messageRollClassName = prefersReducedMotion
     ? ""
     : "home-ticker-message-roll";
+  const productTitleParts = splitTickerProductTitle(activeItem.message);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -121,9 +133,21 @@ const HomeTicker = ({ items, rotateEveryMs }: HomeTickerProps) => {
       <span className="relative h-[20px] min-w-0 flex-1 overflow-hidden md:h-[24px]">
         <span
           key={`home-ticker-${activeIndex}-${activeItem.message}`}
-          className={`block truncate text-14pxr font-semibold leading-[20px] md:text-17pxr md:leading-[24px] ${messageRollClassName}`}
+          className={`block truncate text-12pxr font-semibold leading-[18px] md:text-17pxr md:leading-[24px] ${messageRollClassName}`}
         >
-          {activeItem.message}
+          {productTitleParts ? (
+            <>
+              {productTitleParts.prefix}
+              {"<"}
+              <span className="inline-block max-w-[clamp(70px,28vw,140px)] overflow-hidden text-ellipsis whitespace-nowrap align-bottom md:max-w-none">
+                {productTitleParts.title}
+              </span>
+              {">"}
+              {productTitleParts.suffix}
+            </>
+          ) : (
+            activeItem.message
+          )}
         </span>
       </span>
     </div>
