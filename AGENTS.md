@@ -23,6 +23,12 @@
 - Default mode에서는 합리적 가정을 우선하고, 로컬에서 찾을 수 없으며 추측이 위험할 때만 짧게 질문한다.
 - `request_user_input`은 Plan mode에서 해당 tool이 제공될 때만 사용한다.
 
+## 0.3) Local Credential Documents
+
+- CMS/admin 계정 작업 전에 로컬 전용 계정 문서 `output/local-credentials/likenovel-cms-admin.md`를 먼저 확인한다.
+- 위 파일은 git ignore 대상이며 비밀번호를 포함할 수 있다. 비밀번호를 채팅, tracked 문서, 커밋, PR 본문에 출력하지 않는다.
+- CMS/admin 계정 작업은 해당 문서의 계정으로 로그인한 뒤 대상 이메일 exact search, `latest_signed_type`, `use_yn`, reset, signin 검증 순서로 진행한다.
+
 ## 1) Source Of Truth
 
 - 코드베이스와 런타임 readback이 SSOT다. 문서가 코드와 다르면 코드/런타임을 믿고 문서를 고친다.
