@@ -107,8 +107,30 @@ html {
     animation-play-state: paused;
   }
 
+  @keyframes home-ticker-message-roll {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .home-ticker-message-roll {
+    animation: home-ticker-message-roll 180ms ease-out;
+    will-change: transform, opacity;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .single-slot-title-marquee {
+      animation: none;
+      transform: none;
+      will-change: auto;
+    }
+
+    .home-ticker-message-roll {
       animation: none;
       transform: none;
       will-change: auto;

@@ -81,6 +81,9 @@ const HomeTicker = ({ items, rotateEveryMs }: HomeTickerProps) => {
   const activeItem = displayItems[activeIndex] ?? fallbackItem;
   const isClickable =
     typeof activeItem.productId === "number" && activeItem.productId > 0;
+  const messageRollClassName = prefersReducedMotion
+    ? ""
+    : "home-ticker-message-roll";
 
   useEffect(() => {
     setActiveIndex(0);
@@ -115,8 +118,13 @@ const HomeTicker = ({ items, rotateEveryMs }: HomeTickerProps) => {
       <span className="shrink-0 rounded-full bg-white/20 px-10pxr py-4pxr text-12pxr font-bold leading-[16px]">
         LIVE
       </span>
-      <span className="min-w-0 flex-1 whitespace-normal break-keep text-14pxr font-semibold leading-[20px] md:text-17pxr md:leading-[24px]">
-        {activeItem.message}
+      <span className="relative h-[20px] min-w-0 flex-1 overflow-hidden md:h-[24px]">
+        <span
+          key={`home-ticker-${activeIndex}-${activeItem.message}`}
+          className={`block truncate text-14pxr font-semibold leading-[20px] md:text-17pxr md:leading-[24px] ${messageRollClassName}`}
+        >
+          {activeItem.message}
+        </span>
       </span>
     </div>
   );

@@ -17,6 +17,10 @@ const productPathSource = readFileSync(
   new URL("../../utils/productPath.ts", import.meta.url),
   "utf8"
 );
+const globalsSource = readFileSync(
+  new URL("../../app/globals.css", import.meta.url),
+  "utf8"
+);
 
 const hookStart = apiSource.indexOf("export const useGetHomeTicker");
 const hookEnd = apiSource.indexOf("export const useGetMainSingleSlots", hookStart);
@@ -99,6 +103,31 @@ assert.match(
   componentSource,
   /prefersReducedMotion \|\| displayItems\.length <= 1/,
   "HomeTicker should not start rolling for reduced motion users"
+);
+assert.match(
+  componentSource,
+  /overflow-hidden/,
+  "HomeTicker should clip the one-line rolling text area"
+);
+assert.match(
+  componentSource,
+  /key=\{`home-ticker-\$\{activeIndex\}-\$\{activeItem\.message\}`\}/,
+  "HomeTicker should remount the text line when the active message changes"
+);
+assert.match(
+  componentSource,
+  /prefersReducedMotion[\s\S]*:\s*"home-ticker-message-roll"/,
+  "HomeTicker should apply the rolling animation only when motion is allowed"
+);
+assert.match(
+  globalsSource,
+  /@keyframes home-ticker-message-roll/,
+  "HomeTicker should define a vertical rolling keyframe"
+);
+assert.match(
+  globalsSource,
+  /\.home-ticker-message-roll/,
+  "HomeTicker should expose the rolling animation utility class"
 );
 assert.match(
   componentSource,
