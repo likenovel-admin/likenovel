@@ -19,11 +19,14 @@ const HOME_TICKER_FALLBACK_MESSAGE =
 const HOME_TICKER_BLOCKED_TERMS = ["연독률", "재유입", "전환율"];
 const HOME_TICKER_DEFAULT_ROTATE_EVERY_MS = 5000;
 const HOME_TICKER_MIN_ROTATE_EVERY_MS = 3000;
+const NOTICE_LIST_PATH = "/product/customer-service/notice";
 
 const fallbackItem: IHomeTickerItem = {
   type: "fallback",
   message: HOME_TICKER_FALLBACK_MESSAGE,
   productId: null,
+  targetType: "none",
+  targetId: null,
   priority: 0,
   freshness: "fallback",
 };
@@ -52,6 +55,27 @@ const splitTickerProductTitle = (message: string) => {
     title: match[2],
     suffix: match[3],
   };
+};
+
+const getFallbackTargetType = (item: IHomeTickerItem) => {
+  if (item.productId) return "product";
+  if (item.type === "new_notice") return "notice";
+  return "none";
+};
+
+const getHomeTickerTargetPath = (item: IHomeTickerItem) => {
+  const targetType = item.targetType || getFallbackTargetType(item);
+  const targetId = item.targetId || item.productId;
+
+  if (targetType === "product" && item.productId) {
+    return buildProductDetailPath(item.productId);
+  }
+
+  if (targetType === "notice") {
+    return targetId ? `${NOTICE_LIST_PATH}/${targetId}` : NOTICE_LIST_PATH;
+  }
+
+  return null;
 };
 
 const usePrefersReducedMotion = () => {
@@ -90,8 +114,8 @@ const HomeTicker = ({ items, rotateEveryMs }: HomeTickerProps) => {
   }, [items]);
 
   const activeItem = displayItems[activeIndex] ?? fallbackItem;
-  const isClickable =
-    typeof activeItem.productId === "number" && activeItem.productId > 0;
+  const targetPath = getHomeTickerTargetPath(activeItem);
+  const isClickable = targetPath !== null;
   const messageRollClassName = prefersReducedMotion
     ? ""
     : "home-ticker-message-roll";
@@ -116,13 +140,15 @@ const HomeTicker = ({ items, rotateEveryMs }: HomeTickerProps) => {
   }, [displayItems.length, prefersReducedMotion, rotateEveryMs]);
 
   const handleClick = () => {
-    if (!isClickable || activeItem.productId === null) return;
+    if (!targetPath) return;
 
-    setPendingProductDetailEntrySource(
-      activeItem.productId,
-      PRODUCT_DETAIL_ENTRY_SOURCE.HOME_TICKER
-    );
-    router.push(buildProductDetailPath(activeItem.productId));
+    if (activeItem.productId) {
+      setPendingProductDetailEntrySource(
+        activeItem.productId,
+        PRODUCT_DETAIL_ENTRY_SOURCE.HOME_TICKER
+      );
+    }
+    router.push(targetPath);
   };
 
   const content = (
@@ -160,7 +186,7 @@ const HomeTicker = ({ items, rotateEveryMs }: HomeTickerProps) => {
           type="button"
           onClick={handleClick}
           className="block w-full text-left transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100"
-          aria-label={`${activeItem.message} 작품 보기`}
+          aria-label={`${activeItem.message} 자세히 보기`}
         >
           {content}
         </button>

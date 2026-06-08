@@ -152,10 +152,14 @@ export type HomeTickerFreshness =
   | "trend_snapshot"
   | "fallback";
 
+export type HomeTickerTargetType = "product" | "notice" | "none";
+
 export interface IHomeTickerItem {
   type: string;
   message: string;
   productId: number | null;
+  targetType?: HomeTickerTargetType;
+  targetId?: number | null;
   priority: number;
   freshness: HomeTickerFreshness;
 }

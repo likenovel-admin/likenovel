@@ -35,7 +35,12 @@ assert.match(
 );
 assert.match(
   dtoSource,
-  /export interface IHomeTickerItem[\s\S]*type: string;[\s\S]*message: string;[\s\S]*productId: number \| null;[\s\S]*priority: number;[\s\S]*freshness: HomeTickerFreshness;/,
+  /export type HomeTickerTargetType = "product" \| "notice" \| "none";/,
+  "Home ticker DTO should expose target type for product, notice, and non-clickable items"
+);
+assert.match(
+  dtoSource,
+  /export interface IHomeTickerItem[\s\S]*type: string;[\s\S]*message: string;[\s\S]*productId: number \| null;[\s\S]*targetType\?: HomeTickerTargetType;[\s\S]*targetId\?: number \| null;[\s\S]*priority: number;[\s\S]*freshness: HomeTickerFreshness;/,
   "Home ticker item DTO should match the backend item shape"
 );
 assert.match(
@@ -146,8 +151,28 @@ assert.match(
 );
 assert.match(
   componentSource,
-  /setPendingProductDetailEntrySource\([\s\S]*PRODUCT_DETAIL_ENTRY_SOURCE\.HOME_TICKER[\s\S]*router\.push\(buildProductDetailPath\(activeItem\.productId\)\)/,
+  /buildProductDetailPath\(item\.productId\)/,
+  "HomeTicker product targets should route to product detail"
+);
+assert.match(
+  componentSource,
+  /activeItem\.productId[\s\S]*setPendingProductDetailEntrySource\([\s\S]*PRODUCT_DETAIL_ENTRY_SOURCE\.HOME_TICKER[\s\S]*router\.push\(targetPath\)/,
   "HomeTicker clicks should seed home_ticker attribution before navigation"
+);
+assert.match(
+  componentSource,
+  /NOTICE_LIST_PATH = "\/product\/customer-service\/notice"/,
+  "HomeTicker should define the notice list landing path"
+);
+assert.match(
+  componentSource,
+  /targetType === "notice"[\s\S]*\`\$\{NOTICE_LIST_PATH\}\/\$\{targetId\}\`/,
+  "HomeTicker should route notice ticker items to notice detail when a notice id exists"
+);
+assert.match(
+  componentSource,
+  /aria-label=\{`\$\{activeItem\.message\} 자세히 보기`\}/,
+  "HomeTicker clickable labels should work for both product and notice targets"
 );
 assert.match(
   componentSource,
