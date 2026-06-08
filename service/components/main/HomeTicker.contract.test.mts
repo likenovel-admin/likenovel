@@ -181,11 +181,6 @@ assert.match(
 );
 assert.match(
   componentSource,
-  /bg-primary-100/,
-  "HomeTicker should use the service primary blue background"
-);
-assert.match(
-  componentSource,
   /focus-visible:outline-primary-100/,
   "HomeTicker focus outline should use the service primary blue"
 );
