@@ -2,6 +2,7 @@
 import { useGetProductNoticeDetail } from "@/app/api/query/author/episode";
 import { useSelectViewerPath } from "@/app/api/query/episode";
 import Modal from "@/components/common/Modal";
+import Spinner from "@/components/common/Spinner";
 import ViewerBottomNav from "@/components/menu/ViewerBottomNav";
 import ViewerNav from "@/components/menu/ViewerNav";
 import ViewerSideMenu from "@/components/menu/ViewerSideMenu";
@@ -29,17 +30,19 @@ import {
   type NextEpisodeClickSignalContext,
   postNextEpisodeClickSignalBestEffort,
 } from "@/utils/nextEpisodeClickSignal";
-import { getProductDetailEntrySource } from "@/utils/productPath";
+import {
+  buildProductDetailPath,
+  getProductDetailEntrySource,
+} from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
 import { savePendingWebsochatLaunch } from "@/utils/websochatLaunch";
 import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 const Viewer = () => {
-  const pathname = usePathname();
-  const pathSegments = pathname.split("/");
-  const episodeId = Number(pathSegments[pathSegments.length - 1]);
+  const params = useParams<{ id: string }>();
+  const episodeId = Number(params.id || 0);
   const searchParams = useSearchParams();
   const viewerType = searchParams.get("type");
   const isNoticeViewer = viewerType === "notice";
@@ -74,11 +77,38 @@ const Viewer = () => {
   const [goFirstRequest, setGoFirstRequest] = useState(0);
   const [suppressViewerClickTick, setSuppressViewerClickTick] = useState(0);
 
-  const { data } = useSelectViewerPath(viewerEpisodeId);
+  const {
+    data,
+    error: viewerError,
+    isError: isViewerError,
+    isLoading: isViewerLoading,
+    refetch: refetchViewerPath,
+  } = useSelectViewerPath(viewerEpisodeId);
   const { data: noticeDetailData } = useGetProductNoticeDetail(
     isNoticeViewer ? episodeId : "",
     isNoticeViewer
   );
+  const episodeData = data?.data;
+  const viewerErrorStatus = axios.isAxiosError(viewerError)
+    ? viewerError.response?.status
+    : undefined;
+  const isViewerAuthError =
+    viewerErrorStatus === 401 || viewerErrorStatus === 403;
+  const isViewerNotFoundError = viewerErrorStatus === 404;
+  const isViewerMissingData = !isViewerError && !episodeData;
+  const isViewerMissingEpisode = isViewerNotFoundError || isViewerMissingData;
+  const isViewerTransientError =
+    isViewerError && !isViewerAuthError && !isViewerNotFoundError;
+  const viewerUnavailableTitle = isViewerAuthError
+    ? "로그인이 필요합니다."
+    : isViewerMissingEpisode
+      ? "회차를 찾을 수 없습니다."
+      : "회차를 불러오지 못했습니다.";
+  const viewerUnavailableMessage = isViewerAuthError
+    ? "로그인이 필요한 회차이거나 접근할 수 없는 회차입니다."
+    : isViewerMissingEpisode
+      ? "삭제되었거나 공개되지 않은 회차입니다."
+      : "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
 
   // Check for notice data from store and set notice state
   useEffect(() => {
@@ -346,6 +376,72 @@ const Viewer = () => {
     });
     router.push("/websochat");
   }, [data?.data, router]);
+
+  const handleLoginFromUnavailableViewer = useCallback(() => {
+    const currentPath = window.location.pathname + window.location.search;
+    setLocalStorage(STORAGE_KEYS.PREVIOUS_PAGE, currentPath);
+    router.push("/login?modal=open", { scroll: false });
+  }, [router]);
+
+  const handleGoToProductDetail = useCallback(() => {
+    if (hintedProductId) {
+      router.push(
+        buildProductDetailPath(hintedProductId, {
+          entrySource,
+        })
+      );
+      return;
+    }
+    router.back();
+  }, [entrySource, hintedProductId, router]);
+
+  if (!isNoticeViewer && isViewerLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!isNoticeViewer && (isViewerError || !episodeData)) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center px-24pxr text-center">
+        <p className="text-18pxr font-semibold text-black-300">
+          {viewerUnavailableTitle}
+        </p>
+        <p className="mt-10pxr text-14pxr text-dark-gray-400">
+          {viewerUnavailableMessage}
+        </p>
+        <div className="mt-24pxr flex gap-10pxr">
+          {isViewerAuthError && !isAuthenticated && (
+            <button
+              type="button"
+              onClick={handleLoginFromUnavailableViewer}
+              className="h-44pxr px-18pxr rounded-[8px] bg-primary-100 text-white text-14pxr font-semibold"
+            >
+              로그인하기
+            </button>
+          )}
+          {isViewerTransientError && (
+            <button
+              type="button"
+              onClick={() => refetchViewerPath()}
+              className="h-44pxr px-18pxr rounded-[8px] bg-primary-100 text-white text-14pxr font-semibold"
+            >
+              다시 시도
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleGoToProductDetail}
+            className="h-44pxr px-18pxr rounded-[8px] border border-light-gray-400 text-14pxr font-semibold text-black-300"
+          >
+            작품 페이지로 이동
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">

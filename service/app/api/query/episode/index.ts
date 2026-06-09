@@ -7,6 +7,7 @@ import {
 } from "./dto";
 import { ISelectEpisodeResponse } from "../author/episode/dto";
 import useAuthStore from "@/store/authStore";
+import type { AxiosRequestConfigWithAuthBypass } from "../../axios";
 
 export const useSelectEpisodes = (
   productId: number,
@@ -61,7 +62,13 @@ export const useSelectViewerPath = (episodeId: number) => {
   return useQuery<ISelectViewerPathResponse>({
     queryKey: ["selectViewerPath", episodeId, viewerCacheIdentity],
     queryFn: async () => {
-      const response = await instance.get(`/v1/query/episodes/${episodeId}`);
+      const config: AxiosRequestConfigWithAuthBypass = {
+        skipAuthRedirectOn401: true,
+      };
+      const response = await instance.get(
+        `/v1/query/episodes/${episodeId}`,
+        config
+      );
       return response.data;
     },
     enabled: !!episodeId,

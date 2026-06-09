@@ -1,12 +1,10 @@
 import useAuthStore from "@/store/authStore";
-import axios from "axios";
+import axios, { type AxiosRequestConfig } from "axios";
 import { IRefreshTokenRequest } from "../auth/dto";
 
-type AxiosRequestConfigWithAuthBypass = {
+export type AxiosRequestConfigWithAuthBypass = AxiosRequestConfig & {
   _retry?: boolean;
   skipAuthRedirectOn401?: boolean;
-  headers?: Record<string, any>;
-  url?: string;
 };
 
 export const instance = axios.create({
