@@ -2,6 +2,7 @@ export interface IProductAiConsentItem {
   product_id: number;
   title: string;
   nickname: string | null;
+  author_email: string | null;
   episode_count: number;
   open_yn: "Y" | "N";
   ai_promotion_yn: "Y" | "N";
