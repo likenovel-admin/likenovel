@@ -20,6 +20,50 @@ warn() {
   printf 'WARN: %s\n' "$*" >&2
 }
 
+submodule_git() {
+  env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$SUBMODULE_PATH" "$@"
+}
+
+check_submodule_worktree_alignment() {
+  info "--- submodule worktree readback ---"
+
+  local git_ref label tree_row expected_sha actual_sha submodule_status
+  git_ref="$1"
+  label="$2"
+  tree_row="$(git ls-tree "$git_ref" -- "$SUBMODULE_PATH" 2>/dev/null || true)"
+  if [[ -z "$tree_row" ]]; then
+    fail "submodule path is not tracked in $label: $SUBMODULE_PATH"
+    info ""
+    return
+  fi
+
+  expected_sha="$(printf '%s\n' "$tree_row" | awk '{print $3}')"
+  actual_sha="$(submodule_git rev-parse HEAD 2>/dev/null || true)"
+  if [[ -z "$actual_sha" ]]; then
+    fail "submodule is not initialized or has no readable HEAD: $SUBMODULE_PATH"
+    info "Run: git submodule update --init --checkout $SUBMODULE_PATH"
+    info ""
+    return
+  fi
+
+  info "$label expects: $expected_sha"
+  info "submodule HEAD:  $actual_sha"
+
+  if [[ "$actual_sha" != "$expected_sha" ]]; then
+    fail "submodule working tree HEAD does not match $label gitlink: $SUBMODULE_PATH"
+    info "Run: git submodule update --init --checkout $SUBMODULE_PATH"
+  fi
+
+  submodule_status="$(submodule_git status --porcelain)"
+  if [[ -n "$submodule_status" ]]; then
+    fail "submodule has its own dirty worktree: $SUBMODULE_PATH"
+    printf '%s\n' "$submodule_status" >&2
+    info "Commit or stash backend changes in the submodule before pushing from the root repo."
+  fi
+
+  info ""
+}
+
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
@@ -101,11 +145,14 @@ elif [[ "$branch" == "prod" ]]; then
 fi
 
 info "--- pushed ref checks ---"
+processed_ref_updates=0
 if [[ -t 0 ]]; then
   info "(manual run: no pre-push ref update stream)"
+  check_submodule_worktree_alignment HEAD "HEAD"
 else
   while read -r local_ref local_sha remote_ref remote_sha; do
     [[ -z "${local_ref:-}" ]] && continue
+    processed_ref_updates=$((processed_ref_updates + 1))
 
     info "$local_ref $local_sha -> $remote_ref $remote_sha"
     if [[ "$local_sha" == "$ZERO_SHA" ]]; then
@@ -130,6 +177,8 @@ else
         ;;
     esac
 
+    check_submodule_worktree_alignment "$local_sha" "$local_ref"
+
     if [[ "$remote_sha" == "$ZERO_SHA" ]]; then
       changed_files="$(git diff-tree --no-commit-id --name-only -r "$local_sha")"
     else
@@ -147,6 +196,11 @@ else
       fi
     fi
   done
+
+  if (( processed_ref_updates == 0 )); then
+    info "(no pre-push ref updates on stdin; checking HEAD)"
+    check_submodule_worktree_alignment HEAD "HEAD"
+  fi
 fi
 info ""
 
