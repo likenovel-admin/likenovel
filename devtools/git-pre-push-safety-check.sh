@@ -20,6 +20,106 @@ warn() {
   printf 'WARN: %s\n' "$*" >&2
 }
 
+submodule_git() {
+  env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$SUBMODULE_PATH" "$@"
+}
+
+check_submodule_worktree_alignment() {
+  info "--- submodule worktree readback ---"
+
+  local git_ref label tree_row expected_sha actual_sha submodule_status
+  git_ref="$1"
+  label="$2"
+  tree_row="$(git ls-tree "$git_ref" -- "$SUBMODULE_PATH" 2>/dev/null || true)"
+  if [[ -z "$tree_row" ]]; then
+    fail "submodule path is not tracked in $label: $SUBMODULE_PATH"
+    info ""
+    return
+  fi
+
+  expected_sha="$(printf '%s\n' "$tree_row" | awk '{print $3}')"
+  actual_sha="$(submodule_git rev-parse HEAD 2>/dev/null || true)"
+  if [[ -z "$actual_sha" ]]; then
+    fail "submodule is not initialized or has no readable HEAD: $SUBMODULE_PATH"
+    info "Run: git submodule update --init --checkout $SUBMODULE_PATH"
+    info ""
+    return
+  fi
+
+  info "$label expects: $expected_sha"
+  info "submodule HEAD:  $actual_sha"
+
+  if [[ "$actual_sha" != "$expected_sha" ]]; then
+    fail "submodule working tree HEAD does not match $label gitlink: $SUBMODULE_PATH"
+    info "Run: git submodule update --init --checkout $SUBMODULE_PATH"
+  fi
+
+  submodule_status="$(submodule_git status --porcelain)"
+  if [[ -n "$submodule_status" ]]; then
+    fail "submodule has its own dirty worktree: $SUBMODULE_PATH"
+    printf '%s\n' "$submodule_status" >&2
+    info "Commit or stash backend changes in the submodule before pushing from the root repo."
+  fi
+
+  info ""
+}
+
+push_diff_base_result=""
+
+resolve_push_diff_base() {
+  local local_ref local_sha remote_ref remote_sha base_ref base_sha local_branch upstream
+  local_ref="$1"
+  local_sha="$2"
+  remote_ref="$3"
+  remote_sha="$4"
+  push_diff_base_result=""
+
+  if [[ "$remote_sha" != "$ZERO_SHA" ]]; then
+    push_diff_base_result="$remote_sha"
+    return 0
+  fi
+
+  case "$remote_ref" in
+    refs/heads/dev)
+      base_ref="origin/main"
+      ;;
+    refs/heads/prod)
+      base_ref="origin/dev"
+      ;;
+    *)
+      base_ref=""
+      if [[ "$local_ref" == refs/heads/* ]]; then
+        local_branch="${local_ref#refs/heads/}"
+        upstream="$(git rev-parse --abbrev-ref --symbolic-full-name "$local_branch@{upstream}" 2>/dev/null || true)"
+        if [[ -n "$upstream" ]]; then
+          base_ref="$upstream"
+        fi
+      elif [[ "$local_ref" == "HEAD" && -n "${branch:-}" ]]; then
+        upstream="$(git rev-parse --abbrev-ref --symbolic-full-name "$branch@{upstream}" 2>/dev/null || true)"
+        if [[ -n "$upstream" ]]; then
+          base_ref="$upstream"
+        fi
+      fi
+      if [[ -z "$base_ref" ]]; then
+        base_ref="origin/main"
+      fi
+      ;;
+  esac
+
+  if ! git rev-parse --verify --quiet "$base_ref^{commit}" >/dev/null; then
+    return 1
+  fi
+
+  base_sha="$(git merge-base "$base_ref" "$local_sha" || true)"
+  if [[ -z "$base_sha" ]]; then
+    return 1
+  fi
+
+  info "new branch diff base: $base_ref $base_sha"
+  push_diff_base_result="$base_sha"
+  return 0
+}
+
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
@@ -101,11 +201,14 @@ elif [[ "$branch" == "prod" ]]; then
 fi
 
 info "--- pushed ref checks ---"
+processed_ref_updates=0
 if [[ -t 0 ]]; then
   info "(manual run: no pre-push ref update stream)"
+  check_submodule_worktree_alignment HEAD "HEAD"
 else
   while read -r local_ref local_sha remote_ref remote_sha; do
     [[ -z "${local_ref:-}" ]] && continue
+    processed_ref_updates=$((processed_ref_updates + 1))
 
     info "$local_ref $local_sha -> $remote_ref $remote_sha"
     if [[ "$local_sha" == "$ZERO_SHA" ]]; then
@@ -130,23 +233,29 @@ else
         ;;
     esac
 
-    if [[ "$remote_sha" == "$ZERO_SHA" ]]; then
-      changed_files="$(git diff-tree --no-commit-id --name-only -r "$local_sha")"
+    check_submodule_worktree_alignment "$local_sha" "$local_ref"
+
+    if resolve_push_diff_base "$local_ref" "$local_sha" "$remote_ref" "$remote_sha"; then
+      changed_files="$(git diff --name-only "$push_diff_base_result" "$local_sha")"
     else
-      changed_files="$(git diff --name-only "$remote_sha" "$local_sha")"
+      changed_files=""
+      fail "cannot determine pushed range diff base for $local_ref -> $remote_ref"
     fi
 
     if printf '%s\n' "$changed_files" | grep -Fxq "$SUBMODULE_PATH"; then
       if [[ "${ALLOW_SUBMODULE_POINTER_PUSH:-}" == "1" ]]; then
         info "ALLOW_SUBMODULE_POINTER_PUSH=1 set; pushed submodule pointer is intentional."
-        if [[ "$remote_sha" != "$ZERO_SHA" ]]; then
-          git diff --submodule=log "$remote_sha" "$local_sha" -- "$SUBMODULE_PATH" >&2 || true
-        fi
+        git diff --submodule=log "$push_diff_base_result" "$local_sha" -- "$SUBMODULE_PATH" >&2 || true
       else
         fail "push contains submodule pointer change: $SUBMODULE_PATH"
       fi
     fi
   done
+
+  if (( processed_ref_updates == 0 )); then
+    info "(no pre-push ref updates on stdin; checking HEAD)"
+    check_submodule_worktree_alignment HEAD "HEAD"
+  fi
 fi
 info ""
 
