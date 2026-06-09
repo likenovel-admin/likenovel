@@ -15,8 +15,13 @@ export default function ProductAiConsentTable({ data, loading }: Props) {
     { header: "작품 ID", key: "product_id" },
     { header: "작품명", key: "title" },
     {
-      header: "닉네임",
+      header: "작가명",
       key: "nickname",
+      render: (value: string | null) => value || "-",
+    },
+    {
+      header: "이메일",
+      key: "author_email",
       render: (value: string | null) => value || "-",
     },
     { header: "회차수", key: "episode_count" },
