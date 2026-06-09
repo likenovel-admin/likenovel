@@ -152,11 +152,12 @@ const HomeTicker = ({ items, rotateEveryMs }: HomeTickerProps) => {
   };
 
   const content = (
-    <div className="flex min-h-[52px] w-full items-center gap-10pxr rounded-none bg-primary-100 px-16pxr py-12pxr text-white shadow-[0_2px_8px_rgba(23,107,242,0.16)] md:min-h-[58px] md:px-28pxr">
-      <span className="shrink-0 rounded-full bg-white/20 px-10pxr py-4pxr text-12pxr font-bold leading-[16px]">
+    <div className="home-ticker-surface">
+      <span className="home-ticker-live-badge">
+        <span className="home-ticker-live-dot" aria-hidden="true" />
         LIVE
       </span>
-      <span className="relative h-[20px] min-w-0 flex-1 overflow-hidden md:h-[24px]">
+      <span className="home-ticker-message-viewport">
         <span
           key={`home-ticker-${activeIndex}-${activeItem.message}`}
           className={`block truncate text-12pxr font-semibold leading-[18px] md:text-17pxr md:leading-[24px] ${messageRollClassName}`}
@@ -180,7 +181,7 @@ const HomeTicker = ({ items, rotateEveryMs }: HomeTickerProps) => {
   );
 
   return (
-    <div data-home-ticker className="w-full px-16pxr md:px-0">
+    <div data-home-ticker className="w-full px-16pxr md:px-0 md:mt-20pxr md:mb-28pxr">
       {isClickable ? (
         <button
           type="button"

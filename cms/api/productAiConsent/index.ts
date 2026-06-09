@@ -22,3 +22,14 @@ export const useGetProductAiConsents = (
     },
   });
 };
+
+export const getProductAiConsentsDownload = async (
+  params: IGetProductAiConsentParams
+) => {
+  const res = await apiClient.request<IGetProductAiConsentResponse>({
+    url: "/v1/query/admins/product-ai-consents/all",
+    method: "GET",
+    queryParams: params,
+  });
+  return res;
+};

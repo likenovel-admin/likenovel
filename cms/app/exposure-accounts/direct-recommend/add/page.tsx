@@ -24,6 +24,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ReactDatePicker from "react-datepicker";
+import ProductIdPreview from "../ProductIdPreview";
 
 export default function Page() {
   // const isMobile = useIsMobile()
@@ -218,6 +219,10 @@ export default function Page() {
                         value={product}
                         onChange={(e) => setProduct(e.target.value)}
                         placeholder="작품명을 입력하세요"
+                      />
+                      <ProductIdPreview
+                        productInput={product}
+                        onProductInputChange={setProduct}
                       />
                     </TableCell>
                   </TableRow>
