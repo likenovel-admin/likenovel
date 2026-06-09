@@ -127,6 +127,7 @@ docker compose up -d --build cms       # http://localhost:3002
 - 이 repo는 linked worktree에서 push hook이 막힌다. linked worktree에서 push를 시도하지 말고, commit SHA를 만든 뒤 primary checkout에서 `git push origin <sha>:dev` 또는 `git push origin <sha>:prod`처럼 exact ref로 push한다.
 - worktree에서 만든 unrelated change는 staging하지 않는다.
 - submodule pointer 변경은 `git diff --submodule=log` readback 후에만 stage한다.
+- root 로컬 작업은 정상 흐름이지만 submodule drift는 commit/push 전에 차단한다. 새 checkout 또는 hook이 의심되면 `bash devtools/install-git-hooks.sh`를 실행한다.
 
 필수 확인:
 
