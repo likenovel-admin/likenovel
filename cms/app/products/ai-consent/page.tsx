@@ -1,7 +1,13 @@
 "use client";
 
-import { useGetProductAiConsents } from "@/api/productAiConsent";
-import { IGetProductAiConsentParams } from "@/api/productAiConsent/dto";
+import {
+  getProductAiConsentsDownload,
+  useGetProductAiConsents,
+} from "@/api/productAiConsent";
+import {
+  IGetProductAiConsentParams,
+  IProductAiConsentItem,
+} from "@/api/productAiConsent/dto";
 import ProductAiConsentTable from "@/app/products/ai-consent/DataTable";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import PaginationControls from "@/components/common/PaginationControls";
@@ -17,11 +23,15 @@ import {
 } from "@/components/ui/select";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { item_per_page } from "@/constants/common";
+import { downloadExcel } from "@/lib/excelDownload";
 import { isConfirmedEnter } from "@/lib/keyboard";
-import { calculatePageCount } from "@/lib/utils";
+import { calculatePageCount, catchErrorMessage, showAlert } from "@/lib/utils";
 import { useState } from "react";
 
+const yn = (value: "Y" | "N" | null | undefined) => (value === "Y" ? "Y" : "N");
+
 export default function ProductAiConsentPage() {
+  const [isDownloading, setIsDownloading] = useState(false);
   const [filters, setFilters] = useState<IGetProductAiConsentParams>({
     page: 1,
     count_per_page: item_per_page,
@@ -47,6 +57,42 @@ export default function ProductAiConsentPage() {
       search_word: "",
       page: 1,
     }));
+  };
+
+  const handleDownloadExcel = async () => {
+    await downloadExcel<IProductAiConsentItem>({
+      apiFn: getProductAiConsentsDownload,
+      params: {
+        search_target: filters.search_target || undefined,
+        search_word: filters.search_word || undefined,
+      },
+      headers: [
+        "작품 ID",
+        "작품명",
+        "작가명",
+        "이메일",
+        "회차수",
+        "작품 공개여부",
+        "AI홍보",
+        "웹소챗",
+      ],
+      fields: [
+        "product_id",
+        "title",
+        (row) => row.nickname || "-",
+        (row) => row.author_email || "-",
+        "episode_count",
+        (row) => yn(row.open_yn),
+        (row) => yn(row.ai_promotion_yn),
+        (row) => yn(row.websochat_enabled_yn),
+      ],
+      filename: "AI 활용 동의 현황",
+      onStart: () => setIsDownloading(true),
+      onFinish: () => setIsDownloading(false),
+      onError: (error) => {
+        showAlert("오류", catchErrorMessage(error), "확인");
+      },
+    });
   };
 
   const totalPages = calculatePageCount(
@@ -76,7 +122,7 @@ export default function ProductAiConsentPage() {
               <SelectItem value="none">선택 안함</SelectItem>
               <SelectItem value="product-id">작품 ID</SelectItem>
               <SelectItem value="product-title">작품명</SelectItem>
-              <SelectItem value="nickname">닉네임</SelectItem>
+              <SelectItem value="nickname">작가명</SelectItem>
             </SelectContent>
           </Select>
 
@@ -96,6 +142,13 @@ export default function ProductAiConsentPage() {
             초기화
           </Button>
           <Button onClick={handleSearch}>검색</Button>
+          <Button
+            variant="outline"
+            onClick={handleDownloadExcel}
+            disabled={isDownloading}
+          >
+            엑셀 다운로드
+          </Button>
         </div>
 
         <ProductAiConsentTable
@@ -109,7 +162,7 @@ export default function ProductAiConsentPage() {
           totalPages={totalPages}
         />
 
-        <FullPageLoader isLoading={isLoading || isFetching} />
+        <FullPageLoader isLoading={isLoading || isFetching || isDownloading} />
       </div>
     </SidebarInset>
   );
