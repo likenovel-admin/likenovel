@@ -64,6 +64,62 @@ check_submodule_worktree_alignment() {
   info ""
 }
 
+push_diff_base_result=""
+
+resolve_push_diff_base() {
+  local local_ref local_sha remote_ref remote_sha base_ref base_sha local_branch upstream
+  local_ref="$1"
+  local_sha="$2"
+  remote_ref="$3"
+  remote_sha="$4"
+  push_diff_base_result=""
+
+  if [[ "$remote_sha" != "$ZERO_SHA" ]]; then
+    push_diff_base_result="$remote_sha"
+    return 0
+  fi
+
+  case "$remote_ref" in
+    refs/heads/dev)
+      base_ref="origin/main"
+      ;;
+    refs/heads/prod)
+      base_ref="origin/dev"
+      ;;
+    *)
+      base_ref=""
+      if [[ "$local_ref" == refs/heads/* ]]; then
+        local_branch="${local_ref#refs/heads/}"
+        upstream="$(git rev-parse --abbrev-ref --symbolic-full-name "$local_branch@{upstream}" 2>/dev/null || true)"
+        if [[ -n "$upstream" ]]; then
+          base_ref="$upstream"
+        fi
+      elif [[ "$local_ref" == "HEAD" && -n "${branch:-}" ]]; then
+        upstream="$(git rev-parse --abbrev-ref --symbolic-full-name "$branch@{upstream}" 2>/dev/null || true)"
+        if [[ -n "$upstream" ]]; then
+          base_ref="$upstream"
+        fi
+      fi
+      if [[ -z "$base_ref" ]]; then
+        base_ref="origin/main"
+      fi
+      ;;
+  esac
+
+  if ! git rev-parse --verify --quiet "$base_ref^{commit}" >/dev/null; then
+    return 1
+  fi
+
+  base_sha="$(git merge-base "$base_ref" "$local_sha" || true)"
+  if [[ -z "$base_sha" ]]; then
+    return 1
+  fi
+
+  info "new branch diff base: $base_ref $base_sha"
+  push_diff_base_result="$base_sha"
+  return 0
+}
+
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
@@ -179,18 +235,17 @@ else
 
     check_submodule_worktree_alignment "$local_sha" "$local_ref"
 
-    if [[ "$remote_sha" == "$ZERO_SHA" ]]; then
-      changed_files="$(git diff-tree --no-commit-id --name-only -r "$local_sha")"
+    if resolve_push_diff_base "$local_ref" "$local_sha" "$remote_ref" "$remote_sha"; then
+      changed_files="$(git diff --name-only "$push_diff_base_result" "$local_sha")"
     else
-      changed_files="$(git diff --name-only "$remote_sha" "$local_sha")"
+      changed_files=""
+      fail "cannot determine pushed range diff base for $local_ref -> $remote_ref"
     fi
 
     if printf '%s\n' "$changed_files" | grep -Fxq "$SUBMODULE_PATH"; then
       if [[ "${ALLOW_SUBMODULE_POINTER_PUSH:-}" == "1" ]]; then
         info "ALLOW_SUBMODULE_POINTER_PUSH=1 set; pushed submodule pointer is intentional."
-        if [[ "$remote_sha" != "$ZERO_SHA" ]]; then
-          git diff --submodule=log "$remote_sha" "$local_sha" -- "$SUBMODULE_PATH" >&2 || true
-        fi
+        git diff --submodule=log "$push_diff_base_result" "$local_sha" -- "$SUBMODULE_PATH" >&2 || true
       else
         fail "push contains submodule pointer change: $SUBMODULE_PATH"
       fi
