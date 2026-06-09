@@ -24,9 +24,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import GeneralPromotionModal from "../modal/GeneralPromotionModal";
 import AdultAgeBadge from "../common/AdultAgeBadge";
-import Bookmark from "/public/images/bookmark.svg";
-import ThumbsUp from "/public/images/thumbs-up-gray.svg";
-import View from "/public/images/view.svg";
 
 interface Props {
   data: IProduct;
@@ -358,41 +355,6 @@ const ProductListCard = ({
                   <div className="md:hidden w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
                 )}
             </div>
-
-            {data.trendindex && (
-              <div className="flex w-full gap-15pxr">
-                <div className="flex items-center gap-3pxr">
-                  <View className="w-[14px] h-[12px] text-dark-gray-400" />
-                  <span className="text-11pxr md:text-13pxr text-dark-gray-400">
-                    {data.trendindex.hitCount}
-                  </span>
-                  {/* <RankIndicator
-                    rankIndicator={data.trendindex.hitIndicator ?? 0}
-                    textStyles="text-10pxr"
-                  /> */}
-                </div>
-                <div className="flex items-center gap-3pxr">
-                  <ThumbsUp className="w-[15px] h-[12px]" />
-                  <span className="text-11pxr md:text-13pxr text-dark-gray-400">
-                    {data.trendindex.recommendCount}
-                  </span>
-                  {/* <RankIndicator
-                    rankIndicator={data.trendindex.recommendIndicator ?? 0}
-                    textStyles="text-10pxr"
-                  /> */}
-                </div>
-                <div className="flex items-center gap-3pxr">
-                  <Bookmark className="w-[10px] h-[15px] text-dark-gray-400" />
-                  <span className="text-11pxr md:text-13pxr text-dark-gray-400">
-                    {data.trendindex.bookmarkCount}
-                  </span>
-                  {/* <RankIndicator
-                    rankIndicator={data.trendindex.bookmarkIndicator ?? 0}
-                    textStyles="text-10pxr"
-                  /> */}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
