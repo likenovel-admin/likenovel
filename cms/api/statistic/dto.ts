@@ -20,6 +20,7 @@ import {
   IStatisticAiReaderSummary,
   IStatisticAiReaderTimelineAction,
   IStatisticAiApiUsageModel,
+  IStatisticAiProviderHealth,
   IStatisticAiApiUsageSource,
   IStatisticAiApiUsageSummary,
 } from "@/types/statistic";
@@ -198,4 +199,13 @@ export interface IGetStatisticAiApiUsageResponse {
   summary: IStatisticAiApiUsageSummary;
   results: IStatisticAiApiUsageSource[];
   model_summary: IStatisticAiApiUsageModel[];
+  provider_health: IStatisticAiProviderHealth[];
+}
+
+export interface IGetStatisticAiProviderHealthResponse {
+  results: IStatisticAiProviderHealth[];
+}
+
+export interface IPostStatisticAiProviderHealthCheckResponse {
+  results: IStatisticAiProviderHealth[];
 }

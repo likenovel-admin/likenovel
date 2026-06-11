@@ -24,9 +24,11 @@ import {
   IGetStatisticAiReaderTimelineResponse,
   IGetStatisticAiApiUsageParams,
   IGetStatisticAiApiUsageResponse,
+  IGetStatisticAiProviderHealthResponse,
+  IPostStatisticAiProviderHealthCheckResponse,
 } from "@/api/statistic/dto";
 import apiClient from "@/lib/apiClient";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 export interface ICancelCashOrderReqBody {
   reason?: string;
@@ -266,6 +268,32 @@ export const useGetStatisticAiApiUsage = (
         queryParams: params,
       });
       return res;
+    },
+  });
+};
+
+export const usePostStatisticAiProviderHealthCheck = () => {
+  return useMutation<IPostStatisticAiProviderHealthCheckResponse, Error>({
+    mutationFn: async () => {
+      return await apiClient.request<IPostStatisticAiProviderHealthCheckResponse>({
+        url: "/v1/command/statistics/ai-provider-health/check",
+        method: "POST",
+      });
+    },
+  });
+};
+
+export const useGetStatisticAiProviderHealth = (refetchInterval = 60000) => {
+  return useQuery<IGetStatisticAiProviderHealthResponse>({
+    queryKey: ["GetStatisticAiProviderHealth"],
+    refetchInterval,
+    refetchIntervalInBackground: false,
+
+    queryFn: async () => {
+      return await apiClient.request<IGetStatisticAiProviderHealthResponse>({
+        url: "/v1/query/statistics/ai-provider-health",
+        method: "GET",
+      });
     },
   });
 };
