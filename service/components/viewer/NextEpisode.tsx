@@ -2,7 +2,7 @@ import { useSelectViewerPath, useSelectNextEpisodeInfo } from "@/app/api/query/e
 import { useRouter, useSearchParams } from "next/navigation";
 import ArrowRight from "/public/images/arrow-right-medium.svg";
 import useModalStore from "@/store/modalStore";
-import { TYPE_MODAL } from "@/constants/common";
+import { TYPE_MODAL, resolveProductCoverImage } from "@/constants/common";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useAuthStore from "@/store/authStore";
 import useViewStore from "@/store/viewerStore";
@@ -45,7 +45,7 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
     );
   }
 
-  const coverImagePath = data.data.coverImagePath;
+  const coverImagePath = resolveProductCoverImage(data.data.coverImagePath);
 
   const handleNextEpisode = () => {
     const episode = data?.data;
