@@ -171,6 +171,14 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
   - prod monitor quick
 - GitHub Actions가 push 후 60초 안에 matching run/check-suite를 만들지 않거나 `workflow_dispatch`가 HTTP 5xx면 재시도 1회 후 orchestration failure로 보고하고 fallback을 분리한다.
 
+## 7.1) Operational Verification Stop Rules
+
+- 운영 배포/DB/API 검수에서 alias, host, DB URL, table name, migration history table, venv path를 추측하지 않는다. 먼저 `AGENTS.md` -> `docs/wiki/deployment-and-batch.md` -> `docs/deployment-runbook.md`와 실제 source/runtime file을 읽는다.
+- `ln-was` 같은 SSH alias를 임의로 사용하지 않는다. runbook 또는 `ops/monitor-prod/lib.sh`에 있는 bastion/ProxyCommand/SSH wrapper 경로를 그대로 사용한다.
+- 운영 host에서 Python/DB readback을 실행할 때는 먼저 active runtime path와 env load 방식을 확인한다. prod API 기준은 `/home/ln-admin/likenovel/api`이며, 필요 시 `.env`를 로드한 뒤 venv Python을 직접 호출한다.
+- DB schema 검수에서 migration 기록 테이블명을 추측하지 않는다. 기록 테이블 존재 여부를 먼저 `information_schema`로 확인하고, 없는 경우 table/column/API/read path 검증으로 분리해 `migration record 미검증`이라고 보고한다.
+- 첫 실패가 문서 불일치나 명령 추측에서 발생하면 같은 방향으로 재시도하지 않는다. 즉시 문서/source/runtime readback으로 돌아가고, 실패를 `제 절차 오류` 또는 `미검증`으로 분리한다.
+
 ## 8) DB And Batch
 
 - 로컬 백엔드/배치 검증 기본 DB 채널은 `host.docker.internal:13306`이다. 이는 SSH tunnel 뒤 dev RDS다.
