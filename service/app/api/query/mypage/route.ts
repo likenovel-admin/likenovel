@@ -146,21 +146,8 @@ export async function POST() {
       );
     }
     /*
-      data: {
-        dataHeader: { CNTY_CD: 'ko', GW_RSLT_CD: '1200', GW_RSLT_MSG: '오류 없음' },
-        dataBody: {
-          rsp_cd: 'P000',
-          result_cd: '0000',
-          site_code: 'Q0U5MjY=',
-          token_version_id: '20241210123345B1-NC11CE926-AA6BE-55CF2A3D6B',
-          token_val: '/sabg0pVPAKbs7S1P1yAGdRV72N4Mmq1ah3J90E1/L8=',
-          period: 3600
-        }
-      }
-
-      'siteCode': authForSecureTokenResponse.data.dataBody.site_code,
-      'tokenVal': authForSecureTokenResponse.data.dataBody.token_val,
-      'tokenVersionId': authForSecureTokenResponse.data.dataBody.token_version_id
+      NICE returns site_code, token_version_id, token_val, and period.
+      Do not keep sample token values in source.
      */
     const siteCode = authForSecureTokenResponse.data.dataBody.site_code;
     const tokenVal = authForSecureTokenResponse.data.dataBody.token_val;
