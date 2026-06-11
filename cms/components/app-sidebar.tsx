@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  AlertTriangle,
   BookOpen,
   Bot,
   Frame,
@@ -14,6 +15,7 @@ import {
   LogOut,
 } from "lucide-react";
 
+import { useGetStatisticAiProviderHealth } from "@/api/statistic";
 import { NavMain } from "@/components/nav-main";
 import {
   Sidebar,
@@ -371,6 +373,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="mt-7">
+        <AiProviderHealthAlert />
         <NavMain items={data.navMain(pathname)} />
         {/*<NavProjects projects={data.projects}/>
           <NavSecondary items={data.navSecondary} className="mt-auto"/>*/}
@@ -391,5 +394,37 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </button>
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+const alertStatuses = new Set([
+  "credit_depleted",
+  "rate_limited",
+  "auth_failed",
+  "timeout",
+  "provider_error",
+  "unknown_error",
+]);
+
+function AiProviderHealthAlert() {
+  const { data } = useGetStatisticAiProviderHealth(60000);
+  const degraded = (data?.results || []).filter((row) => alertStatuses.has(row.status));
+
+  if (!degraded.length) return null;
+
+  const label = degraded
+    .map((row) => row.provider)
+    .slice(0, 2)
+    .join(", ");
+  const suffix = degraded.length > 2 ? ` 외 ${degraded.length - 2}` : "";
+
+  return (
+    <a
+      href="/statistics/ai-api-usage"
+      className="mx-4 mb-3 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700"
+    >
+      <AlertTriangle className="h-4 w-4 shrink-0" />
+      <span className="break-words">AI Provider 장애: {label}{suffix}</span>
+    </a>
   );
 }

@@ -311,3 +311,17 @@ export interface IStatisticAiApiUsageModel {
   estimated_cost_usd: number;
   untracked_count: number;
 }
+
+export interface IStatisticAiProviderHealth {
+  provider: string;
+  model: string | null;
+  status: string;
+  http_status: number | null;
+  error_code: string | null;
+  error_message: string | null;
+  latency_ms: number | null;
+  checked_at: string | null;
+  success_at: string | null;
+  last_success_at: string | null;
+  affected_features: string | null;
+}
