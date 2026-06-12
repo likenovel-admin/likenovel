@@ -79,6 +79,9 @@ cms-app.md
 partner-app.md
 service-app.md
 docs/*
+!docs/ai-codebook/
+docs/ai-codebook/*
+!docs/ai-codebook/golden-set-v1.json
 !docs/cms-notice-runbook.md
 !docs/deployment-runbook.md
 !docs/batch-system-architecture.md
