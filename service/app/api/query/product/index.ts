@@ -160,16 +160,20 @@ export const useSelectBannerPromotion = (): any => {
   };
 };
 
-export const useSelectProductDetail = (productId: number) => {
+export const useSelectProductDetail = (
+  productId: number,
+  cacheIdentity: string = "guest",
+  enabled: boolean = true
+) => {
   return useQuery<IUseSelectProductDetailResponse, unknown>({
-    queryKey: ["selectProductDetail", productId],
+    queryKey: ["selectProductDetail", productId, cacheIdentity],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/products/${productId}/details-group`
       );
       return response.data;
     },
-    enabled: !!productId,
+    enabled: enabled && !!productId,
     staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
     gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
   });

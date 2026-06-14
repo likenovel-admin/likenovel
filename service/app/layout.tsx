@@ -5,18 +5,12 @@ import {
 } from "@/constants/adminPopup";
 import AuthInitializer from "@/components/common/AuthInitializer";
 import Confirm from "@/components/common/Confirm";
+import GlobalDeferredModals from "@/components/common/GlobalDeferredModals";
 import NavigationTracker from "@/components/common/NavigationTracker";
 import SitePageViewTracker from "@/components/common/SitePageViewTracker";
 import Spinner from "@/components/common/Spinner";
 import Toast from "@/components/common/Toast";
 import WithNoSSR from "@/components/common/WithNoSSR";
-import CacheStatusModal from "@/components/modal/CacheStatusModal";
-import CacheUseModal from "@/components/modal/CacheUseModal";
-import DonateModal from "@/components/modal/DonateModal";
-import RentalStatusModal from "@/components/modal/RentalStatusModal";
-import ReportReasonModal from "@/components/modal/ReportReasonModal";
-import AiChatPanel from "@/components/recommendation/AiChatPanel";
-import SearchModal from "@/components/search/SearchModal";
 import ErrorBoundaryWrapper from "@/hooks/useErrorBoundary";
 import ReactQueryProvider from "@/hooks/useReactQuery";
 import type { Metadata } from "next";
@@ -71,17 +65,11 @@ export default function RootLayout({
                   }
                 >
                   {children}
-                  <AiChatPanel />
                   {modal}
                   <div id="modal-root" />
                   <Confirm />
                   <Toast />
-                  <SearchModal />
-                  <CacheUseModal />
-                  <DonateModal />
-                  <CacheStatusModal />
-                  <RentalStatusModal />
-                  <ReportReasonModal />
+                  <GlobalDeferredModals />
                 </Suspense>
               </ErrorBoundaryWrapper>
           </ReactQueryProvider>

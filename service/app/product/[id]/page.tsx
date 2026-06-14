@@ -71,18 +71,23 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function ProductDetail() {
-  const { user, isAuthenticated, accessToken } = useAuthStore((state) => ({
+  const { user, isAuthenticated, accessToken, isAuthInitialized } = useAuthStore((state) => ({
     user: state.user,
     isAuthenticated: state.isAuthenticated,
     accessToken: state.accessToken,
+    isAuthInitialized: state.isAuthInitialized,
   }));
-  const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
+  const canUseUserScope =
+    isAuthInitialized && !!accessToken && !!user?.userId && isAuthenticated;
+  const isUserScopePending =
+    isAuthInitialized && !!accessToken && isAuthenticated && !user?.userId;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchParamString = searchParams.toString();
   const entrySourceParam = searchParams.get("entrySource");
   const focusParam = searchParams.get("focus");
+  const shouldPrioritizeAiLibrarian = shouldFocusAiLibrarian(focusParam);
   const urlEntrySource = getProductDetailEntrySource(entrySourceParam);
   const [hasHiddenMarketingLanding, setHasHiddenMarketingLanding] =
     useState(false);
@@ -119,9 +124,22 @@ export default function ProductDetail() {
       ? entrySource
       : null;
   const [activeTab, setActiveTab] = useState("episode");
+  const [
+    hasDeferredProductDetailSecondaryData,
+    setHasDeferredProductDetailSecondaryData,
+  ] = useState(false);
   const [guestReadProgress, setGuestReadProgressState] =
     useState<GuestReadProgressRecord | null>(null);
-  const { data, isPending, isSuccess } = useSelectProductDetail(productId);
+  const productDetailCacheIdentity = !isAuthInitialized || isUserScopePending
+    ? "auth-pending"
+    : canUseUserScope
+      ? `user:${user.userId}`
+      : "guest";
+  const { data, isPending, isSuccess } = useSelectProductDetail(
+    productId,
+    productDetailCacheIdentity,
+    isAuthInitialized && !isUserScopePending
+  );
   const { setToast } = useToastStore();
   const { setHasNew } = useGiftBoxStore();
   const setAiLibrarianPanelOpen = useChatStore((state) => state.setIsOpen);
@@ -151,17 +169,34 @@ export default function ProductDetail() {
     canUseUserScope && !hasCheckedTickets
   );
 
+  useEffect(() => {
+    setHasDeferredProductDetailSecondaryData(false);
+    if (!productId) return;
+
+    const timer = window.setTimeout(() => {
+      setHasDeferredProductDetailSecondaryData(true);
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [productId]);
+
+  const shouldLoadSecondaryProductDetailData =
+    shouldPrioritizeAiLibrarian || (isSuccess && hasDeferredProductDetailSecondaryData);
+  const shouldLoadComments =
+    shouldLoadSecondaryProductDetailData || activeTab === "comment";
+
   // Always fetch content-based suggestions (추천1 내용비슷) for all users
   const { data: contentSuggestProducts } = useSelectSuggestProducts(
     productId,
-    "content"
+    "content",
+    shouldLoadSecondaryProductDetailData
   );
 
   // Fetch cart-based suggestions only when logged in (추천3-장바구니)
   const { data: cartSuggestProducts } = useSelectSuggestProducts(
     productId,
     "cart",
-    canUseUserScope
+    canUseUserScope && shouldLoadSecondaryProductDetailData
   );
 
   const { data: episodes } = useSelectEpisodes(
@@ -220,6 +255,7 @@ export default function ProductDetail() {
     productData,
     evaluationData,
     noticeData,
+    ownerEpisodes,
     episodeTypePaidCount,
     issuedVouchers,
   } = useMemo(() => {
@@ -234,14 +270,25 @@ export default function ProductDetail() {
       productData: data?.data.product as IProduct,
       evaluationData: data?.data.evaluations ?? ({} as IEvaluation),
       noticeData: data?.data.notices,
+      ownerEpisodes: data?.data.episodes ?? [],
       episodeTypePaidCount: episodeTypePaidCount,
       issuedVouchers: data?.data.issuedVouchers ?? [],
     };
   }, [data]);
+  const isProductOwner =
+    !!user?.userId && !!productData?.authorId && user.userId === productData.authorId;
+  const isAdminCPEditor =
+    user?.userRole === "CP" ||
+    user?.userRole === "editor" ||
+    user?.userRole === "admin";
+  const shouldUseOwnerEpisodeList = canUseUserScope && (isProductOwner || isAdminCPEditor);
+  const displayEpisodeCount = shouldUseOwnerEpisodeList
+    ? ownerEpisodes.length
+    : episodeCount;
   const { data: aiBriefsData } = useGetAiProductBriefs(
     [productId],
     productData?.adultYn === "Y" ? "Y" : "N",
-    !!productId && isSuccess
+    !!productId && isSuccess && shouldLoadSecondaryProductDetailData
   );
   const aiLibrarianBrief = aiBriefsData?.data?.[0] ?? null;
   const aiLibrarianCopy = useMemo(
@@ -266,7 +313,7 @@ export default function ProductDetail() {
   };
 
   useEffect(() => {
-    if (!isSuccess || !shouldFocusAiLibrarian(focusParam)) return;
+    if (!isSuccess || !shouldPrioritizeAiLibrarian) return;
 
     const timer = window.setTimeout(() => {
       aiLibrarianRef.current?.scrollIntoView({
@@ -276,7 +323,7 @@ export default function ProductDetail() {
     }, 120);
 
     return () => window.clearTimeout(timer);
-  }, [focusParam, isSuccess]);
+  }, [isSuccess, shouldPrioritizeAiLibrarian]);
 
   useEffect(() => {
     if (!pathname || typeof document === "undefined") {
@@ -410,7 +457,8 @@ export default function ProductDetail() {
   const { data: otherProducts } = useSelectAuthorProducts(
     productData?.authorId,
     productData?.productId,
-    adultYn
+    adultYn,
+    shouldLoadSecondaryProductDetailData
   );
 
   // 댓글 영역 ref (스크롤 이벤트 처리용)
@@ -421,7 +469,9 @@ export default function ProductDetail() {
     Number(productId),
     1,
     6,
-    "recommend"
+    "recommend",
+    true,
+    shouldLoadComments
   );
 
   useEffect(() => {
@@ -808,7 +858,7 @@ export default function ProductDetail() {
             episodeId={effectiveEpisodeId}
             latestEpisodeNo={effectiveLatestEpisodeNo}
             latestEpisodeTitle={effectiveLatestEpisodeTitle}
-            episodeCount={episodeCount}
+            episodeCount={displayEpisodeCount}
             firstEpisodeId={firstEpisodeId}
             firstEpisodeTitle={firstEpisodeTitle}
             entrySource={viewerEntrySource}
@@ -838,7 +888,7 @@ export default function ProductDetail() {
                         activeTab === "episode" ? "text-primary-100" : ""
                       } `}
                     >
-                      &nbsp;{episodeCount || 0}
+                      &nbsp;{displayEpisodeCount || 0}
                     </span>
                   </>
                 ),
@@ -873,10 +923,11 @@ export default function ProductDetail() {
               authorId={productData?.authorId}
               notices={noticeData || []}
               priceType={productData?.priceType}
-              episodeCount={episodeCount}
+              episodeCount={displayEpisodeCount}
               paidEpisodeNo={productData?.paidEpisodeNo}
               waitForFreeYn={productData?.badge?.waitForFreeYn || productData?.badge?.waitingForFreeYn}
               entrySource={viewerEntrySource}
+              initialOwnerEpisodes={shouldUseOwnerEpisodeList ? ownerEpisodes : undefined}
             />
             <div
               ref={commentRef}
@@ -892,6 +943,7 @@ export default function ProductDetail() {
                 hasEpisode
                 keepPreviousData
                 hasAuthorFixedComment
+                enabled={shouldLoadComments}
               />
             </div>
             <div className="hidden md:block">

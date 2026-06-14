@@ -2,6 +2,26 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const commentQuerySource = readFileSync(
+  new URL("../../api/query/comment/index.ts", import.meta.url),
+  "utf8"
+);
+const authorProductQuerySource = readFileSync(
+  new URL("../../api/query/author/product/index.ts", import.meta.url),
+  "utf8"
+);
+const productQuerySource = readFileSync(
+  new URL("../../api/query/product/index.ts", import.meta.url),
+  "utf8"
+);
+const commentAreaSource = readFileSync(
+  new URL("../../../components/common/CommentArea.tsx", import.meta.url),
+  "utf8"
+);
+const productCoverAreaSource = readFileSync(
+  new URL("../../../components/productDetail/ProductCoverArea.tsx", import.meta.url),
+  "utf8"
+);
 
 assert.match(source, /const aiLibrarianBrief = aiBriefsData\?\.data\?\.\[0\] \?\? null/);
 assert.match(source, /aiLibrarianBrief\s+\?\s+buildAiLibrarianCopy/);
@@ -16,3 +36,108 @@ assert.match(source, /requestProductQuestion\(productQuestion\)/);
 assert.match(source, /이 작품 어떤 작품인지 알려줘/);
 assert.match(source, /onAskMore=\{handleAskAiLibrarianMore\}/);
 assert.doesNotMatch(source, /router\.push\(["']\/websochat/);
+assert.match(
+  source,
+  /const shouldLoadSecondaryProductDetailData =\s*shouldPrioritizeAiLibrarian \|\| \(isSuccess && hasDeferredProductDetailSecondaryData\);/,
+  "Product detail should defer below-fold secondary data after the first render"
+);
+assert.match(
+  source,
+  /useSelectSuggestProducts\(\s*productId,\s*"content",\s*shouldLoadSecondaryProductDetailData\s*\)/,
+  "Content suggestions should not compete with the first product-detail render"
+);
+assert.match(
+  source,
+  /useSelectAuthorProducts\(\s*productData\?\.authorId,\s*productData\?\.productId,\s*adultYn,\s*shouldLoadSecondaryProductDetailData\s*\)/,
+  "Same-author products should be delayed until secondary product-detail data is enabled"
+);
+assert.match(
+  source,
+  /isAuthInitialized/,
+  "Product detail should wait for auth hydration before owner/admin episode scope decisions"
+);
+assert.match(
+  source,
+  /const canUseUserScope =\s*isAuthInitialized && !!accessToken && !!user\?\.userId && isAuthenticated;/,
+  "Product detail should not trust user storage before auth initialization"
+);
+assert.match(
+  source,
+  /const isUserScopePending =\s*isAuthInitialized && !!accessToken && isAuthenticated && !user\?\.userId;/,
+  "Product detail should not fetch auth-scoped details before the user id is hydrated"
+);
+assert.match(
+  source,
+  /const productDetailCacheIdentity =\s*!isAuthInitialized \|\| isUserScopePending\s*\?\s*"auth-pending"\s*:\s*canUseUserScope\s*\?\s*`user:\$\{user\.userId\}`\s*:\s*"guest";/,
+  "Product detail should separate owner/admin product-detail cache from guest cache"
+);
+assert.match(
+  source,
+  /useSelectProductDetail\(\s*productId,\s*productDetailCacheIdentity,\s*isAuthInitialized && !isUserScopePending\s*\)/,
+  "Product detail should wait for auth initialization before fetching details-group"
+);
+assert.match(
+  source,
+  /const shouldUseOwnerEpisodeList = canUseUserScope && \(isProductOwner \|\| isAdminCPEditor\);/,
+  "Product detail should distinguish hydrated owner/admin episode list scope from public reader scope"
+);
+assert.match(
+  source,
+  /initialOwnerEpisodes=\{shouldUseOwnerEpisodeList \? ownerEpisodes : undefined\}/,
+  "Product detail should pass details-group episodes only for owner/admin episode lists"
+);
+assert.match(
+  source,
+  /episodeCount=\{displayEpisodeCount\}/,
+  "Product detail should show an owner/admin episode count when rendering owner/admin episodes"
+);
+assert.match(
+  source,
+  /&nbsp;\{displayEpisodeCount \|\| 0\}/,
+  "Product detail episode tab count should match the owner/admin episode list count"
+);
+assert.match(
+  commentQuerySource,
+  /enabled: enabled && !Number\.isNaN\(productId\)/,
+  "useSelectComment should support delaying product comments"
+);
+assert.match(
+  authorProductQuerySource,
+  /queryKey: \["selectAuthorProducts", authorId, productId, adultYnParam\]/,
+  "useSelectAuthorProducts should key adult filtering to avoid stale cross-filter cache"
+);
+assert.match(
+  authorProductQuerySource,
+  /enabled: enabled && !!authorId && !!productId/,
+  "useSelectAuthorProducts should support delaying same-author fetches"
+);
+assert.match(
+  productQuerySource,
+  /export const useSelectProductDetail = \(\s*productId: number,\s*cacheIdentity: string = "guest",\s*enabled: boolean = true\s*\)/,
+  "useSelectProductDetail should accept a cache identity and enabled gate"
+);
+assert.match(
+  productQuerySource,
+  /queryKey: \["selectProductDetail", productId, cacheIdentity\]/,
+  "Product detail query key should include auth scope to avoid owner/private cache leakage"
+);
+assert.match(
+  productQuerySource,
+  /enabled: enabled && !!productId/,
+  "Product detail query should wait until auth scope is known"
+);
+assert.match(
+  commentAreaSource,
+  /enabled\?: boolean;/,
+  "CommentArea should let product detail delay the internal comment query"
+);
+assert.match(
+  productCoverAreaSource,
+  /const displayEpisodeCount = episodeCount \?\? data\?\.totalOpenEpisodeCount \?\? 0;/,
+  "ProductCoverArea should display the page-provided owner/admin episode count when available"
+);
+assert.doesNotMatch(
+  productCoverAreaSource,
+  /\{data\.totalOpenEpisodeCount\}화/,
+  "ProductCoverArea should not force public open episode count in owner/admin views"
+);

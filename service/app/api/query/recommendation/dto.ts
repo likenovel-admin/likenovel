@@ -98,6 +98,9 @@ export interface IAiProductBrief {
   protagonistMaterialTags?: string[];
   styleTags?: string[];
   romanceTags?: string[];
+  librarianIntro?: string | null;
+  librarianPoints?: string[];
+  librarianChips?: string[];
 }
 
 export interface IGetAiProductBriefsResponse {

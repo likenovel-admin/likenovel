@@ -1,6 +1,11 @@
 "use client";
 import { useSelectUser } from "@/app/api/auth";
+import { instance } from "@/app/api/axios";
 import useAuthStore from "@/store/authStore";
+import {
+  clearStaleAuthSession,
+  hasStoredAuthToken,
+} from "@/utils/authSession";
 import { useEffect } from "react";
 
 const useInitializeAuth = () => {
@@ -37,7 +42,7 @@ const useInitializeAuth = () => {
     setState({
       isAuthInitialized: true,
       isAuthenticated: !!accessToken,
-      user: accessToken && storedUser ? JSON.parse(storedUser) : null,
+      user: null,
       accessToken,
       refreshToken,
     });
@@ -45,6 +50,7 @@ const useInitializeAuth = () => {
 
   useEffect(() => {
     if (data === undefined) return;
+    const hasToken = hasStoredAuthToken(localStorage, sessionStorage);
 
     /**
      * 서버 유저 동기화(Defensive)
@@ -53,7 +59,7 @@ const useInitializeAuth = () => {
      *   로그인 페이지에서도 401/재발급 루프가 발생할 수 있습니다.
      * - 실제 userId가 있을 때만 user를 저장합니다.
      */
-    if (data?.data?.userId) {
+    if (data?.data?.userId && hasToken) {
       const user = {
         userId: data.data.userId,
         birthDate: data.data.birthDate,
@@ -62,7 +68,7 @@ const useInitializeAuth = () => {
         userRole: data.data.userRole,
       };
 
-      setState({ user });
+      setState({ isAuthenticated: true, user });
 
       // Sync recent_sign_in_type from server if different
       const serverRecentSignInType = data.data.recentSignInType;
@@ -84,8 +90,21 @@ const useInitializeAuth = () => {
         // }
       }
     } else {
-      // 비로그인/유저 미존재 상태에서는 user를 보관하지 않습니다.
-      setState({ user: null });
+      if (hasToken) {
+        clearStaleAuthSession({
+          localStorage,
+          sessionStorage,
+          authorizationHeaders: instance.defaults.headers.common,
+        });
+      }
+
+      // 비로그인/유저 미존재 상태에서는 인증 토큰과 user를 보관하지 않습니다.
+      setState({
+        isAuthenticated: false,
+        user: null,
+        accessToken: null,
+        refreshToken: null,
+      });
     }
   }, [data, setState]);
 };
