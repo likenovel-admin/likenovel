@@ -96,6 +96,7 @@ const ProductCoverArea = ({
   const latestEpisodeDateLabel = getLatestEpisodeDate(
     data?.properties?.latestEpisodeDate || ""
   );
+  const displayEpisodeCount = episodeCount ?? data?.totalOpenEpisodeCount ?? 0;
 
   useEffect(() => {
     logProductTrace(
@@ -502,7 +503,7 @@ const ProductCoverArea = ({
                         <div className="flex items-center flex-wrap">
                           <span className="text-13pxr md:text-15pxr text-dark-gray-500">
                             {/* 총 {data.trendindex?.hasEpisodeCount}화 */}총{" "}
-                            {data.totalOpenEpisodeCount}화
+                            {displayEpisodeCount}화
                           </span>
                           <div className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
                           <span className="text-13pxr md:text-15pxr text-dark-gray-500">

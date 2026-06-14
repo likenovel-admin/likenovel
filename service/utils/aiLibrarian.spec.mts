@@ -153,3 +153,38 @@ assert.equal(
 );
 assert.equal(shouldFocusAiLibrarian(PRODUCT_DETAIL_AI_LIBRARIAN_FOCUS), true);
 assert.equal(shouldFocusAiLibrarian("episode"), false);
+
+// LLM이 작성한 librarian 카피가 있으면 템플릿 대신 그대로 사용한다
+const librarianCopy = buildAiLibrarianCopy(
+  { productId: 103, title: "사서 카피 작품", synopsis: "시놉", genre: ["판타지"], keywords: [] },
+  {
+    productId: 103,
+    hook: "훅 문장.",
+    premise: "전제 문장.",
+    mood: "유쾌한 분위기",
+    protagonistGoal: "성장",
+    tasteTags: ["머지칩1", "머지칩2"],
+    librarianIntro: "사서가 직접 쓴 소개예요.",
+    librarianPoints: ["포인트 하나예요.", "포인트 둘이에요.", "포인트 셋이에요."],
+    librarianChips: ["먼치킨", "아카데미", "회귀"],
+  },
+);
+assert.equal(librarianCopy.intro, "사서가 직접 쓴 소개예요.");
+assert.deepEqual(librarianCopy.points, ["포인트 하나예요.", "포인트 둘이에요.", "포인트 셋이에요."]);
+assert.deepEqual(librarianCopy.chips, ["먼치킨", "아카데미", "회귀"]);
+assert.equal(librarianCopy.preview.includes("사서가 직접 쓴 소개예요."), true);
+
+// librarian 카피가 없으면 기존 템플릿/머지 fallback
+const librarianFallbackCopy = buildAiLibrarianCopy(
+  { productId: 104, title: "fallback 작품", synopsis: "시놉", genre: ["판타지"], keywords: [] },
+  {
+    productId: 104,
+    hook: "훅 문장.",
+    premise: "전제 문장.",
+    mood: "유쾌한 분위기",
+    protagonistGoal: "성장",
+    tasteTags: ["머지칩1", "머지칩2"],
+  },
+);
+assert.equal(librarianFallbackCopy.intro.includes("훅 문장."), true);
+assert.deepEqual(librarianFallbackCopy.chips, ["머지칩1", "머지칩2"]);
