@@ -58,6 +58,7 @@ interface Props {
   hasEpisode?: boolean;
   hasAuthorFixedComment?: boolean;
   keepPreviousData?: boolean;
+  enabled?: boolean;
 }
 
 const PAGE_SIZE = 6;
@@ -68,6 +69,7 @@ const CommentArea = ({
   hasEpisode,
   hasAuthorFixedComment,
   keepPreviousData,
+  enabled = true,
 }: Props) => {
   const { user } = useAuthStore();
   const currentUserId = user?.userId;
@@ -110,7 +112,8 @@ const CommentArea = ({
     1,
     PAGE_SIZE,
     activeTab,
-    keepPreviousData
+    keepPreviousData,
+    enabled
   );
 
   const allComments: IComment[] = useMemo(() => {
