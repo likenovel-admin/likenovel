@@ -43,6 +43,36 @@ assert.match(
   "ProductEpisodes should request descending or ascending episode order from the API"
 );
 assert.match(
+  source,
+  /initialOwnerEpisodes\?: IEpisode\[\];/,
+  "ProductEpisodes should accept details-group episodes for owner/admin views"
+);
+assert.match(
+  source,
+  /const shouldUseOwnerEpisodes = \(isAuthor \|\| isAdminCPEditor\) && !!initialOwnerEpisodes;/,
+  "ProductEpisodes should only switch to details-group episodes for owner/admin views"
+);
+assert.match(
+  source,
+  /isEpisodeQueryEnabled && !shouldUseOwnerEpisodes/,
+  "ProductEpisodes should not call the public episode list when owner/admin details-group episodes are available"
+);
+assert.match(
+  source,
+  /shouldUseOwnerEpisodes \? sortedOwnerEpisodes :/,
+  "ProductEpisodes should render sorted owner/admin episodes from details-group when available"
+);
+assert.match(
+  source,
+  /if \(!shouldUseOwnerEpisodes && newCount >= allEpisodes.length - 5\)/,
+  "ProductEpisodes should only fetch more pages for the public episode list"
+);
+assert.match(
+  source,
+  /const canBypassEpisodePayment = isAuthor \|\| isAdminCPEditor;/,
+  "ProductEpisodes should let authors/admins open owned management-visible paid episodes without the rent modal"
+);
+assert.match(
   episodeHookSource,
   /enabled: enabled && !!productId/,
   "useSelectEpisodes should support disabling the episode query until sort defaults are known"

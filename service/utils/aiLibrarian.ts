@@ -22,6 +22,9 @@ export type AiProductBrief = {
   protagonistMaterialTags?: readonly string[] | null;
   styleTags?: readonly string[] | null;
   romanceTags?: readonly string[] | null;
+  librarianIntro?: string | null;
+  librarianPoints?: readonly string[] | null;
+  librarianChips?: readonly string[] | null;
 };
 
 export type AiLibrarianCopy = {
@@ -63,6 +66,17 @@ const clampSentence = (value: string, maxLength: number) => {
 const stripEllipsisMarks = (value: string) =>
   normalizeText(value).replace(/…/g, "").replace(/\.{2,}/g, "").trim();
 
+// 받침 유무에 따라 을/를 선택 (한글 외 문자로 끝나면 병기)
+const withEulReul = (word: string) => {
+  const code = word.charCodeAt(word.length - 1);
+  if (Number.isNaN(code) || code < 0xac00 || code > 0xd7a3) return `${word}을(를)`;
+  return (code - 0xac00) % 28 ? `${word}을` : `${word}를`;
+};
+
+// mood 값이 이미 "~분위기"로 끝나면 중복으로 붙이지 않는다
+const asMoodPhrase = (mood: string) =>
+  mood.endsWith("분위기") ? mood : `${mood} 분위기`;
+
 const getPacingLabel = (value: string) => {
   switch (normalizeText(value).toLowerCase()) {
     case "fast":
@@ -96,9 +110,9 @@ const buildListPreviewLines = ({
     (title ? `「${title}」의 초반 갈등을 먼저 보세요.` : "초반 갈등을 먼저 보세요.");
   const pacingLabel = getPacingLabel(pacing);
   const secondLine = protagonistGoal
-    ? `${pacingLabel}로 ${protagonistGoal} 동력이 선명해요.`
+    ? `${pacingLabel}로 주인공이 ${withEulReul(protagonistGoal)} 향해 달려가요.`
     : mood
-    ? `${pacingLabel}와 ${mood} 분위기가 강점이에요.`
+    ? `${pacingLabel}와 ${asMoodPhrase(mood)}가 어우러져요.`
     : `${pacingLabel}로 설정과 인물의 방향을 빠르게 판단할 수 있어요.`;
 
   return [firstLine, stripEllipsisMarks(secondLine)];
@@ -116,6 +130,8 @@ const buildBriefCopy = (
   const protagonistGoal = normalizeText(brief.protagonistGoal);
   const mood = normalizeText(brief.mood);
   const title = normalizeText(product.title);
+  // LLM이 선별한 노출용 칩 우선, 없으면 태그 머지 fallback
+  const curatedChips = uniqueValues(brief.librarianChips);
   const briefTags = uniqueValues([
     ...(brief.tasteTags || []),
     ...(brief.worldviewTags || []),
@@ -125,17 +141,17 @@ const buildBriefCopy = (
     ...(brief.protagonistMaterialTags || []),
     ...(brief.romanceTags || []),
   ]);
-  const chips = briefTags.slice(0, MAX_CHIPS);
+  const chips = (curatedChips.length > 0 ? curatedChips : briefTags).slice(0, MAX_CHIPS);
   const tasteLine =
     chips.length > 0
-      ? "아래 AI 키워드의 결이 맞는 독자에게 어울릴 수 있어요."
+      ? "아래 키워드를 좋아하는 독자에게 어울려요."
       : "처음 읽는 독자가 작품의 출발점과 인물의 방향을 잡기 쉬워요.";
 
   const previewBase = `${clampSentence(hook || premise, 74)} ${
     protagonistGoal
-      ? `${protagonistGoal} 축을 따라가면 재미가 선명해요.`
+      ? `주인공이 ${withEulReul(protagonistGoal)} 향해 가는 이야기예요.`
       : mood
-      ? `${mood} 결을 좋아하면 잘 맞아요.`
+      ? `${asMoodPhrase(mood)}를 좋아하면 잘 맞아요.`
       : "초반 갈등과 인물의 방향이 또렷해요."
   }`;
   const previewLines = buildListPreviewLines({
@@ -152,20 +168,26 @@ const buildBriefCopy = (
       ? `이야기의 출발점은 ${premise}`
       : `초반 훅은 ${hook}`,
     protagonistType && protagonistGoal
-      ? `주인공은 ${protagonistType} 축으로 ${protagonistGoal}을 향해 움직여요.`
+      ? `${protagonistType}인 주인공이 ${withEulReul(protagonistGoal)} 향해 움직여요.`
       : protagonistGoal
-      ? `주인공의 동력은 ${protagonistGoal}에 가까워요.`
+      ? `주인공은 ${withEulReul(protagonistGoal)} 향해 움직여요.`
       : mood
-      ? `${mood} 분위기가 작품의 첫인상을 만들어요.`
+      ? `${asMoodPhrase(mood)}가 작품의 첫인상을 만들어요.`
       : "인물의 목표와 세계의 압박을 따라가며 읽기 좋아요.",
     tasteLine,
   ];
 
+  // LLM이 작성한 사서 카피가 있으면 그대로 사용, 없으면 템플릿 조립 fallback
+  const librarianIntro = normalizeText(brief.librarianIntro);
+  const librarianPoints = uniqueValues(brief.librarianPoints);
+
   return {
-    preview: clampSentence(previewBase, MAX_PREVIEW_LENGTH),
+    preview: clampSentence(librarianIntro || previewBase, MAX_PREVIEW_LENGTH),
     previewLines,
-    intro: `${hook || premise}${mood ? ` ${mood} 결이 강하게 깔려 있어요.` : ""}`,
-    points,
+    intro:
+      librarianIntro ||
+      `${hook || premise}${mood ? ` ${asMoodPhrase(mood)}가 짙게 깔려 있어요.` : ""}`,
+    points: librarianPoints.length >= 3 ? librarianPoints.slice(0, 3) : points,
     chips,
   };
 };
@@ -188,18 +210,18 @@ export const buildAiLibrarianCopy = (
     : "초반 회차에서 인물의 방향과 갈등 구조를 먼저 확인해보세요.";
 
   const intro = synopsis
-    ? `${titleLead} ${tasteAnchor}을 먼저 잡고 들어가면 좋은 작품이에요. ${synopsisSignal}`
+    ? `${titleLead} ${withEulReul(tasteAnchor)} 먼저 잡고 들어가면 좋은 작품이에요. ${synopsisSignal}`
     : primaryGenre
-    ? `${titleLead} ${primaryGenre}의 결을 중심으로, 처음 읽는 독자가 분위기와 인물의 흐름을 잡기 좋게 시작돼요.`
-    : `${titleLead} 처음 읽는 독자가 초반 분위기와 인물의 목표를 따라가며 결을 잡기 좋은 편이에요.`;
+    ? `${titleLead} ${primaryGenre} 분위기를 중심으로, 처음 읽는 독자도 인물의 흐름을 잡기 좋게 시작돼요.`
+    : `${titleLead} 처음 읽는 독자가 초반 분위기와 인물의 목표를 따라가며 읽기 좋은 편이에요.`;
 
   const previewBase = synopsis
-    ? `${titleLead} ${tasteAnchor}을 먼저 보면 초반 결이 잡혀요.`
+    ? `${titleLead} ${withEulReul(tasteAnchor)} 먼저 보면 초반 흐름이 잡혀요.`
     : primaryGenre
     ? `${titleLead} ${primaryGenre} 중심의 흐름이에요. 초반 분위기와 인물의 목표를 따라가며 읽기 좋아요.`
     : `${titleLead} 아직 자세한 소개가 적지만, 초반 분위기와 인물의 목표를 따라가며 읽어볼 만해요.`;
   const previewLines = buildListPreviewLines({
-    hook: synopsis ? `${titleLead} ${tasteAnchor}을 먼저 보면 초반 결이 잡혀요.` : "",
+    hook: synopsis ? `${titleLead} ${withEulReul(tasteAnchor)} 먼저 보면 초반 흐름이 잡혀요.` : "",
     premise: synopsis,
     protagonistGoal: "",
     mood: primaryGenre,

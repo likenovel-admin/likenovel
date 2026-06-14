@@ -114,19 +114,19 @@ export const useUpdateProduct = () => {
 export const useSelectAuthorProducts = (
   authorId: number,
   productId: number,
-  adult_yn?: string
+  adult_yn?: string,
+  enabled: boolean = true
 ) => {
+  const adultYnParam = adult_yn || "N";
   return useQuery<ISelectAuthorProductsResponse>({
-    queryKey: ["selectAuthorProducts", authorId, productId],
+    queryKey: ["selectAuthorProducts", authorId, productId, adultYnParam],
     queryFn: async () => {
       const response = await instance.get(
-        `/v1/query/products/author/others?author_id=${authorId}&exclude_product_id=${productId}&adult_yn=${
-          adult_yn || "N"
-        }`
+        `/v1/query/products/author/others?author_id=${authorId}&exclude_product_id=${productId}&adult_yn=${adultYnParam}`
       );
       return response.data;
     },
-    enabled: !!authorId,
+    enabled: enabled && !!authorId && !!productId,
   });
 };
 

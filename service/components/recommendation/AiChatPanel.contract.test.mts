@@ -5,6 +5,14 @@ const source = readFileSync(
   new URL("./AiChatPanel.tsx", import.meta.url),
   "utf8"
 );
+const deferredModalSource = readFileSync(
+  new URL("../common/GlobalDeferredModals.tsx", import.meta.url),
+  "utf8"
+);
+const layoutSource = readFileSync(
+  new URL("../../app/layout.tsx", import.meta.url),
+  "utf8"
+);
 
 assert.ok(
   source.includes(
@@ -41,3 +49,28 @@ assert.doesNotMatch(source, /exclude_product_ids: excludeIds/);
 assert.match(source, /className="fixed inset-0 z-\[70\] bg-black\/30"/);
 assert.match(source, /className=\{`fixed top-0 right-0 z-\[80\]/);
 assert.doesNotMatch(source, /router\.push\(["']\/websochat/);
+assert.match(
+  deferredModalSource,
+  /const AiChatPanel = dynamic\(\(\) => import\("@\/components\/recommendation\/AiChatPanel"\), \{\s*ssr: false,\s*\}\);/,
+  "AiChatPanel should be deferred out of the root layout bundle"
+);
+assert.match(
+  deferredModalSource,
+  /const SearchModal = dynamic\(\(\) => import\("@\/components\/search\/SearchModal"\), \{\s*ssr: false,\s*\}\);/,
+  "SearchModal should be deferred out of the root layout bundle"
+);
+assert.match(
+  layoutSource,
+  /<GlobalDeferredModals \/>/,
+  "Root layout should mount deferred global modals through one client boundary"
+);
+assert.doesNotMatch(
+  layoutSource,
+  /import AiChatPanel from "@\/components\/recommendation\/AiChatPanel"/,
+  "Root layout should not statically import AiChatPanel"
+);
+assert.doesNotMatch(
+  layoutSource,
+  /import SearchModal from "@\/components\/search\/SearchModal"/,
+  "Root layout should not statically import SearchModal"
+);

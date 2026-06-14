@@ -12,7 +12,8 @@ export const useSelectComment = (
   page: number,
   limit: number,
   order: string,
-  keepPreviousData: boolean = true
+  keepPreviousData: boolean = true,
+  enabled: boolean = true
 ) => {
   return useInfiniteQuery<UseSelectCommentResponse>({
     queryKey: ["selectComment", productId, page, limit, order],
@@ -28,7 +29,7 @@ export const useSelectComment = (
       return lastPage.data.comments.length === 0 ? undefined : nextPage;
     },
     initialPageParam: 1,
-    enabled: !Number.isNaN(productId),
+    enabled: enabled && !Number.isNaN(productId),
     placeholderData: keepPreviousData
       ? (previousData) => previousData
       : undefined,
