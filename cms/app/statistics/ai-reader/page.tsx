@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatAiReaderDisplayName } from "@/lib/ai-reader-display-name";
 import { calculatePageCount, cn } from "@/lib/utils";
 import {
+  MAX_AI_READER_AGENT_COUNT,
   aiReaderActionToneClassName,
   formatAiReaderActionScoreLabel,
   formatAiReaderActionStatusLabel,
@@ -173,7 +174,7 @@ const buildImmediateSchedulePreview = ({
 }) => {
   const today = format(new Date(), "yyyy-MM-dd");
   if (!startImmediately || scheduleDate !== today || agentCount < 1) return [];
-  const normalizedBatchSize = Math.max(1, Math.min(MAX_AI_READER_AGENT_COUNT, batchSize || 1));
+  const normalizedBatchSize = Math.max(1, Math.min(MAX_AI_READER_IMMEDIATE_BATCH_SIZE, batchSize || 1));
   const normalizedInterval = Math.max(1, Math.min(120, batchIntervalMinutes || 10));
   const windowMinutes = Math.max(30, normalizedInterval);
   const firstStartAt = roundUpToNextFiveMinutes(new Date());
@@ -215,7 +216,7 @@ const getScheduleEndDateInput = (startDateInput: string, durationDays: number) =
   return format(endDate, "yyyy-MM-dd");
 };
 
-const MAX_AI_READER_AGENT_COUNT = 100;
+const MAX_AI_READER_IMMEDIATE_BATCH_SIZE = 100;
 const AI_READER_EFFECTS_PER_PAGE = 20;
 const AI_READER_PRESET_STORAGE_KEY = "likenovel.cms.aiReader.customPresets.v1";
 const AI_READER_NICKNAME_POOL_STORAGE_KEY = "likenovel.cms.aiReader.profileNicknamePool.v1";
@@ -231,6 +232,10 @@ const AI_READER_DURATION_OPTIONS = [
 ];
 
 type AiReaderIntensity = "LOW" | "MEDIUM" | "HIGH";
+type DetailSettingsTab = "operation" | "product";
+type ProductTypeWeightKey = "free_serial" | "paid_serial";
+type FreeProductTypeWeightKey = "normal_serial" | "free_serial";
+type ProductStatusWeightKey = "ongoing" | "rest" | "end" | "stop";
 type RatioMap = Record<string, number>;
 type AiReaderTimeBlockInput = {
   label: string;
@@ -251,6 +256,9 @@ type AiReaderPreset = {
   dailyLlmBudget: number;
   ageGroupRatios: RatioMap;
   genderRatios: RatioMap;
+  productTypeWeights: RatioMap;
+  freeProductTypeWeights: RatioMap;
+  productStatusWeights?: RatioMap | null;
 };
 
 const ageGroupLabel: Record<string, string> = {
@@ -281,6 +289,68 @@ const defaultGenderRatios: RatioMap = {
   M: 52,
   F: 48,
 };
+
+const productTypeWeightKeys: ProductTypeWeightKey[] = ["free_serial", "paid_serial"];
+
+const productTypeWeightLabel: Record<ProductTypeWeightKey, string> = {
+  free_serial: "무료연재",
+  paid_serial: "유료연재",
+};
+
+const defaultProductTypeWeights: RatioMap = {
+  free_serial: 100,
+  paid_serial: 0,
+};
+
+const productTypeWeightPresets: Array<{ label: string; weights: RatioMap }> = [
+  { label: "무료연재 기본", weights: { free_serial: 100, paid_serial: 0 } },
+  { label: "균형", weights: { free_serial: 50, paid_serial: 50 } },
+  { label: "무료연재 우선", weights: { free_serial: 70, paid_serial: 30 } },
+  { label: "유료연재 우선", weights: { free_serial: 30, paid_serial: 70 } },
+  { label: "유료 집중", weights: { free_serial: 10, paid_serial: 90 } },
+];
+
+const freeProductTypeWeightKeys: FreeProductTypeWeightKey[] = ["normal_serial", "free_serial"];
+
+const freeProductTypeWeightLabel: Record<FreeProductTypeWeightKey, string> = {
+  normal_serial: "일반연재",
+  free_serial: "자유연재",
+};
+
+const defaultFreeProductTypeWeights: RatioMap = {
+  normal_serial: 85,
+  free_serial: 15,
+};
+
+const freeProductTypeWeightPresets: Array<{ label: string; weights: RatioMap }> = [
+  { label: "85:15", weights: { normal_serial: 85, free_serial: 15 } },
+  { label: "일반 중심", weights: { normal_serial: 70, free_serial: 30 } },
+  { label: "균형", weights: { normal_serial: 50, free_serial: 50 } },
+  { label: "자유 포함", weights: { normal_serial: 40, free_serial: 60 } },
+];
+
+const productStatusWeightKeys: ProductStatusWeightKey[] = ["ongoing", "rest", "end", "stop"];
+
+const productStatusWeightLabel: Record<ProductStatusWeightKey, string> = {
+  ongoing: "연재중",
+  rest: "휴재",
+  end: "완결",
+  stop: "연재중지",
+};
+
+const ongoingFocusedStatusWeights: RatioMap = {
+  ongoing: 80,
+  rest: 10,
+  end: 10,
+  stop: 0,
+};
+
+const productStatusWeightPresets: Array<{ label: string; weights: RatioMap | null }> = [
+  { label: "전체", weights: null },
+  { label: "연재중 중심", weights: ongoingFocusedStatusWeights },
+  { label: "연재중만", weights: { ongoing: 100, rest: 0, end: 0, stop: 0 } },
+  { label: "완결 포함", weights: { ongoing: 50, rest: 10, end: 40, stop: 0 } },
+];
 
 const commuteMealEveningBlocks: AiReaderTimeBlockInput[] = [
   { label: "출근", startHour: 7, endHour: 9, sessionsPerAgent: 1 },
@@ -353,6 +423,9 @@ const defaultPresets: AiReaderPreset[] = [
     agentCount: 50,
     ageGroupRatios: defaultAgeGroupRatios,
     genderRatios: defaultGenderRatios,
+    productTypeWeights: defaultProductTypeWeights,
+    freeProductTypeWeights: defaultFreeProductTypeWeights,
+    productStatusWeights: null,
     ...intensityDefaults.LOW,
   },
   {
@@ -363,6 +436,9 @@ const defaultPresets: AiReaderPreset[] = [
     agentCount: 100,
     ageGroupRatios: defaultAgeGroupRatios,
     genderRatios: defaultGenderRatios,
+    productTypeWeights: defaultProductTypeWeights,
+    freeProductTypeWeights: defaultFreeProductTypeWeights,
+    productStatusWeights: null,
     ...intensityDefaults.MEDIUM,
   },
   {
@@ -370,9 +446,12 @@ const defaultPresets: AiReaderPreset[] = [
     name: "프리셋3 HIGH",
     locked: true,
     intensity: "HIGH",
-    agentCount: 100,
+    agentCount: 200,
     ageGroupRatios: defaultAgeGroupRatios,
     genderRatios: defaultGenderRatios,
+    productTypeWeights: defaultProductTypeWeights,
+    freeProductTypeWeights: defaultFreeProductTypeWeights,
+    productStatusWeights: null,
     ...intensityDefaults.HIGH,
   },
 ];
@@ -452,6 +531,9 @@ type LastDryRun = {
   immediateScheduleStartAt: string | null;
   ageGroupRatios: RatioMap;
   genderRatios: RatioMap;
+  productTypeWeights: RatioMap;
+  freeProductTypeWeights: RatioMap;
+  productStatusWeights: RatioMap | null;
   profileNicknamePool: string[];
   token: string;
   availableUserCount: number;
@@ -474,6 +556,9 @@ type LastResumeDryRun = {
   immediateBatchSize: number;
   immediateBatchIntervalMinutes: number;
   immediateScheduleStartAt: string | null;
+  productTypeWeights: RatioMap;
+  freeProductTypeWeights: RatioMap;
+  productStatusWeights: RatioMap | null;
   token: string;
   availableAgentCount: number;
   missingAgentCount: number;
@@ -506,12 +591,16 @@ export default function Page() {
   const [immediateBatchIntervalInput, setImmediateBatchIntervalInput] = useState("10");
   const [ageGroupRatios, setAgeGroupRatios] = useState<RatioMap>(defaultAgeGroupRatios);
   const [genderRatios, setGenderRatios] = useState<RatioMap>(defaultGenderRatios);
+  const [productTypeWeights, setProductTypeWeights] = useState<RatioMap>(defaultProductTypeWeights);
+  const [freeProductTypeWeights, setFreeProductTypeWeights] = useState<RatioMap>(defaultFreeProductTypeWeights);
+  const [productStatusWeights, setProductStatusWeights] = useState<RatioMap | null>(null);
   const [profileNicknamePoolInput, setProfileNicknamePoolInput] = useState("");
   const [lastDryRun, setLastDryRun] = useState<LastDryRun | null>(null);
   const [lastResumeDryRun, setLastResumeDryRun] = useState<LastResumeDryRun | null>(null);
   const [operationMessage, setOperationMessage] = useState<string | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [agentSetupOpen, setAgentSetupOpen] = useState(false);
+  const [detailSettingsTab, setDetailSettingsTab] = useState<DetailSettingsTab>("operation");
   const [hourlyTab, setHourlyTab] = useState<"past" | "upcoming">("past");
 
   useEffect(() => {
@@ -578,6 +667,9 @@ export default function Page() {
       timeBlocks: normalizeTimeBlocks(
         preset.timeBlocks?.length ? preset.timeBlocks : blocksFromSingleHours(preset.activeHours)
       ),
+      productTypeWeights: preset.productTypeWeights || defaultProductTypeWeights,
+      freeProductTypeWeights: preset.freeProductTypeWeights || defaultFreeProductTypeWeights,
+      productStatusWeights: preset.productStatusWeights ?? null,
     })),
     [customPresets]
   );
@@ -599,9 +691,23 @@ export default function Page() {
     () => allPresets.find((preset) => preset.id === selectedPresetId),
     [allPresets, selectedPresetId]
   );
+  const productTypeWeightTotal = sumRatios(productTypeWeights);
+  const productTypeWeightSummary = `${productTypeWeightLabel.free_serial} ${numberFormat(
+    productTypeWeights["free_serial"]
+  )} / ${productTypeWeightLabel.paid_serial} ${numberFormat(productTypeWeights["paid_serial"])}`;
+  const freeProductTypeWeightTotal = sumRatios(freeProductTypeWeights);
+  const freeProductTypeWeightSummary = `${freeProductTypeWeightLabel.normal_serial} ${numberFormat(
+    freeProductTypeWeights["normal_serial"]
+  )} / ${freeProductTypeWeightLabel.free_serial} ${numberFormat(freeProductTypeWeights["free_serial"])}`;
+  const productStatusWeightTotal = productStatusWeights ? sumRatios(productStatusWeights) : 0;
+  const productStatusWeightSummary = productStatusWeights
+    ? productStatusWeightKeys
+        .map((key) => `${productStatusWeightLabel[key]} ${numberFormat(productStatusWeights[key])}`)
+        .join(" / ")
+    : "연재상태 전체";
   const activitySettingSummary = `${selectedPreset?.name ?? "사용자 설정"} · ${intensity} · ${numberFormat(
     dailySessionTargetValue
-  )}개 시간표 · LLM ${numberFormat(dailyLlmBudgetValue)}회/일`;
+  )}개 시간표 · LLM ${numberFormat(dailyLlmBudgetValue)}회/일 · ${productTypeWeightSummary} · ${freeProductTypeWeightSummary} · ${productStatusWeightSummary}`;
   const scheduleSettingSummary = `${numberFormat(normalizedScheduleDurationDays)}일 · ${
     startImmediately && isImmediateScheduleDate
       ? `바로 시작 ${numberFormat(immediateBatchSizeValue)}명씩`
@@ -665,6 +771,9 @@ export default function Page() {
       && JSON.stringify(lastDryRun.timeBlocks) === JSON.stringify(apiTimeBlocks)
       && JSON.stringify(lastDryRun.ageGroupRatios) === JSON.stringify(ageGroupRatios)
       && JSON.stringify(lastDryRun.genderRatios) === JSON.stringify(genderRatios)
+      && JSON.stringify(lastDryRun.productTypeWeights) === JSON.stringify(productTypeWeights)
+      && JSON.stringify(lastDryRun.freeProductTypeWeights) === JSON.stringify(freeProductTypeWeights)
+      && JSON.stringify(lastDryRun.productStatusWeights) === JSON.stringify(productStatusWeights)
       && JSON.stringify(lastDryRun.profileNicknamePool) === JSON.stringify(profileNicknamePoolValue)
   );
   const hasMatchingDryRun = Boolean(
@@ -691,6 +800,9 @@ export default function Page() {
       && JSON.stringify(lastResumeDryRun.timeBlocks) === JSON.stringify(apiTimeBlocks)
       && lastResumeDryRun.dailySessionTarget === dailySessionTargetValue
       && lastResumeDryRun.dailyLlmBudget === dailyLlmBudgetValue
+      && JSON.stringify(lastResumeDryRun.productTypeWeights) === JSON.stringify(productTypeWeights)
+      && JSON.stringify(lastResumeDryRun.freeProductTypeWeights) === JSON.stringify(freeProductTypeWeights)
+      && JSON.stringify(lastResumeDryRun.productStatusWeights) === JSON.stringify(productStatusWeights)
       && lastResumeDryRun.startImmediately === startImmediately
       && lastResumeDryRun.immediateBatchSize === resumeImmediateBatchSizeValue
       && lastResumeDryRun.immediateBatchIntervalMinutes === immediateBatchIntervalValue
@@ -769,6 +881,15 @@ export default function Page() {
     if (dailyLlmBudgetValue < dailySessionTargetValue) {
       return `LLM 예산은 시간표 블록 수(${numberFormat(dailySessionTargetValue)}회) 이상이어야 합니다. 예산이 더 낮으면 뒤 시간대 활동이 남습니다.`;
     }
+    if (productTypeWeightTotal !== 100) {
+      return `작품 가중치 합계는 100이어야 합니다. 현재 합계 ${numberFormat(productTypeWeightTotal)}입니다.`;
+    }
+    if (freeProductTypeWeightTotal !== 100) {
+      return `무료연재 내부 가중치 합계는 100이어야 합니다. 현재 합계 ${numberFormat(freeProductTypeWeightTotal)}입니다.`;
+    }
+    if (productStatusWeights && productStatusWeightTotal !== 100) {
+      return `연재 상태 가중치 합계는 100이어야 합니다. 현재 합계 ${numberFormat(productStatusWeightTotal)}입니다.`;
+    }
     return null;
   };
 
@@ -796,7 +917,11 @@ export default function Page() {
     setDailyLlmBudgetInput(String(preset.dailyLlmBudget));
     setAgeGroupRatios({ ...preset.ageGroupRatios });
     setGenderRatios({ ...preset.genderRatios });
+    setProductTypeWeights({ ...preset.productTypeWeights });
+    setFreeProductTypeWeights({ ...preset.freeProductTypeWeights });
+    setProductStatusWeights(preset.productStatusWeights ? { ...preset.productStatusWeights } : null);
     resetDryRun();
+    resetResumeDryRun();
     setOperationMessage(`${preset.name} 적용됨`);
   };
 
@@ -816,8 +941,14 @@ export default function Page() {
         setOperationMessage(`투입 수는 1~${MAX_AI_READER_AGENT_COUNT}명까지 가능합니다.`);
         return;
       }
-      if (ageGroupRatioTotal !== 100 || genderRatioTotal !== 100) {
-        setOperationMessage("연령/성별 비율 합계는 각각 100이어야 합니다.");
+      if (
+        ageGroupRatioTotal !== 100
+        || genderRatioTotal !== 100
+        || productTypeWeightTotal !== 100
+        || freeProductTypeWeightTotal !== 100
+        || (productStatusWeights && productStatusWeightTotal !== 100)
+      ) {
+        setOperationMessage("연령/성별/작품/무료 내부/연재 상태 가중치 합계는 각각 100이어야 합니다.");
         return;
       }
       const nextPreset: AiReaderPreset = {
@@ -831,6 +962,9 @@ export default function Page() {
         dailyLlmBudget: dailyLlmBudgetValue,
         ageGroupRatios: { ...ageGroupRatios },
         genderRatios: { ...genderRatios },
+        productTypeWeights: { ...productTypeWeights },
+        freeProductTypeWeights: { ...freeProductTypeWeights },
+        productStatusWeights: productStatusWeights ? { ...productStatusWeights } : null,
       };
       const nextPresets = [...customPresets, nextPreset];
       setCustomPresets(nextPresets);
@@ -869,6 +1003,54 @@ export default function Page() {
     resetDryRun();
   };
 
+  const handleProductTypeWeightChange = (key: ProductTypeWeightKey, rawValue: string) => {
+    const nextNumber = Math.max(0, Math.min(100, Number(rawValue.replace(/\D/g, "") || 0)));
+    setProductTypeWeights({ ...productTypeWeights, [key]: nextNumber });
+    setSelectedPresetId("custom");
+    resetDryRun();
+    resetResumeDryRun();
+  };
+
+  const applyProductTypeWeightPreset = (weights: RatioMap) => {
+    setProductTypeWeights({ ...weights });
+    setSelectedPresetId("custom");
+    resetDryRun();
+    resetResumeDryRun();
+  };
+
+  const handleFreeProductTypeWeightChange = (key: FreeProductTypeWeightKey, rawValue: string) => {
+    const nextNumber = Math.max(0, Math.min(100, Number(rawValue.replace(/\D/g, "") || 0)));
+    setFreeProductTypeWeights({ ...freeProductTypeWeights, [key]: nextNumber });
+    setSelectedPresetId("custom");
+    resetDryRun();
+    resetResumeDryRun();
+  };
+
+  const applyFreeProductTypeWeightPreset = (weights: RatioMap) => {
+    setFreeProductTypeWeights({ ...weights });
+    setSelectedPresetId("custom");
+    resetDryRun();
+    resetResumeDryRun();
+  };
+
+  const handleProductStatusWeightChange = (key: ProductStatusWeightKey, rawValue: string) => {
+    const nextNumber = Math.max(0, Math.min(100, Number(rawValue.replace(/\D/g, "") || 0)));
+    setProductStatusWeights({
+      ...(productStatusWeights || ongoingFocusedStatusWeights),
+      [key]: nextNumber,
+    });
+    setSelectedPresetId("custom");
+    resetDryRun();
+    resetResumeDryRun();
+  };
+
+  const applyProductStatusWeightPreset = (weights: RatioMap | null) => {
+    setProductStatusWeights(weights ? { ...weights } : null);
+    setSelectedPresetId("custom");
+    resetDryRun();
+    resetResumeDryRun();
+  };
+
   const refreshAiReaderState = async () => {
     await Promise.all([refetch(), refetchAgents()]);
   };
@@ -893,8 +1075,8 @@ export default function Page() {
         setOperationMessage(activityScheduleError);
         return;
       }
-      if (immediateBatchSizeValue < 1 || immediateBatchSizeValue > MAX_AI_READER_AGENT_COUNT) {
-        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+      if (immediateBatchSizeValue < 1 || immediateBatchSizeValue > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
+        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
         return;
       }
       if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -915,8 +1097,8 @@ export default function Page() {
       }
       if (apply && !hasMatchingDryRun) {
         setOperationMessage(
-          bootstrapDryRunBlockMessage
-            || "같은 prefix/투입 수/날짜/기간/활동량/비율/LLM 예산으로 사전 확인을 먼저 통과해야 적용할 수 있습니다."
+            bootstrapDryRunBlockMessage
+            || "같은 prefix/투입 수/날짜/기간/활동량/비율/작품 가중치/LLM 예산으로 사전 확인을 먼저 통과해야 적용할 수 있습니다."
         );
         return;
       }
@@ -941,6 +1123,9 @@ export default function Page() {
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
         time_blocks: apiTimeBlocks,
+        product_type_weights: productTypeWeights,
+        free_product_type_weights: freeProductTypeWeights,
+        ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
         start_immediately: startImmediately,
         immediate_batch_size: immediateBatchSizeValue,
         immediate_batch_interval_minutes: immediateBatchIntervalValue,
@@ -972,6 +1157,9 @@ export default function Page() {
           immediateScheduleStartAt: result.immediate_schedule_start_at || null,
           ageGroupRatios: { ...ageGroupRatios },
           genderRatios: { ...genderRatios },
+          productTypeWeights: { ...productTypeWeights },
+          freeProductTypeWeights: { ...freeProductTypeWeights },
+          productStatusWeights: productStatusWeights ? { ...productStatusWeights } : null,
           profileNicknamePool: [...profileNicknamePoolValue],
           token: result.dry_run_token || "",
           availableUserCount: Number(result.available_user_count || 0),
@@ -1035,8 +1223,8 @@ export default function Page() {
       setOperationMessage(activityScheduleError);
       return false;
     }
-    if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_AGENT_COUNT) {
-      setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+    if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
+      setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
       return false;
     }
     if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -1055,6 +1243,9 @@ export default function Page() {
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
       time_blocks: apiTimeBlocks,
+      product_type_weights: productTypeWeights,
+      free_product_type_weights: freeProductTypeWeights,
+      ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
       daily_llm_budget: dailyLlmBudgetValue,
     });
     const immediateScheduleRows = countImmediateScheduleRows(dryRunResult.immediate_schedule_preview);
@@ -1072,6 +1263,9 @@ export default function Page() {
       immediateBatchSize,
       immediateBatchIntervalMinutes: immediateBatchIntervalValue,
       immediateScheduleStartAt: dryRunResult.immediate_schedule_start_at || null,
+      productTypeWeights: { ...productTypeWeights },
+      freeProductTypeWeights: { ...freeProductTypeWeights },
+      productStatusWeights: productStatusWeights ? { ...productStatusWeights } : null,
       token: dryRunResult.dry_run_token || "",
       availableAgentCount: Number(dryRunResult.available_agent_count || 0),
       missingAgentCount: Number(dryRunResult.missing_agent_count || 0),
@@ -1112,6 +1306,9 @@ export default function Page() {
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
       time_blocks: apiTimeBlocks,
+      product_type_weights: productTypeWeights,
+      free_product_type_weights: freeProductTypeWeights,
+      ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
       daily_llm_budget: dailyLlmBudgetValue,
       dry_run_token: dryRunResult.dry_run_token,
     });
@@ -1142,8 +1339,8 @@ export default function Page() {
       setOperationMessage(activityScheduleError);
       return false;
     }
-    if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_AGENT_COUNT) {
-      setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+    if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
+      setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
       return false;
     }
     if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -1162,6 +1359,9 @@ export default function Page() {
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
       time_blocks: apiTimeBlocks,
+      product_type_weights: productTypeWeights,
+      free_product_type_weights: freeProductTypeWeights,
+      ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
       daily_llm_budget: dailyLlmBudgetValue,
     });
     const immediateScheduleRows = countImmediateScheduleRows(dryRunResult.immediate_schedule_preview);
@@ -1196,6 +1396,9 @@ export default function Page() {
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
       time_blocks: apiTimeBlocks,
+      product_type_weights: productTypeWeights,
+      free_product_type_weights: freeProductTypeWeights,
+      ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
       daily_llm_budget: dailyLlmBudgetValue,
       dry_run_token: dryRunResult.dry_run_token,
     });
@@ -1291,8 +1494,8 @@ export default function Page() {
         setOperationMessage(activityScheduleError);
         return;
       }
-      if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_AGENT_COUNT) {
-        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+      if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
+        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
         return;
       }
       if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -1311,6 +1514,9 @@ export default function Page() {
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
         time_blocks: apiTimeBlocks,
+        product_type_weights: productTypeWeights,
+        free_product_type_weights: freeProductTypeWeights,
+        ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
         daily_llm_budget: dailyLlmBudgetValue,
       });
       const immediateScheduleRows = countImmediateScheduleRows(dryRunResult.immediate_schedule_preview);
@@ -1328,6 +1534,9 @@ export default function Page() {
         immediateBatchSize,
         immediateBatchIntervalMinutes: immediateBatchIntervalValue,
         immediateScheduleStartAt: dryRunResult.immediate_schedule_start_at || null,
+        productTypeWeights: { ...productTypeWeights },
+        freeProductTypeWeights: { ...freeProductTypeWeights },
+        productStatusWeights: productStatusWeights ? { ...productStatusWeights } : null,
         token: dryRunResult.dry_run_token || "",
         availableAgentCount: Number(dryRunResult.available_agent_count || 0),
         missingAgentCount: Number(dryRunResult.missing_agent_count || 0),
@@ -1365,6 +1574,9 @@ export default function Page() {
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
         time_blocks: apiTimeBlocks,
+        product_type_weights: productTypeWeights,
+        free_product_type_weights: freeProductTypeWeights,
+        ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
         daily_llm_budget: dailyLlmBudgetValue,
         dry_run_token: dryRunResult.dry_run_token,
       });
@@ -1399,8 +1611,8 @@ export default function Page() {
         setOperationMessage(activityScheduleError);
         return;
       }
-      if (resumeImmediateBatchSizeValue < 1 || resumeImmediateBatchSizeValue > MAX_AI_READER_AGENT_COUNT) {
-        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+      if (resumeImmediateBatchSizeValue < 1 || resumeImmediateBatchSizeValue > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
+        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
         return;
       }
       if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -1408,7 +1620,7 @@ export default function Page() {
         return;
       }
       if (apply && !hasMatchingResumeDryRun) {
-        setOperationMessage("같은 날짜/기간/재가동 수/시작 방식으로 사전 확인을 먼저 통과해야 적용할 수 있습니다.");
+        setOperationMessage("같은 날짜/기간/재가동 수/시작 방식/작품 가중치로 사전 확인을 먼저 통과해야 적용할 수 있습니다.");
         return;
       }
       if (
@@ -1429,6 +1641,9 @@ export default function Page() {
         active_hours: parseHoursInput(activeHoursInput),
         daily_session_target: dailySessionTargetValue,
         time_blocks: apiTimeBlocks,
+        product_type_weights: productTypeWeights,
+        free_product_type_weights: freeProductTypeWeights,
+        ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
         daily_llm_budget: dailyLlmBudgetValue,
         dry_run_token: apply ? lastResumeDryRun?.token : undefined,
       });
@@ -1448,6 +1663,9 @@ export default function Page() {
           immediateBatchSize: resumeImmediateBatchSizeValue,
           immediateBatchIntervalMinutes: immediateBatchIntervalValue,
           immediateScheduleStartAt: result.immediate_schedule_start_at || null,
+          productTypeWeights: { ...productTypeWeights },
+          freeProductTypeWeights: { ...freeProductTypeWeights },
+          productStatusWeights: productStatusWeights ? { ...productStatusWeights } : null,
           token: result.dry_run_token || "",
           availableAgentCount: Number(result.available_agent_count || 0),
           missingAgentCount: Number(result.missing_agent_count || 0),
@@ -1547,7 +1765,7 @@ export default function Page() {
     if (nextRunMode === "setup") {
       return "투입 가능한 AI가 부족합니다. 먼저 신규 AI 독자를 생성하거나 목표 인원을 낮춰야 합니다.";
     }
-    return "목표 활동 인원은 1~100명 사이로 입력하세요.";
+    return `목표 활동 인원은 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`;
   })();
   const llmSuccessRate = percentFormat(
     summary?.success_decision_count,
@@ -1778,7 +1996,7 @@ export default function Page() {
                   </div>
                 </label>
                 <div className="flex flex-wrap gap-1.5">
-                  {[0, 50, 100].map((count) => (
+                  {[0, 50, 100, 200].map((count) => (
                     <Button
                       key={count}
                       type="button"
@@ -2102,8 +2320,30 @@ export default function Page() {
               <span className="mx-2">·</span>
               <span className="font-medium text-foreground">기간·시작</span>: {scheduleSettingSummary}
             </div>
+            <div className="mt-3 inline-flex rounded-md border bg-muted/20 p-0.5">
+              {[
+                { id: "operation", label: "운영 설정" },
+                { id: "product", label: "작품 가중치" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setDetailSettingsTab(tab.id as DetailSettingsTab)}
+                  className={cn(
+                    "rounded-sm px-3 py-1 text-xs transition",
+                    detailSettingsTab === tab.id
+                      ? "bg-white font-medium text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
 
+          {detailSettingsTab === "operation" && (
+          <>
           {/* Step 1. 강도 + 프리셋 */}
           <div className="mb-5 rounded-md border bg-muted/10 p-3">
             <div className="mb-3 flex items-center gap-2">
@@ -2613,6 +2853,163 @@ export default function Page() {
               </div>
             )}
           </div>
+          </>
+          )}
+
+          {detailSettingsTab === "product" && (
+          <div className="mb-5 rounded-md border bg-muted/10 p-3">
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h3 className="text-xs font-medium">작품 가중치</h3>
+                <div className="mt-0.5 text-[11px] text-muted-foreground">
+                  {productTypeWeightSummary} · 합계 {numberFormat(productTypeWeightTotal)}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {productTypeWeightPresets.map((preset) => (
+                  <Button
+                    key={preset.label}
+                    type="button"
+                    size="sm"
+                    variant={
+                      JSON.stringify(productTypeWeights) === JSON.stringify(preset.weights)
+                        ? "default"
+                        : "outline"
+                    }
+                    onClick={() => applyProductTypeWeightPreset(preset.weights)}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {productTypeWeightKeys.map((key) => (
+                <label key={key} className="rounded-md border bg-white p-3 text-xs">
+                  <span className="font-medium">{productTypeWeightLabel[key]}</span>
+                  <Input
+                    className="mt-2"
+                    inputMode="numeric"
+                    value={productTypeWeights[key] ?? 0}
+                    onChange={(e) => handleProductTypeWeightChange(key, e.target.value)}
+                  />
+                </label>
+              ))}
+            </div>
+            <div
+              className={cn(
+                "mt-2 text-xs",
+                productTypeWeightTotal === 100 ? "text-muted-foreground" : "text-destructive"
+              )}
+            >
+              합계 {numberFormat(productTypeWeightTotal)}
+            </div>
+
+            <div className="mt-5 border-t pt-4">
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h4 className="text-xs font-medium">무료연재 내부 비중</h4>
+                  <div className="mt-0.5 text-[11px] text-muted-foreground">
+                    {freeProductTypeWeightSummary} · 합계 {numberFormat(freeProductTypeWeightTotal)}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {freeProductTypeWeightPresets.map((preset) => (
+                    <Button
+                      key={preset.label}
+                      type="button"
+                      size="sm"
+                      variant={
+                        JSON.stringify(freeProductTypeWeights) === JSON.stringify(preset.weights)
+                          ? "default"
+                          : "outline"
+                      }
+                      onClick={() => applyFreeProductTypeWeightPreset(preset.weights)}
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {freeProductTypeWeightKeys.map((key) => (
+                  <label key={key} className="rounded-md border bg-white p-3 text-xs">
+                    <span className="font-medium">{freeProductTypeWeightLabel[key]}</span>
+                    <Input
+                      className="mt-2"
+                      inputMode="numeric"
+                      value={freeProductTypeWeights[key] ?? 0}
+                      onChange={(e) => handleFreeProductTypeWeightChange(key, e.target.value)}
+                    />
+                  </label>
+                ))}
+              </div>
+              <div
+                className={cn(
+                  "mt-2 text-xs",
+                  freeProductTypeWeightTotal === 100 ? "text-muted-foreground" : "text-destructive"
+                )}
+              >
+                합계 {numberFormat(freeProductTypeWeightTotal)}
+              </div>
+            </div>
+
+            <div className="mt-5 border-t pt-4">
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h4 className="text-xs font-medium">연재 상태 가중치</h4>
+                  <div className="mt-0.5 text-[11px] text-muted-foreground">
+                    {productStatusWeightSummary}
+                    {productStatusWeights ? ` · 합계 ${numberFormat(productStatusWeightTotal)}` : ""}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {productStatusWeightPresets.map((preset) => (
+                    <Button
+                      key={preset.label}
+                      type="button"
+                      size="sm"
+                      variant={
+                        (preset.weights === null && productStatusWeights === null)
+                          || JSON.stringify(productStatusWeights) === JSON.stringify(preset.weights)
+                          ? "default"
+                          : "outline"
+                      }
+                      onClick={() => applyProductStatusWeightPreset(preset.weights)}
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              {productStatusWeights && (
+                <>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                    {productStatusWeightKeys.map((key) => (
+                      <label key={key} className="rounded-md border bg-white p-3 text-xs">
+                        <span className="font-medium">{productStatusWeightLabel[key]}</span>
+                        <Input
+                          className="mt-2"
+                          inputMode="numeric"
+                          value={productStatusWeights[key] ?? 0}
+                          onChange={(e) => handleProductStatusWeightChange(key, e.target.value)}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <div
+                    className={cn(
+                      "mt-2 text-xs",
+                      productStatusWeightTotal === 100 ? "text-muted-foreground" : "text-destructive"
+                    )}
+                  >
+                    합계 {numberFormat(productStatusWeightTotal)}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          )}
 
           {/* 신규 AI 독자 생성 */}
           <div className="-mx-4 mt-5 border-t bg-muted/10 px-4 pb-3 pt-4">

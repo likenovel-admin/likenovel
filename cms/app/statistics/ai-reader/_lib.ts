@@ -106,7 +106,7 @@ export const ageGroupLabel: Record<string, string> = {
 export const ageGroupKeys = ["10s", "20s", "30s", "40s", "50s"];
 export const genderKeys = ["M", "F"];
 
-export const MAX_AI_READER_AGENT_COUNT = 100;
+export const MAX_AI_READER_AGENT_COUNT = 200;
 export const AI_READER_PRESET_STORAGE_KEY = "likenovel.cms.aiReader.customPresets.v1";
 
 export type AiReaderIntensity = "LOW" | "MEDIUM" | "HIGH";
@@ -185,7 +185,7 @@ export const defaultPresets: AiReaderPreset[] = [
     name: "프리셋3 HIGH",
     locked: true,
     intensity: "HIGH",
-    agentCount: 100,
+    agentCount: 200,
     ageGroupRatios: defaultAgeGroupRatios,
     genderRatios: defaultGenderRatios,
     ...intensityDefaults.HIGH,
