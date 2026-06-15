@@ -21,4 +21,4 @@ check_http() {
 check_http "https://www.likenovel.net"          "service"
 check_http "https://partner.likenovel.net"      "partner"
 check_http "https://cms.likenovel.net"          "cms"
-check_http "https://api.likenovel.net/docs"     "api"      # FastAPI 루트는 404 정상, /docs 로 헬스 대용
+check_http "https://api.likenovel.net/health"   "api"
