@@ -402,12 +402,12 @@ PRODUCT_IDS=1102,1106 INTERVAL_SEC=30 ITERATIONS=20 /home/hongsan/work/likenovel
 - read-only 관측 도구다. 배치/DB 상태를 수정하지 않는다.
 - 중간 진행률은 `ready_episode_count`보다 `로그 + recent summaries + summary count`를 우선 신뢰한다.
 
-현재 운영 기준(2026-05-26):
-- prod crontab active line은 비용 방지를 위해 `STORYCTX_MAX_PARALLEL=1 STORYCTX_BUILD_MODE=delta STORYCTX_MAX_MISSING_EPISODES=5`를 명시한 적이 있다.
+현재 운영 기준(2026-06-15):
+- prod crontab active line은 `STORYCTX_MAX_PARALLEL=1 STORYCTX_BUILD_MODE=delta STORYCTX_MAX_MISSING_EPISODES=20`을 명시한다. 20화 수동 가속 테스트가 성공해 백로그 회복 속도를 높였고, 병렬도는 1로 유지한다.
 - 시간은 매시 10분이다.
 
 ```cron
-10 * * * * STORYCTX_MAX_PARALLEL=1 STORYCTX_BUILD_MODE=delta STORYCTX_MAX_MISSING_EPISODES=5 bash /home/ln-admin/likenovel/batch/build_story_agent_context_batch.sh >> /home/ln-admin/likenovel/batch/build_story_agent_context_batch.log 2>&1
+10 * * * * STORYCTX_MAX_PARALLEL=1 STORYCTX_BUILD_MODE=delta STORYCTX_MAX_MISSING_EPISODES=20 bash /home/ln-admin/likenovel/batch/build_story_agent_context_batch.sh >> /home/ln-admin/likenovel/batch/build_story_agent_context_batch.log 2>&1
 ```
 
 Story context 비용 가드:
