@@ -66,6 +66,9 @@ export interface IAiReaderBootstrapRequest {
   active_hours?: number[];
   daily_session_target?: number;
   time_blocks?: IAiReaderTimeBlock[];
+  product_type_weights?: Record<string, number>;
+  free_product_type_weights?: Record<string, number>;
+  product_status_weights?: Record<string, number>;
   start_immediately?: boolean;
   immediate_batch_size?: number;
   immediate_batch_interval_minutes?: number;
@@ -137,6 +140,9 @@ export interface IAiReaderResumePausedRequest {
   active_hours?: number[];
   daily_session_target?: number;
   time_blocks?: IAiReaderTimeBlock[];
+  product_type_weights?: Record<string, number>;
+  free_product_type_weights?: Record<string, number>;
+  product_status_weights?: Record<string, number>;
   daily_llm_budget?: number;
   dry_run_token?: string;
 }
