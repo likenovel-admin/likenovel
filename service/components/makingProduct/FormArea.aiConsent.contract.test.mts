@@ -2,6 +2,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const source = readFileSync(new URL("./FormArea.tsx", import.meta.url), "utf8");
+const baseSearchTag = readFileSync(
+  new URL("./BaseSearchTag.tsx", import.meta.url),
+  "utf8"
+);
+const searchTag = readFileSync(
+  new URL("../form/searchTag/index.tsx", import.meta.url),
+  "utf8"
+);
 const dto = readFileSync(
   new URL("../../app/api/query/author/product/dto.ts", import.meta.url),
   "utf8"
@@ -23,7 +31,7 @@ assert.match(source, /name="agree"[\s\S]*rules=\{[\s\S]*productId[\s\S]*\? undef
 assert.match(source, /checked=\{productId \? true : field\.value\}/);
 assert.match(source, /disabled=\{!!productId\}/);
 assert.match(source, /name="agree"[\s\S]*name="aiExternalPromotionYn"/);
-assert.match(source, /<div className="flex flex-col gap-4pxr">[\s\S]*name="agree"[\s\S]*name="aiExternalPromotionYn"/);
+assert.match(source, /<div[\s\S]{0,120}className="flex flex-col gap-4pxr"[\s\S]*name="agree"[\s\S]*name="aiExternalPromotionYn"/);
 assert.doesNotMatch(source, /AI 설정/);
 assert.doesNotMatch(source, /3단계 AI 활용 동의/);
 assert.doesNotMatch(source, /선택하지 않아도 작품 등록은 가능합니다\./);
@@ -34,6 +42,21 @@ assert.doesNotMatch(source, /ai_content_service_enabled_yn: formData/);
 assert.doesNotMatch(source, /플랫폼 내 AI 콘텐츠 서비스 활성화/);
 assert.doesNotMatch(source, /미선택시 독자 노출/);
 assert.doesNotMatch(source, /name="aiExternalPromotionYn"[\s\S]{0,200}rules=/);
+
+assert.match(source, /required: "연재주기를 설정해주세요\."/);
+assert.match(source, /scrollToErrorField\(firstErrorName\)/);
+assert.match(source, /message: firstErrorMessage \|\| "입력값을 확인해주세요\."/);
+assert.doesNotMatch(source, /필수 입력값을 확인해주세요\./);
+assert.match(source, /name="baseTag"[\s\S]*validate: \(value\)[\s\S]*기본 태그를 1개 이상 선택해주세요\./);
+assert.match(source, /<BaseSearchTag[\s\S]*isError=\{!!formState\.errors\.baseTag\}[\s\S]*errorText=\{formState\.errors\.baseTag\?\.message\}/);
+
+assert.match(baseSearchTag, /required/);
+assert.match(baseSearchTag, /isError=\{isError\}/);
+assert.match(baseSearchTag, /errorText=\{errorText\}/);
+
+assert.match(searchTag, /errorText\?: ReactNode/);
+assert.match(searchTag, /aria-invalid=\{isError \? true : undefined\}/);
+assert.match(searchTag, /shouldValidate: true/);
 
 assert.match(dto, /ai_content_service_enabled_yn\?: "Y" \| "N"/);
 assert.match(dto, /ai_external_promotion_yn\?: "Y" \| "N"/);
