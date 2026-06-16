@@ -85,6 +85,8 @@ export interface IUpdateProductRequest {
   cp_contract_price?: number;
   free_episode_start_no?: number | null;
   free_episode_end_no?: number | null;
+  hundred_free_campaign_enabled?: boolean;
+  hundred_free_campaign_ends_at?: string | null;
 }
 
 export interface IUpdateProductResponse {

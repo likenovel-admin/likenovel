@@ -436,6 +436,9 @@ Story context 비용 가드:
 - `batch`이면 `/home/ln-admin/likenovel/api/.env`
 - Docker 환경 fallback은 `/proc/1/environ`
 
+`likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/free_episode_campaign_expire_batch.sh`는 active
+`tb_product_free_episode_campaign` row를 5분 주기로 만료 처리하고, 작품 무료회차 범위를 row의 restore 범위로 복구한다. 현재 partner UI 기본 restore 범위는 1~25다.
+
 `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`는 active release의 `/home/ln-admin/likenovel/api-dev/batch`를 `/home/ln-admin/likenovel/batch-dev`로 복사하지만 dev cron은 자동 설치하지 않는다.
 
 `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`는 `/home/ln-admin/likenovel/api/batch`를 `/home/ln-admin/likenovel/batch`로 복사하고, prod main rule slot/story context 일부 cron만 보장한다. 전체 cron 상태의 SSOT는 배포 후 `crontab -l` readback이다.
