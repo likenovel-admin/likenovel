@@ -85,8 +85,7 @@ const useAuthStore = create<IAuthState>((set) => ({
       accessToken: null,
       refreshToken: null,
     });
-    sessionStorage.clear();
-    // Clear tokens from both localStorage and sessionStorage
+    // Clear only auth-owned keys so analytics/session attribution state remains intact.
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     // localStorage.removeItem("recent_sign_in_type");
@@ -95,7 +94,9 @@ const useAuthStore = create<IAuthState>((set) => ({
     localStorage.removeItem(STORAGE_KEYS.QUEST_REWARD_AFTER_LOGIN);
     sessionStorage.removeItem("access_token");
     sessionStorage.removeItem("refresh_token");
-    // sessionStorage.removeItem("recent_sign_in_type");
+    sessionStorage.removeItem("recent_sign_in_type");
+    sessionStorage.removeItem("keep_signin_yn");
+    sessionStorage.removeItem("user");
   },
 
   setAccessToken: (newToken) => {
