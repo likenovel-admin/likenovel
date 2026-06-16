@@ -104,6 +104,9 @@ selects env by runtime directory:
   `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/cron_job.dev.sh`.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/episode_state_transition_minute_batch.sh`
   needs `EPISODE_STATE_TRANSITION_BATCH_ENABLE=1` in cron.
+- `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/free_episode_campaign_expire_batch.sh`
+  expires active `tb_product_free_episode_campaign` rows every 5 minutes and restores
+  product free episode ranges to the row's restore range, currently 1~25.
 - Story context prod cron has live-state history and source fallback differences.
   Do not infer current max parallel from one file; verify active `crontab -l` and
   then compare with `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`.

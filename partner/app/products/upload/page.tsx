@@ -81,6 +81,8 @@ type FormState = {
   cpCompanyName: string;
   freeEpisodeStartNo: string;
   freeEpisodeEndNo: string;
+  hundredFreeCampaignEnabled: boolean;
+  hundredFreeCampaignEndsAt: string;
   monopolyYn: boolean;
   blindYn: boolean;
   synopsis: string;
@@ -116,6 +118,8 @@ const INITIAL_FORM: FormState = {
   cpCompanyName: "",
   freeEpisodeStartNo: "",
   freeEpisodeEndNo: "",
+  hundredFreeCampaignEnabled: false,
+  hundredFreeCampaignEndsAt: "",
   monopolyYn: false,
   blindYn: false,
   synopsis: "",
@@ -138,6 +142,23 @@ const SALE_RESERVE_WEEKDAY_OPTIONS = [
   { label: "토", value: 6 },
   { label: "일", value: 0 },
 ] as const;
+
+const toDateTimeLocalValue = (value?: string | null) => {
+  if (!value) return "";
+  return value.replace(" ", "T").slice(0, 16);
+};
+
+const toDateTimeLocalInputValue = (date: Date) => {
+  const pad = (num: number) => String(num).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const getDefaultHundredFreeCampaignEndsAt = () => {
+  const nextWeek = new Date();
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  nextWeek.setHours(23, 59, 0, 0);
+  return toDateTimeLocalInputValue(nextWeek);
+};
 const INITIAL_SALE_RESERVE_OPTION: SaleReserveOptionState = {
   launchStartNo: "",
   launchEndNo: "",
@@ -421,6 +442,22 @@ export default function ProductUploadPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleHundredFreeCampaignToggle = (checked: boolean) => {
+    setField("hundredFreeCampaignEnabled", checked);
+    if (checked) {
+      setField("freeEpisodeStartNo", "1");
+      setField("freeEpisodeEndNo", "100");
+      setField(
+        "hundredFreeCampaignEndsAt",
+        form.hundredFreeCampaignEndsAt || getDefaultHundredFreeCampaignEndsAt()
+      );
+      return;
+    }
+    setField("freeEpisodeStartNo", "1");
+    setField("freeEpisodeEndNo", "25");
+    setField("hundredFreeCampaignEndsAt", "");
+  };
+
   const setSaleReserveOptionField = <K extends keyof SaleReserveOptionState>(
     key: K,
     value: SaleReserveOptionState[K]
@@ -484,6 +521,8 @@ export default function ProductUploadPage() {
       ((productDetail.paid_episode_no ?? 0) > 1
         ? (productDetail.paid_episode_no as number) - 1
         : null);
+    const hundredFreeCampaignActive =
+      productDetail.hundred_free_campaign_active_yn === "Y";
 
     setForm((prev) => ({
       ...prev,
@@ -520,6 +559,10 @@ export default function ProductUploadPage() {
         freeEpisodeEndNo !== null && freeEpisodeEndNo !== undefined
           ? String(freeEpisodeEndNo)
           : "",
+      hundredFreeCampaignEnabled: hundredFreeCampaignActive,
+      hundredFreeCampaignEndsAt: hundredFreeCampaignActive
+        ? toDateTimeLocalValue(productDetail.hundred_free_campaign_ends_at)
+        : "",
       monopolyYn: productDetail.monopoly_yn === "Y",
       blindYn: productDetail.blind_yn === "Y",
       synopsis: detailWithOptional.synopsis ?? "",
@@ -642,6 +685,15 @@ export default function ProductUploadPage() {
         return "무료회차 시작 번호가 종료 번호보다 클 수 없습니다.";
       }
     }
+    if (isEditMode && form.hundredFreeCampaignEnabled) {
+      if (!form.hundredFreeCampaignEndsAt) {
+        return "백화무료 종료 일시를 입력해주세요.";
+      }
+      const endsAt = new Date(form.hundredFreeCampaignEndsAt);
+      if (Number.isNaN(endsAt.getTime()) || endsAt <= new Date()) {
+        return "백화무료 종료 일시는 현재 이후로 입력해주세요.";
+      }
+    }
 
     return "";
   };
@@ -706,6 +758,10 @@ export default function ProductUploadPage() {
     const currentCpCompanyName = productDetail?.cp_company_name ?? "";
     const nextCpCompanyName = form.cpCompanyName.trim();
     const shouldSendCpCompanyName = !isEditMode || nextCpCompanyName !== currentCpCompanyName;
+    const shouldSendHundredFreeCampaign =
+      isEditMode &&
+      (form.hundredFreeCampaignEnabled ||
+        productDetail?.hundred_free_campaign_active_yn === "Y");
 
     return {
       author_nickname: form.authorName.trim() || undefined,
@@ -737,6 +793,14 @@ export default function ProductUploadPage() {
       ...(isEditMode
         ? { open_yn: form.blindYn ? "N" : form.openYn, blind_yn: form.blindYn ? "Y" : "N" }
         : { open_yn: form.openYn, blind_yn: form.blindYn ? "Y" : "N" }),
+      ...(shouldSendHundredFreeCampaign
+        ? {
+            hundred_free_campaign_enabled: form.hundredFreeCampaignEnabled,
+            hundred_free_campaign_ends_at: form.hundredFreeCampaignEnabled
+              ? form.hundredFreeCampaignEndsAt
+              : null,
+          }
+        : {}),
     };
   };
 
@@ -1768,8 +1832,8 @@ export default function ProductUploadPage() {
                       placeholder="시작"
                       maxLength={3}
                       className="w-[92px]"
-                      readOnly={isReadOnlyMode}
-                      disabled={isReadOnlyMode}
+                      readOnly={isReadOnlyMode || form.hundredFreeCampaignEnabled}
+                      disabled={isReadOnlyMode || form.hundredFreeCampaignEnabled}
                       onChange={(e) => {
                         const value = e.target.value;
                         if (value === "" || /^\d{1,3}$/.test(value)) {
@@ -1783,8 +1847,8 @@ export default function ProductUploadPage() {
                       placeholder="종료"
                       maxLength={3}
                       className="w-[92px]"
-                      readOnly={isReadOnlyMode}
-                      disabled={isReadOnlyMode}
+                      readOnly={isReadOnlyMode || form.hundredFreeCampaignEnabled}
+                      disabled={isReadOnlyMode || form.hundredFreeCampaignEnabled}
                       onChange={(e) => {
                         const value = e.target.value;
                         if (value === "" || /^\d{1,3}$/.test(value)) {
@@ -1793,6 +1857,32 @@ export default function ProductUploadPage() {
                       }}
                     />
                   </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <label className="inline-flex items-center gap-2 text-sm font-medium text-[#1F2124]">
+                      <input
+                        type="checkbox"
+                        checked={form.hundredFreeCampaignEnabled}
+                        disabled={isReadOnlyMode}
+                        onChange={(e) => handleHundredFreeCampaignToggle(e.target.checked)}
+                      />
+                      이번주만 백화무료 지정
+                    </label>
+                    {form.hundredFreeCampaignEnabled && (
+                      <Input
+                        type="datetime-local"
+                        value={form.hundredFreeCampaignEndsAt}
+                        min={toDateTimeLocalInputValue(new Date())}
+                        className="w-[220px]"
+                        disabled={isReadOnlyMode}
+                        onChange={(e) =>
+                          setField("hundredFreeCampaignEndsAt", e.target.value)
+                        }
+                      />
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-[#8A909C]">
+                    활성화하면 즉시 1~100화가 무료로 지정되고, 종료 후 1~25화 무료로 자동 복구됩니다.
+                  </p>
                 </div>
               )}
 
