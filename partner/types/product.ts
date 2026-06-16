@@ -31,6 +31,8 @@ export interface IProduct {
   free_episode_start_no?: number | null;
   free_episode_end_no?: number | null;
   paid_episode_no?: number | null;
+  hundred_free_campaign_active_yn?: "Y" | "N" | null;
+  hundred_free_campaign_ends_at?: string | null;
   product_type?: string | null;
   productType?: string | null;
   openYn?: "Y" | "N";
