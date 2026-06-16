@@ -136,6 +136,26 @@ assert.match(
   /const displayEpisodeCount = episodeCount \?\? data\?\.totalOpenEpisodeCount \?\? 0;/,
   "ProductCoverArea should display the page-provided owner/admin episode count when available"
 );
+assert.match(
+  productCoverAreaSource,
+  /const paidOpenDateLabel =\s*data\?\.priceType === "paid" \? formatPaidOpenDate\(data\?\.paidOpenDate\) : "";/,
+  "ProductCoverArea should only compute a paid-open date label for paid products"
+);
+assert.match(
+  productCoverAreaSource,
+  /유료전환일:/,
+  "ProductCoverArea should label the paid conversion date with a colon on the detail header"
+);
+assert.match(
+  productCoverAreaSource,
+  /paidOpenDateLabel && \(/,
+  "ProductCoverArea should hide the paid conversion date when the backend has no date"
+);
+assert.match(
+  productCoverAreaSource,
+  /\{displayEpisodeCount\}화[\s\S]*getUpdateFrequency\([\s\S]*data\.properties\?\.updateFrequency \|\| ""[\s\S]*<\/div>\s*\{paidOpenDateLabel && \([\s\S]*유료전환일:/,
+  "ProductCoverArea should render the paid conversion date on the line after total episodes and update frequency"
+);
 assert.doesNotMatch(
   productCoverAreaSource,
   /\{data\.totalOpenEpisodeCount\}화/,

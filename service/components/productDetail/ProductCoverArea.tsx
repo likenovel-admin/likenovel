@@ -59,6 +59,12 @@ interface Props {
   backFallbackPath?: string | null;
 }
 
+const formatPaidOpenDate = (value?: string | null) => {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  return match ? `${match[1]}.${match[2]}.${match[3]}` : "";
+};
+
 const ProductCoverArea = ({
   data,
   isSuccess,
@@ -97,6 +103,8 @@ const ProductCoverArea = ({
     data?.properties?.latestEpisodeDate || ""
   );
   const displayEpisodeCount = episodeCount ?? data?.totalOpenEpisodeCount ?? 0;
+  const paidOpenDateLabel =
+    data?.priceType === "paid" ? formatPaidOpenDate(data?.paidOpenDate) : "";
 
   useEffect(() => {
     logProductTrace(
@@ -512,6 +520,13 @@ const ProductCoverArea = ({
                             )}
                           </span>
                         </div>
+                        {paidOpenDateLabel && (
+                          <div className="flex items-center">
+                            <span className="text-13pxr md:text-15pxr text-dark-gray-500">
+                              유료전환일: {paidOpenDateLabel}
+                            </span>
+                          </div>
+                        )}
                         {user && (isAdminCPEditor || isAuthor) ? (
                           <div className="flex items-center justify-center md:justify-start gap-10pxr flex-wrap">
                             <div>

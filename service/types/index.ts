@@ -207,6 +207,7 @@ export interface IProduct {
   badge?: IBadge;
   priceType: "free" | "paid";
   paidEpisodeNo?: number | null;
+  paidOpenDate?: string | null;
   illustratorNickname?: string;
   trendindex?: ITrendIndex;
   properties?: IProperties;
