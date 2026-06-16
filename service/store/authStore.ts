@@ -9,6 +9,7 @@ interface IAuthState {
   accessToken: string | null;
   setAccessToken: (newToken: string) => void;
   refreshToken: string | null;
+  setRefreshToken: (newToken: string) => void;
   signIn: (
     tokens: ITokens,
     recentSignInType: ISocialLoginProvider,
@@ -113,6 +114,23 @@ const useAuthStore = create<IAuthState>((set) => ({
     } else {
       // Default to localStorage if no preference is set
       localStorage.setItem("access_token", newToken);
+    }
+  },
+
+  setRefreshToken: (newToken) => {
+    set((state) => ({
+      ...state,
+      refreshToken: newToken,
+    }));
+    const keepSignInLocal = localStorage.getItem("keep_signin_yn");
+    const keepSignInSession = sessionStorage.getItem("keep_signin_yn");
+
+    if (keepSignInLocal === "Y") {
+      localStorage.setItem("refresh_token", newToken);
+    } else if (keepSignInSession === "N") {
+      sessionStorage.setItem("refresh_token", newToken);
+    } else {
+      localStorage.setItem("refresh_token", newToken);
     }
   },
 

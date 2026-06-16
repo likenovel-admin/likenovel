@@ -162,7 +162,7 @@ instance.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const { accessToken, refreshToken, setAccessToken, signOut, isAuthenticated } =
+      const { accessToken, refreshToken, setAccessToken, setRefreshToken, signOut } =
         useAuthStore.getState();
 
       const clearStaleAuth = () => {
@@ -187,9 +187,17 @@ instance.interceptors.response.use(
             res?.data?.data?.auth?.accessToken ||
             res?.data?.token?.access_token ||
             res?.data?.token?.accessToken;
+          const newRefreshToken =
+            res?.data?.data?.token?.refreshToken ||
+            res?.data?.data?.auth?.refreshToken ||
+            res?.data?.token?.refresh_token ||
+            res?.data?.token?.refreshToken;
 
           if (newAccessToken) {
             setAccessToken(newAccessToken);
+            if (newRefreshToken) {
+              setRefreshToken(newRefreshToken);
+            }
             instance.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
             const requestHeaders = originalRequest.headers ?? (originalRequest.headers = {});
             requestHeaders["Authorization"] = `Bearer ${newAccessToken}`;
