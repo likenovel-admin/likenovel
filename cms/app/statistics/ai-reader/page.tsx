@@ -30,6 +30,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatAiReaderDisplayName } from "@/lib/ai-reader-display-name";
 import { calculatePageCount, cn } from "@/lib/utils";
 import {
+  defaultFreeProductTypeWeights,
+  defaultProductTypeWeights,
+  getAiReaderAgentListLastPage,
+  getNextAiReaderAgentIndexOffset,
+  MAX_AI_READER_IMMEDIATE_BATCH_SIZE,
   MAX_AI_READER_AGENT_COUNT,
   aiReaderActionToneClassName,
   formatAiReaderActionScoreLabel,
@@ -216,7 +221,6 @@ const getScheduleEndDateInput = (startDateInput: string, durationDays: number) =
   return format(endDate, "yyyy-MM-dd");
 };
 
-const MAX_AI_READER_IMMEDIATE_BATCH_SIZE = 100;
 const AI_READER_EFFECTS_PER_PAGE = 20;
 const AI_READER_PRESET_STORAGE_KEY = "likenovel.cms.aiReader.customPresets.v1";
 const AI_READER_NICKNAME_POOL_STORAGE_KEY = "likenovel.cms.aiReader.profileNicknamePool.v1";
@@ -297,11 +301,6 @@ const productTypeWeightLabel: Record<ProductTypeWeightKey, string> = {
   paid_serial: "유료연재",
 };
 
-const defaultProductTypeWeights: RatioMap = {
-  free_serial: 100,
-  paid_serial: 0,
-};
-
 const productTypeWeightPresets: Array<{ label: string; weights: RatioMap }> = [
   { label: "무료연재 기본", weights: { free_serial: 100, paid_serial: 0 } },
   { label: "균형", weights: { free_serial: 50, paid_serial: 50 } },
@@ -315,11 +314,6 @@ const freeProductTypeWeightKeys: FreeProductTypeWeightKey[] = ["normal_serial", 
 const freeProductTypeWeightLabel: Record<FreeProductTypeWeightKey, string> = {
   normal_serial: "일반연재",
   free_serial: "자유연재",
-};
-
-const defaultFreeProductTypeWeights: RatioMap = {
-  normal_serial: 85,
-  free_serial: 15,
 };
 
 const freeProductTypeWeightPresets: Array<{ label: string; weights: RatioMap }> = [
@@ -535,6 +529,7 @@ type LastDryRun = {
   freeProductTypeWeights: RatioMap;
   productStatusWeights: RatioMap | null;
   profileNicknamePool: string[];
+  agentIndexOffset: number;
   token: string;
   availableUserCount: number;
   missingUserCount: number;
@@ -637,6 +632,32 @@ export default function Page() {
     page: 1,
     count_per_page: 100,
   });
+  const {
+    data: allAgentsData,
+    refetch: refetchAllAgents,
+    isLoading: isLoadingAllAgents,
+    isFetching: isFetchingAllAgents,
+  } = useGetAiReaderAgents({
+    schedule_date: scheduleDateInput,
+    status: "all",
+    page: 1,
+    count_per_page: MAX_AI_READER_AGENT_COUNT,
+  });
+  const allAgentsLastPage = getAiReaderAgentListLastPage(
+    allAgentsData?.total_count,
+    MAX_AI_READER_AGENT_COUNT
+  );
+  const {
+    data: allAgentsLastPageData,
+    refetch: refetchAllAgentsLastPage,
+    isLoading: isLoadingAllAgentsLastPage,
+    isFetching: isFetchingAllAgentsLastPage,
+  } = useGetAiReaderAgents({
+    schedule_date: scheduleDateInput,
+    status: "all",
+    page: allAgentsLastPage,
+    count_per_page: MAX_AI_READER_AGENT_COUNT,
+  });
   const bootstrapMutation = useBootstrapAiReaderAgents();
   const pauseAllMutation = usePauseAllAiReaderAgents();
   const resumePausedMutation = useResumePausedAiReaderAgents();
@@ -691,14 +712,28 @@ export default function Page() {
     () => allPresets.find((preset) => preset.id === selectedPresetId),
     [allPresets, selectedPresetId]
   );
-  const productTypeWeightTotal = sumRatios(productTypeWeights);
+  const productTypeWeightsPayload = useMemo(
+    () => ({
+      free_serial: Number(productTypeWeights.free_serial || 0),
+      paid_serial: Number(productTypeWeights.paid_serial || 0),
+    }),
+    [productTypeWeights]
+  );
+  const freeProductTypeWeightsPayload = useMemo(
+    () => ({
+      normal_serial: Number(freeProductTypeWeights.normal_serial || 0),
+      free_serial: Number(freeProductTypeWeights.free_serial || 0),
+    }),
+    [freeProductTypeWeights]
+  );
+  const productTypeWeightTotal = sumRatios(productTypeWeightsPayload);
   const productTypeWeightSummary = `${productTypeWeightLabel.free_serial} ${numberFormat(
-    productTypeWeights["free_serial"]
-  )} / ${productTypeWeightLabel.paid_serial} ${numberFormat(productTypeWeights["paid_serial"])}`;
-  const freeProductTypeWeightTotal = sumRatios(freeProductTypeWeights);
+    productTypeWeightsPayload.free_serial
+  )} / ${productTypeWeightLabel.paid_serial} ${numberFormat(productTypeWeightsPayload.paid_serial)}`;
+  const freeProductTypeWeightTotal = sumRatios(freeProductTypeWeightsPayload);
   const freeProductTypeWeightSummary = `${freeProductTypeWeightLabel.normal_serial} ${numberFormat(
-    freeProductTypeWeights["normal_serial"]
-  )} / ${freeProductTypeWeightLabel.free_serial} ${numberFormat(freeProductTypeWeights["free_serial"])}`;
+    freeProductTypeWeightsPayload.normal_serial
+  )} / ${freeProductTypeWeightLabel.free_serial} ${numberFormat(freeProductTypeWeightsPayload.free_serial)}`;
   const productStatusWeightTotal = productStatusWeights ? sumRatios(productStatusWeights) : 0;
   const productStatusWeightSummary = productStatusWeights
     ? productStatusWeightKeys
@@ -718,6 +753,18 @@ export default function Page() {
   const estimatedDailySessions = bootstrapCountValue * dailySessionTargetValue;
   const estimatedPeriodSessions = estimatedDailySessions * normalizedScheduleDurationDays;
   const estimatedDailyLlmBudget = bootstrapCountValue * dailyLlmBudgetValue;
+  const bootstrapAgentIndexOffset = getNextAiReaderAgentIndexOffset(
+    [
+      ...(allAgentsData?.items || []),
+      ...(allAgentsLastPageData?.items || []),
+    ],
+    allAgentsData?.total_count
+  );
+  const isAiReaderAgentIndexLoading = !allAgentsData
+    || isLoadingAllAgents
+    || isFetchingAllAgents
+    || (allAgentsLastPage > 1
+      && (!allAgentsLastPageData || isLoadingAllAgentsLastPage || isFetchingAllAgentsLastPage));
   const estimatedImmediateSchedulePreview = useMemo(
     () => buildImmediateSchedulePreview({
       agentCount: bootstrapCountValue,
@@ -771,10 +818,11 @@ export default function Page() {
       && JSON.stringify(lastDryRun.timeBlocks) === JSON.stringify(apiTimeBlocks)
       && JSON.stringify(lastDryRun.ageGroupRatios) === JSON.stringify(ageGroupRatios)
       && JSON.stringify(lastDryRun.genderRatios) === JSON.stringify(genderRatios)
-      && JSON.stringify(lastDryRun.productTypeWeights) === JSON.stringify(productTypeWeights)
-      && JSON.stringify(lastDryRun.freeProductTypeWeights) === JSON.stringify(freeProductTypeWeights)
+      && JSON.stringify(lastDryRun.productTypeWeights) === JSON.stringify(productTypeWeightsPayload)
+      && JSON.stringify(lastDryRun.freeProductTypeWeights) === JSON.stringify(freeProductTypeWeightsPayload)
       && JSON.stringify(lastDryRun.productStatusWeights) === JSON.stringify(productStatusWeights)
       && JSON.stringify(lastDryRun.profileNicknamePool) === JSON.stringify(profileNicknamePoolValue)
+      && lastDryRun.agentIndexOffset === bootstrapAgentIndexOffset
   );
   const hasMatchingDryRun = Boolean(
     hasSameBootstrapDryRunInput
@@ -800,8 +848,8 @@ export default function Page() {
       && JSON.stringify(lastResumeDryRun.timeBlocks) === JSON.stringify(apiTimeBlocks)
       && lastResumeDryRun.dailySessionTarget === dailySessionTargetValue
       && lastResumeDryRun.dailyLlmBudget === dailyLlmBudgetValue
-      && JSON.stringify(lastResumeDryRun.productTypeWeights) === JSON.stringify(productTypeWeights)
-      && JSON.stringify(lastResumeDryRun.freeProductTypeWeights) === JSON.stringify(freeProductTypeWeights)
+      && JSON.stringify(lastResumeDryRun.productTypeWeights) === JSON.stringify(productTypeWeightsPayload)
+      && JSON.stringify(lastResumeDryRun.freeProductTypeWeights) === JSON.stringify(freeProductTypeWeightsPayload)
       && JSON.stringify(lastResumeDryRun.productStatusWeights) === JSON.stringify(productStatusWeights)
       && lastResumeDryRun.startImmediately === startImmediately
       && lastResumeDryRun.immediateBatchSize === resumeImmediateBatchSizeValue
@@ -917,8 +965,8 @@ export default function Page() {
     setDailyLlmBudgetInput(String(preset.dailyLlmBudget));
     setAgeGroupRatios({ ...preset.ageGroupRatios });
     setGenderRatios({ ...preset.genderRatios });
-    setProductTypeWeights({ ...preset.productTypeWeights });
-    setFreeProductTypeWeights({ ...preset.freeProductTypeWeights });
+    setProductTypeWeights({ ...(preset.productTypeWeights || defaultProductTypeWeights) });
+    setFreeProductTypeWeights({ ...(preset.freeProductTypeWeights || defaultFreeProductTypeWeights) });
     setProductStatusWeights(preset.productStatusWeights ? { ...preset.productStatusWeights } : null);
     resetDryRun();
     resetResumeDryRun();
@@ -962,8 +1010,8 @@ export default function Page() {
         dailyLlmBudget: dailyLlmBudgetValue,
         ageGroupRatios: { ...ageGroupRatios },
         genderRatios: { ...genderRatios },
-        productTypeWeights: { ...productTypeWeights },
-        freeProductTypeWeights: { ...freeProductTypeWeights },
+        productTypeWeights: { ...productTypeWeightsPayload },
+        freeProductTypeWeights: { ...freeProductTypeWeightsPayload },
         productStatusWeights: productStatusWeights ? { ...productStatusWeights } : null,
       };
       const nextPresets = [...customPresets, nextPreset];
@@ -1052,12 +1100,16 @@ export default function Page() {
   };
 
   const refreshAiReaderState = async () => {
-    await Promise.all([refetch(), refetchAgents()]);
+    await Promise.all([refetch(), refetchAgents(), refetchAllAgents(), refetchAllAgentsLastPage()]);
   };
 
   const handleBootstrap = async (apply: boolean) => {
     try {
       setOperationMessage(null);
+      if (isAiReaderAgentIndexLoading) {
+        setOperationMessage("AI 독자 번호 확인 중입니다. 잠시 후 다시 시도하세요.");
+        return;
+      }
       const agentCount = bootstrapCountValue;
       const activeHours = parseHoursInput(activeHoursInput);
       if (!bootstrapPrefix.trim() || agentCount < 1 || agentCount > MAX_AI_READER_AGENT_COUNT) {
@@ -1112,6 +1164,9 @@ export default function Page() {
       ) {
         return;
       }
+      const agentIndexOffset = apply
+        ? lastDryRun?.agentIndexOffset ?? bootstrapAgentIndexOffset
+        : bootstrapAgentIndexOffset;
       const result = await bootstrapMutation.mutateAsync({
         email_prefix: bootstrapPrefix,
         agent_count: agentCount,
@@ -1123,9 +1178,10 @@ export default function Page() {
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
         time_blocks: apiTimeBlocks,
-        product_type_weights: productTypeWeights,
-        free_product_type_weights: freeProductTypeWeights,
+        product_type_weights: productTypeWeightsPayload,
+        free_product_type_weights: freeProductTypeWeightsPayload,
         ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
+        agent_index_offset: agentIndexOffset,
         start_immediately: startImmediately,
         immediate_batch_size: immediateBatchSizeValue,
         immediate_batch_interval_minutes: immediateBatchIntervalValue,
@@ -1157,10 +1213,11 @@ export default function Page() {
           immediateScheduleStartAt: result.immediate_schedule_start_at || null,
           ageGroupRatios: { ...ageGroupRatios },
           genderRatios: { ...genderRatios },
-          productTypeWeights: { ...productTypeWeights },
-          freeProductTypeWeights: { ...freeProductTypeWeights },
+          productTypeWeights: { ...productTypeWeightsPayload },
+          freeProductTypeWeights: { ...freeProductTypeWeightsPayload },
           productStatusWeights: productStatusWeights ? { ...productStatusWeights } : null,
           profileNicknamePool: [...profileNicknamePoolValue],
+          agentIndexOffset,
           token: result.dry_run_token || "",
           availableUserCount: Number(result.available_user_count || 0),
           missingUserCount: Number(result.missing_user_count || 0),
@@ -1243,8 +1300,8 @@ export default function Page() {
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
       time_blocks: apiTimeBlocks,
-      product_type_weights: productTypeWeights,
-      free_product_type_weights: freeProductTypeWeights,
+      product_type_weights: productTypeWeightsPayload,
+      free_product_type_weights: freeProductTypeWeightsPayload,
       ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
       daily_llm_budget: dailyLlmBudgetValue,
     });
@@ -1263,8 +1320,8 @@ export default function Page() {
       immediateBatchSize,
       immediateBatchIntervalMinutes: immediateBatchIntervalValue,
       immediateScheduleStartAt: dryRunResult.immediate_schedule_start_at || null,
-      productTypeWeights: { ...productTypeWeights },
-      freeProductTypeWeights: { ...freeProductTypeWeights },
+      productTypeWeights: { ...productTypeWeightsPayload },
+      freeProductTypeWeights: { ...freeProductTypeWeightsPayload },
       productStatusWeights: productStatusWeights ? { ...productStatusWeights } : null,
       token: dryRunResult.dry_run_token || "",
       availableAgentCount: Number(dryRunResult.available_agent_count || 0),
@@ -1306,8 +1363,8 @@ export default function Page() {
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
       time_blocks: apiTimeBlocks,
-      product_type_weights: productTypeWeights,
-      free_product_type_weights: freeProductTypeWeights,
+      product_type_weights: productTypeWeightsPayload,
+      free_product_type_weights: freeProductTypeWeightsPayload,
       ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
       daily_llm_budget: dailyLlmBudgetValue,
       dry_run_token: dryRunResult.dry_run_token,
@@ -1359,8 +1416,8 @@ export default function Page() {
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
       time_blocks: apiTimeBlocks,
-      product_type_weights: productTypeWeights,
-      free_product_type_weights: freeProductTypeWeights,
+      product_type_weights: productTypeWeightsPayload,
+      free_product_type_weights: freeProductTypeWeightsPayload,
       ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
       daily_llm_budget: dailyLlmBudgetValue,
     });
@@ -1396,8 +1453,8 @@ export default function Page() {
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
       time_blocks: apiTimeBlocks,
-      product_type_weights: productTypeWeights,
-      free_product_type_weights: freeProductTypeWeights,
+      product_type_weights: productTypeWeightsPayload,
+      free_product_type_weights: freeProductTypeWeightsPayload,
       ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
       daily_llm_budget: dailyLlmBudgetValue,
       dry_run_token: dryRunResult.dry_run_token,
@@ -1514,8 +1571,8 @@ export default function Page() {
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
         time_blocks: apiTimeBlocks,
-        product_type_weights: productTypeWeights,
-        free_product_type_weights: freeProductTypeWeights,
+        product_type_weights: productTypeWeightsPayload,
+        free_product_type_weights: freeProductTypeWeightsPayload,
         ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
         daily_llm_budget: dailyLlmBudgetValue,
       });
@@ -1534,8 +1591,8 @@ export default function Page() {
         immediateBatchSize,
         immediateBatchIntervalMinutes: immediateBatchIntervalValue,
         immediateScheduleStartAt: dryRunResult.immediate_schedule_start_at || null,
-        productTypeWeights: { ...productTypeWeights },
-        freeProductTypeWeights: { ...freeProductTypeWeights },
+        productTypeWeights: { ...productTypeWeightsPayload },
+        freeProductTypeWeights: { ...freeProductTypeWeightsPayload },
         productStatusWeights: productStatusWeights ? { ...productStatusWeights } : null,
         token: dryRunResult.dry_run_token || "",
         availableAgentCount: Number(dryRunResult.available_agent_count || 0),
@@ -1574,8 +1631,8 @@ export default function Page() {
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
         time_blocks: apiTimeBlocks,
-        product_type_weights: productTypeWeights,
-        free_product_type_weights: freeProductTypeWeights,
+        product_type_weights: productTypeWeightsPayload,
+        free_product_type_weights: freeProductTypeWeightsPayload,
         ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
         daily_llm_budget: dailyLlmBudgetValue,
         dry_run_token: dryRunResult.dry_run_token,
@@ -1641,8 +1698,8 @@ export default function Page() {
         active_hours: parseHoursInput(activeHoursInput),
         daily_session_target: dailySessionTargetValue,
         time_blocks: apiTimeBlocks,
-        product_type_weights: productTypeWeights,
-        free_product_type_weights: freeProductTypeWeights,
+        product_type_weights: productTypeWeightsPayload,
+        free_product_type_weights: freeProductTypeWeightsPayload,
         ...(productStatusWeights ? { product_status_weights: productStatusWeights } : {}),
         daily_llm_budget: dailyLlmBudgetValue,
         dry_run_token: apply ? lastResumeDryRun?.token : undefined,
@@ -1663,8 +1720,8 @@ export default function Page() {
           immediateBatchSize: resumeImmediateBatchSizeValue,
           immediateBatchIntervalMinutes: immediateBatchIntervalValue,
           immediateScheduleStartAt: result.immediate_schedule_start_at || null,
-          productTypeWeights: { ...productTypeWeights },
-          freeProductTypeWeights: { ...freeProductTypeWeights },
+          productTypeWeights: { ...productTypeWeightsPayload },
+          freeProductTypeWeights: { ...freeProductTypeWeightsPayload },
           productStatusWeights: productStatusWeights ? { ...productStatusWeights } : null,
           token: result.dry_run_token || "",
           availableAgentCount: Number(result.available_agent_count || 0),
@@ -1719,7 +1776,7 @@ export default function Page() {
   const canRefreshIdleActiveSchedules = refreshableIdleActiveAgentCount > 0;
   const plannedRunDurationLabel = `${numberFormat(normalizedScheduleDurationDays)}일`;
   const nextRunMode = (() => {
-    if (!Number.isInteger(targetActiveCountValue) || targetActiveCountValue < 1 || targetActiveCountValue > MAX_AI_READER_AGENT_COUNT) {
+    if (!Number.isInteger(targetActiveCountValue) || targetActiveCountValue < 0 || targetActiveCountValue > MAX_AI_READER_AGENT_COUNT) {
       return "invalid";
     }
     if (activeAgentCount > 0 && scheduledActiveAgentCount > 0) {
@@ -1765,7 +1822,7 @@ export default function Page() {
     if (nextRunMode === "setup") {
       return "투입 가능한 AI가 부족합니다. 먼저 신규 AI 독자를 생성하거나 목표 인원을 낮춰야 합니다.";
     }
-    return `목표 활동 인원은 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`;
+    return `목표 활동 인원은 0~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`;
   })();
   const llmSuccessRate = percentFormat(
     summary?.success_decision_count,
@@ -1776,7 +1833,7 @@ export default function Page() {
     try {
       setOperationMessage(null);
       if (nextRunMode === "invalid") {
-        setOperationMessage(`목표 인원은 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+        setOperationMessage(`목표 인원은 0~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
         return;
       }
       if (nextRunMode === "setup") {
@@ -3021,22 +3078,27 @@ export default function Page() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => handleBootstrap(false)}
-                  disabled={pendingOperation}
-                >
-                  1. 사전 확인
-                </Button>
-                <Button
-                  onClick={() => handleBootstrap(true)}
-                  disabled={pendingOperation || !hasMatchingDryRun}
-                >
-                  2. 투입 적용
-                </Button>
-              </div>
-            </div>
-            <div className="mt-3">
+	                <Button
+	                  variant="outline"
+	                  onClick={() => handleBootstrap(false)}
+	                  disabled={pendingOperation || isAiReaderAgentIndexLoading}
+	                >
+	                  1. 사전 확인
+	                </Button>
+	                <Button
+	                  onClick={() => handleBootstrap(true)}
+	                  disabled={pendingOperation || isAiReaderAgentIndexLoading || !hasMatchingDryRun}
+	                >
+	                  2. 투입 적용
+	                </Button>
+	              </div>
+	            </div>
+	            {isAiReaderAgentIndexLoading && (
+	              <div className="mt-2 text-[11px] text-muted-foreground">
+	                AI 독자 번호 확인 중입니다.
+	              </div>
+	            )}
+	            <div className="mt-3">
               <label className="flex flex-col gap-1">
                 <span className="text-[11px] text-muted-foreground">추가 닉네임 후보 풀</span>
                 <Textarea
