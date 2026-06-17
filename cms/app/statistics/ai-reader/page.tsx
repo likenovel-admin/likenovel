@@ -30,6 +30,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatAiReaderDisplayName } from "@/lib/ai-reader-display-name";
 import { calculatePageCount, cn } from "@/lib/utils";
 import {
+  defaultFreeProductTypeWeights,
+  defaultProductTypeWeights,
+  getAiReaderAgentListLastPage,
+  getNextAiReaderAgentIndexOffset,
+  MAX_AI_READER_IMMEDIATE_BATCH_SIZE,
+  MAX_AI_READER_AGENT_COUNT,
   aiReaderActionToneClassName,
   formatAiReaderActionScoreLabel,
   formatAiReaderActionStatusLabel,
@@ -173,7 +179,7 @@ const buildImmediateSchedulePreview = ({
 }) => {
   const today = format(new Date(), "yyyy-MM-dd");
   if (!startImmediately || scheduleDate !== today || agentCount < 1) return [];
-  const normalizedBatchSize = Math.max(1, Math.min(MAX_AI_READER_AGENT_COUNT, batchSize || 1));
+  const normalizedBatchSize = Math.max(1, Math.min(MAX_AI_READER_IMMEDIATE_BATCH_SIZE, batchSize || 1));
   const normalizedInterval = Math.max(1, Math.min(120, batchIntervalMinutes || 10));
   const windowMinutes = Math.max(30, normalizedInterval);
   const firstStartAt = roundUpToNextFiveMinutes(new Date());
@@ -215,7 +221,6 @@ const getScheduleEndDateInput = (startDateInput: string, durationDays: number) =
   return format(endDate, "yyyy-MM-dd");
 };
 
-const MAX_AI_READER_AGENT_COUNT = 100;
 const AI_READER_EFFECTS_PER_PAGE = 20;
 const AI_READER_PRESET_STORAGE_KEY = "likenovel.cms.aiReader.customPresets.v1";
 const AI_READER_NICKNAME_POOL_STORAGE_KEY = "likenovel.cms.aiReader.profileNicknamePool.v1";
@@ -251,6 +256,8 @@ type AiReaderPreset = {
   dailyLlmBudget: number;
   ageGroupRatios: RatioMap;
   genderRatios: RatioMap;
+  productTypeWeights: RatioMap;
+  freeProductTypeWeights: RatioMap;
 };
 
 const ageGroupLabel: Record<string, string> = {
@@ -281,6 +288,19 @@ const defaultGenderRatios: RatioMap = {
   M: 52,
   F: 48,
 };
+
+const productTypeWeightLabels: Record<string, string> = {
+  free_serial: "무료연재",
+  paid_serial: "유료연재",
+};
+
+const freeProductTypeWeightLabels: Record<string, string> = {
+  normal_serial: "일반연재",
+  free_serial: "자유연재",
+};
+
+const productTypeWeightKeys = ["free_serial", "paid_serial"];
+const freeProductTypeWeightKeys = ["normal_serial", "free_serial"];
 
 const commuteMealEveningBlocks: AiReaderTimeBlockInput[] = [
   { label: "출근", startHour: 7, endHour: 9, sessionsPerAgent: 1 },
@@ -353,6 +373,8 @@ const defaultPresets: AiReaderPreset[] = [
     agentCount: 50,
     ageGroupRatios: defaultAgeGroupRatios,
     genderRatios: defaultGenderRatios,
+    productTypeWeights: defaultProductTypeWeights,
+    freeProductTypeWeights: defaultFreeProductTypeWeights,
     ...intensityDefaults.LOW,
   },
   {
@@ -363,6 +385,8 @@ const defaultPresets: AiReaderPreset[] = [
     agentCount: 100,
     ageGroupRatios: defaultAgeGroupRatios,
     genderRatios: defaultGenderRatios,
+    productTypeWeights: defaultProductTypeWeights,
+    freeProductTypeWeights: defaultFreeProductTypeWeights,
     ...intensityDefaults.MEDIUM,
   },
   {
@@ -373,6 +397,8 @@ const defaultPresets: AiReaderPreset[] = [
     agentCount: 100,
     ageGroupRatios: defaultAgeGroupRatios,
     genderRatios: defaultGenderRatios,
+    productTypeWeights: defaultProductTypeWeights,
+    freeProductTypeWeights: defaultFreeProductTypeWeights,
     ...intensityDefaults.HIGH,
   },
 ];
@@ -452,7 +478,10 @@ type LastDryRun = {
   immediateScheduleStartAt: string | null;
   ageGroupRatios: RatioMap;
   genderRatios: RatioMap;
+  productTypeWeights: RatioMap;
+  freeProductTypeWeights: RatioMap;
   profileNicknamePool: string[];
+  agentIndexOffset: number;
   token: string;
   availableUserCount: number;
   missingUserCount: number;
@@ -470,6 +499,8 @@ type LastResumeDryRun = {
   dailySessionTarget: number;
   timeBlocks: IAiReaderTimeBlock[];
   dailyLlmBudget: number;
+  productTypeWeights: RatioMap;
+  freeProductTypeWeights: RatioMap;
   startImmediately: boolean;
   immediateBatchSize: number;
   immediateBatchIntervalMinutes: number;
@@ -506,6 +537,8 @@ export default function Page() {
   const [immediateBatchIntervalInput, setImmediateBatchIntervalInput] = useState("10");
   const [ageGroupRatios, setAgeGroupRatios] = useState<RatioMap>(defaultAgeGroupRatios);
   const [genderRatios, setGenderRatios] = useState<RatioMap>(defaultGenderRatios);
+  const [productTypeWeights, setProductTypeWeights] = useState<RatioMap>(defaultProductTypeWeights);
+  const [freeProductTypeWeights, setFreeProductTypeWeights] = useState<RatioMap>(defaultFreeProductTypeWeights);
   const [profileNicknamePoolInput, setProfileNicknamePoolInput] = useState("");
   const [lastDryRun, setLastDryRun] = useState<LastDryRun | null>(null);
   const [lastResumeDryRun, setLastResumeDryRun] = useState<LastResumeDryRun | null>(null);
@@ -548,6 +581,32 @@ export default function Page() {
     page: 1,
     count_per_page: 100,
   });
+  const {
+    data: allAgentsData,
+    refetch: refetchAllAgents,
+    isLoading: isLoadingAllAgents,
+    isFetching: isFetchingAllAgents,
+  } = useGetAiReaderAgents({
+    schedule_date: scheduleDateInput,
+    status: "all",
+    page: 1,
+    count_per_page: MAX_AI_READER_AGENT_COUNT,
+  });
+  const allAgentsLastPage = getAiReaderAgentListLastPage(
+    allAgentsData?.total_count,
+    MAX_AI_READER_AGENT_COUNT
+  );
+  const {
+    data: allAgentsLastPageData,
+    refetch: refetchAllAgentsLastPage,
+    isLoading: isLoadingAllAgentsLastPage,
+    isFetching: isFetchingAllAgentsLastPage,
+  } = useGetAiReaderAgents({
+    schedule_date: scheduleDateInput,
+    status: "all",
+    page: allAgentsLastPage,
+    count_per_page: MAX_AI_READER_AGENT_COUNT,
+  });
   const bootstrapMutation = useBootstrapAiReaderAgents();
   const pauseAllMutation = usePauseAllAiReaderAgents();
   const resumePausedMutation = useResumePausedAiReaderAgents();
@@ -575,6 +634,8 @@ export default function Page() {
   const allPresets = useMemo(
     () => [...defaultPresets, ...customPresets].map((preset) => ({
       ...preset,
+      productTypeWeights: preset.productTypeWeights || defaultProductTypeWeights,
+      freeProductTypeWeights: preset.freeProductTypeWeights || defaultFreeProductTypeWeights,
       timeBlocks: normalizeTimeBlocks(
         preset.timeBlocks?.length ? preset.timeBlocks : blocksFromSingleHours(preset.activeHours)
       ),
@@ -595,6 +656,20 @@ export default function Page() {
   const profileNicknamePoolValue = profileNicknamePoolResult.nicknames;
   const invalidProfileNicknameCount =
     profileNicknamePoolResult.invalidNicknames.length + profileNicknamePoolResult.forbiddenNicknames.length;
+  const productTypeWeightsPayload = useMemo(
+    () => ({
+      free_serial: Number(productTypeWeights.free_serial || 0),
+      paid_serial: Number(productTypeWeights.paid_serial || 0),
+    }),
+    [productTypeWeights]
+  );
+  const freeProductTypeWeightsPayload = useMemo(
+    () => ({
+      normal_serial: Number(freeProductTypeWeights.normal_serial || 0),
+      free_serial: Number(freeProductTypeWeights.free_serial || 0),
+    }),
+    [freeProductTypeWeights]
+  );
   const selectedPreset = useMemo(
     () => allPresets.find((preset) => preset.id === selectedPresetId),
     [allPresets, selectedPresetId]
@@ -609,9 +684,28 @@ export default function Page() {
   } · ${formatTimeBlockSummary(normalizedTimeBlocks)}`;
   const ageGroupRatioTotal = sumRatios(ageGroupRatios);
   const genderRatioTotal = sumRatios(genderRatios);
+  const productTypeWeightTotal = sumRatios(productTypeWeightsPayload);
+  const freeProductTypeWeightTotal = sumRatios(freeProductTypeWeightsPayload);
+  const targetingSettingSummary = `무료 ${numberFormat(productTypeWeightsPayload.free_serial)} / 유료 ${numberFormat(
+    productTypeWeightsPayload.paid_serial
+  )} · 일반 ${numberFormat(freeProductTypeWeightsPayload.normal_serial)} / 자유 ${numberFormat(
+    freeProductTypeWeightsPayload.free_serial
+  )}`;
   const estimatedDailySessions = bootstrapCountValue * dailySessionTargetValue;
   const estimatedPeriodSessions = estimatedDailySessions * normalizedScheduleDurationDays;
   const estimatedDailyLlmBudget = bootstrapCountValue * dailyLlmBudgetValue;
+  const bootstrapAgentIndexOffset = getNextAiReaderAgentIndexOffset(
+    [
+      ...(allAgentsData?.items || []),
+      ...(allAgentsLastPageData?.items || []),
+    ],
+    allAgentsData?.total_count
+  );
+  const isAiReaderAgentIndexLoading = !allAgentsData
+    || isLoadingAllAgents
+    || isFetchingAllAgents
+    || (allAgentsLastPage > 1
+      && (!allAgentsLastPageData || isLoadingAllAgentsLastPage || isFetchingAllAgentsLastPage));
   const estimatedImmediateSchedulePreview = useMemo(
     () => buildImmediateSchedulePreview({
       agentCount: bootstrapCountValue,
@@ -665,7 +759,10 @@ export default function Page() {
       && JSON.stringify(lastDryRun.timeBlocks) === JSON.stringify(apiTimeBlocks)
       && JSON.stringify(lastDryRun.ageGroupRatios) === JSON.stringify(ageGroupRatios)
       && JSON.stringify(lastDryRun.genderRatios) === JSON.stringify(genderRatios)
+      && JSON.stringify(lastDryRun.productTypeWeights) === JSON.stringify(productTypeWeightsPayload)
+      && JSON.stringify(lastDryRun.freeProductTypeWeights) === JSON.stringify(freeProductTypeWeightsPayload)
       && JSON.stringify(lastDryRun.profileNicknamePool) === JSON.stringify(profileNicknamePoolValue)
+      && lastDryRun.agentIndexOffset === bootstrapAgentIndexOffset
   );
   const hasMatchingDryRun = Boolean(
     hasSameBootstrapDryRunInput
@@ -689,6 +786,8 @@ export default function Page() {
       && lastResumeDryRun.scheduleDurationDays === scheduleDurationDaysValue
       && JSON.stringify(lastResumeDryRun.activeHours) === JSON.stringify(activeHoursValue)
       && JSON.stringify(lastResumeDryRun.timeBlocks) === JSON.stringify(apiTimeBlocks)
+      && JSON.stringify(lastResumeDryRun.productTypeWeights) === JSON.stringify(productTypeWeightsPayload)
+      && JSON.stringify(lastResumeDryRun.freeProductTypeWeights) === JSON.stringify(freeProductTypeWeightsPayload)
       && lastResumeDryRun.dailySessionTarget === dailySessionTargetValue
       && lastResumeDryRun.dailyLlmBudget === dailyLlmBudgetValue
       && lastResumeDryRun.startImmediately === startImmediately
@@ -769,6 +868,9 @@ export default function Page() {
     if (dailyLlmBudgetValue < dailySessionTargetValue) {
       return `LLM 예산은 시간표 블록 수(${numberFormat(dailySessionTargetValue)}회) 이상이어야 합니다. 예산이 더 낮으면 뒤 시간대 활동이 남습니다.`;
     }
+    if (productTypeWeightTotal !== 100 || freeProductTypeWeightTotal !== 100) {
+      return "작품 타겟팅 비율 합계는 무료/유료, 일반/자유 각각 100이어야 합니다.";
+    }
     return null;
   };
 
@@ -796,7 +898,10 @@ export default function Page() {
     setDailyLlmBudgetInput(String(preset.dailyLlmBudget));
     setAgeGroupRatios({ ...preset.ageGroupRatios });
     setGenderRatios({ ...preset.genderRatios });
+    setProductTypeWeights({ ...(preset.productTypeWeights || defaultProductTypeWeights) });
+    setFreeProductTypeWeights({ ...(preset.freeProductTypeWeights || defaultFreeProductTypeWeights) });
     resetDryRun();
+    resetResumeDryRun();
     setOperationMessage(`${preset.name} 적용됨`);
   };
 
@@ -820,6 +925,10 @@ export default function Page() {
         setOperationMessage("연령/성별 비율 합계는 각각 100이어야 합니다.");
         return;
       }
+      if (productTypeWeightTotal !== 100 || freeProductTypeWeightTotal !== 100) {
+        setOperationMessage("작품 타겟팅 비율 합계는 무료/유료, 일반/자유 각각 100이어야 합니다.");
+        return;
+      }
       const nextPreset: AiReaderPreset = {
         id: `custom-${Date.now()}`,
         name,
@@ -831,6 +940,8 @@ export default function Page() {
         dailyLlmBudget: dailyLlmBudgetValue,
         ageGroupRatios: { ...ageGroupRatios },
         genderRatios: { ...genderRatios },
+        productTypeWeights: { ...productTypeWeightsPayload },
+        freeProductTypeWeights: { ...freeProductTypeWeightsPayload },
       };
       const nextPresets = [...customPresets, nextPreset];
       setCustomPresets(nextPresets);
@@ -869,13 +980,32 @@ export default function Page() {
     resetDryRun();
   };
 
+  const handleTargetingRatioChange = (
+    setter: (nextValue: RatioMap) => void,
+    currentValue: RatioMap,
+    key: string,
+    rawValue: string
+  ) => {
+    handleRatioChange(setter, currentValue, key, rawValue);
+    resetResumeDryRun();
+  };
+
   const refreshAiReaderState = async () => {
-    await Promise.all([refetch(), refetchAgents()]);
+    await Promise.all([
+      refetch(),
+      refetchAgents(),
+      refetchAllAgents(),
+      refetchAllAgentsLastPage(),
+    ]);
   };
 
   const handleBootstrap = async (apply: boolean) => {
     try {
       setOperationMessage(null);
+      if (isAiReaderAgentIndexLoading) {
+        setOperationMessage("AI 독자 번호 확인 중입니다. 잠시 후 다시 시도하세요.");
+        return;
+      }
       const agentCount = bootstrapCountValue;
       const activeHours = parseHoursInput(activeHoursInput);
       if (!bootstrapPrefix.trim() || agentCount < 1 || agentCount > MAX_AI_READER_AGENT_COUNT) {
@@ -893,8 +1023,8 @@ export default function Page() {
         setOperationMessage(activityScheduleError);
         return;
       }
-      if (immediateBatchSizeValue < 1 || immediateBatchSizeValue > MAX_AI_READER_AGENT_COUNT) {
-        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+      if (immediateBatchSizeValue < 1 || immediateBatchSizeValue > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
+        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
         return;
       }
       if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -920,6 +1050,9 @@ export default function Page() {
         );
         return;
       }
+      const agentIndexOffset = apply
+        ? lastDryRun?.agentIndexOffset ?? bootstrapAgentIndexOffset
+        : bootstrapAgentIndexOffset;
       if (
         apply
           && !window.confirm(
@@ -937,10 +1070,13 @@ export default function Page() {
         schedule_duration_days: scheduleDurationDaysValue,
         apply,
         auto_provision_missing_users: apply,
+        agent_index_offset: agentIndexOffset,
         daily_llm_budget: dailyLlmBudgetValue,
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
         time_blocks: apiTimeBlocks,
+        product_type_weights: productTypeWeightsPayload,
+        free_product_type_weights: freeProductTypeWeightsPayload,
         start_immediately: startImmediately,
         immediate_batch_size: immediateBatchSizeValue,
         immediate_batch_interval_minutes: immediateBatchIntervalValue,
@@ -972,7 +1108,10 @@ export default function Page() {
           immediateScheduleStartAt: result.immediate_schedule_start_at || null,
           ageGroupRatios: { ...ageGroupRatios },
           genderRatios: { ...genderRatios },
+          productTypeWeights: { ...productTypeWeightsPayload },
+          freeProductTypeWeights: { ...freeProductTypeWeightsPayload },
           profileNicknamePool: [...profileNicknamePoolValue],
+          agentIndexOffset,
           token: result.dry_run_token || "",
           availableUserCount: Number(result.available_user_count || 0),
           missingUserCount: Number(result.missing_user_count || 0),
@@ -1035,8 +1174,8 @@ export default function Page() {
       setOperationMessage(activityScheduleError);
       return false;
     }
-    if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_AGENT_COUNT) {
-      setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+    if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
+      setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
       return false;
     }
     if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -1055,6 +1194,8 @@ export default function Page() {
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
       time_blocks: apiTimeBlocks,
+      product_type_weights: productTypeWeightsPayload,
+      free_product_type_weights: freeProductTypeWeightsPayload,
       daily_llm_budget: dailyLlmBudgetValue,
     });
     const immediateScheduleRows = countImmediateScheduleRows(dryRunResult.immediate_schedule_preview);
@@ -1068,6 +1209,8 @@ export default function Page() {
       dailySessionTarget: dailySessionTargetValue,
       timeBlocks: apiTimeBlocks,
       dailyLlmBudget: dailyLlmBudgetValue,
+      productTypeWeights: { ...productTypeWeightsPayload },
+      freeProductTypeWeights: { ...freeProductTypeWeightsPayload },
       startImmediately,
       immediateBatchSize,
       immediateBatchIntervalMinutes: immediateBatchIntervalValue,
@@ -1112,6 +1255,8 @@ export default function Page() {
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
       time_blocks: apiTimeBlocks,
+      product_type_weights: productTypeWeightsPayload,
+      free_product_type_weights: freeProductTypeWeightsPayload,
       daily_llm_budget: dailyLlmBudgetValue,
       dry_run_token: dryRunResult.dry_run_token,
     });
@@ -1142,8 +1287,8 @@ export default function Page() {
       setOperationMessage(activityScheduleError);
       return false;
     }
-    if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_AGENT_COUNT) {
-      setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+    if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
+      setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
       return false;
     }
     if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -1162,6 +1307,8 @@ export default function Page() {
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
       time_blocks: apiTimeBlocks,
+      product_type_weights: productTypeWeightsPayload,
+      free_product_type_weights: freeProductTypeWeightsPayload,
       daily_llm_budget: dailyLlmBudgetValue,
     });
     const immediateScheduleRows = countImmediateScheduleRows(dryRunResult.immediate_schedule_preview);
@@ -1196,6 +1343,8 @@ export default function Page() {
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
       time_blocks: apiTimeBlocks,
+      product_type_weights: productTypeWeightsPayload,
+      free_product_type_weights: freeProductTypeWeightsPayload,
       daily_llm_budget: dailyLlmBudgetValue,
       dry_run_token: dryRunResult.dry_run_token,
     });
@@ -1291,8 +1440,8 @@ export default function Page() {
         setOperationMessage(activityScheduleError);
         return;
       }
-      if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_AGENT_COUNT) {
-        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+      if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
+        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
         return;
       }
       if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -1311,6 +1460,8 @@ export default function Page() {
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
         time_blocks: apiTimeBlocks,
+        product_type_weights: productTypeWeightsPayload,
+        free_product_type_weights: freeProductTypeWeightsPayload,
         daily_llm_budget: dailyLlmBudgetValue,
       });
       const immediateScheduleRows = countImmediateScheduleRows(dryRunResult.immediate_schedule_preview);
@@ -1324,6 +1475,8 @@ export default function Page() {
         dailySessionTarget: dailySessionTargetValue,
         timeBlocks: apiTimeBlocks,
         dailyLlmBudget: dailyLlmBudgetValue,
+        productTypeWeights: { ...productTypeWeightsPayload },
+        freeProductTypeWeights: { ...freeProductTypeWeightsPayload },
         startImmediately,
         immediateBatchSize,
         immediateBatchIntervalMinutes: immediateBatchIntervalValue,
@@ -1365,6 +1518,8 @@ export default function Page() {
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
         time_blocks: apiTimeBlocks,
+        product_type_weights: productTypeWeightsPayload,
+        free_product_type_weights: freeProductTypeWeightsPayload,
         daily_llm_budget: dailyLlmBudgetValue,
         dry_run_token: dryRunResult.dry_run_token,
       });
@@ -1399,8 +1554,8 @@ export default function Page() {
         setOperationMessage(activityScheduleError);
         return;
       }
-      if (resumeImmediateBatchSizeValue < 1 || resumeImmediateBatchSizeValue > MAX_AI_READER_AGENT_COUNT) {
-        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+      if (resumeImmediateBatchSizeValue < 1 || resumeImmediateBatchSizeValue > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
+        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
         return;
       }
       if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -1429,6 +1584,8 @@ export default function Page() {
         active_hours: parseHoursInput(activeHoursInput),
         daily_session_target: dailySessionTargetValue,
         time_blocks: apiTimeBlocks,
+        product_type_weights: productTypeWeightsPayload,
+        free_product_type_weights: freeProductTypeWeightsPayload,
         daily_llm_budget: dailyLlmBudgetValue,
         dry_run_token: apply ? lastResumeDryRun?.token : undefined,
       });
@@ -1444,6 +1601,8 @@ export default function Page() {
           dailySessionTarget: dailySessionTargetValue,
           timeBlocks: apiTimeBlocks,
           dailyLlmBudget: dailyLlmBudgetValue,
+          productTypeWeights: { ...productTypeWeightsPayload },
+          freeProductTypeWeights: { ...freeProductTypeWeightsPayload },
           startImmediately,
           immediateBatchSize: resumeImmediateBatchSizeValue,
           immediateBatchIntervalMinutes: immediateBatchIntervalValue,
@@ -1501,8 +1660,11 @@ export default function Page() {
   const canRefreshIdleActiveSchedules = refreshableIdleActiveAgentCount > 0;
   const plannedRunDurationLabel = `${numberFormat(normalizedScheduleDurationDays)}일`;
   const nextRunMode = (() => {
-    if (!Number.isInteger(targetActiveCountValue) || targetActiveCountValue < 1 || targetActiveCountValue > MAX_AI_READER_AGENT_COUNT) {
+    if (!Number.isInteger(targetActiveCountValue) || targetActiveCountValue < 0 || targetActiveCountValue > MAX_AI_READER_AGENT_COUNT) {
       return "invalid";
+    }
+    if (targetActiveCountValue === 0) {
+      return "pause_all";
     }
     if (activeAgentCount > 0 && scheduledActiveAgentCount > 0) {
       return "replace";
@@ -1532,9 +1694,13 @@ export default function Page() {
     if (nextRunMode === "refresh") return "운영 다시 시작";
     if (nextRunMode === "resume") return "운영 시작";
     if (nextRunMode === "setup") return "신규 AI 독자 생성 열기";
+    if (nextRunMode === "pause_all") return "운영 멈추기";
     return "목표 인원 확인 필요";
   })();
   const nextRunHelpText = (() => {
+    if (nextRunMode === "pause_all") {
+      return "활동 중인 AI 독자를 모두 일시정지하고 남은 스케줄과 대기 액션을 정리합니다.";
+    }
     if (nextRunMode === "replace") {
       return "이미 남은 예약이 있어 새 설정을 적용하려면 기존 예약과 대기 액션을 새 설정으로 교체합니다. 실행 전 확인창이 뜹니다.";
     }
@@ -1547,7 +1713,7 @@ export default function Page() {
     if (nextRunMode === "setup") {
       return "투입 가능한 AI가 부족합니다. 먼저 신규 AI 독자를 생성하거나 목표 인원을 낮춰야 합니다.";
     }
-    return "목표 활동 인원은 1~100명 사이로 입력하세요.";
+    return `목표 활동 인원은 0~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`;
   })();
   const llmSuccessRate = percentFormat(
     summary?.success_decision_count,
@@ -1558,7 +1724,11 @@ export default function Page() {
     try {
       setOperationMessage(null);
       if (nextRunMode === "invalid") {
-        setOperationMessage(`목표 인원은 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+        setOperationMessage(`목표 인원은 0~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`);
+        return;
+      }
+      if (nextRunMode === "pause_all") {
+        await handlePauseAllAgents();
         return;
       }
       if (nextRunMode === "setup") {
@@ -1778,7 +1948,7 @@ export default function Page() {
                   </div>
                 </label>
                 <div className="flex flex-wrap gap-1.5">
-                  {[0, 50, 100].map((count) => (
+                  {[0, 50, 100, 200].map((count) => (
                     <Button
                       key={count}
                       type="button"
@@ -1789,6 +1959,68 @@ export default function Page() {
                       {count}명
                     </Button>
                   ))}
+                </div>
+                <div className="rounded-md border bg-white p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="text-xs font-medium">작품 타겟팅</div>
+                    <div
+                      className={`text-[11px] ${
+                        productTypeWeightTotal === 100 && freeProductTypeWeightTotal === 100
+                          ? "text-muted-foreground"
+                          : "text-destructive"
+                      }`}
+                    >
+                      {targetingSettingSummary}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {productTypeWeightKeys.map((key) => (
+                      <label key={key} className="text-[11px] text-muted-foreground">
+                        {productTypeWeightLabels[key]}
+                        <Input
+                          className="mt-1 h-8 px-2"
+                          inputMode="numeric"
+                          value={productTypeWeights[key] ?? 0}
+                          onChange={(e) =>
+                            handleTargetingRatioChange(
+                              setProductTypeWeights,
+                              productTypeWeights,
+                              key,
+                              e.target.value
+                            )
+                          }
+                          disabled={pendingOperation}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {freeProductTypeWeightKeys.map((key) => (
+                      <label key={key} className="text-[11px] text-muted-foreground">
+                        {freeProductTypeWeightLabels[key]}
+                        <Input
+                          className="mt-1 h-8 px-2"
+                          inputMode="numeric"
+                          value={freeProductTypeWeights[key] ?? 0}
+                          onChange={(e) =>
+                            handleTargetingRatioChange(
+                              setFreeProductTypeWeights,
+                              freeProductTypeWeights,
+                              key,
+                              e.target.value
+                            )
+                          }
+                          disabled={pendingOperation}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  {(productTypeWeightTotal !== 100 || freeProductTypeWeightTotal !== 100) && (
+                    <div className="mt-1 text-[11px] text-destructive">
+                      합계가 각각 100이어야 적용됩니다. 현재 무료/유료 {productTypeWeightTotal}, 일반/자유{" "}
+                      {freeProductTypeWeightTotal}
+                    </div>
+                  )}
                 </div>
                 <div className="rounded-md border bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
                   {targetOperationMessage}
@@ -1831,7 +2063,9 @@ export default function Page() {
                         onClick={handleStartConfiguredRun}
                         disabled={pendingOperation}
                       >
-                        {nextRunMode === "replace" ? (
+                        {nextRunMode === "pause_all" ? (
+                          <CirclePause className="mr-2 h-4 w-4" />
+                        ) : nextRunMode === "replace" ? (
                           <RefreshCw className="mr-2 h-4 w-4" />
                         ) : (
                           <Play className="mr-2 h-4 w-4" />
@@ -2099,6 +2333,8 @@ export default function Page() {
             </p>
             <div className="mt-2 rounded-md border bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
               <span className="font-medium text-foreground">현재 활동값</span>: {activitySettingSummary}
+              <span className="mx-2">·</span>
+              <span className="font-medium text-foreground">작품</span>: {targetingSettingSummary}
               <span className="mx-2">·</span>
               <span className="font-medium text-foreground">기간·시작</span>: {scheduleSettingSummary}
             </div>
@@ -2627,18 +2863,23 @@ export default function Page() {
                 <Button
                   variant="outline"
                   onClick={() => handleBootstrap(false)}
-                  disabled={pendingOperation}
+                  disabled={pendingOperation || isAiReaderAgentIndexLoading}
                 >
                   1. 사전 확인
                 </Button>
                 <Button
                   onClick={() => handleBootstrap(true)}
-                  disabled={pendingOperation || !hasMatchingDryRun}
+                  disabled={pendingOperation || isAiReaderAgentIndexLoading || !hasMatchingDryRun}
                 >
                   2. 투입 적용
                 </Button>
               </div>
             </div>
+            {isAiReaderAgentIndexLoading && (
+              <div className="mt-2 text-[11px] text-muted-foreground">
+                AI 독자 번호 확인 중입니다.
+              </div>
+            )}
             <div className="mt-3">
               <label className="flex flex-col gap-1">
                 <span className="text-[11px] text-muted-foreground">추가 닉네임 후보 풀</span>
