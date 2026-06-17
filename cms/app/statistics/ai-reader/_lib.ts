@@ -107,7 +107,39 @@ export const ageGroupKeys = ["10s", "20s", "30s", "40s", "50s"];
 export const genderKeys = ["M", "F"];
 
 export const MAX_AI_READER_AGENT_COUNT = 200;
+export const MAX_AI_READER_IMMEDIATE_BATCH_SIZE = 100;
 export const AI_READER_PRESET_STORAGE_KEY = "likenovel.cms.aiReader.customPresets.v1";
+
+export type AiReaderAgentKeyItem = {
+  agent_key?: string | null;
+};
+
+export const parseAiReaderAgentIndex = (agentKey?: string | null) => {
+  const match = /^ai-reader-(\d+)$/.exec(String(agentKey || ""));
+  if (!match) return null;
+  const index = Number(match[1]);
+  return Number.isInteger(index) && index >= 0 ? index : null;
+};
+
+export const getAiReaderAgentListLastPage = (
+  totalCount: unknown,
+  countPerPage = MAX_AI_READER_AGENT_COUNT
+) => {
+  const safeTotalCount = Math.max(0, Number(totalCount || 0));
+  const safeCountPerPage = Math.max(1, Number(countPerPage || 1));
+  return Math.max(1, Math.ceil(safeTotalCount / safeCountPerPage));
+};
+
+export const getNextAiReaderAgentIndexOffset = (
+  agents: AiReaderAgentKeyItem[],
+  fallbackCount: unknown = 0
+) => {
+  const maxIndex = agents.reduce((currentMaxIndex, agent) => {
+    const index = parseAiReaderAgentIndex(agent.agent_key);
+    return index === null ? currentMaxIndex : Math.max(currentMaxIndex, index);
+  }, -1);
+  return Math.max(maxIndex + 1, Math.max(0, Number(fallbackCount || 0)));
+};
 
 export type AiReaderIntensity = "LOW" | "MEDIUM" | "HIGH";
 export type RatioMap = Record<string, number>;
@@ -123,6 +155,8 @@ export type AiReaderPreset = {
   dailyLlmBudget: number;
   ageGroupRatios: RatioMap;
   genderRatios: RatioMap;
+  productTypeWeights: RatioMap;
+  freeProductTypeWeights: RatioMap;
 };
 
 export const defaultAgeGroupRatios: RatioMap = {
@@ -136,6 +170,16 @@ export const defaultAgeGroupRatios: RatioMap = {
 export const defaultGenderRatios: RatioMap = {
   M: 52,
   F: 48,
+};
+
+export const defaultProductTypeWeights: RatioMap = {
+  free_serial: 100,
+  paid_serial: 0,
+};
+
+export const defaultFreeProductTypeWeights: RatioMap = {
+  normal_serial: 85,
+  free_serial: 15,
 };
 
 export const intensityDefaults: Record<
@@ -168,6 +212,8 @@ export const defaultPresets: AiReaderPreset[] = [
     agentCount: 50,
     ageGroupRatios: defaultAgeGroupRatios,
     genderRatios: defaultGenderRatios,
+    productTypeWeights: defaultProductTypeWeights,
+    freeProductTypeWeights: defaultFreeProductTypeWeights,
     ...intensityDefaults.LOW,
   },
   {
@@ -178,6 +224,8 @@ export const defaultPresets: AiReaderPreset[] = [
     agentCount: 100,
     ageGroupRatios: defaultAgeGroupRatios,
     genderRatios: defaultGenderRatios,
+    productTypeWeights: defaultProductTypeWeights,
+    freeProductTypeWeights: defaultFreeProductTypeWeights,
     ...intensityDefaults.MEDIUM,
   },
   {
@@ -188,6 +236,8 @@ export const defaultPresets: AiReaderPreset[] = [
     agentCount: 200,
     ageGroupRatios: defaultAgeGroupRatios,
     genderRatios: defaultGenderRatios,
+    productTypeWeights: defaultProductTypeWeights,
+    freeProductTypeWeights: defaultFreeProductTypeWeights,
     ...intensityDefaults.HIGH,
   },
 ];

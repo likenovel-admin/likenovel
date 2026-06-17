@@ -82,6 +82,24 @@ export interface IMakeProductForm {
   productType: "normal" | "";
 }
 
+const REQUIRED_FIELD_ORDER: (keyof IMakeProductForm)[] = [
+  "ongoingState",
+  "title",
+  "authorNickname",
+  "updateFrequency",
+  "primaryGenre",
+  "baseTag",
+  "synopsis",
+  "ageGrade",
+  "open",
+  "monopoly",
+  "contract",
+  "cpNickname",
+  "paidStartChapterDate",
+  "paidStartChapter",
+  "agree",
+];
+
 interface IOriginProduct extends IMakeProductForm {
   coverImagePath: string;
   priceType: "free" | "paid";
@@ -178,6 +196,9 @@ const FormArea = ({ productId }: Props) => {
   } = methods;
   const { setToast } = useToastStore();
   const { setConfirm } = useConfirmStore();
+  const fieldErrorRefs = useRef<
+    Partial<Record<keyof IMakeProductForm, HTMLDivElement | null>>
+  >({});
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(false);
@@ -189,6 +210,38 @@ const FormArea = ({ productId }: Props) => {
     productId &&
       (data?.data.priceType === "paid" || data?.data.paidApprovedYn === "Y")
   );
+
+  const setFieldErrorRef =
+    (fieldName: keyof IMakeProductForm) => (element: HTMLDivElement | null) => {
+      fieldErrorRefs.current[fieldName] = element;
+    };
+
+  const getFirstErrorName = (errors: Record<string, any>) => {
+    return (
+      REQUIRED_FIELD_ORDER.find((fieldName) => errors[fieldName]) ||
+      (Object.keys(errors)[0] as keyof IMakeProductForm | undefined)
+    );
+  };
+
+  const getErrorMessage = (error: any) => {
+    if (!error) return "";
+    if (typeof error.message === "string") return error.message;
+    return "";
+  };
+
+  const scrollToErrorField = (fieldName?: keyof IMakeProductForm) => {
+    if (!fieldName || typeof window === "undefined") return;
+
+    window.requestAnimationFrame(() => {
+      const namedField = document.querySelector<HTMLElement>(
+        `[name="${fieldName}"]`
+      );
+      const target = fieldErrorRefs.current[fieldName] || namedField;
+
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      namedField?.focus({ preventScroll: true });
+    });
+  };
   const shouldIncludePaidFieldsOnUpdate = Boolean(
     productId &&
       (data?.data.priceType === "paid" ||
@@ -565,16 +618,23 @@ const FormArea = ({ productId }: Props) => {
       });
     }
   };
-  const onError = (errors: any) => {
+  const onError = (errors: Record<string, any>) => {
     const errorKeys = Object.keys(errors);
-    if (errorKeys.length === 1 && errorKeys.includes("agree")) {
+    const firstErrorName = getFirstErrorName(errors);
+    const firstErrorMessage = getErrorMessage(
+      firstErrorName ? errors[firstErrorName] : null
+    );
+
+    scrollToErrorField(firstErrorName);
+
+    if (firstErrorName === "agree" && errorKeys.length === 1) {
       setConfirm({
-        content: "이용약관에 동의해주세요.",
+        content: firstErrorMessage || "이용약관에 동의해주세요.",
         buttonCount: 1,
       });
     } else {
       setToast({
-        message: "필수 입력값을 확인해주세요.",
+        message: firstErrorMessage || "입력값을 확인해주세요.",
         type: "error",
       });
     }
@@ -836,134 +896,137 @@ const FormArea = ({ productId }: Props) => {
                   />
                 </div> */}
 
-                <Controller
-                  name="updateFrequency"
-                  control={control}
-                  rules={{
-                    required:
-                      "목표연재주기(권장 주5회)를 최소 1개 이상 선택해주세요.",
-                  }}
-                  render={({ field }) => (
-                    <CheckboxGroup
-                      label={
-                        <div className="flex gap-2 mb-2 items-center">
-                          <span
-                            className={
-                              "text-13pxr md:text-16pxr text-dark-gray-500 after:content-['*'] after:text-red-100 font-semibold"
-                            }
-                          >
-                            목표연재주기(권장 주5회)
-                          </span>
-                          <span className={"text-13pxr text-dark-gray-300"}>
-                            {field.value?.includes("irregular")
-                              ? "비정기 연재입니다."
-                              : "중복선택 가능합니다."}
-                          </span>
-                        </div>
-                      }
-                      onChange={(selectedValues) => {
-                        const previousValue = field.value ?? [];
-                        const hasIrregular =
-                          selectedValues.includes("irregular");
-                        const hadIrregular =
-                          previousValue.includes("irregular");
-
-                        // If user just selected "irregular" (wasn't selected before)
-                        if (hasIrregular && !hadIrregular) {
-                          // Only keep "irregular", remove all other days
-                          field.onChange(["irregular"]);
-                        }
-                        // If user selected a day when "irregular" was already selected
-                        else if (
-                          hasIrregular &&
-                          hadIrregular &&
-                          selectedValues.length > 1
-                        ) {
-                          // Remove "irregular", keep only the newly selected days
-                          field.onChange(
-                            selectedValues.filter((v) => v !== "irregular")
-                          );
-                        }
-                        // Normal case: no irregular involved or user unselected irregular
-                        else {
-                          field.onChange(selectedValues);
-                        }
-                      }}
-                      selectedValues={field.value ?? []}
-                      options={[
-                        {
-                          label: "월",
-                          value: "mon",
-                        },
-                        {
-                          label: "화",
-                          value: "tue",
-                        },
-                        {
-                          label: "수",
-                          value: "wed",
-                        },
-                        {
-                          label: "목",
-                          value: "thu",
-                        },
-                        {
-                          label: "금",
-                          value: "fri",
-                        },
-                        {
-                          label: "토",
-                          value: "sat",
-                        },
-                        {
-                          label: "일",
-                          value: "sun",
-                        },
-                        {
-                          label: "비정기",
-                          value: "irregular",
-                        },
-                      ]}
-                    />
-                  )}
-                />
-                <div className={"flex gap-2 w-full"}>
+                <div ref={setFieldErrorRef("updateFrequency")}>
                   <Controller
-                    name="primaryGenre"
-                    rules={{
-                      required: "1차 장르를 선택해주세요.",
-                    }}
+                    name="updateFrequency"
                     control={control}
+                    rules={{
+                      required: "연재주기를 설정해주세요.",
+                    }}
                     render={({ field }) => (
-                      <SelectBox
-                        label="1차 장르"
-                        full
-                        labelClassName={
-                          labelClassName +
-                          " after:content-['*'] after:text-red-100 font-semibold"
+                      <CheckboxGroup
+                        label={
+                          <div className="flex gap-2 mb-2 items-center">
+                            <span
+                              className={
+                                "text-13pxr md:text-16pxr text-dark-gray-500 after:content-['*'] after:text-red-100 font-semibold"
+                              }
+                            >
+                              목표연재주기(권장 주5회)
+                            </span>
+                            <span className={"text-13pxr text-dark-gray-300"}>
+                              {field.value?.includes("irregular")
+                                ? "비정기 연재입니다."
+                                : "중복선택 가능합니다."}
+                            </span>
+                          </div>
                         }
-                        options={[
-                          {
-                            label: "1차 장르 선택",
-                            value: "",
-                            disabled: true,
-                          },
-                          ...genreOptions.map((g) => ({
-                            label: g,
-                            value: g,
-                          })),
-                        ]}
-                        value={field.value || ""}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          if (watch("subGenre") === e.target.value) {
-                            setValue("subGenre", "");
+                        onChange={(selectedValues) => {
+                          const previousValue = field.value ?? [];
+                          const hasIrregular =
+                            selectedValues.includes("irregular");
+                          const hadIrregular =
+                            previousValue.includes("irregular");
+
+                          // If user just selected "irregular" (wasn't selected before)
+                          if (hasIrregular && !hadIrregular) {
+                            // Only keep "irregular", remove all other days
+                            field.onChange(["irregular"]);
+                          }
+                          // If user selected a day when "irregular" was already selected
+                          else if (
+                            hasIrregular &&
+                            hadIrregular &&
+                            selectedValues.length > 1
+                          ) {
+                            // Remove "irregular", keep only the newly selected days
+                            field.onChange(
+                              selectedValues.filter((v) => v !== "irregular")
+                            );
+                          }
+                          // Normal case: no irregular involved or user unselected irregular
+                          else {
+                            field.onChange(selectedValues);
                           }
                         }}
-                        ref={field.ref}
+                        selectedValues={field.value ?? []}
+                        options={[
+                          {
+                            label: "월",
+                            value: "mon",
+                          },
+                          {
+                            label: "화",
+                            value: "tue",
+                          },
+                          {
+                            label: "수",
+                            value: "wed",
+                          },
+                          {
+                            label: "목",
+                            value: "thu",
+                          },
+                          {
+                            label: "금",
+                            value: "fri",
+                          },
+                          {
+                            label: "토",
+                            value: "sat",
+                          },
+                          {
+                            label: "일",
+                            value: "sun",
+                          },
+                          {
+                            label: "비정기",
+                            value: "irregular",
+                          },
+                        ]}
                       />
                     )}
                   />
+                </div>
+                <div className={"flex gap-2 w-full"}>
+                  <div ref={setFieldErrorRef("primaryGenre")} className="w-full">
+                    <Controller
+                      name="primaryGenre"
+                      rules={{
+                        required: "1차 장르를 선택해주세요.",
+                      }}
+                      control={control}
+                      render={({ field }) => (
+                        <SelectBox
+                          label="1차 장르"
+                          full
+                          labelClassName={
+                            labelClassName +
+                            " after:content-['*'] after:text-red-100 font-semibold"
+                          }
+                          options={[
+                            {
+                              label: "1차 장르 선택",
+                              value: "",
+                              disabled: true,
+                            },
+                            ...genreOptions.map((g) => ({
+                              label: g,
+                              value: g,
+                            })),
+                          ]}
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            if (watch("subGenre") === e.target.value) {
+                              setValue("subGenre", "");
+                            }
+                          }}
+                          ref={field.ref}
+                        />
+                      )}
+                    />
+                  </div>
                   <Controller
                     name="subGenre"
                     control={control}
@@ -989,7 +1052,24 @@ const FormArea = ({ productId }: Props) => {
                     )}
                   />
                 </div>
-                <BaseSearchTag />
+                <div ref={setFieldErrorRef("baseTag")}>
+                  <Controller
+                    name="baseTag"
+                    control={control}
+                    rules={{
+                      validate: (value) =>
+                        value && value.length > 0
+                          ? true
+                          : "기본 태그를 1개 이상 선택해주세요.",
+                    }}
+                    render={() => (
+                      <BaseSearchTag
+                        isError={!!formState.errors.baseTag}
+                        errorText={formState.errors.baseTag?.message}
+                      />
+                    )}
+                  />
+                </div>
                 {/* <DirectSearchTag /> */}
                 <NewDirectInputSearchTag />
                 <TextArea
@@ -1323,7 +1403,10 @@ const FormArea = ({ productId }: Props) => {
                     />
                   </>
                 )}
-                <div className="flex flex-col gap-4pxr">
+                <div
+                  ref={setFieldErrorRef("agree")}
+                  className="flex flex-col gap-4pxr"
+                >
                   <Controller
                     name="agree"
                     control={control}

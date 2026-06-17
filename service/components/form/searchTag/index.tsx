@@ -20,12 +20,14 @@ type SearchListType = {
 interface SearchKeywordProps extends InputHTMLAttributes<HTMLInputElement> {
   searchList?: SearchListType;
   isError?: boolean;
+  errorText?: ReactNode;
   additionalText?: ReactNode;
   full?: boolean;
   label?: string;
   labelStyle?: string;
   gap?: string;
   maximumSelected?: number;
+  required?: boolean;
   selectedTag?: string;
 }
 
@@ -33,6 +35,7 @@ const SearchTag = forwardRef(function SearchKeywordComponent(
   {
     placeholder,
     isError,
+    errorText,
     className,
     additionalText,
     searchList,
@@ -41,6 +44,7 @@ const SearchTag = forwardRef(function SearchKeywordComponent(
     labelStyle,
     gap,
     maximumSelected,
+    required,
     ...props
   }: SearchKeywordProps,
   ref: Ref<HTMLInputElement>
@@ -90,9 +94,15 @@ const SearchTag = forwardRef(function SearchKeywordComponent(
 
     if (isInBaseTag) {
       const updatedBaseTag = baseTag.filter((base) => base.value !== tag.value);
-      setValue("baseTag", updatedBaseTag);
+      setValue("baseTag", updatedBaseTag, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
     } else {
-      setValue("baseTag", [...baseTag, tag]);
+      setValue("baseTag", [...baseTag, tag], {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
     }
   };
 
@@ -115,6 +125,7 @@ const SearchTag = forwardRef(function SearchKeywordComponent(
             <span className={"text-13pxr md:text-16pxr text-dark-gray-500 "}>
               {label}
             </span>
+            {required && <span className="text-red-100">*</span>}
             <span className={"text-13pxr text-dark-gray-300"}>
               <span className={"text-dark-gray-500"}>
                 {combinedList.length}
@@ -146,6 +157,7 @@ const SearchTag = forwardRef(function SearchKeywordComponent(
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onFocus={() => setShowSearchList(true)}
+            aria-invalid={isError ? true : undefined}
           />
           <div className="relative w-full">
             {isShowSearchList && (
@@ -158,9 +170,13 @@ const SearchTag = forwardRef(function SearchKeywordComponent(
             )}
           </div>
         </div>
-        <div className="self-start text-dark-gray-300 text-13pxr">
-          {`${label}는 최대 ${maximumSelected}개까지 입력 가능합니다.`}
-        </div>
+        {isError && errorText ? (
+          <div className="self-start text-red-100 text-12pxr">{errorText}</div>
+        ) : (
+          <div className="self-start text-dark-gray-300 text-13pxr">
+            {`${label}는 최대 ${maximumSelected}개까지 입력 가능합니다.`}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -214,14 +230,20 @@ const TagArea = ({
                         const updatedBaseTag = baseTag.filter(
                           (base) => base.value !== tag.value
                         );
-                        setValue("baseTag", updatedBaseTag);
+                        setValue("baseTag", updatedBaseTag, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
                       } else if (isInSelectedList) {
                         setSelectedList((prev) =>
                           prev.filter(
                             (selected) => selected.value !== tag.value
                           )
                         );
-                        setValue("baseTag", selectedList);
+                        setValue("baseTag", selectedList, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
                       } else {
                         if (
                           maximumSelected &&
@@ -235,7 +257,10 @@ const TagArea = ({
                           });
                           return;
                         }
-                        setValue("baseTag", [...baseTag, tag]);
+                        setValue("baseTag", [...baseTag, tag], {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
                       }
                     }}
                   >

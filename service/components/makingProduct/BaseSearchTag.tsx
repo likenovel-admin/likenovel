@@ -1,9 +1,14 @@
 import { useSelectTags } from "@/app/api/query/author/product";
 import { tagObject } from "@/app/api/query/author/product/dto";
-import { useMemo } from "react";
+import { ReactNode, useMemo } from "react";
 import SearchTag from "../form/searchTag";
 
-const BaseSearchTag = () => {
+interface BaseSearchTagProps {
+  isError?: boolean;
+  errorText?: ReactNode;
+}
+
+const BaseSearchTag = ({ isError, errorText }: BaseSearchTagProps) => {
   const { data } = useSelectTags();
 
   const tags = useMemo(() => {
@@ -28,6 +33,9 @@ const BaseSearchTag = () => {
       className={inputTextClassName}
       maximumSelected={10}
       placeholder="태그를 검색하세요"
+      required
+      isError={isError}
+      errorText={errorText}
     />
   );
 };

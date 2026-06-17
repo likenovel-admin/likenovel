@@ -44,6 +44,14 @@ const createMemoryStorage = () => {
   session.setItem("access_token", "session-access");
   session.setItem("refresh_token", "session-refresh");
   session.setItem("user", JSON.stringify({ userId: 1086 }));
+  session.setItem(
+    "formData",
+    JSON.stringify({ email: "user@example.com", password: "secret" })
+  );
+  session.setItem("ln_site_pv_session_id", "pv_session_1");
+  session.setItem("ln_site_pv_last_key", "/product/1106");
+  session.setItem("ln_site_pv_marketing_attribution", JSON.stringify({ source: "ad" }));
+  session.setItem("funnel_route_state", JSON.stringify({ path: "/product/1106" }));
 
   assert.equal(hasStoredAuthToken(local, session), true);
 
@@ -58,11 +66,19 @@ const createMemoryStorage = () => {
   assert.equal(session.getItem("access_token"), null);
   assert.equal(session.getItem("refresh_token"), null);
   assert.equal(session.getItem("user"), null);
+  assert.equal(session.getItem("formData"), null);
   assert.equal(headers.Authorization, undefined);
   assert.equal(headers.authorization, undefined);
   assert.equal(headers["Content-Type"], "application/json");
   assert.equal(local.getItem("keep_signin_yn"), "Y");
   assert.equal(local.getItem("recent_viewed_products"), "[1106]");
+  assert.equal(session.getItem("ln_site_pv_session_id"), "pv_session_1");
+  assert.equal(session.getItem("ln_site_pv_last_key"), "/product/1106");
+  assert.equal(
+    session.getItem("ln_site_pv_marketing_attribution"),
+    JSON.stringify({ source: "ad" })
+  );
+  assert.equal(session.getItem("funnel_route_state"), JSON.stringify({ path: "/product/1106" }));
   assert.equal(local.clearCount, 0);
   assert.equal(session.clearCount, 0);
   assert.equal(hasStoredAuthToken(local, session), false);
