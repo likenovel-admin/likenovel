@@ -2065,6 +2065,55 @@ export default function Page() {
                     </Button>
                   ))}
                 </div>
+                <div className="rounded-md border bg-white p-3">
+                  <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                    <div className="text-xs font-medium">작품 타겟팅</div>
+                    <div
+                      className={cn(
+                        "text-[11px]",
+                        productTypeWeightTotal === 100 && freeProductTypeWeightTotal === 100
+                          ? "text-muted-foreground"
+                          : "text-destructive"
+                      )}
+                    >
+                      {productTypeWeightSummary} · {freeProductTypeWeightSummary}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {productTypeWeightKeys.map((key) => (
+                      <label key={key} className="text-[11px] text-muted-foreground">
+                        {productTypeWeightLabel[key]}
+                        <Input
+                          className="mt-1 h-8 px-2"
+                          inputMode="numeric"
+                          value={productTypeWeights[key] ?? 0}
+                          onChange={(e) => handleProductTypeWeightChange(key, e.target.value)}
+                          disabled={pendingOperation}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {freeProductTypeWeightKeys.map((key) => (
+                      <label key={key} className="text-[11px] text-muted-foreground">
+                        {freeProductTypeWeightLabel[key]}
+                        <Input
+                          className="mt-1 h-8 px-2"
+                          inputMode="numeric"
+                          value={freeProductTypeWeights[key] ?? 0}
+                          onChange={(e) => handleFreeProductTypeWeightChange(key, e.target.value)}
+                          disabled={pendingOperation}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  {(productTypeWeightTotal !== 100 || freeProductTypeWeightTotal !== 100) && (
+                    <div className="mt-2 text-[11px] text-destructive">
+                      합계가 각각 100이어야 적용됩니다. 현재 작품 {numberFormat(productTypeWeightTotal)}, 무료 내부{" "}
+                      {numberFormat(freeProductTypeWeightTotal)}
+                    </div>
+                  )}
+                </div>
                 <div className="rounded-md border bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
                   {targetOperationMessage}
                   {targetOperation.kind === "needs_more_agents" && (
