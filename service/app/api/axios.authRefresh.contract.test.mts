@@ -45,3 +45,40 @@ assert.match(
   /if \(newRefreshToken\) \{\s*setRefreshToken\(newRefreshToken\);\s*\}/s,
   "axios refresh interceptor should save a rotated refresh token when backend returns one"
 );
+
+const clearStaleAuthMatch = axiosSource.match(
+  /const clearStaleAuth = \(\) => \{(?<body>[\s\S]*?)\n\s*\};\n\n\s*\/\/ refresh token/
+);
+
+assert.ok(
+  clearStaleAuthMatch?.groups?.body,
+  "axios refresh interceptor should define stale auth cleanup"
+);
+
+const clearStaleAuthBody = clearStaleAuthMatch.groups.body;
+
+assert.match(
+  clearStaleAuthBody,
+  /clearStaleAuthSession/,
+  "axios refresh failure should use auth-only stale session cleanup"
+);
+assert.match(
+  clearStaleAuthBody,
+  /clearAuthorizationHeaders/,
+  "axios refresh failure should clear stale Authorization headers"
+);
+assert.match(
+  axiosSource,
+  /setState\(\s*\{\s*isAuthenticated:\s*false,\s*user:\s*null,\s*accessToken:\s*null,\s*refreshToken:\s*null,\s*\}\s*\)/s,
+  "axios refresh failure should reset only auth store state"
+);
+assert.doesNotMatch(
+  clearStaleAuthBody,
+  /signOut\(\)/,
+  "axios stale auth cleanup must not reuse explicit signOut side effects"
+);
+assert.doesNotMatch(
+  clearStaleAuthBody,
+  /recent_viewed_products/,
+  "axios stale auth cleanup should preserve local recent-viewed signals"
+);
