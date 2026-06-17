@@ -5,6 +5,8 @@ type AuthorizationHeaders = Record<string, unknown> & {
 };
 
 const AUTH_TOKEN_KEYS = ["access_token", "refresh_token"] as const;
+export const SIGN_UP_FORM_DATA_SESSION_KEY = "formData";
+const SENSITIVE_AUTH_SESSION_KEYS = [SIGN_UP_FORM_DATA_SESSION_KEY] as const;
 
 export const hasStoredAuthToken = (
   localStorage: Pick<Storage, "getItem">,
@@ -44,5 +46,8 @@ export const clearStaleAuthSession = ({
   }
 
   sessionStorage.removeItem("user");
+  for (const key of SENSITIVE_AUTH_SESSION_KEYS) {
+    sessionStorage.removeItem(key);
+  }
   clearAuthorizationHeaders(authorizationHeaders);
 };

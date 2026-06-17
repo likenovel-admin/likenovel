@@ -1,4 +1,8 @@
 import useAuthStore from "@/store/authStore";
+import {
+  clearAuthorizationHeaders,
+  clearStaleAuthSession,
+} from "@/utils/authSession";
 import axios, { type AxiosRequestConfig } from "axios";
 import { IRefreshTokenRequest } from "../auth/dto";
 
@@ -37,7 +41,7 @@ instance.interceptors.request.use(
     /**
      * Authorization 헤더 동기화(Defensive)
      * - 토큰이 없는데도 axios defaults에 Authorization이 남아있으면(이전 세션/로그아웃/재발급 실패 후)
-     *   로그인 페이지에서도 잘못된 Bearer가 전송되어 401 루프(→ reissue → signOut)가 발생할 수 있습니다.
+     *   로그인 페이지에서도 잘못된 Bearer가 전송되어 401 루프(→ reissue → stale auth cleanup)가 발생할 수 있습니다.
      * - 토큰이 있으면 설정, 없으면 헤더/기본값을 반드시 제거합니다.
      */
     if (accessToken) {
@@ -162,16 +166,22 @@ instance.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const { accessToken, refreshToken, setAccessToken, setRefreshToken, signOut } =
+      const { accessToken, refreshToken, setAccessToken, setRefreshToken, setState } =
         useAuthStore.getState();
 
       const clearStaleAuth = () => {
-        try {
-          delete (instance.defaults.headers.common as any).Authorization;
-          delete (originalRequest.headers as any)?.Authorization;
-          delete (originalRequest.headers as any)?.authorization;
-        } catch (_) {}
-        signOut();
+        clearStaleAuthSession({
+          localStorage,
+          sessionStorage,
+          authorizationHeaders: instance.defaults.headers.common,
+        });
+        clearAuthorizationHeaders(originalRequest.headers as any);
+        setState({
+          isAuthenticated: false,
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+        });
       };
 
       // refresh token이 있으면 재발급 시도
@@ -205,7 +215,7 @@ instance.interceptors.response.use(
           }
         } catch (_) {}
 
-        // 재발급 실패 → 로그아웃 후 로그인 리다이렉트
+        // 재발급 실패 → stale auth만 정리 후 로그인 리다이렉트
         clearStaleAuth();
         const currentUrl = encodeURIComponent(window.location.pathname);
         window.location.href = `/login?redirect=${currentUrl}`;
