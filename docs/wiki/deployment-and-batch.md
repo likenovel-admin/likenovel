@@ -1,8 +1,8 @@
 # Deployment And Batch
 
 > Status: CURRENT GUIDE
-> Last verified: 2026-06-03
-> Code readback: 2026-06-03
+> Last verified: 2026-06-18
+> Code readback: 2026-06-18
 > Rule: do not execute deploy, DB, cron, or batch operations from this summary.
 > Open the linked runbook/source files and read back the live target first.
 
@@ -14,7 +14,7 @@
 - Backend prod verification script: `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/verify_backend_prod_deploy.sh`
 - Prod monitor: `ops/monitor-prod/README.md`
 
-Code-readback anchors checked on 2026-06-03:
+Code-readback anchors checked on 2026-06-18:
 
 - Dev backend workflow copies source `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh` to package `run_be.sh` before CodeDeploy: `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml`
 - Prod backend workflow packages `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`, `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/verify_backend_prod_deploy.sh`, `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/init/`, and `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/`, then runs on-host verification: `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions.yml`
@@ -107,6 +107,10 @@ selects env by runtime directory:
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/free_episode_campaign_expire_batch.sh`
   expires active `tb_product_free_episode_campaign` rows every 5 minutes and restores
   product free episode ranges to the row's restore range, currently 1~25.
+- `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/ai_taste_hourly_batch.sh`
+  runs a bounded missing-factor backfill before aggregating
+  `tb_user_ai_signal_event_factor` into `tb_user_taste_factor_score`; inspect the
+  backfill and aggregation log lines together when AI taste slots look stale.
 - Story context prod cron has live-state history and source fallback differences.
   Do not infer current max parallel from one file; verify active `crontab -l` and
   then compare with `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`.

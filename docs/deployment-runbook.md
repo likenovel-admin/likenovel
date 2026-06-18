@@ -5,7 +5,7 @@
 > source/runtime and update this document in the same task.
 
 Last verified: 2026-05-26
-DB/cron/batch code readback: 2026-06-03
+DB/cron/batch code readback: 2026-06-18
 Repository root: `/home/hongsan/work/likenovel`
 Legacy Windows path: `C:\Users\Hongsan\Downloads\likenovel` (참고용)
 
@@ -40,13 +40,14 @@ Legacy Windows path: `C:\Users\Hongsan\Downloads\likenovel` (참고용)
 - prod batch runtime path: `/home/ln-admin/likenovel/batch`
 - dev batch runtime path: `/home/ln-admin/likenovel/batch-dev`
 
-2026-06-03 코드 readback 기준:
+2026-06-18 코드 readback 기준:
 - `.github/workflows/docker-dev.yml` and `.github/workflows/docker-prod.yml` deploy only frontend Docker images from the root repo.
 - `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml` packages dev backend CodeDeploy and replaces package `run_be.sh` with source `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`.
 - `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions.yml` packages prod backend CodeDeploy, waits for deployment success, then runs `verify_backend_prod_deploy.sh` on ln-was.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh` syncs batch files to `/home/ln-admin/likenovel/batch-dev` but keeps `/etc/cron.d/likenovel-dev` manual.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh` syncs batch files to `/home/ln-admin/likenovel/batch` and guards only selected prod user-crontab lines.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/cron_env.sh` maps `batch-dev` to `/home/ln-admin/likenovel/api-dev/.env`, `batch` to `/home/ln-admin/likenovel/api/.env`, and Docker fallback to `/proc/1/environ`.
+- `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/ai_taste_hourly_batch.sh` runs bounded missing-factor backfill before taste factor aggregation.
 
 주의:
 - backend API는 submodule 별도 원격 저장소(`.gitmodules`) 기준으로 배포된다.
