@@ -236,7 +236,7 @@ export default function Home() {
   return (
     <>
       <GlobalNav />
-      <div className="relative min-h-screen pt-[130px] md:pt-[115px] pb-[94px]">
+      <div className="relative min-h-screen overflow-x-hidden pt-[130px] md:pt-[115px] pb-[94px]">
         {isSuccess ? (
           <div className="w-full flex flex-col">
             <Carousel primaryPanels={data?.banners?.primaryPanels ?? []} />

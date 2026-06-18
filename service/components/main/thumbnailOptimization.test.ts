@@ -8,6 +8,7 @@ const freeTopSource = readSource("./FreeTop.tsx");
 const productListCardSource = readSource("../common/ProductListCard.tsx");
 const productCoverCardSource = readSource("../common/ProductCoverCard.tsx");
 const tasteSectionSource = readSource("../recommendation/TasteSection.tsx");
+const homePageSource = readSource("../../app/page.tsx");
 
 assert.match(freeTopSource, /optimized:\s*true/);
 assert.match(freeTopSource, /sizes:\s*"56px"/);
@@ -56,7 +57,12 @@ assert.match(
   /currentPage \+ itemsPerPage \+ \(showNextPreview \? 1 : 0\)/,
 );
 assert.match(tasteSectionSource, /bg-gradient-to-r from-white\/0 to-white/);
+assert.match(tasteSectionSource, /right-\[-52px\]/);
 assert.match(tasteSectionSource, /const showNextArrow = showArrows && currentPage < lastPage/);
+assert.match(
+  homePageSource,
+  /relative min-h-screen overflow-x-hidden pt-\[130px\] md:pt-\[115px\] pb-\[94px\]/,
+);
 assert.match(
   tasteSectionSource,
   /\[\.\.\.section\.products\]\.sort\(\s*\(a, b\) => b\.episodeCount - a\.episodeCount\s*\)/,

@@ -311,7 +311,7 @@ const TasteSection = ({ section }: Props) => {
           })}
         </div>
         {showNextPreview && (
-          <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 hidden w-72pxr bg-gradient-to-r from-white/0 to-white lg:block" />
+          <div className="pointer-events-none absolute bottom-0 right-[-52px] top-0 z-10 hidden w-72pxr bg-gradient-to-r from-white/0 to-white lg:block" />
         )}
 
         {showArrows && (
