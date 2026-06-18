@@ -31,6 +31,7 @@ interface Props {
 
 const SECTION_SUBTITLE = "회원님의 작품 읽기 패턴을 통해 골라드려요.";
 const FALLBACK_PRODUCT_LABEL = "작품 키워드";
+const PRODUCT_LABEL_LIMIT = 3;
 const INTERNAL_AXIS_LABELS = new Set(["연", "타", "직", "타+직"]);
 const GENERIC_LABEL_WORDS = new Set([
   "구좌",
@@ -84,18 +85,35 @@ const getBriefKeywordCandidates = (brief?: IAiProductBrief) => [
   ...(brief?.romanceTags || []),
 ];
 
-const getProductLabel = (
+const getProductLabels = (
   product: IRecommendProduct,
   brief: IAiProductBrief | undefined,
   slotTitle: string
 ) => {
-  const tasteTag = [
+  const labels: string[] = [];
+  const seenLabelKeys = new Set<string>();
+
+  for (const tag of [
     ...getBriefKeywordCandidates(brief),
     ...(product.tasteTags || []),
-  ].find(
-    (tag) => isVisibleTasteTag(tag) && !isSlotTitleDuplicateLabel(tag, slotTitle)
-  );
-  return tasteTag ? normalizeLabel(tasteTag) : FALLBACK_PRODUCT_LABEL;
+  ]) {
+    if (
+      !isVisibleTasteTag(tag) ||
+      isSlotTitleDuplicateLabel(tag, slotTitle)
+    ) {
+      continue;
+    }
+
+    const label = normalizeLabel(tag);
+    const labelKey = normalizeLabelKey(label);
+    if (!labelKey || seenLabelKeys.has(labelKey)) continue;
+
+    seenLabelKeys.add(labelKey);
+    labels.push(label);
+    if (labels.length >= PRODUCT_LABEL_LIMIT) break;
+  }
+
+  return labels.length ? labels : [FALLBACK_PRODUCT_LABEL];
 };
 
 const formatEpisodeBadge = (episodeCount: number) => {
@@ -212,7 +230,7 @@ const TasteSection = ({ section }: Props) => {
             const coverImageSrc = resolveProductCoverImage(product.coverUrl);
             const isDefaultCoverImage =
               coverImageSrc === DEFAULT_PRODUCT_IMAGE;
-            const productLabel = getProductLabel(
+            const productLabels = getProductLabels(
               product,
               aiBriefsByProductId.get(product.productId),
               title
@@ -292,11 +310,16 @@ const TasteSection = ({ section }: Props) => {
                 </div>
 
                 <div className="relative z-10 mt-16pxr flex w-full flex-col items-center px-16pxr">
-                  <span className="inline-flex h-22pxr max-w-full items-center justify-center rounded-full border border-dark-gray-300 px-8pxr text-11pxr font-medium leading-[18px] text-dark-gray-400">
-                    <span className="max-w-[140px] truncate md:max-w-[170px]">
-                      {productLabel}
-                    </span>
-                  </span>
+                  <div className="flex h-22pxr max-w-full items-center justify-center gap-4pxr overflow-hidden">
+                    {productLabels.map((productLabel) => (
+                      <span
+                        key={productLabel}
+                        className="inline-flex h-22pxr min-w-0 max-w-[58px] items-center justify-center rounded-full border border-dark-gray-300 px-7pxr text-11pxr font-medium leading-[18px] text-dark-gray-400 md:max-w-[72px]"
+                      >
+                        <span className="truncate">{productLabel}</span>
+                      </span>
+                    ))}
+                  </div>
                   <p className="mt-8pxr w-full truncate text-16pxr font-bold leading-[24px] text-black-100">
                     {product.title}
                   </p>

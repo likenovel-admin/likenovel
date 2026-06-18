@@ -75,7 +75,12 @@ assert.match(
 );
 assert.match(tasteSectionSource, /작품 키워드/);
 assert.match(tasteSectionSource, /isSlotTitleDuplicateLabel/);
-assert.match(tasteSectionSource, /!isSlotTitleDuplicateLabel\(tag, slotTitle\)/);
+assert.match(tasteSectionSource, /isSlotTitleDuplicateLabel\(tag, slotTitle\)/);
+assert.match(tasteSectionSource, /const PRODUCT_LABEL_LIMIT = 3/);
+assert.match(tasteSectionSource, /const getProductLabels =/);
+assert.match(tasteSectionSource, /labels\.length >= PRODUCT_LABEL_LIMIT/);
+assert.match(tasteSectionSource, /productLabels\.map\(\(productLabel\)/);
+assert.doesNotMatch(tasteSectionSource, /const productLabel = getProductLabel/);
 assert.doesNotMatch(
   tasteSectionSource,
   /AI사서 키워드|const subtitle = section\.reason|getSectionLabel|DIMENSION_LABELS|행동 신호 기반/,
