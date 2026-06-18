@@ -49,7 +49,18 @@ assert.match(
   tasteSectionSource,
   /const isDefaultCoverImage =\s*coverImageSrc === DEFAULT_PRODUCT_IMAGE/,
 );
-assert.match(tasteSectionSource, /const itemsPerPage = 4/);
+assert.match(tasteSectionSource, /const DEFAULT_DESKTOP_ITEMS_PER_PAGE = 4/);
+assert.match(tasteSectionSource, /const getResponsiveItemsPerPage =/);
+assert.match(tasteSectionSource, /viewportWidth = containerWidth/);
+assert.match(tasteSectionSource, /window\.innerWidth/);
+assert.match(tasteSectionSource, /ResizeObserver/);
+assert.match(tasteSectionSource, /sectionMeasureRef/);
+assert.doesNotMatch(tasteSectionSource, /const itemsPerPage = 4/);
+assert.match(tasteSectionSource, /const isDesktop = device === "desktop"/);
+assert.doesNotMatch(
+  tasteSectionSource,
+  /const isDesktop = device !== "mobile" && device !== "tablet"/,
+);
 assert.match(tasteSectionSource, /episodeCount/);
 assert.match(
   tasteSectionSource,
@@ -57,9 +68,14 @@ assert.match(
 );
 assert.match(tasteSectionSource, /bg-gradient-to-r from-white\/0 to-white/);
 assert.match(tasteSectionSource, /bg-gradient-to-l from-white\/0 to-white/);
-assert.match(tasteSectionSource, /lg:-mx-\[32px\]/);
-assert.match(tasteSectionSource, /lg:w-\[calc\(100%\+64px\)\]/);
-assert.match(tasteSectionSource, /lg:-translate-x-\[227px\]/);
+assert.match(tasteSectionSource, /--ai-taste-loop-width/);
+assert.match(tasteSectionSource, /--ai-taste-loop-shift/);
+assert.match(tasteSectionSource, /lg:w-\[var\(--ai-taste-loop-width\)\]/);
+assert.match(
+  tasteSectionSource,
+  /lg:translate-x-\[var\(--ai-taste-loop-shift\)\]/,
+);
+assert.doesNotMatch(tasteSectionSource, /lg:max-w-\[calc\(100vw-32px\)\]/);
 assert.match(tasteSectionSource, /const LOOP_PREVIEW_CARD_INDEX = 0/);
 assert.match(tasteSectionSource, /const isLoopPreviewCard =/);
 assert.match(tasteSectionSource, /tabIndex=\{isLoopPreviewCard \? -1 : undefined\}/);

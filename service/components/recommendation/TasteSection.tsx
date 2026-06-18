@@ -22,7 +22,14 @@ import {
 } from "@/utils/productPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Fragment, useMemo, useState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import CircleArrow from "../common/CircleArrow";
 
 interface Props {
@@ -33,6 +40,12 @@ const SECTION_SUBTITLE = "회원님의 작품 읽기 패턴을 통해 골라드�
 const FALLBACK_PRODUCT_LABEL = "작품 키워드";
 const PRODUCT_LABEL_LIMIT = 3;
 const LOOP_PREVIEW_CARD_INDEX = 0;
+const DEFAULT_DESKTOP_ITEMS_PER_PAGE = 4;
+const MIN_DESKTOP_ITEMS_PER_PAGE = 1;
+const DESKTOP_CARD_WIDTH = 259;
+const DESKTOP_CARD_GAP = 16;
+const DESKTOP_PREVIEW_WIDTH = 32;
+const LOOP_SHIFT_WIDTH = DESKTOP_CARD_WIDTH - DESKTOP_PREVIEW_WIDTH;
 const INTERNAL_AXIS_LABELS = new Set(["연", "타", "직", "타+직"]);
 const GENERIC_LABEL_WORDS = new Set([
   "구좌",
@@ -131,6 +144,36 @@ function getLoopedProducts<T>(items: T[], startIndex: number, count: number) {
   });
 }
 
+const getResponsiveItemsPerPage = (
+  containerWidth: number,
+  viewportWidth = containerWidth
+) => {
+  const availableWidth = Math.min(
+    containerWidth,
+    viewportWidth - DESKTOP_PREVIEW_WIDTH * 2
+  );
+
+  if (!Number.isFinite(availableWidth) || availableWidth <= 0) {
+    return DEFAULT_DESKTOP_ITEMS_PER_PAGE;
+  }
+
+  return Math.min(
+    DEFAULT_DESKTOP_ITEMS_PER_PAGE,
+    Math.max(
+      MIN_DESKTOP_ITEMS_PER_PAGE,
+      Math.floor(
+        (availableWidth - DESKTOP_PREVIEW_WIDTH + DESKTOP_CARD_GAP) /
+          (DESKTOP_CARD_WIDTH + DESKTOP_CARD_GAP)
+      )
+    )
+  );
+};
+
+const getLoopViewportWidth = (itemsPerPage: number) =>
+  itemsPerPage * DESKTOP_CARD_WIDTH +
+  Math.max(0, itemsPerPage - 1) * DESKTOP_CARD_GAP +
+  DESKTOP_PREVIEW_WIDTH * 2;
+
 const SparkleIcon = () => (
   <svg
     aria-hidden="true"
@@ -153,6 +196,7 @@ const SparkleIcon = () => (
 const TasteSection = ({ section }: Props) => {
   const router = useRouter();
   const device = useMediaDevice();
+  const sectionMeasureRef = useRef<HTMLElement | null>(null);
   const { isAuthenticated, accessToken, user } = useAuthStore((state) => ({
     isAuthenticated: state.isAuthenticated,
     accessToken: state.accessToken,
@@ -160,11 +204,16 @@ const TasteSection = ({ section }: Props) => {
   }));
   const { mutate: postSignalEvent } = usePostAiSignalEvent();
   const [currentPage, setCurrentPage] = useState(0);
+  const [desktopItemsPerPage, setDesktopItemsPerPage] = useState(
+    DEFAULT_DESKTOP_ITEMS_PER_PAGE
+  );
   const [brokenCoverProductIds, setBrokenCoverProductIds] = useState<
     Record<number, true>
   >({});
-  const itemsPerPage = 4;
-  const isDesktop = device !== "mobile" && device !== "tablet";
+  const isDesktop = device === "desktop";
+  const itemsPerPage = isDesktop
+    ? desktopItemsPerPage
+    : section.products.length;
   const adultYn = user?.isOnAdult ? "Y" : "N";
   const canTrackAiTasteClick = Boolean(isAuthenticated || accessToken);
   const sortedProducts = useMemo(
@@ -191,6 +240,31 @@ const TasteSection = ({ section }: Props) => {
     [aiBriefsData]
   );
 
+  useEffect(() => {
+    const target = sectionMeasureRef.current;
+    if (!target) return;
+
+    const updateItemsPerPage = () => {
+      setDesktopItemsPerPage(
+        getResponsiveItemsPerPage(
+          target.getBoundingClientRect().width,
+          window.innerWidth
+        )
+      );
+    };
+
+    updateItemsPerPage();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateItemsPerPage);
+      return () => window.removeEventListener("resize", updateItemsPerPage);
+    }
+
+    const resizeObserver = new ResizeObserver(updateItemsPerPage);
+    resizeObserver.observe(target);
+    return () => resizeObserver.disconnect();
+  }, []);
+
   if (!section.products.length) return null;
 
   const title = section.title?.trim() ? section.title : "AI 추천 작품";
@@ -214,8 +288,16 @@ const TasteSection = ({ section }: Props) => {
   const isLoopEnabled = isDesktop && totalItems > itemsPerPage;
   const currentProducts = isLoopEnabled
     ? getLoopedProducts(sortedProducts, currentPage - 1, itemsPerPage + 2)
-    : sortedProducts.slice(currentPage, currentPage + itemsPerPage);
+    : isDesktop
+      ? sortedProducts.slice(0, itemsPerPage)
+      : sortedProducts;
   const showArrows = isLoopEnabled;
+  const loopViewportStyle = isLoopEnabled
+    ? ({
+        "--ai-taste-loop-width": `${getLoopViewportWidth(itemsPerPage)}px`,
+        "--ai-taste-loop-shift": `-${LOOP_SHIFT_WIDTH}px`,
+      } as CSSProperties)
+    : undefined;
 
   const handlePrevPage = () => {
     if (!isLoopEnabled) return;
@@ -228,7 +310,7 @@ const TasteSection = ({ section }: Props) => {
   };
 
   return (
-    <section className="relative max-w-[1120px]">
+    <section ref={sectionMeasureRef} className="relative max-w-[1120px]">
       <div className="px-16pxr md:px-0">
         <h3 className="text-20pxr md:text-24pxr font-bold leading-[28px] md:leading-[34px] text-black-100">
           {slotTitle}
@@ -240,15 +322,16 @@ const TasteSection = ({ section }: Props) => {
       </div>
 
       <div
+        style={loopViewportStyle}
         className={`relative mt-16pxr ${
           isLoopEnabled
-            ? "lg:-mx-[32px] lg:w-[calc(100%+64px)] lg:overflow-hidden"
+            ? "lg:mx-auto lg:w-[var(--ai-taste-loop-width)] lg:overflow-hidden"
             : ""
         }`}
       >
         <div
           className={`flex gap-12pxr md:gap-16pxr scroll-hidden overflow-x-auto lg:overflow-hidden pl-16pxr pr-16pxr md:px-0 ${
-            isLoopEnabled ? "lg:-translate-x-[227px]" : ""
+            isLoopEnabled ? "lg:translate-x-[var(--ai-taste-loop-shift)]" : ""
           }`}
         >
           {currentProducts.map((product, renderedIndex) => {
