@@ -32,6 +32,7 @@ interface Props {
 const SECTION_SUBTITLE = "회원님의 작품 읽기 패턴을 통해 골라드려요.";
 const FALLBACK_PRODUCT_LABEL = "작품 키워드";
 const PRODUCT_LABEL_LIMIT = 3;
+const LOOP_PREVIEW_CARD_INDEX = 0;
 const INTERNAL_AXIS_LABELS = new Set(["연", "타", "직", "타+직"]);
 const GENERIC_LABEL_WORDS = new Set([
   "구좌",
@@ -241,16 +242,20 @@ const TasteSection = ({ section }: Props) => {
       <div
         className={`relative mt-16pxr ${
           isLoopEnabled
-            ? "lg:-mx-[52px] lg:w-[calc(100%+104px)] lg:overflow-hidden"
+            ? "lg:-mx-[32px] lg:w-[calc(100%+64px)] lg:overflow-hidden"
             : ""
         }`}
       >
         <div
           className={`flex gap-12pxr md:gap-16pxr scroll-hidden overflow-x-auto lg:overflow-hidden pl-16pxr pr-16pxr md:px-0 ${
-            isLoopEnabled ? "lg:-translate-x-[207px]" : ""
+            isLoopEnabled ? "lg:-translate-x-[227px]" : ""
           }`}
         >
           {currentProducts.map((product, renderedIndex) => {
+            const isLoopPreviewCard =
+              isLoopEnabled &&
+              (renderedIndex === LOOP_PREVIEW_CARD_INDEX ||
+                renderedIndex === currentProducts.length - 1);
             const isCoverBroken = Boolean(
               brokenCoverProductIds[product.productId]
             );
@@ -268,8 +273,15 @@ const TasteSection = ({ section }: Props) => {
               <button
                 key={`${product.productId}-${renderedIndex}`}
                 type="button"
-                className="relative h-[326px] w-[212px] flex-shrink-0 cursor-pointer overflow-hidden rounded-[20px] bg-light-gray-100 pt-34pxr text-center md:h-[382px] md:w-[259px] md:pt-48pxr"
+                tabIndex={isLoopPreviewCard ? -1 : undefined}
+                aria-hidden={isLoopPreviewCard || undefined}
+                className={`relative h-[326px] w-[212px] flex-shrink-0 overflow-hidden rounded-[20px] bg-light-gray-100 pt-34pxr text-center md:h-[382px] md:w-[259px] md:pt-48pxr ${
+                  isLoopPreviewCard
+                    ? "pointer-events-none"
+                    : "cursor-pointer"
+                }`}
                 onClick={() => {
+                  if (isLoopPreviewCard) return;
                   if (canTrackAiTasteClick) {
                     postSignalEvent({
                       product_id: product.productId,
@@ -336,7 +348,11 @@ const TasteSection = ({ section }: Props) => {
                   )}
                 </div>
 
-                <div className="relative z-10 mt-16pxr flex w-full flex-col items-center px-16pxr">
+                <div
+                  className={`relative z-10 mt-16pxr flex w-full flex-col items-center px-16pxr ${
+                    isLoopPreviewCard ? "invisible" : ""
+                  }`}
+                >
                   <div className="flex h-22pxr max-w-full items-center justify-center gap-4pxr overflow-hidden">
                     {productLabels.map((productLabel) => (
                       <span

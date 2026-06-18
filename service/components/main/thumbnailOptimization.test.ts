@@ -57,9 +57,14 @@ assert.match(
 );
 assert.match(tasteSectionSource, /bg-gradient-to-r from-white\/0 to-white/);
 assert.match(tasteSectionSource, /bg-gradient-to-l from-white\/0 to-white/);
-assert.match(tasteSectionSource, /lg:-mx-\[52px\]/);
-assert.match(tasteSectionSource, /lg:w-\[calc\(100%\+104px\)\]/);
-assert.match(tasteSectionSource, /lg:-translate-x-\[207px\]/);
+assert.match(tasteSectionSource, /lg:-mx-\[32px\]/);
+assert.match(tasteSectionSource, /lg:w-\[calc\(100%\+64px\)\]/);
+assert.match(tasteSectionSource, /lg:-translate-x-\[227px\]/);
+assert.match(tasteSectionSource, /const LOOP_PREVIEW_CARD_INDEX = 0/);
+assert.match(tasteSectionSource, /const isLoopPreviewCard =/);
+assert.match(tasteSectionSource, /tabIndex=\{isLoopPreviewCard \? -1 : undefined\}/);
+assert.match(tasteSectionSource, /aria-hidden=\{isLoopPreviewCard \|\| undefined\}/);
+assert.match(tasteSectionSource, /isLoopPreviewCard \? "invisible" : ""/);
 assert.match(tasteSectionSource, /const isLoopEnabled = isDesktop && totalItems > itemsPerPage/);
 assert.match(tasteSectionSource, /\(prev - 1 \+ totalItems\) % totalItems/);
 assert.match(tasteSectionSource, /\(prev \+ 1\) % totalItems/);
