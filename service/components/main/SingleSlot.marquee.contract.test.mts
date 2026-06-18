@@ -31,6 +31,16 @@ assert.match(
 );
 assert.match(
   source,
+  /line-clamp-3/,
+  "SingleSlot summary should show up to three lines",
+);
+assert.match(
+  source,
+  /-translate-y-\[4px\] md:-translate-y-\[8px\]/,
+  "SingleSlot text block should sit slightly above vertical center",
+);
+assert.match(
+  source,
   /aria-hidden/,
   "Duplicated marquee text should be hidden from assistive technology",
 );

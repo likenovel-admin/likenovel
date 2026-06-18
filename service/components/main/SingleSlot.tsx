@@ -136,11 +136,11 @@ const SingleSlot = ({ slot }: Props) => {
             className="relative flex items-center min-h-[132px] md:min-h-[156px] bg-light-gray-100 rounded-[10px] pl-24pxr pr-[134px] md:pl-[64px] md:pr-[250px]"
           >
             {/* left: OneadayBoxHeader */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 -translate-y-[4px] md:-translate-y-[8px]">
               {/* OneadayBoxTitle (제목 1줄) */}
               <SingleSlotTitle title={product.title} />
-              {/* OneadayBoxSummary (소개글 2줄) */}
-              <p className="mt-12pxr md:mt-[27px] text-14pxr md:text-20pxr leading-[20px] md:leading-[24px] tracking-[-1px] text-black-100 whitespace-pre-line line-clamp-2">
+              {/* OneadayBoxSummary (소개글 3줄) */}
+              <p className="mt-12pxr md:mt-[27px] text-14pxr md:text-20pxr leading-[20px] md:leading-[24px] tracking-[-1px] text-black-100 whitespace-pre-line line-clamp-3">
                 {summaryText}
               </p>
             </div>
