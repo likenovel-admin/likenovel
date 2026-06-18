@@ -4,8 +4,8 @@ import {
 } from "@/constants/common";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import { IProduct } from "@/types";
-import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import { shouldShowProductUpBadge } from "@/utils/productBadge";
 import {
   buildProductDetailPath,
   ProductDetailEntrySource,
@@ -79,9 +79,7 @@ const ProductCoverCard = ({
                 timePassValue={data.badge?.timepassFromTo}
               />
             )}
-            {getIsNewEpisode(data.properties?.latestEpisodeDate || "") && (
-              <SquareBadge type="up" />
-            )}
+            {shouldShowProductUpBadge(data) && <SquareBadge type="up" />}
           </div>
         </div>
       </div>

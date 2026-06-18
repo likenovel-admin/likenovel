@@ -5,6 +5,8 @@ const readSource = (path: string) =>
   readFileSync(new URL(path, import.meta.url), "utf8");
 
 const freeTopSource = readSource("./FreeTop.tsx");
+const paidTopSource = readSource("./PaidTop.tsx");
+const cpPromotionSource = readSource("./CPPromotion.tsx");
 const productListCardSource = readSource("../common/ProductListCard.tsx");
 const productCoverCardSource = readSource("../common/ProductCoverCard.tsx");
 const tasteSectionSource = readSource("../recommendation/TasteSection.tsx");
@@ -35,6 +37,14 @@ assert.match(productCoverCardSource, /unoptimized=\{isDefaultCoverImage\}/);
 assert.match(
   productCoverCardSource,
   /sizes="\(max-width: 767px\) 108px, 142px"/,
+);
+assert.match(productCoverCardSource, /shouldShowProductUpBadge\(data\)/);
+assert.match(freeTopSource, /shouldShowProductUpBadge\(product\)/);
+assert.match(paidTopSource, /shouldShowProductUpBadge\(product\)/);
+assert.match(cpPromotionSource, /shouldShowProductUpBadge\(product\)/);
+assert.match(
+  cpPromotionSource,
+  /absolute flex gap-\[2px\] bottom-\[5px\] left-\[5px\]/,
 );
 
 assert.match(
@@ -107,6 +117,8 @@ assert.match(tasteSectionSource, /const PRODUCT_LABEL_LIMIT = 3/);
 assert.match(tasteSectionSource, /const getProductLabels =/);
 assert.match(tasteSectionSource, /labels\.length >= PRODUCT_LABEL_LIMIT/);
 assert.match(tasteSectionSource, /productLabels\.map\(\(productLabel\)/);
+assert.match(tasteSectionSource, /product\.newReleaseYn === "Y"/);
+assert.match(tasteSectionSource, /<SquareBadge type="up" \/>/);
 assert.doesNotMatch(tasteSectionSource, /const productLabel = getProductLabel/);
 assert.doesNotMatch(
   tasteSectionSource,

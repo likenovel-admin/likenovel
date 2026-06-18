@@ -1,6 +1,6 @@
 import { useAdultCoverImage } from "@/hooks/useAdultCoverImage";
 import { IProduct } from "@/types";
-import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
+import { shouldShowProductUpBadge } from "@/utils/productBadge";
 import {
   buildProductDetailPath,
   PRODUCT_DETAIL_ENTRY_SOURCE,
@@ -153,9 +153,7 @@ const FreeTop = ({ data }: Props) => {
                       sizes: "56px",
                     }
                   )}
-                  {getIsNewEpisode(
-                    product.properties?.latestEpisodeDate || ""
-                  ) && (
+                  {shouldShowProductUpBadge(product) && (
                     <div className="absolute bottom-2pxr left-2pxr scale-[0.72] origin-bottom-left">
                       <SquareBadge type="up" />
                     </div>
@@ -220,9 +218,7 @@ const FreeTop = ({ data }: Props) => {
                   <div className="absolute top-0 left-0 scale-[0.8] origin-top-left">
                     <RankingBadge rank={product.rank?.currentRank || 0} />
                   </div>
-                  {getIsNewEpisode(
-                    product.properties?.latestEpisodeDate || ""
-                  ) && (
+                  {shouldShowProductUpBadge(product) && (
                     <div className="absolute bottom-4pxr left-4pxr scale-[0.85] origin-bottom-left">
                       <SquareBadge type="up" />
                     </div>

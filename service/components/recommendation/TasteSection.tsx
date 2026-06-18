@@ -31,6 +31,7 @@ import {
   type CSSProperties,
 } from "react";
 import CircleArrow from "../common/CircleArrow";
+import SquareBadge from "../common/SquareBadge";
 
 interface Props {
   section: IRecommendSection;
@@ -351,6 +352,7 @@ const TasteSection = ({ section }: Props) => {
               title
             );
             const episodeBadge = formatEpisodeBadge(product.episodeCount);
+            const shouldShowUpBadge = product.newReleaseYn === "Y";
 
             return (
               <button
@@ -423,6 +425,11 @@ const TasteSection = ({ section }: Props) => {
                       loading="eager"
                       className="object-cover"
                     />
+                  )}
+                  {shouldShowUpBadge && (
+                    <div className="absolute bottom-[5px] left-[5px] z-10">
+                      <SquareBadge type="up" />
+                    </div>
                   )}
                   {episodeBadge && (
                     <span className="absolute right-[-6px] top-14pxr min-w-[42px] rounded-full bg-white px-8pxr py-5pxr text-12pxr font-bold leading-[16px] text-dark-gray-400 shadow-[0_2px_8px_rgba(17,19,23,0.12)]">

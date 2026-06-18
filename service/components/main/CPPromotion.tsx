@@ -3,6 +3,7 @@ import UserNickname from "@/components/common/UserNickname";
 import { DEFAULT_PRODUCT_IMAGE } from "@/constants/common";
 import { IProduct } from "@/types";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import { shouldShowProductUpBadge } from "@/utils/productBadge";
 import {
   ProductDetailEntrySource,
   setPendingProductDetailEntrySource,
@@ -68,7 +69,7 @@ const CPPromotion = ({
                     height={255}
                     className="object-cover w-[108px] md:w-[172px] h-[164px] md:h-[255px] rounded-[10px]"
                   />
-                  <div className="absolute flex gap-[2px] top-[5px] left-[5px]">
+                  <div className="absolute flex gap-[2px] bottom-[5px] left-[5px]">
                     {product.badge?.waitForFreeYn === "Y" && (
                       <SquareBadge
                         type={getPromotionBadgeType(
@@ -82,10 +83,7 @@ const CPPromotion = ({
                         timePassValue={product.badge.timepassFromTo}
                       />
                     )}
-                    {/* {getIsNewEpisode(product.properties?.latestEpisodeDate || "") && (
-                    <SquareBadge type="up" />
-                  )} */}
-                    {product.badge?.newReleaseYn === "Y" && (
+                    {shouldShowProductUpBadge(product) && (
                       <SquareBadge type="up" />
                     )}
                   </div>

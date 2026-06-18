@@ -2,8 +2,8 @@ import AdultAgeBadge from "@/components/common/AdultAgeBadge";
 import { useAdultCoverImage } from "@/hooks/useAdultCoverImage";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import { IProduct } from "@/types";
-import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import { shouldShowProductUpBadge } from "@/utils/productBadge";
 import {
   buildProductDetailPath,
   PRODUCT_DETAIL_ENTRY_SOURCE,
@@ -152,9 +152,9 @@ const PaidTop = ({ data }: Props) => {
                     freeEpisodeNumber={product.badge?.freeEpisodeTicketCount}
                     timePassValue={product.badge?.timepassFromTo}
                   />
-                  {getIsNewEpisode(
-                    product.properties?.latestEpisodeDate || ""
-                  ) && <SquareBadge type="up" />}
+                  {shouldShowProductUpBadge(product) && (
+                    <SquareBadge type="up" />
+                  )}
                 </div>
               </div>
               <div className="flex items-start gap-10pxr mt-14pxr">
