@@ -51,14 +51,20 @@ assert.match(
 );
 assert.match(tasteSectionSource, /const itemsPerPage = 4/);
 assert.match(tasteSectionSource, /episodeCount/);
-assert.match(tasteSectionSource, /const showNextPreview = isDesktop && currentPage < lastPage/);
 assert.match(
   tasteSectionSource,
-  /currentPage \+ itemsPerPage \+ \(showNextPreview \? 1 : 0\)/,
+  /getLoopedProducts\(sortedProducts, currentPage - 1, itemsPerPage \+ 2\)/,
 );
 assert.match(tasteSectionSource, /bg-gradient-to-r from-white\/0 to-white/);
-assert.match(tasteSectionSource, /right-\[-52px\]/);
-assert.match(tasteSectionSource, /const showNextArrow = showArrows && currentPage < lastPage/);
+assert.match(tasteSectionSource, /bg-gradient-to-l from-white\/0 to-white/);
+assert.match(tasteSectionSource, /lg:-mx-\[52px\]/);
+assert.match(tasteSectionSource, /lg:w-\[calc\(100%\+104px\)\]/);
+assert.match(tasteSectionSource, /lg:-translate-x-\[207px\]/);
+assert.match(tasteSectionSource, /const isLoopEnabled = isDesktop && totalItems > itemsPerPage/);
+assert.match(tasteSectionSource, /\(prev - 1 \+ totalItems\) % totalItems/);
+assert.match(tasteSectionSource, /\(prev \+ 1\) % totalItems/);
+assert.doesNotMatch(tasteSectionSource, /isDisabled=\{currentPage === 0\}/);
+assert.doesNotMatch(tasteSectionSource, /showNextArrow/);
 assert.match(
   homePageSource,
   /relative min-h-screen overflow-x-hidden pt-\[130px\] md:pt-\[115px\] pb-\[94px\]/,

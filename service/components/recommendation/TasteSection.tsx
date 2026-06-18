@@ -121,6 +121,15 @@ const formatEpisodeBadge = (episodeCount: number) => {
   return `${Math.floor(episodeCount)}화`;
 };
 
+function getLoopedProducts<T>(items: T[], startIndex: number, count: number) {
+  if (!items.length) return [];
+
+  return Array.from({ length: count }, (_, offset) => {
+    const nextIndex = (startIndex + offset + items.length) % items.length;
+    return items[nextIndex];
+  });
+}
+
 const SparkleIcon = () => (
   <svg
     aria-hidden="true"
@@ -200,14 +209,22 @@ const TasteSection = ({ section }: Props) => {
             <Fragment key={`slot-title-text-${index}`}>{part}</Fragment>
           )
         );
-  const lastPage = Math.max(0, sortedProducts.length - itemsPerPage);
-  const showNextPreview = isDesktop && currentPage < lastPage;
-  const currentProducts = sortedProducts.slice(
-    currentPage,
-    currentPage + itemsPerPage + (showNextPreview ? 1 : 0)
-  );
-  const showArrows = isDesktop && sortedProducts.length > itemsPerPage;
-  const showNextArrow = showArrows && currentPage < lastPage;
+  const totalItems = sortedProducts.length;
+  const isLoopEnabled = isDesktop && totalItems > itemsPerPage;
+  const currentProducts = isLoopEnabled
+    ? getLoopedProducts(sortedProducts, currentPage - 1, itemsPerPage + 2)
+    : sortedProducts.slice(currentPage, currentPage + itemsPerPage);
+  const showArrows = isLoopEnabled;
+
+  const handlePrevPage = () => {
+    if (!isLoopEnabled) return;
+    setCurrentPage((prev) => (prev - 1 + totalItems) % totalItems);
+  };
+
+  const handleNextPage = () => {
+    if (!isLoopEnabled) return;
+    setCurrentPage((prev) => (prev + 1) % totalItems);
+  };
 
   return (
     <section className="relative max-w-[1120px]">
@@ -221,9 +238,19 @@ const TasteSection = ({ section }: Props) => {
         </p>
       </div>
 
-      <div className="relative mt-16pxr">
-        <div className="flex gap-12pxr md:gap-16pxr scroll-hidden overflow-x-auto lg:overflow-hidden pl-16pxr pr-16pxr md:px-0">
-          {currentProducts.map((product) => {
+      <div
+        className={`relative mt-16pxr ${
+          isLoopEnabled
+            ? "lg:-mx-[52px] lg:w-[calc(100%+104px)] lg:overflow-hidden"
+            : ""
+        }`}
+      >
+        <div
+          className={`flex gap-12pxr md:gap-16pxr scroll-hidden overflow-x-auto lg:overflow-hidden pl-16pxr pr-16pxr md:px-0 ${
+            isLoopEnabled ? "lg:-translate-x-[207px]" : ""
+          }`}
+        >
+          {currentProducts.map((product, renderedIndex) => {
             const isCoverBroken = Boolean(
               brokenCoverProductIds[product.productId]
             );
@@ -239,7 +266,7 @@ const TasteSection = ({ section }: Props) => {
 
             return (
               <button
-                key={product.productId}
+                key={`${product.productId}-${renderedIndex}`}
                 type="button"
                 className="relative h-[326px] w-[212px] flex-shrink-0 cursor-pointer overflow-hidden rounded-[20px] bg-light-gray-100 pt-34pxr text-center md:h-[382px] md:w-[259px] md:pt-48pxr"
                 onClick={() => {
@@ -333,29 +360,29 @@ const TasteSection = ({ section }: Props) => {
             );
           })}
         </div>
-        {showNextPreview && (
-          <div className="pointer-events-none absolute bottom-0 right-[-52px] top-0 z-10 hidden w-72pxr bg-gradient-to-r from-white/0 to-white lg:block" />
+        {isLoopEnabled && (
+          <>
+            <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 hidden w-72pxr bg-gradient-to-l from-white/0 to-white lg:block" />
+            <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 hidden w-72pxr bg-gradient-to-r from-white/0 to-white lg:block" />
+          </>
         )}
 
         {showArrows && (
           <>
-            <div className="absolute left-[-20px] top-1/2 z-20 hidden -translate-y-1/2 lg:block">
+            <div className="absolute left-[32px] top-1/2 z-20 hidden -translate-y-1/2 lg:block">
               <CircleArrow
                 direction="left"
-                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                isDisabled={currentPage === 0}
+                onClick={handlePrevPage}
+                isDisabled={false}
               />
             </div>
-            {showNextArrow && (
-              <div className="absolute right-[-20px] top-1/2 z-20 hidden -translate-y-1/2 lg:block">
-                <CircleArrow
-                  direction="right"
-                  onClick={() =>
-                    setCurrentPage(Math.min(lastPage, currentPage + 1))
-                  }
-                />
-              </div>
-            )}
+            <div className="absolute right-[32px] top-1/2 z-20 hidden -translate-y-1/2 lg:block">
+              <CircleArrow
+                direction="right"
+                onClick={handleNextPage}
+                isDisabled={false}
+              />
+            </div>
           </>
         )}
       </div>
