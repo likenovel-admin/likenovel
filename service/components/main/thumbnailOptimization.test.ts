@@ -79,6 +79,10 @@ assert.match(
   /\(itemsPerPage \+ 1\) \* DESKTOP_CARD_GAP/,
 );
 assert.match(tasteSectionSource, /sectionMeasureRef/);
+assert.match(
+  tasteSectionSource,
+  /className="relative mx-auto w-full max-w-\[1120px\]"/,
+);
 assert.doesNotMatch(tasteSectionSource, /const itemsPerPage = 4/);
 assert.match(tasteSectionSource, /const isDesktop = device === "desktop"/);
 assert.doesNotMatch(
@@ -95,6 +99,8 @@ assert.match(tasteSectionSource, /bg-gradient-to-l from-white\/0 to-white/);
 assert.match(tasteSectionSource, /--ai-taste-loop-width/);
 assert.match(tasteSectionSource, /--ai-taste-loop-shift/);
 assert.match(tasteSectionSource, /lg:w-\[var\(--ai-taste-loop-width\)\]/);
+assert.match(tasteSectionSource, /lg:w-max lg:overflow-visible/);
+assert.doesNotMatch(tasteSectionSource, /lg:mx-auto/);
 assert.match(
   tasteSectionSource,
   /lg:translate-x-\[var\(--ai-taste-loop-shift\)\]/,

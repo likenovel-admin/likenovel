@@ -311,7 +311,7 @@ const TasteSection = ({ section }: Props) => {
   };
 
   return (
-    <section ref={sectionMeasureRef} className="relative max-w-[1120px]">
+    <section ref={sectionMeasureRef} className="relative mx-auto w-full max-w-[1120px]">
       <div className="px-16pxr md:px-0">
         <h3 className="text-20pxr md:text-24pxr font-bold leading-[28px] md:leading-[34px] text-black-100">
           {slotTitle}
@@ -326,13 +326,15 @@ const TasteSection = ({ section }: Props) => {
         style={loopViewportStyle}
         className={`relative mt-16pxr ${
           isLoopEnabled
-            ? "lg:mx-auto lg:w-[var(--ai-taste-loop-width)] lg:overflow-hidden"
+            ? "lg:w-[var(--ai-taste-loop-width)] lg:overflow-hidden"
             : ""
         }`}
       >
         <div
-          className={`flex gap-12pxr scroll-hidden overflow-x-auto lg:overflow-hidden pl-16pxr pr-16pxr md:px-0 ${
-            isLoopEnabled ? "lg:translate-x-[var(--ai-taste-loop-shift)]" : ""
+          className={`flex gap-12pxr scroll-hidden overflow-x-auto pl-16pxr pr-16pxr md:px-0 ${
+            isLoopEnabled
+              ? "lg:w-max lg:overflow-visible lg:translate-x-[var(--ai-taste-loop-shift)]"
+              : "lg:overflow-hidden"
           }`}
         >
           {currentProducts.map((product, renderedIndex) => {
