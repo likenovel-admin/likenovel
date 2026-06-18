@@ -38,13 +38,40 @@ assert.match(
 
 assert.match(
   tasteSectionSource,
-  /sizes="\(max-width: 767px\) 108px, 142px"/,
+  /sizes="\(max-width: 767px\) 132px, 160px"/,
 );
 assert.match(
   tasteSectionSource,
-  /src=\{DEFAULT_PRODUCT_IMAGE\}[\s\S]*\bunoptimized\b/,
+  /src=\{DEFAULT_PRODUCT_IMAGE\}[\s\S]*\bsizes="\(max-width: 767px\) 132px, 160px"[\s\S]*\bunoptimized\b/,
 );
 assert.match(
   tasteSectionSource,
-  /const isDefaultCoverImage = coverImageSrc === DEFAULT_PRODUCT_IMAGE/,
+  /const isDefaultCoverImage =\s*coverImageSrc === DEFAULT_PRODUCT_IMAGE/,
 );
+assert.match(tasteSectionSource, /const itemsPerPage = 4/);
+assert.match(tasteSectionSource, /episodeCount/);
+assert.match(tasteSectionSource, /const showNextPreview = isDesktop && currentPage < lastPage/);
+assert.match(
+  tasteSectionSource,
+  /currentPage \+ itemsPerPage \+ \(showNextPreview \? 1 : 0\)/,
+);
+assert.match(tasteSectionSource, /bg-gradient-to-r from-white\/0 to-white/);
+assert.match(tasteSectionSource, /const showNextArrow = showArrows && currentPage < lastPage/);
+assert.match(
+  tasteSectionSource,
+  /\[\.\.\.section\.products\]\.sort\(\s*\(a, b\) => b\.episodeCount - a\.episodeCount\s*\)/,
+);
+assert.match(tasteSectionSource, /blur-\[30px\]/);
+assert.match(tasteSectionSource, /rounded-\[20px\]/);
+assert.match(
+  tasteSectionSource,
+  /회원님의 작품 읽기 패턴을 통해 골라드려요\./,
+);
+assert.match(tasteSectionSource, /작품 키워드/);
+assert.match(tasteSectionSource, /isSlotTitleDuplicateLabel/);
+assert.match(tasteSectionSource, /!isSlotTitleDuplicateLabel\(tag, slotTitle\)/);
+assert.doesNotMatch(
+  tasteSectionSource,
+  /AI사서 키워드|const subtitle = section\.reason|getSectionLabel|DIMENSION_LABELS|행동 신호 기반/,
+);
+assert.doesNotMatch(tasteSectionSource, /새로운 추천 보기|algorithm-more-button/);

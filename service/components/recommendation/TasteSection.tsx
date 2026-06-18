@@ -1,7 +1,14 @@
 "use client";
 
-import { IRecommendSection } from "@/app/api/query/recommendation/dto";
-import { usePostAiSignalEvent } from "@/app/api/query/recommendation";
+import {
+  IAiProductBrief,
+  IRecommendProduct,
+  IRecommendSection,
+} from "@/app/api/query/recommendation/dto";
+import {
+  useGetAiProductBriefs,
+  usePostAiSignalEvent,
+} from "@/app/api/query/recommendation";
 import {
   DEFAULT_PRODUCT_IMAGE,
   resolveProductCoverImage,
@@ -15,29 +22,146 @@ import {
 } from "@/utils/productPath";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import CircleArrow from "../common/CircleArrow";
-import MainHeader from "../common/MainHeader";
 
 interface Props {
   section: IRecommendSection;
 }
 
+const SECTION_SUBTITLE = "회원님의 작품 읽기 패턴을 통해 골라드려요.";
+const FALLBACK_PRODUCT_LABEL = "작품 키워드";
+const INTERNAL_AXIS_LABELS = new Set(["연", "타", "직", "타+직"]);
+const GENERIC_LABEL_WORDS = new Set([
+  "구좌",
+  "작품",
+  "조합",
+  "주인공",
+  "직업",
+  "키워드",
+  "타입",
+  "유형",
+]);
+
+const normalizeLabel = (value: string) => value.replace(/\s+/g, " ").trim();
+const normalizeLabelKey = (value: string) =>
+  normalizeLabel(value).replace(/[^0-9A-Za-z가-힣]+/g, "");
+const getComparableWords = (value: string) =>
+  normalizeLabel(value)
+    .replace(/[^0-9A-Za-z가-힣]+/g, " ")
+    .split(" ")
+    .filter((word) => word.length >= 2);
+
+const isVisibleTasteTag = (value: string) => {
+  const label = normalizeLabel(value);
+  if (!label || INTERNAL_AXIS_LABELS.has(label)) return false;
+  return !/^[가-힣A-Za-z]{1,2}(?:\+[가-힣A-Za-z]{1,2})+$/.test(label);
+};
+
+const isSlotTitleDuplicateLabel = (label: string, slotTitle: string) => {
+  const labelKey = normalizeLabelKey(label);
+  const slotTitleKey = normalizeLabelKey(slotTitle);
+  if (labelKey && slotTitleKey.includes(labelKey)) return true;
+
+  const slotTitleWords = new Set(getComparableWords(slotTitle));
+  const labelWords = getComparableWords(label).filter(
+    (word) => !GENERIC_LABEL_WORDS.has(word)
+  );
+  return (
+    labelWords.length > 0 &&
+    labelWords.every((word) => slotTitleWords.has(word))
+  );
+};
+
+const getBriefKeywordCandidates = (brief?: IAiProductBrief) => [
+  ...(brief?.librarianChips || []),
+  ...(brief?.tasteTags || []),
+  ...(brief?.worldviewTags || []),
+  ...(brief?.styleTags || []),
+  ...(brief?.protagonistTypeTags || []),
+  ...(brief?.protagonistJobTags || []),
+  ...(brief?.protagonistMaterialTags || []),
+  ...(brief?.romanceTags || []),
+];
+
+const getProductLabel = (
+  product: IRecommendProduct,
+  brief: IAiProductBrief | undefined,
+  slotTitle: string
+) => {
+  const tasteTag = [
+    ...getBriefKeywordCandidates(brief),
+    ...(product.tasteTags || []),
+  ].find(
+    (tag) => isVisibleTasteTag(tag) && !isSlotTitleDuplicateLabel(tag, slotTitle)
+  );
+  return tasteTag ? normalizeLabel(tasteTag) : FALLBACK_PRODUCT_LABEL;
+};
+
+const formatEpisodeBadge = (episodeCount: number) => {
+  if (!Number.isFinite(episodeCount) || episodeCount <= 0) return null;
+  return `${Math.floor(episodeCount)}화`;
+};
+
+const SparkleIcon = () => (
+  <svg
+    aria-hidden="true"
+    className="h-18pxr w-18pxr flex-shrink-0 text-primary-100"
+    viewBox="0 0 20 20"
+    fill="none"
+  >
+    <path
+      d="M9.1 2.4 7.6 7.2 3 8.8l4.6 1.6 1.5 4.8 1.6-4.8 4.6-1.6-4.6-1.6-1.6-4.8Z"
+      fill="currentColor"
+    />
+    <path
+      d="m15.4 1.8-.7 2.1-2 .7 2 .7.7 2.1.7-2.1 2-.7-2-.7-.7-2.1Z"
+      fill="currentColor"
+      opacity=".58"
+    />
+  </svg>
+);
+
 const TasteSection = ({ section }: Props) => {
   const router = useRouter();
   const device = useMediaDevice();
-  const { isAuthenticated, accessToken } = useAuthStore((state) => ({
+  const { isAuthenticated, accessToken, user } = useAuthStore((state) => ({
     isAuthenticated: state.isAuthenticated,
     accessToken: state.accessToken,
+    user: state.user,
   }));
   const { mutate: postSignalEvent } = usePostAiSignalEvent();
   const [currentPage, setCurrentPage] = useState(0);
   const [brokenCoverProductIds, setBrokenCoverProductIds] = useState<
     Record<number, true>
   >({});
-  const itemsPerPage = 6;
+  const itemsPerPage = 4;
   const isDesktop = device !== "mobile" && device !== "tablet";
+  const adultYn = user?.isOnAdult ? "Y" : "N";
   const canTrackAiTasteClick = Boolean(isAuthenticated || accessToken);
+  const sortedProducts = useMemo(
+    () =>
+      [...section.products].sort(
+        (a, b) => b.episodeCount - a.episodeCount
+      ),
+    [section.products]
+  );
+  const productIds = useMemo(
+    () => sortedProducts.map((product) => product.productId),
+    [sortedProducts]
+  );
+  const { data: aiBriefsData } = useGetAiProductBriefs(
+    productIds,
+    adultYn,
+    productIds.length > 0
+  );
+  const aiBriefsByProductId = useMemo(
+    () =>
+      new Map(
+        (aiBriefsData?.data ?? []).map((brief) => [brief.productId, brief])
+      ),
+    [aiBriefsData]
+  );
 
   if (!section.products.length) return null;
 
@@ -48,124 +172,171 @@ const TasteSection = ({ section }: Props) => {
       ? title
       : parts.map((part, index) =>
           index % 2 === 1 ? (
-            <span key={`slot-title-highlight-${index}`} className="text-primary-100">
+            <span
+              key={`slot-title-highlight-${index}`}
+              className="text-primary-100"
+            >
               {part}
             </span>
           ) : (
             <Fragment key={`slot-title-text-${index}`}>{part}</Fragment>
           )
         );
-  const currentProducts = section.products.slice(
+  const lastPage = Math.max(0, sortedProducts.length - itemsPerPage);
+  const showNextPreview = isDesktop && currentPage < lastPage;
+  const currentProducts = sortedProducts.slice(
     currentPage,
-    currentPage + itemsPerPage
+    currentPage + itemsPerPage + (showNextPreview ? 1 : 0)
   );
-  const lastPage = Math.max(0, section.products.length - itemsPerPage);
-  const showArrows = isDesktop && section.products.length > itemsPerPage;
+  const showArrows = isDesktop && sortedProducts.length > itemsPerPage;
+  const showNextArrow = showArrows && currentPage < lastPage;
 
   return (
-    <div className="relative max-w-[1120px] md:h-[350px]">
-      <MainHeader headerText={slotTitle} />
-
-      <div className="flex gap-10pxr md:gap-20pxr mt-10pxr md:mt-20pxr scroll-hidden overflow-x-auto lg:overflow-hidden pl-16pxr md:pl-0">
-        {currentProducts.map((product) => {
-          const isCoverBroken = Boolean(
-            brokenCoverProductIds[product.productId]
-          );
-          const coverImageSrc = resolveProductCoverImage(product.coverUrl);
-          const isDefaultCoverImage = coverImageSrc === DEFAULT_PRODUCT_IMAGE;
-          return (
-            <div
-              key={product.productId}
-              className="flex-shrink-0 w-[108px] md:w-[142px] cursor-pointer"
-              onClick={() => {
-                if (canTrackAiTasteClick) {
-                  postSignalEvent({
-                    product_id: product.productId,
-                    event_type: "taste_slot_click",
-                    event_payload: {
-                      source: "ai_taste_section",
-                      slot_title: section.title,
-                      slot_dimension: section.dimension,
-                    },
-                  });
-                }
-                setPendingProductDetailEntrySource(
-                  product.productId,
-                  PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION
-                );
-                router.push(
-                  buildProductDetailPath(product.productId, {
-                    entrySource: PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION,
-                  })
-                );
-              }}
-            >
-              <div className="relative w-[108px] md:w-[142px] h-[164px] md:h-[217px] bg-light-gray-100 rounded-[10px] overflow-hidden">
-                {!isCoverBroken && !isDefaultCoverImage ? (
-                  <Image
-                    src={coverImageSrc}
-                    alt={product.title}
-                    width={142}
-                    height={217}
-                    sizes="(max-width: 767px) 108px, 142px"
-                    className="object-cover w-full h-full rounded-[10px]"
-                    onError={() =>
-                      setBrokenCoverProductIds((prev) => ({
-                        ...prev,
-                        [product.productId]: true,
-                      }))
-                    }
-                  />
-                ) : (
-                  <Image
-                    src={DEFAULT_PRODUCT_IMAGE}
-                    alt={product.title}
-                    width={142}
-                    height={217}
-                    unoptimized
-                    loading="eager"
-                    className="object-cover w-full h-full rounded-[10px]"
-                  />
-                )}
-              </div>
-              <div className="mt-8pxr">
-                <p className="text-14pxr md:text-15pxr font-medium line-clamp-2">
-                  {product.title}
-                </p>
-                {product.authorNickname && (
-                  <p className="text-12pxr text-dark-gray-400 mt-2pxr">
-                    {product.authorNickname}
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
+    <section className="relative max-w-[1120px]">
+      <div className="px-16pxr md:px-0">
+        <h3 className="text-20pxr md:text-24pxr font-bold leading-[28px] md:leading-[34px] text-black-100">
+          {slotTitle}
+        </h3>
+        <p className="mt-4pxr flex items-center gap-4pxr text-14pxr md:text-15pxr leading-[22px] text-dark-gray-400">
+          <SparkleIcon />
+          <span>{SECTION_SUBTITLE}</span>
+        </p>
       </div>
 
-      {showArrows && (
-        <>
-          <div className="absolute top-[43%] left-[-20px] z-5 hidden lg:block">
-            <CircleArrow
-              direction="left"
-              onClick={() =>
-                setCurrentPage(Math.max(0, currentPage - 1))
-              }
-              isDisabled={currentPage === 0}
-            />
-          </div>
-          <div className="absolute top-[43%] right-[-20px] z-5 hidden lg:block">
-            <CircleArrow
-              direction="right"
-              onClick={() =>
-                setCurrentPage(Math.min(lastPage, currentPage + 1))
-              }
-              isDisabled={currentPage >= lastPage}
-            />
-          </div>
-        </>
-      )}
-    </div>
+      <div className="relative mt-16pxr">
+        <div className="flex gap-12pxr md:gap-16pxr scroll-hidden overflow-x-auto lg:overflow-hidden pl-16pxr pr-16pxr md:px-0">
+          {currentProducts.map((product) => {
+            const isCoverBroken = Boolean(
+              brokenCoverProductIds[product.productId]
+            );
+            const coverImageSrc = resolveProductCoverImage(product.coverUrl);
+            const isDefaultCoverImage =
+              coverImageSrc === DEFAULT_PRODUCT_IMAGE;
+            const productLabel = getProductLabel(
+              product,
+              aiBriefsByProductId.get(product.productId),
+              title
+            );
+            const episodeBadge = formatEpisodeBadge(product.episodeCount);
+
+            return (
+              <button
+                key={product.productId}
+                type="button"
+                className="relative h-[326px] w-[212px] flex-shrink-0 cursor-pointer overflow-hidden rounded-[20px] bg-light-gray-100 pt-34pxr text-center md:h-[382px] md:w-[259px] md:pt-48pxr"
+                onClick={() => {
+                  if (canTrackAiTasteClick) {
+                    postSignalEvent({
+                      product_id: product.productId,
+                      event_type: "taste_slot_click",
+                      event_payload: {
+                        source: "ai_taste_section",
+                        slot_title: section.title,
+                        slot_dimension: section.dimension,
+                      },
+                    });
+                  }
+                  setPendingProductDetailEntrySource(
+                    product.productId,
+                    PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION
+                  );
+                  router.push(
+                    buildProductDetailPath(product.productId, {
+                      entrySource: PRODUCT_DETAIL_ENTRY_SOURCE.AI_TASTE_SECTION,
+                    })
+                  );
+                }}
+              >
+                <div className="absolute left-1/2 top-34pxr h-[196px] w-[212px] -translate-x-1/2 rotate-180 opacity-30 blur-[30px] md:top-48pxr md:h-[228px] md:w-[259px]">
+                  <Image
+                    src={coverImageSrc}
+                    alt=""
+                    fill
+                    sizes="(max-width: 767px) 212px, 259px"
+                    unoptimized={isDefaultCoverImage}
+                    className="object-cover"
+                  />
+                </div>
+
+                <div className="relative z-10 mx-auto h-[190px] w-[132px] overflow-hidden rounded-[8px] bg-light-gray-200 shadow-[0_1px_2px_rgba(17,19,23,0.12)] md:h-[224px] md:w-[160px]">
+                  {!isCoverBroken && !isDefaultCoverImage ? (
+                    <Image
+                      src={coverImageSrc}
+                      alt={product.title}
+                      fill
+                      sizes="(max-width: 767px) 132px, 160px"
+                      className="object-cover"
+                      onError={() =>
+                        setBrokenCoverProductIds((prev) => ({
+                          ...prev,
+                          [product.productId]: true,
+                        }))
+                      }
+                    />
+                  ) : (
+                    <Image
+                      src={DEFAULT_PRODUCT_IMAGE}
+                      alt={product.title}
+                      fill
+                      sizes="(max-width: 767px) 132px, 160px"
+                      unoptimized
+                      loading="eager"
+                      className="object-cover"
+                    />
+                  )}
+                  {episodeBadge && (
+                    <span className="absolute right-[-6px] top-14pxr min-w-[42px] rounded-full bg-white px-8pxr py-5pxr text-12pxr font-bold leading-[16px] text-dark-gray-400 shadow-[0_2px_8px_rgba(17,19,23,0.12)]">
+                      {episodeBadge}
+                    </span>
+                  )}
+                </div>
+
+                <div className="relative z-10 mt-16pxr flex w-full flex-col items-center px-16pxr">
+                  <span className="inline-flex h-22pxr max-w-full items-center justify-center rounded-full border border-dark-gray-300 px-8pxr text-11pxr font-medium leading-[18px] text-dark-gray-400">
+                    <span className="max-w-[140px] truncate md:max-w-[170px]">
+                      {productLabel}
+                    </span>
+                  </span>
+                  <p className="mt-8pxr w-full truncate text-16pxr font-bold leading-[24px] text-black-100">
+                    {product.title}
+                  </p>
+                  {product.authorNickname && (
+                    <p className="mt-4pxr w-full truncate text-14pxr leading-[20px] text-dark-gray-400">
+                      {product.authorNickname}
+                    </p>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {showNextPreview && (
+          <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 hidden w-72pxr bg-gradient-to-r from-white/0 to-white lg:block" />
+        )}
+
+        {showArrows && (
+          <>
+            <div className="absolute left-[-20px] top-1/2 z-20 hidden -translate-y-1/2 lg:block">
+              <CircleArrow
+                direction="left"
+                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                isDisabled={currentPage === 0}
+              />
+            </div>
+            {showNextArrow && (
+              <div className="absolute right-[-20px] top-1/2 z-20 hidden -translate-y-1/2 lg:block">
+                <CircleArrow
+                  direction="right"
+                  onClick={() =>
+                    setCurrentPage(Math.min(lastPage, currentPage + 1))
+                  }
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </section>
   );
 };
 
