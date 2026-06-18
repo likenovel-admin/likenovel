@@ -60,10 +60,24 @@ assert.match(
   /const isDefaultCoverImage =\s*coverImageSrc === DEFAULT_PRODUCT_IMAGE/,
 );
 assert.match(tasteSectionSource, /const DEFAULT_DESKTOP_ITEMS_PER_PAGE = 4/);
+assert.match(tasteSectionSource, /const DESKTOP_CARD_GAP = 12/);
+assert.match(tasteSectionSource, /const DESKTOP_PREVIEW_WIDTH = 10/);
+assert.match(
+  tasteSectionSource,
+  /const LOOP_SHIFT_WIDTH = DESKTOP_CARD_WIDTH - DESKTOP_PREVIEW_WIDTH/,
+);
 assert.match(tasteSectionSource, /const getResponsiveItemsPerPage =/);
 assert.match(tasteSectionSource, /viewportWidth = containerWidth/);
 assert.match(tasteSectionSource, /window\.innerWidth/);
 assert.match(tasteSectionSource, /ResizeObserver/);
+assert.match(
+  tasteSectionSource,
+  /availableWidth - DESKTOP_CARD_GAP - DESKTOP_PREVIEW_WIDTH \* 2/,
+);
+assert.match(
+  tasteSectionSource,
+  /\(itemsPerPage \+ 1\) \* DESKTOP_CARD_GAP/,
+);
 assert.match(tasteSectionSource, /sectionMeasureRef/);
 assert.doesNotMatch(tasteSectionSource, /const itemsPerPage = 4/);
 assert.match(tasteSectionSource, /const isDesktop = device === "desktop"/);
@@ -99,6 +113,14 @@ assert.doesNotMatch(tasteSectionSource, /showNextArrow/);
 assert.match(
   homePageSource,
   /relative min-h-screen overflow-x-hidden pt-\[130px\] md:pt-\[115px\] pb-\[94px\]/,
+);
+assert.equal(
+  (homePageSource.match(/gap-44pxr md:gap-88pxr/g) || []).length,
+  2,
+);
+assert.equal(
+  (homePageSource.match(/mt-44pxr md:mt-88pxr/g) || []).length,
+  2,
 );
 assert.match(
   tasteSectionSource,

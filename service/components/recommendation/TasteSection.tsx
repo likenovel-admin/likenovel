@@ -44,8 +44,8 @@ const LOOP_PREVIEW_CARD_INDEX = 0;
 const DEFAULT_DESKTOP_ITEMS_PER_PAGE = 4;
 const MIN_DESKTOP_ITEMS_PER_PAGE = 1;
 const DESKTOP_CARD_WIDTH = 259;
-const DESKTOP_CARD_GAP = 16;
-const DESKTOP_PREVIEW_WIDTH = 32;
+const DESKTOP_CARD_GAP = 12;
+const DESKTOP_PREVIEW_WIDTH = 10;
 const LOOP_SHIFT_WIDTH = DESKTOP_CARD_WIDTH - DESKTOP_PREVIEW_WIDTH;
 const INTERNAL_AXIS_LABELS = new Set(["연", "타", "직", "타+직"]);
 const GENERIC_LABEL_WORDS = new Set([
@@ -163,7 +163,7 @@ const getResponsiveItemsPerPage = (
     Math.max(
       MIN_DESKTOP_ITEMS_PER_PAGE,
       Math.floor(
-        (availableWidth - DESKTOP_PREVIEW_WIDTH + DESKTOP_CARD_GAP) /
+        (availableWidth - DESKTOP_CARD_GAP - DESKTOP_PREVIEW_WIDTH * 2) /
           (DESKTOP_CARD_WIDTH + DESKTOP_CARD_GAP)
       )
     )
@@ -172,7 +172,7 @@ const getResponsiveItemsPerPage = (
 
 const getLoopViewportWidth = (itemsPerPage: number) =>
   itemsPerPage * DESKTOP_CARD_WIDTH +
-  Math.max(0, itemsPerPage - 1) * DESKTOP_CARD_GAP +
+  (itemsPerPage + 1) * DESKTOP_CARD_GAP +
   DESKTOP_PREVIEW_WIDTH * 2;
 
 const SparkleIcon = () => (
@@ -331,7 +331,7 @@ const TasteSection = ({ section }: Props) => {
         }`}
       >
         <div
-          className={`flex gap-12pxr md:gap-16pxr scroll-hidden overflow-x-auto lg:overflow-hidden pl-16pxr pr-16pxr md:px-0 ${
+          className={`flex gap-12pxr scroll-hidden overflow-x-auto lg:overflow-hidden pl-16pxr pr-16pxr md:px-0 ${
             isLoopEnabled ? "lg:translate-x-[var(--ai-taste-loop-shift)]" : ""
           }`}
         >

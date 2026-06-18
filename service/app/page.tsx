@@ -256,7 +256,7 @@ export default function Home() {
               </div>
             </div>
             {mainRuleSlotSections.length > 0 && (
-              <div className="w-full max-w-[1120px] mx-auto flex flex-col mt-30pxr md:mt-70pxr gap-30pxr md:gap-68pxr">
+              <div className="w-full max-w-[1120px] mx-auto flex flex-col mt-44pxr md:mt-88pxr gap-44pxr md:gap-88pxr">
                 {mainRuleSlotSections.map((section) => (
                   <BottomProducts
                     key={`main-rule-${section.suggestName}-${section.suggestTitle}`}
@@ -279,7 +279,7 @@ export default function Home() {
                 secondaryPanels={data?.banners?.secondaryPanels ?? []}
               />
             </div>
-            <div className="w-full max-w-[1120px] mx-auto flex flex-col mt-30pxr md:mt-70pxr gap-30pxr md:gap-68pxr">
+            <div className="w-full max-w-[1120px] mx-auto flex flex-col mt-44pxr md:mt-88pxr gap-44pxr md:gap-88pxr">
               <CPPromotion
                 data={cpPromotionProducts}
                 title={data?.publisherPromotionTitle}
