@@ -13,7 +13,7 @@ import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
 import { getUpdateFrequency } from "@/utils/getUpdateFrequency";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import Button from "../common/Button";
 import ProductStateBadge from "../common/ProductStateBadge";
 import Spinner from "../common/Spinner";
@@ -41,6 +41,14 @@ const normalizeSynopsisText = (synopsis?: string | null) =>
     .replace(/\\r\\n/g, "\n")
     .replace(/\\n/g, "\n")
     .replace(/\r\n/g, "\n");
+
+const renderSynopsisText = (text: string) =>
+  text.split("\n").map((line, index, lines) => (
+    <Fragment key={index}>
+      {line}
+      {index < lines.length - 1 && <br />}
+    </Fragment>
+  ));
 
 const ProductCoverArea = ({
   data,
@@ -311,8 +319,8 @@ const MoreArea = ({ synopsis }: { synopsis?: string }) => {
   return (
     <div className="w-full md:w-auto mt-6 border-t md:border-t-0 text-14pxr leading-[20px] text-dark-gray-500">
       <div className="pt-3">
-        <div className="whitespace-pre-line">
-          {truncatedText}
+        <div>
+          {renderSynopsisText(truncatedText)}
           {!isExpanded && shouldShowMore && (
             <>
               ...{" "}

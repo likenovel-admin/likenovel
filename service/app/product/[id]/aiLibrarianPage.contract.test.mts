@@ -167,18 +167,23 @@ assert.doesNotMatch(
 );
 assert.match(
   productCoverAreaSource,
-  /normalizeSynopsisText/,
-  "Product detail synopsis should normalize escaped and actual line breaks"
+  /splitSynopsisParagraphs/,
+  "Product detail synopsis should split escaped and actual line breaks"
 );
 assert.match(
   productCoverAreaSource,
-  /line-clamp-2[\s\S]{0,120}whitespace-pre-line/,
-  "Product detail folded synopsis should preserve line breaks while clamped"
+  /<span\s+className=\{\`\$\{data\.trendindex \? "line-clamp-2" : ""\}\`\}[\s\S]*synopsisParagraphs\.map/,
+  "Product detail folded synopsis should keep the existing span and paragraph UI"
 );
 assert.match(
   productCoverAreaSource,
-  /<p className="whitespace-pre-line text-14pxr md:text-15pxr text-dark-gray-400">/,
-  "Product detail expanded synopsis should preserve line breaks"
+  /<div className="text-14pxr md:text-15pxr text-dark-gray-400">[\s\S]*synopsisParagraphs\.map/,
+  "Product detail expanded synopsis should keep the existing paragraph UI"
+);
+assert.doesNotMatch(
+  productCoverAreaSource,
+  /whitespace-pre-line/,
+  "Product detail synopsis should not change layout with whitespace-pre-line"
 );
 assert.doesNotMatch(
   productCoverAreaSource,
@@ -192,6 +197,6 @@ assert.match(
 );
 assert.match(
   episodeManagerProductCoverAreaSource,
-  /<div className="whitespace-pre-line">[\s\S]*\{truncatedText\}/,
-  "Episode manager folded and expanded synopsis should preserve line breaks"
+  /<div>[\s\S]*\{renderSynopsisText\(truncatedText\)\}/,
+  "Episode manager should preserve the existing wrapper while rendering line breaks"
 );
