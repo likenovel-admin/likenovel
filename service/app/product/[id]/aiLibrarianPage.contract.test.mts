@@ -190,6 +190,11 @@ assert.match(
   /<p className="text-14pxr md:text-15pxr text-dark-gray-400">[\s\S]*renderSynopsisText\(synopsisText\)/,
   "Product detail expanded synopsis should keep a single text block while rendering line breaks"
 );
+assert.match(
+  productCoverAreaSource,
+  /<div className="relative w-full bg-white border border-light-gray-200 rounded-\[10px\] shadow-sm">/,
+  "Product detail expanded synopsis popup should keep the intended full-width layout"
+);
 assert.doesNotMatch(
   productCoverAreaSource,
   /whitespace-pre-line/,

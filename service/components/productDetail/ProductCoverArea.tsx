@@ -658,7 +658,7 @@ const ProductCoverArea = ({
                     )}
                     {isSynopsisOpen && (
                       <div className="absolute top-[99px] left-[-10px] inset-0 z-50 flex items-center justify-center w-[105%] md:w-[110%]">
-                        <div className="relative bg-white border border-light-gray-200 rounded-[10px] shadow-sm">
+                        <div className="relative w-full bg-white border border-light-gray-200 rounded-[10px] shadow-sm">
                           <div className="relative p-4 w-[100%] h-[200px] overflow-auto">
                             <p className="text-14pxr md:text-15pxr text-dark-gray-400">
                               {renderSynopsisText(synopsisText)}
