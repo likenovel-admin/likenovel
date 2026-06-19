@@ -22,6 +22,10 @@ const productCoverAreaSource = readFileSync(
   new URL("../../../components/productDetail/ProductCoverArea.tsx", import.meta.url),
   "utf8"
 );
+const episodeManagerProductCoverAreaSource = readFileSync(
+  new URL("../../../components/episodeManager/ProductCoverArea.tsx", import.meta.url),
+  "utf8"
+);
 
 assert.match(source, /const aiLibrarianBrief = aiBriefsData\?\.data\?\.\[0\] \?\? null/);
 assert.match(source, /aiLibrarianBrief\s+\?\s+buildAiLibrarianCopy/);
@@ -160,4 +164,34 @@ assert.doesNotMatch(
   productCoverAreaSource,
   /\{data\.totalOpenEpisodeCount\}화/,
   "ProductCoverArea should not force public open episode count in owner/admin views"
+);
+assert.match(
+  productCoverAreaSource,
+  /normalizeSynopsisText/,
+  "Product detail synopsis should normalize escaped and actual line breaks"
+);
+assert.match(
+  productCoverAreaSource,
+  /line-clamp-2[\s\S]{0,120}whitespace-pre-line/,
+  "Product detail folded synopsis should preserve line breaks while clamped"
+);
+assert.match(
+  productCoverAreaSource,
+  /<p className="whitespace-pre-line text-14pxr md:text-15pxr text-dark-gray-400">/,
+  "Product detail expanded synopsis should preserve line breaks"
+);
+assert.doesNotMatch(
+  productCoverAreaSource,
+  /\.split\("\\\\n"\)/,
+  "Product detail synopsis should not only split escaped newline text"
+);
+assert.match(
+  episodeManagerProductCoverAreaSource,
+  /normalizeSynopsisText/,
+  "Episode manager synopsis should normalize escaped and actual line breaks"
+);
+assert.match(
+  episodeManagerProductCoverAreaSource,
+  /<div className="whitespace-pre-line">[\s\S]*\{truncatedText\}/,
+  "Episode manager folded and expanded synopsis should preserve line breaks"
 );

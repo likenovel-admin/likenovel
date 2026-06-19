@@ -36,6 +36,12 @@ interface Props {
   comments?: IComment[];
 }
 
+const normalizeSynopsisText = (synopsis?: string | null) =>
+  (synopsis ?? "")
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\r\n/g, "\n");
+
 const ProductCoverArea = ({
   data,
   evaluations,
@@ -287,6 +293,7 @@ const MoreArea = ({ synopsis }: { synopsis?: string }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!synopsis) return null;
+  const displaySynopsis = normalizeSynopsisText(synopsis);
 
   const truncateText = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text;
@@ -295,14 +302,16 @@ const MoreArea = ({ synopsis }: { synopsis?: string }) => {
     return lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated;
   };
 
-  const shouldShowMore = synopsis.length > 150;
+  const shouldShowMore = displaySynopsis.length > 150;
   const truncatedText =
-    shouldShowMore && !isExpanded ? truncateText(synopsis, 120) : synopsis;
+    shouldShowMore && !isExpanded
+      ? truncateText(displaySynopsis, 120)
+      : displaySynopsis;
 
   return (
     <div className="w-full md:w-auto mt-6 border-t md:border-t-0 text-14pxr leading-[20px] text-dark-gray-500">
       <div className="pt-3">
-        <div>
+        <div className="whitespace-pre-line">
           {truncatedText}
           {!isExpanded && shouldShowMore && (
             <>

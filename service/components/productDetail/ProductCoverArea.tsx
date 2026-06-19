@@ -65,6 +65,12 @@ const formatPaidOpenDate = (value?: string | null) => {
   return match ? `${match[1]}.${match[2]}.${match[3]}` : "";
 };
 
+const normalizeSynopsisText = (synopsis?: string | null) =>
+  (synopsis ?? "")
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\r\n/g, "\n");
+
 const ProductCoverArea = ({
   data,
   isSuccess,
@@ -103,6 +109,7 @@ const ProductCoverArea = ({
     data?.properties?.latestEpisodeDate || ""
   );
   const displayEpisodeCount = episodeCount ?? data?.totalOpenEpisodeCount ?? 0;
+  const synopsisText = normalizeSynopsisText(data?.synopsis);
   const paidOpenDateLabel =
     data?.priceType === "paid" ? formatPaidOpenDate(data?.paidOpenDate) : "";
 
@@ -311,7 +318,7 @@ const ProductCoverArea = ({
 
   useEffect(() => {
     if (data?.synopsis) {
-      setShowReadMore(data.synopsis.length > 98);
+      setShowReadMore(synopsisText.length > 98);
     }
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -338,7 +345,7 @@ const ProductCoverArea = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [data?.synopsis]);
+  }, [data?.synopsis, synopsisText]);
 
   const renderInterestTooltipIcon = (src: string, alt: string) => {
     return (
@@ -625,20 +632,11 @@ const ProductCoverArea = ({
                     className={`relative max-w-[530px] mt-10pxr`}
                     ref={synopsisRef}
                   >
-                    <span
-                      className={`${data.trendindex ? "line-clamp-2" : ""}`}
+                    <p
+                      className={`${data.trendindex ? "line-clamp-2" : ""} whitespace-pre-line text-14pxr md:text-15pxr text-dark-gray-400 mb-4pxr`}
                     >
-                      {data?.synopsis
-                        ?.split("\\n")
-                        .map((paragraph: any, index: number) => (
-                          <p
-                            key={index}
-                            className="text-14pxr md:text-15pxr text-dark-gray-400 mb-4pxr"
-                          >
-                            {paragraph}
-                          </p>
-                        ))}
-                    </span>
+                      {synopsisText}
+                    </p>
                     {showReadMore && data.trendindex && (
                       <div className="absolute right-0 flex items-center gap-5pxr mt-2pxr">
                         <button
@@ -654,15 +652,9 @@ const ProductCoverArea = ({
                       <div className="absolute top-[99px] left-[-10px] inset-0 z-50 flex items-center justify-center w-[105%] md:w-[110%]">
                         <div className="relative bg-white border border-light-gray-200 rounded-[10px] shadow-sm">
                           <div className="relative p-4 w-[100%] h-[200px] overflow-auto">
-                            <div className="text-14pxr md:text-15pxr text-dark-gray-400">
-                              {data.synopsis
-                                ?.split("\\n")
-                                .map((paragraph: any, index: number) => (
-                                  <p key={index} className="mb-4pxr">
-                                    {paragraph}
-                                  </p>
-                                ))}
-                            </div>
+                            <p className="whitespace-pre-line text-14pxr md:text-15pxr text-dark-gray-400">
+                              {synopsisText}
+                            </p>
                           </div>
                           <div className="flex w-full justify-end items-center gap-5pxr h-[30px] py-5pxr pr-10pxr border border-t-light-gray-200 border-b-0 border-l-0 border-r-0 bg-[#FAFAFA] rounded-b-[10px]">
                             <button
