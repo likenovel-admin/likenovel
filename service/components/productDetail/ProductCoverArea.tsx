@@ -65,14 +65,19 @@ const formatPaidOpenDate = (value?: string | null) => {
   return match ? `${match[1]}.${match[2]}.${match[3]}` : "";
 };
 
-const splitSynopsisParagraphs = (synopsis?: string | null) =>
-  synopsis
-    ? synopsis
-        .replace(/\\r\\n/g, "\n")
-        .replace(/\\n/g, "\n")
-        .replace(/\r\n/g, "\n")
-        .split("\n")
-    : [];
+const normalizeSynopsisText = (synopsis?: string | null) =>
+  (synopsis ?? "")
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\r\n/g, "\n");
+
+const renderSynopsisText = (text: string) =>
+  text.split("\n").map((line, index, lines) => (
+    <React.Fragment key={index}>
+      {line}
+      {index < lines.length - 1 && <br />}
+    </React.Fragment>
+  ));
 
 const ProductCoverArea = ({
   data,
@@ -112,7 +117,7 @@ const ProductCoverArea = ({
     data?.properties?.latestEpisodeDate || ""
   );
   const displayEpisodeCount = episodeCount ?? data?.totalOpenEpisodeCount ?? 0;
-  const synopsisParagraphs = splitSynopsisParagraphs(data?.synopsis);
+  const synopsisText = normalizeSynopsisText(data?.synopsis);
   const paidOpenDateLabel =
     data?.priceType === "paid" ? formatPaidOpenDate(data?.paidOpenDate) : "";
 
@@ -632,21 +637,14 @@ const ProductCoverArea = ({
                     </div>
                   )}
                   <div
-                    className={`relative max-w-[530px] mt-10pxr`}
+                    className={`relative w-full max-w-[530px] mt-10pxr`}
                     ref={synopsisRef}
                   >
-                    <span
-                      className={`${data.trendindex ? "line-clamp-2" : ""}`}
+                    <p
+                      className={`${data.trendindex ? "line-clamp-2" : ""} text-14pxr md:text-15pxr text-dark-gray-400 mb-4pxr`}
                     >
-                      {synopsisParagraphs.map((paragraph, index) => (
-                        <p
-                          key={index}
-                          className="text-14pxr md:text-15pxr text-dark-gray-400 mb-4pxr"
-                        >
-                          {paragraph}
-                        </p>
-                      ))}
-                    </span>
+                      {renderSynopsisText(synopsisText)}
+                    </p>
                     {showReadMore && data.trendindex && (
                       <div className="absolute right-0 flex items-center gap-5pxr mt-2pxr">
                         <button
@@ -662,13 +660,9 @@ const ProductCoverArea = ({
                       <div className="absolute top-[99px] left-[-10px] inset-0 z-50 flex items-center justify-center w-[105%] md:w-[110%]">
                         <div className="relative bg-white border border-light-gray-200 rounded-[10px] shadow-sm">
                           <div className="relative p-4 w-[100%] h-[200px] overflow-auto">
-                            <div className="text-14pxr md:text-15pxr text-dark-gray-400">
-                              {synopsisParagraphs.map((paragraph, index) => (
-                                <p key={index} className="mb-4pxr">
-                                  {paragraph}
-                                </p>
-                              ))}
-                            </div>
+                            <p className="text-14pxr md:text-15pxr text-dark-gray-400">
+                              {renderSynopsisText(synopsisText)}
+                            </p>
                           </div>
                           <div className="flex w-full justify-end items-center gap-5pxr h-[30px] py-5pxr pr-10pxr border border-t-light-gray-200 border-b-0 border-l-0 border-r-0 bg-[#FAFAFA] rounded-b-[10px]">
                             <button

@@ -167,23 +167,38 @@ assert.doesNotMatch(
 );
 assert.match(
   productCoverAreaSource,
-  /splitSynopsisParagraphs/,
-  "Product detail synopsis should split escaped and actual line breaks"
+  /normalizeSynopsisText/,
+  "Product detail synopsis should normalize escaped and actual line breaks"
 );
 assert.match(
   productCoverAreaSource,
-  /<span\s+className=\{\`\$\{data\.trendindex \? "line-clamp-2" : ""\}\`\}[\s\S]*synopsisParagraphs\.map/,
-  "Product detail folded synopsis should keep the existing span and paragraph UI"
+  /renderSynopsisText/,
+  "Product detail synopsis should render line breaks without splitting the layout into separate paragraphs"
 );
 assert.match(
   productCoverAreaSource,
-  /<div className="text-14pxr md:text-15pxr text-dark-gray-400">[\s\S]*synopsisParagraphs\.map/,
-  "Product detail expanded synopsis should keep the existing paragraph UI"
+  /className=\{\`relative w-full max-w-\[530px\] mt-10pxr`\}/,
+  "Product detail synopsis wrapper should keep a stable width after preserving line breaks"
+);
+assert.match(
+  productCoverAreaSource,
+  /<p\s+className=\{\`\$\{data\.trendindex \? "line-clamp-2" : ""\} text-14pxr md:text-15pxr text-dark-gray-400 mb-4pxr`\}[\s\S]*renderSynopsisText\(synopsisText\)/,
+  "Product detail folded synopsis should keep the original single text block layout"
+);
+assert.match(
+  productCoverAreaSource,
+  /<p className="text-14pxr md:text-15pxr text-dark-gray-400">[\s\S]*renderSynopsisText\(synopsisText\)/,
+  "Product detail expanded synopsis should keep a single text block while rendering line breaks"
 );
 assert.doesNotMatch(
   productCoverAreaSource,
   /whitespace-pre-line/,
   "Product detail synopsis should not change layout with whitespace-pre-line"
+);
+assert.doesNotMatch(
+  productCoverAreaSource,
+  /synopsisParagraphs\.map/,
+  "Product detail synopsis should not split actual newlines into separate paragraph boxes"
 );
 assert.doesNotMatch(
   productCoverAreaSource,
