@@ -6,7 +6,7 @@ interface WebsochatRpMessageBodyProps {
 }
 
 const BUBBLE_CLASS =
-  "rounded-[16px] px-16pxr py-12pxr text-16pxr leading-[1.6] whitespace-pre-wrap shadow-sm bg-white text-dark-gray-500";
+  "rounded-[16px] px-16pxr py-12pxr text-16pxr leading-[1.6] whitespace-pre-wrap border border-light-gray-500 bg-white text-dark-gray-500";
 
 /**
  * 웹소챗 어시스턴트(RP) 응답을 지문/대사로 분리 렌더한다.
