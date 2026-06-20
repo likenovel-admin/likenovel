@@ -1,6 +1,7 @@
 "use client";
 
 import { useGetChatHistory, usePostAiChat } from "@/app/api/query/recommendation";
+import type { IAiSuggestedAction, IRecommendProduct } from "@/app/api/query/recommendation/dto";
 import { ErrorCodes } from "@/enums/errorCodes";
 import { IChatMessage } from "@/store/chatStore";
 import useChatStore from "@/store/chatStore";
@@ -34,11 +35,223 @@ const PRESETS = [
 type PresetKey = (typeof PRESETS)[number]["key"];
 
 const HIDDEN_PREFIXES = ["/login", "/signup", "/find-password", "/reset-password", "/viewer", "/websochat"];
+const CARD_TAG_LIMIT = 5;
+const FOLLOW_UP_QUESTION_LIMIT = 4;
+const FOLLOW_UP_QUESTION_MIN = 3;
+
+type IProductCardTagSource = {
+  matchTags?: string[];
+  tasteTags?: string[];
+  worldviewTags?: string[];
+  protagonistTypeTags?: string[];
+  protagonistJobTags?: string[];
+  protagonistMaterialTags?: string[];
+  axisRomanceTags?: string[];
+  axisStyleTags?: string[];
+  primaryGenre?: string | null;
+  subGenre?: string | null;
+};
 
 const parsePositiveId = (value?: string) => {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 };
+
+const normalizeCardTag = (value: string | null | undefined) =>
+  String(value || "").replace(/\s+/g, " ").trim();
+
+const buildCardDisplayTags = (product: IProductCardTagSource) => {
+  const tags: string[] = [];
+  const seen = new Set<string>();
+  const append = (value: string | null | undefined) => {
+    const tag = normalizeCardTag(value);
+    if (!tag || seen.has(tag)) return;
+    seen.add(tag);
+    tags.push(tag);
+  };
+
+  [
+    ...(product.matchTags || []),
+    ...(product.protagonistJobTags || []),
+    ...(product.protagonistMaterialTags || []),
+    ...(product.protagonistTypeTags || []),
+    ...(product.worldviewTags || []),
+    ...(product.tasteTags || []),
+    ...(product.axisStyleTags || []),
+    ...(product.axisRomanceTags || []),
+  ].forEach(append);
+
+  append(product.primaryGenre);
+  append(product.subGenre);
+
+  return tags.slice(0, CARD_TAG_LIMIT);
+};
+
+const AiChatProductTags = ({ product }: { product: IProductCardTagSource }) => {
+  const tags = buildCardDisplayTags(product);
+  if (tags.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-4pxr mt-6pxr">
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className="text-11pxr leading-4 text-dark-gray-500 bg-light-gray-200 px-6pxr py-2pxr rounded-full"
+        >
+          #{tag}
+        </span>
+      ))}
+    </div>
+  );
+};
+
+type IProductFollowUpQuestion = IAiSuggestedAction;
+
+const getSuggestedActionPriority = (action: IAiSuggestedAction) => {
+  const priority = Number(action.priority);
+  return Number.isFinite(priority) ? priority : null;
+};
+
+const sortSuggestedActions = (actions: IAiSuggestedAction[]) =>
+  [...actions].sort((a, b) => {
+    const priorityA = getSuggestedActionPriority(a);
+    const priorityB = getSuggestedActionPriority(b);
+    if (priorityA !== null || priorityB !== null) {
+      return (priorityA ?? Number.MAX_SAFE_INTEGER) - (priorityB ?? Number.MAX_SAFE_INTEGER);
+    }
+    return a.label.length - b.label.length;
+  });
+
+const normalizeSuggestedActionsForRender = (actions?: IAiSuggestedAction[]) => {
+  if (!Array.isArray(actions) || actions.length < FOLLOW_UP_QUESTION_MIN || actions.length > FOLLOW_UP_QUESTION_LIMIT) {
+    return [];
+  }
+  const normalized = actions
+    .filter((action) => action?.label?.trim() && action?.userMessage?.trim() && action?.intent)
+    .slice(0, FOLLOW_UP_QUESTION_LIMIT);
+
+  return normalized.length >= FOLLOW_UP_QUESTION_MIN ? sortSuggestedActions(normalized) : [];
+};
+
+const buildProductFollowUpQuestions = (
+  product: IRecommendProduct,
+  suggestedActions?: IAiSuggestedAction[]
+): IProductFollowUpQuestion[] => {
+  const serverActions = normalizeSuggestedActionsForRender(suggestedActions);
+  if (serverActions.length > 0) return serverActions;
+
+  const tags = buildCardDisplayTags(product);
+  const primaryTag = tags[0];
+  const questions: IProductFollowUpQuestion[] = [
+    {
+      id: "explain_match",
+      actionId: "explain_match",
+      label: "왜 제 취향에 맞나요?",
+      userMessage: "왜 제 취향에 맞나요?",
+      intent: "explain_match",
+      priority: 10,
+    },
+  ];
+
+  questions.push(
+    {
+      id: "explain_entry",
+      actionId: "explain_entry",
+      label: "초반 진입 포인트는?",
+      userMessage: "초반 진입 포인트는?",
+      intent: "explain_entry",
+      priority: 20,
+    },
+    {
+      id: "explain_attribute",
+      actionId: "explain_attribute",
+      label: primaryTag ? `#${primaryTag} 포인트가 뭐예요?` : "추천 근거가 뭐예요?",
+      userMessage: primaryTag ? `#${primaryTag} 포인트가 뭐예요?` : "추천 근거가 뭐예요?",
+      intent: "explain_attribute",
+      topic: primaryTag,
+      priority: 30,
+    },
+    {
+      id: "recommend_similar",
+      actionId: "recommend_similar",
+      label: "비슷한 작품도 더 볼래요",
+      userMessage: "비슷한 작품도 더 볼래요",
+      intent: "recommend_similar",
+      priority: 40,
+    }
+  );
+
+  return sortSuggestedActions(questions.slice(0, FOLLOW_UP_QUESTION_LIMIT));
+};
+
+const AiChatProductFollowUps = ({
+  product,
+  suggestedActions,
+  disabled,
+  onAsk,
+}: {
+  product: IRecommendProduct;
+  suggestedActions?: IAiSuggestedAction[];
+  disabled: boolean;
+  onAsk: (question: IProductFollowUpQuestion) => void;
+}) => {
+  const questions = buildProductFollowUpQuestions(product, suggestedActions);
+  if (questions.length === 0) return null;
+
+  return (
+    <div className="mt-10pxr flex flex-col items-start gap-8pxr">
+      {questions.map((question) => (
+        <button
+          key={question.label}
+          type="button"
+          className="max-w-[92%] rounded-full bg-gradient-to-r from-light-gray-100 to-light-gray-200 px-14pxr py-10pxr text-left text-14pxr font-medium leading-[1.45] text-dark-gray-700 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.03)] transition-colors hover:from-light-gray-200 hover:to-light-gray-300 disabled:opacity-30"
+          onClick={(event) => {
+            event.stopPropagation();
+            onAsk(question);
+          }}
+          disabled={disabled}
+        >
+          {question.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const AiChatLoadingSkeleton = () => (
+  <div className="w-full py-8pxr" role="status" aria-label="AI가 작품을 찾고 있어요">
+    <div className="max-w-[94%] rounded-2xl rounded-tl-sm bg-light-gray-100 px-14pxr py-12pxr">
+      <div className="flex items-center gap-8pxr mb-10pxr">
+        <div className="w-5 h-5 border-2 border-light-gray-500 border-t-primary-100 rounded-full animate-spin" />
+        <div className="h-12pxr w-[132px] rounded-full bg-light-gray-300 animate-pulse" />
+      </div>
+      <div className="space-y-6pxr animate-pulse">
+        <div className="h-12pxr w-[92%] rounded-full bg-light-gray-300" />
+        <div className="h-12pxr w-[72%] rounded-full bg-light-gray-300" />
+      </div>
+    </div>
+
+    <div className="mt-8pxr max-w-[94%] rounded-xl bg-light-gray-100 p-12pxr">
+      <div className="flex gap-12pxr animate-pulse">
+        <div className="w-[70px] h-[98px] flex-shrink-0 rounded-lg bg-light-gray-300" />
+        <div className="flex-1 min-w-0 pt-2pxr">
+          <div className="h-14pxr w-[78%] rounded-full bg-light-gray-300" />
+          <div className="mt-8pxr h-10pxr w-[48%] rounded-full bg-light-gray-300" />
+          <div className="mt-10pxr flex flex-wrap gap-4pxr">
+            <div className="h-18pxr w-[48px] rounded-full bg-light-gray-300" />
+            <div className="h-18pxr w-[58px] rounded-full bg-light-gray-300" />
+            <div className="h-18pxr w-[52px] rounded-full bg-light-gray-300" />
+          </div>
+        </div>
+      </div>
+      <div className="mt-10pxr flex flex-col items-start gap-8pxr animate-pulse">
+        <div className="h-36pxr w-[54%] rounded-full bg-light-gray-200" />
+        <div className="h-36pxr w-[66%] rounded-full bg-light-gray-200" />
+        <div className="h-36pxr w-[82%] rounded-full bg-light-gray-200" />
+      </div>
+    </div>
+  </div>
+);
 
 const AiChatPanel = () => {
   const { user, accessToken } = useAuthStore();
@@ -49,6 +262,7 @@ const AiChatPanel = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pendingFollowUpActionRef = useRef<string | null>(null);
 
   const {
     isOpen,
@@ -118,8 +332,11 @@ const AiChatPanel = () => {
         browsedProductIds?: number[];
         contextProductId?: number;
         focusProductCard?: boolean;
+        ignoreExcludeIds?: boolean;
         skipUserMessage?: boolean;
         resetSession?: boolean;
+        sourceActionId?: string;
+        sourceActionIntent?: IAiSuggestedAction["intent"];
       }
     ) => {
       const trigger = options?.trigger ?? "manual";
@@ -132,6 +349,13 @@ const AiChatPanel = () => {
         (preset
           ? `${PRESETS.find((item) => item.key === preset)?.label ?? "추천"} 작품 추천해줘`
           : "재미있는 작품 추천해줘");
+      const sourceActionId = options?.sourceActionId?.trim();
+      if (sourceActionId && pendingFollowUpActionRef.current === sourceActionId) {
+        return;
+      }
+      if (sourceActionId) {
+        pendingFollowUpActionRef.current = sourceActionId;
+      }
 
       setErrorMessage(null);
       if (options?.resetSession) {
@@ -161,14 +385,19 @@ const AiChatPanel = () => {
             ...pageContext,
             current_product_id: options?.contextProductId ?? pageContext.current_product_id,
             focus_product_card: Boolean(options?.focusProductCard),
+            source_action_id: sourceActionId,
+            source_action_intent: options?.sourceActionIntent,
           },
           preset: preset ?? null,
-          exclude_product_ids: options?.resetSession ? [] : excludeIds,
+          exclude_product_ids: options?.ignoreExcludeIds || options?.resetSession ? [] : excludeIds,
           adult_yn: adultYn,
         },
         {
           onSuccess: (res) => {
             setIsLoading(false);
+            if (sourceActionId && pendingFollowUpActionRef.current === sourceActionId) {
+              pendingFollowUpActionRef.current = null;
+            }
             const data = res.data;
             const tasteMatch = data.tasteMatch ?? data.taste_match ?? {
               protagonist: 0,
@@ -180,6 +409,7 @@ const AiChatPanel = () => {
               content: data.reply || "추천 결과가 없습니다.",
               product: data.product,
               tasteMatch,
+              suggestedActions: data.suggestedActions,
             });
 
             if (data.product) {
@@ -188,6 +418,9 @@ const AiChatPanel = () => {
           },
           onError: (error: unknown) => {
             setIsLoading(false);
+            if (sourceActionId && pendingFollowUpActionRef.current === sourceActionId) {
+              pendingFollowUpActionRef.current = null;
+            }
             if (axios.isAxiosError(error) && error.response?.status === 401) {
               const errorCode = error.response?.data?.code;
               const authRequiredCodes = [
@@ -315,7 +548,9 @@ const AiChatPanel = () => {
     <>
       {/* 플로팅 버튼 */}
       <button
-        className={`fixed ${floatingButtonBottomClassName} right-4 md:right-6 z-40 w-[50px] h-[50px] rounded-full bg-primary-100 text-white shadow-[0_8px_20px_rgba(23,107,242,0.35)] flex flex-col items-center justify-center gap-[2px]`}
+        className={`fixed ${floatingButtonBottomClassName} right-4 md:right-6 ${
+          isOpen ? "z-[90] pointer-events-none opacity-0" : "z-[130]"
+        } w-[50px] h-[50px] rounded-full bg-primary-100 text-white shadow-[0_8px_20px_rgba(23,107,242,0.35)] flex flex-col items-center justify-center gap-[2px]`}
         onClick={handleToggle}
         aria-label={isOpen ? "AI 사서 닫기" : "AI 사서 열기"}
       >
@@ -332,14 +567,14 @@ const AiChatPanel = () => {
       {/* 오버레이 */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-[70] bg-black/30"
+          className="fixed inset-0 z-[110] bg-black/30"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* 사이드 패널 */}
       <div
-        className={`fixed top-0 right-0 z-[80] h-full w-full sm:w-[400px] bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.12)] flex flex-col transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 z-[120] h-full w-full sm:w-[400px] bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.12)] flex flex-col transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -383,8 +618,8 @@ const AiChatPanel = () => {
                 <div
                   className={
                     message.role === "user"
-                      ? "max-w-[85%] bg-primary-100 text-white text-14pxr rounded-2xl rounded-tr-sm px-14pxr py-10pxr"
-                      : "max-w-[90%] bg-light-gray-100 text-dark-gray-700 text-14pxr rounded-2xl rounded-tl-sm px-14pxr py-10pxr"
+                      ? "max-w-[85%] bg-primary-100 text-white text-14pxr leading-[1.55] whitespace-pre-wrap break-words rounded-2xl rounded-tr-sm px-14pxr py-10pxr"
+                      : "max-w-[94%] bg-light-gray-100 text-dark-gray-700 text-14pxr leading-[1.6] whitespace-pre-wrap break-words rounded-2xl rounded-tl-sm px-14pxr py-10pxr"
                   }
                 >
                   {message.content}
@@ -393,115 +628,119 @@ const AiChatPanel = () => {
 
               {/* 인라인 작품 카드 — 클릭 시 작품 페이지 이동 */}
               {message.role === "assistant" && message.product && (
-                <div
-                  className="mt-8pxr bg-light-gray-100 rounded-xl p-12pxr cursor-pointer hover:bg-light-gray-200 transition-colors"
-                  onClick={() => {
-                    setPendingProductDetailEntrySource(
-                      message.product!.productId,
-                      PRODUCT_DETAIL_ENTRY_SOURCE.AI_CHAT_RECOMMEND
-                    );
-                    router.push(buildProductDetailPath(message.product!.productId));
-                  }}
-                >
-                  <div className="flex gap-12pxr">
-                    <div className="relative flex-shrink-0 w-[70px] h-[98px] bg-light-gray-200 rounded-lg overflow-hidden">
-                      {message.product.coverUrl ? (
-                        <Image
-                          src={message.product.coverUrl}
-                          alt={message.product.title}
-                          width={70}
-                          height={98}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-11pxr text-dark-gray-300">
-                          표지
-                        </div>
-                      )}
-                      {message.product.priceType === "paid" &&
-                        (message.product.waitingForFreeYn === "Y" || message.product.sixNinePathYn === "Y") && (
-                        <div className="absolute flex bottom-[5px] left-[5px] gap-[2px]">
-                          <SquareBadge
-                            type={getPromotionBadgeType(
-                              message.product.waitingForFreeYn,
-                              0,
-                              undefined,
-                              message.product.sixNinePathYn
-                            )}
+                <div className="mt-8pxr">
+                  <div
+                    className="bg-light-gray-100 rounded-xl p-12pxr cursor-pointer hover:bg-light-gray-200 transition-colors"
+                    onClick={() => {
+                      setPendingProductDetailEntrySource(
+                        message.product!.productId,
+                        PRODUCT_DETAIL_ENTRY_SOURCE.AI_CHAT_RECOMMEND
+                      );
+                      router.push(buildProductDetailPath(message.product!.productId));
+                    }}
+                  >
+                    <div className="flex gap-12pxr">
+                      <div className="relative flex-shrink-0 w-[70px] h-[98px] bg-light-gray-200 rounded-lg overflow-hidden">
+                        {message.product.coverUrl ? (
+                          <Image
+                            src={message.product.coverUrl}
+                            alt={message.product.title}
+                            width={70}
+                            height={98}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-11pxr text-dark-gray-300">
+                            표지
+                          </div>
+                        )}
+                        {message.product.priceType === "paid" &&
+                          (message.product.waitingForFreeYn === "Y" || message.product.sixNinePathYn === "Y") && (
+                          <div className="absolute flex bottom-[5px] left-[5px] gap-[2px]">
+                            <SquareBadge
+                              type={getPromotionBadgeType(
+                                message.product.waitingForFreeYn,
+                                0,
+                                undefined,
+                                message.product.sixNinePathYn
+                              )}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-6pxr">
+                          <h4 className="text-15pxr font-bold line-clamp-1 shrink min-w-0">
+                            {message.product.title}
+                          </h4>
+                          <ProductStateBadge
+                            product={{
+                              priceType: message.product.priceType ?? "free",
+                              state: { ongoingState: message.product.ongoingState ?? "ongoing" },
+                              contract: {
+                                monopolyYn: message.product.monopolyYn ?? "N",
+                                cpContractYn: message.product.cpContractYn ?? "N",
+                              },
+                              badge: { newReleaseYn: message.product.newReleaseYn ?? "N" },
+                              latestEpisodeDate: message.product.lastEpisodeDate ?? undefined,
+                            } as IProduct}
+                            hasFreeOrPaidBadge
                           />
                         </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-6pxr">
-                        <h4 className="text-15pxr font-bold line-clamp-1 shrink min-w-0">
-                          {message.product.title}
-                        </h4>
-                        <ProductStateBadge
-                          product={{
-                            priceType: message.product.priceType ?? "free",
-                            state: { ongoingState: message.product.ongoingState ?? "ongoing" },
-                            contract: {
-                              monopolyYn: message.product.monopolyYn ?? "N",
-                              cpContractYn: message.product.cpContractYn ?? "N",
-                            },
-                            badge: { newReleaseYn: message.product.newReleaseYn ?? "N" },
-                            latestEpisodeDate: message.product.lastEpisodeDate ?? undefined,
-                          } as IProduct}
-                          hasFreeOrPaidBadge
-                        />
+                        {message.product.authorNickname && (
+                          <p className="text-12pxr text-dark-gray-400 mt-2pxr">
+                            {message.product.authorNickname} · {message.product.episodeCount}화
+                            {message.product.serialCycle && (
+                              <span className="text-dark-gray-300"> · {message.product.serialCycle}</span>
+                            )}
+                          </p>
+                        )}
+                        <AiChatProductTags product={message.product} />
+                        {message.tasteMatch && (
+                          <div className="flex flex-wrap gap-6pxr mt-4pxr">
+                            {message.tasteMatch.protagonist > 0 && (
+                              <span className="text-11pxr text-primary-100 bg-light-gray-200 px-6pxr py-2pxr rounded-full">
+                                주인공 {matchPercent(message.tasteMatch.protagonist)}%
+                              </span>
+                            )}
+                            {message.tasteMatch.mood > 0 && (
+                              <span className="text-11pxr text-primary-100 bg-light-gray-200 px-6pxr py-2pxr rounded-full">
+                                분위기 {matchPercent(message.tasteMatch.mood)}%
+                              </span>
+                            )}
+                            {message.tasteMatch.pacing > 0 && (
+                              <span className="text-11pxr text-primary-100 bg-light-gray-200 px-6pxr py-2pxr rounded-full">
+                                전개 {matchPercent(message.tasteMatch.pacing)}%
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      {message.product.authorNickname && (
-                        <p className="text-12pxr text-dark-gray-400 mt-2pxr">
-                          {message.product.authorNickname} · {message.product.episodeCount}화
-                          {message.product.serialCycle && (
-                            <span className="text-dark-gray-300"> · {message.product.serialCycle}</span>
-                          )}
-                        </p>
-                      )}
-                      {message.product.tasteTags && message.product.tasteTags.length > 0 && (
-                        <div className="flex flex-wrap gap-4pxr mt-6pxr">
-                          {message.product.tasteTags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="text-11pxr text-dark-gray-500 bg-light-gray-200 px-6pxr py-2pxr rounded-full"
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {message.tasteMatch && (
-                        <div className="flex flex-wrap gap-6pxr mt-4pxr">
-                          {message.tasteMatch.protagonist > 0 && (
-                            <span className="text-11pxr text-primary-100 bg-light-gray-200 px-6pxr py-2pxr rounded-full">
-                              주인공 {matchPercent(message.tasteMatch.protagonist)}%
-                            </span>
-                          )}
-                          {message.tasteMatch.mood > 0 && (
-                            <span className="text-11pxr text-primary-100 bg-light-gray-200 px-6pxr py-2pxr rounded-full">
-                              분위기 {matchPercent(message.tasteMatch.mood)}%
-                            </span>
-                          )}
-                          {message.tasteMatch.pacing > 0 && (
-                            <span className="text-11pxr text-primary-100 bg-light-gray-200 px-6pxr py-2pxr rounded-full">
-                              전개 {matchPercent(message.tasteMatch.pacing)}%
-                            </span>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </div>
+                  <AiChatProductFollowUps
+                    product={message.product}
+                    suggestedActions={message.suggestedActions}
+                    disabled={isBusy}
+                    onAsk={(question) => {
+                      const focusProductCard = question.intent !== "recommend_similar";
+                      const sourceActionId = question.actionId || question.id || `${question.intent}:${question.topic || ""}:${question.label}`;
+                      handleRecommend(undefined, question.userMessage || question.label, {
+                        trigger: "manual",
+                        contextProductId: message.product!.productId,
+                        focusProductCard,
+                        sourceActionId,
+                        sourceActionIntent: question.intent,
+                      });
+                    }}
+                  />
                 </div>
               )}
             </div>
           ))}
 
           {isBusy && (
-            <div className="flex items-center py-12pxr">
-              <div className="w-5 h-5 border-2 border-light-gray-500 border-t-primary-100 rounded-full animate-spin" />
-              <span className="ml-8pxr text-13pxr text-dark-gray-400">AI가 작품을 찾고 있어요...</span>
-            </div>
+            <AiChatLoadingSkeleton />
           )}
 
           {!!errorMessage && !isBusy && (

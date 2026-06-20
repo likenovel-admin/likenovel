@@ -56,7 +56,16 @@ export interface IRecommendProduct {
   authorNickname: string | null;
   episodeCount: number;
   matchReason: string;
+  matchTags?: string[];
   tasteTags?: string[];
+  worldviewTags?: string[];
+  protagonistTypeTags?: string[];
+  protagonistJobTags?: string[];
+  protagonistMaterialTags?: string[];
+  axisRomanceTags?: string[];
+  axisStyleTags?: string[];
+  primaryGenre?: string | null;
+  subGenre?: string | null;
   serialCycle?: string | null;
   priceType?: "free" | "paid" | null;
   ongoingState?: "ongoing" | "rest" | "end" | "stop" | null;
@@ -115,6 +124,22 @@ export interface ITasteMatch {
   pacing: number;
 }
 
+export type IAiSuggestedActionIntent =
+  | "explain_match"
+  | "explain_entry"
+  | "explain_attribute"
+  | "recommend_similar";
+
+export interface IAiSuggestedAction {
+  id: string;
+  actionId?: string;
+  label: string;
+  userMessage: string;
+  intent: IAiSuggestedActionIntent;
+  topic?: string;
+  priority?: number;
+}
+
 export interface IAiRecommendResponse {
   data: {
     product: IRecommendProduct;
@@ -134,6 +159,8 @@ export interface IAiChatRequest {
     current_product_id?: number;
     current_episode_id?: number;
     focus_product_card?: boolean;
+    source_action_id?: string;
+    source_action_intent?: IAiSuggestedActionIntent;
   };
   preset?: "stacked-chapters" | "good-schedule" | "completed" | "trending" | null;
   exclude_product_ids?: number[];
@@ -146,6 +173,7 @@ export interface IAiChatResponse {
     product?: IRecommendProduct;
     tasteMatch?: ITasteMatch;
     taste_match?: ITasteMatch;
+    suggestedActions?: IAiSuggestedAction[];
   };
 }
 
@@ -176,6 +204,7 @@ export interface IChatHistoryMessage {
   content: string;
   product?: IRecommendProduct;
   tasteMatch?: ITasteMatch;
+  suggestedActions?: IAiSuggestedAction[];
 }
 
 export interface IGetChatHistoryResponse {
