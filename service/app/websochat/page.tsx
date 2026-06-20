@@ -40,6 +40,7 @@ import ModalContainer from "@/components/common/ModalContainer";
 import Spinner from "@/components/common/Spinner";
 import GlobalNav from "@/components/menu/GlobalNav";
 import WebsochatGuideBubble from "@/components/websochat/WebsochatGuideBubble";
+import WebsochatRpMessageBody from "@/components/websochat/WebsochatRpMessageBody";
 import useAuthStore from "@/store/authStore";
 import useConfirmStore from "@/store/confirmStore";
 import { STORAGE_KEYS } from "@/utils/localStorage";
@@ -4537,17 +4538,16 @@ export default function WebsochatPage() {
                       key={message.messageId}
                       className={`${message.role === "user" ? "max-w-[85%] self-end" : "max-w-[92%] md:max-w-[90%] self-start"}`}
                     >
-                      <div
-                        className={`rounded-[16px] px-16pxr py-12pxr text-16pxr leading-[1.6] whitespace-pre-wrap shadow-sm ${
-                          message.role === "user"
-                            ? "bg-primary-100 text-white"
-                            : "bg-white text-dark-gray-500"
-                        }`}
-                      >
-                        {isStreamingAssistantMessage && !(message.content || "").trim()
-                          ? "..."
-                          : message.content}
-                      </div>
+                      {message.role === "assistant" ? (
+                        <WebsochatRpMessageBody
+                          content={message.content || ""}
+                          isStreamingEmpty={isStreamingAssistantMessage && !(message.content || "").trim()}
+                        />
+                      ) : (
+                        <div className="rounded-[16px] px-16pxr py-12pxr text-16pxr leading-[1.6] whitespace-pre-wrap shadow-sm bg-primary-100 text-white">
+                          {message.content}
+                        </div>
+                      )}
                       {isStreamingAssistantMessage && streamingStatusMessage ? (
                         <div className="mt-6pxr px-4pxr text-12pxr text-dark-gray-300">
                           {streamingStatusMessage}
