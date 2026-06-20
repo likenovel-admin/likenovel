@@ -622,11 +622,8 @@ const AiChatPanel = () => {
       )}
 
       {/* 사이드 패널 */}
-      <div
-        className={`fixed top-0 right-0 z-[120] h-full w-full sm:w-[400px] bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.12)] flex flex-col transition-transform duration-300 ease-in-out ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
+      {isOpen && (
+        <div className="fixed top-0 right-0 z-[120] h-full w-full sm:w-[400px] bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.12)] flex flex-col">
         {/* 헤더 */}
         <div className="flex items-center justify-between px-20pxr py-16pxr border-b border-light-gray-300 shrink-0">
           <div className="flex items-center gap-8pxr">
@@ -851,7 +848,8 @@ const AiChatPanel = () => {
             </button>
           </form>
         </div>
-      </div>
+        </div>
+      )}
     </>
   );
 };
