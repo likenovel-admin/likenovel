@@ -36,6 +36,7 @@ type PresetKey = (typeof PRESETS)[number]["key"];
 
 const HIDDEN_PREFIXES = ["/login", "/signup", "/find-password", "/reset-password", "/viewer", "/websochat"];
 const CARD_TAG_LIMIT = 5;
+const AI_CHAT_CONTEXT_MESSAGE_LIMIT = 12;
 const FOLLOW_UP_QUESTION_LIMIT = 4;
 const FOLLOW_UP_QUESTION_MIN = 3;
 
@@ -218,6 +219,38 @@ const AiChatProductFollowUps = ({
   );
 };
 
+const AiChatStandaloneFollowUps = ({
+  suggestedActions,
+  disabled,
+  onAsk,
+}: {
+  suggestedActions?: IAiSuggestedAction[];
+  disabled: boolean;
+  onAsk: (question: IProductFollowUpQuestion) => void;
+}) => {
+  const questions = normalizeSuggestedActionsForRender(suggestedActions);
+  if (questions.length === 0) return null;
+
+  return (
+    <div className="mt-8pxr flex flex-col items-start gap-8pxr">
+      {questions.map((question) => (
+        <button
+          key={question.label}
+          type="button"
+          className="max-w-[92%] rounded-full bg-gradient-to-r from-light-gray-100 to-light-gray-200 px-14pxr py-10pxr text-left text-14pxr font-medium leading-[1.45] text-dark-gray-700 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.03)] transition-colors hover:from-light-gray-200 hover:to-light-gray-300 disabled:opacity-30"
+          onClick={(event) => {
+            event.stopPropagation();
+            onAsk(question);
+          }}
+          disabled={disabled}
+        >
+          {question.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
 const AiChatLoadingSkeleton = () => (
   <div className="w-full py-8pxr" role="status" aria-label="AI가 작품을 찾고 있어요">
     <div className="max-w-[94%] rounded-2xl rounded-tl-sm bg-light-gray-100 px-14pxr py-12pxr">
@@ -295,7 +328,18 @@ const AiChatPanel = () => {
     }
   }, [historyData, initFromHistory]);
 
-  const recentMessages = useMemo(() => messages.slice(-8), [messages]);
+  const recentMessages = useMemo(
+    () => messages.slice(-AI_CHAT_CONTEXT_MESSAGE_LIMIT),
+    [messages]
+  );
+  const activeFocusProductId = useMemo(() => {
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const productId = messages[index].role === "assistant" ? messages[index].product?.productId : undefined;
+      if (productId) return productId;
+    }
+    return undefined;
+  }, [messages]);
+  const shouldShowPresetChips = messages.length === 0;
   const pageContext = useMemo(() => {
     const normalizedPath = pathname || "/";
     const segments = normalizedPath.split("/").filter(Boolean);
@@ -375,6 +419,9 @@ const AiChatPanel = () => {
         })),
         { role: "user" as const, content: prompt },
       ];
+      const activeContextProductId = options?.resetSession ? undefined : activeFocusProductId;
+      const requestCurrentProductId =
+        options?.contextProductId ?? activeContextProductId ?? pageContext.current_product_id;
 
       chat(
         {
@@ -383,7 +430,8 @@ const AiChatPanel = () => {
             trigger,
             browsed_product_ids: contextBrowsedIds,
             ...pageContext,
-            current_product_id: options?.contextProductId ?? pageContext.current_product_id,
+            current_product_id: requestCurrentProductId,
+            active_focus_product_id: options?.contextProductId ?? activeContextProductId,
             focus_product_card: Boolean(options?.focusProductCard),
             source_action_id: sourceActionId,
             source_action_intent: options?.sourceActionIntent,
@@ -448,6 +496,7 @@ const AiChatPanel = () => {
       addAssistantMessage,
       addExcludeId,
       addUserMessage,
+      activeFocusProductId,
       setIsLoading,
       chat,
       excludeIds,
@@ -736,6 +785,20 @@ const AiChatPanel = () => {
                   />
                 </div>
               )}
+              {message.role === "assistant" && !message.product && (
+                <AiChatStandaloneFollowUps
+                  suggestedActions={message.suggestedActions}
+                  disabled={isBusy}
+                  onAsk={(question) => {
+                    const sourceActionId = question.actionId || question.id || `${question.intent}:${question.topic || ""}:${question.label}`;
+                    handleRecommend(undefined, question.userMessage || question.label, {
+                      trigger: "manual",
+                      sourceActionId,
+                      sourceActionIntent: question.intent,
+                    });
+                  }}
+                />
+              )}
             </div>
           ))}
 
@@ -752,18 +815,20 @@ const AiChatPanel = () => {
 
         {/* 하단 고정: 프리셋 + 입력 */}
         <div className="shrink-0 border-t border-light-gray-300 px-16pxr py-12pxr bg-white">
-          <div className="flex flex-wrap gap-6pxr mb-10pxr">
-            {PRESETS.map((preset) => (
-              <button
-                key={preset.key}
-                className="px-12pxr py-6pxr text-12pxr font-medium rounded-full border border-light-gray-400 text-dark-gray-500 hover:bg-light-gray-200 hover:border-primary-100 hover:text-primary-100 transition-colors disabled:opacity-30"
-                onClick={() => handleRecommend(preset.key)}
-                disabled={isBusy}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
+          {shouldShowPresetChips && (
+            <div className="flex flex-wrap gap-6pxr mb-10pxr">
+              {PRESETS.map((preset) => (
+                <button
+                  key={preset.key}
+                  className="px-12pxr py-6pxr text-12pxr font-medium rounded-full border border-light-gray-400 text-dark-gray-500 hover:bg-light-gray-200 hover:border-primary-100 hover:text-primary-100 transition-colors disabled:opacity-30"
+                  onClick={() => handleRecommend(preset.key)}
+                  disabled={isBusy}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="flex gap-8pxr items-center">
             <input
               ref={inputRef}

@@ -157,6 +157,7 @@ export interface IAiChatRequest {
     page_type?: "home" | "product" | "mypage" | "other";
     pathname?: string;
     current_product_id?: number;
+    active_focus_product_id?: number;
     current_episode_id?: number;
     focus_product_card?: boolean;
     source_action_id?: string;

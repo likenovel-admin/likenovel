@@ -13,6 +13,10 @@ const layoutSource = readFileSync(
   new URL("../../app/layout.tsx", import.meta.url),
   "utf8"
 );
+const dtoSource = readFileSync(
+  new URL("../../app/api/query/recommendation/dto.ts", import.meta.url),
+  "utf8"
+);
 
 assert.ok(
   source.includes(
@@ -33,8 +37,17 @@ assert.match(source, /consumePendingProductQuestion/);
 assert.match(source, /handleRecommend\(undefined, pendingProductQuestion\.prompt/);
 assert.match(source, /contextProductId\?: number/);
 assert.match(source, /focusProductCard\?: boolean/);
-assert.match(source, /current_product_id: options\?\.contextProductId \?\? pageContext\.current_product_id/);
+assert.match(source, /const AI_CHAT_CONTEXT_MESSAGE_LIMIT = 12/);
+assert.match(source, /messages\.slice\(-AI_CHAT_CONTEXT_MESSAGE_LIMIT\)/);
+assert.match(source, /const activeFocusProductId = useMemo/);
+assert.match(source, /const activeContextProductId = options\?\.resetSession \? undefined : activeFocusProductId/);
+assert.match(source, /const requestCurrentProductId =/);
+assert.match(source, /current_product_id: requestCurrentProductId/);
+assert.match(source, /active_focus_product_id: options\?\.contextProductId \?\? activeContextProductId/);
+assert.match(dtoSource, /active_focus_product_id\?: number/);
 assert.match(source, /focus_product_card: Boolean\(options\?\.focusProductCard\)/);
+assert.match(source, /const shouldShowPresetChips = messages\.length === 0/);
+assert.match(source, /\{shouldShowPresetChips && \(/);
 assert.match(
   source,
   /const queuedProductQuestion = consumeQueuedAiLibrarianProductQuestion\(pageContext\.current_product_id\)/
@@ -90,8 +103,12 @@ assert.match(source, /priority: 40/);
 assert.match(source, /label: "비슷한 작품도 더 볼래요"/);
 assert.match(source, /return a\.label\.length - b\.label\.length/);
 assert.match(source, /<AiChatProductFollowUps/);
+assert.match(source, /const AiChatStandaloneFollowUps = \(\{/);
+assert.match(source, /message\.role === "assistant" && !message\.product/);
+assert.match(source, /<AiChatStandaloneFollowUps/);
 assert.match(source, /event\.stopPropagation\(\)/);
 assert.match(source, /className="mt-10pxr flex flex-col items-start gap-8pxr"/);
+assert.match(source, /className="mt-8pxr flex flex-col items-start gap-8pxr"/);
 assert.match(source, /bg-gradient-to-r from-light-gray-100 to-light-gray-200/);
 assert.match(source, /text-left text-14pxr/);
 assert.match(source, /suggestedActions: data\.suggestedActions/);

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { IRecommendProduct, ITasteMatch } from "@/app/api/query/recommendation/dto";
+import { IAiSuggestedAction, IRecommendProduct, ITasteMatch } from "@/app/api/query/recommendation/dto";
 
 export interface IChatMessage {
   id: string;
@@ -8,6 +8,7 @@ export interface IChatMessage {
   content: string;
   product?: IRecommendProduct;
   tasteMatch?: ITasteMatch;
+  suggestedActions?: IAiSuggestedAction[];
 }
 
 export interface IPendingProductQuestion {
@@ -32,6 +33,7 @@ interface IChatState {
     content: string;
     product?: IRecommendProduct;
     tasteMatch?: ITasteMatch;
+    suggestedActions?: IAiSuggestedAction[];
   }) => void;
   addExcludeId: (id: number) => void;
   addBrowsedProduct: (id: number) => void;
@@ -82,7 +84,7 @@ const useChatStore = create<IChatState>((set) => ({
         { id: createMessageId(), role: "user", content },
       ],
     })),
-  addAssistantMessage: ({ content, product, tasteMatch }) =>
+  addAssistantMessage: ({ content, product, tasteMatch, suggestedActions }) =>
     set((state) => ({
       messages: [
         ...state.messages,
@@ -92,6 +94,7 @@ const useChatStore = create<IChatState>((set) => ({
           content,
           product,
           tasteMatch,
+          suggestedActions,
         },
       ],
     })),
