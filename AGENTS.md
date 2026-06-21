@@ -133,11 +133,21 @@ docker compose up -d --build cms       # http://localhost:3002
 
 ```bash
 git fetch origin --quiet
+git worktree list
+git branch --list 'claude/*'
 git status --short --branch
 git diff --submodule=log -- likenovel-service-api/likenovel-service-api
 git -C likenovel-service-api/likenovel-service-api status --short --branch
 ```
 
+- Multi-agent ownership stop rule:
+  - `/home/hongsan/work/likenovel` is the Codex primary checkout.
+  - `/home/hongsan/work/likenovel-claude-*` paths are Claude-owned worktrees and must not be edited, staged, committed, pushed, reset, cleaned, moved, or removed by Codex.
+  - `claude/*` branches are Claude-owned and must not be checked out, rebased, amended, force-pushed, or used as Codex push targets.
+  - Codex commit/push scope is only the current Codex-owned worktree and exact files intentionally changed by Codex. Do not bundle Claude-origin changes even when they target the same feature.
+  - If Claude-origin dirty files or unknown-owner dirty files appear in the current physical worktree, stop before staging and report the file list.
+  - Claude work should use feature-specific worktrees such as `/home/hongsan/work/likenovel-claude-<feature>-<date>` and push only `claude/*` branches. Base branch is chosen by task purpose: independent work from `origin/main`, follow-up work from the relevant `origin/codex/*`, deploy work from the target environment branch.
+  - Submodule-initialized worktrees can be hard to move/remove safely. Do not clean up another agent's worktree unless the user explicitly scopes that operation.
 - backend 변경이 운영에 같이 나가야 하면 backend repo에 먼저 commit/push하고 root repo에서 배포된 backend SHA로 pointer를 align한다.
 - parent repo가 submodule remote에 없는 SHA를 가리키게 하지 않는다.
 - 로컬 `main`/`dev`/`prod`에서 직접 통합 merge를 만들지 않는다. 필요하면 `origin/<target>` 기준 integration branch에서 작업한다.
