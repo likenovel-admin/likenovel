@@ -178,6 +178,10 @@ const data = {
           title: "단일구좌 관리",
           url: "/exposure-accounts/main-single-slots",
         },
+        {
+          title: "캐릭터 구좌 관리",
+          url: "/exposure-accounts/character-slots",
+        },
       ],
     },
     {
