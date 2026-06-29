@@ -405,6 +405,7 @@ PRODUCT_IDS=1102,1106 INTERVAL_SEC=30 ITERATIONS=20 /home/hongsan/work/likenovel
 현재 운영 기준(2026-06-15):
 - prod crontab active line은 `STORYCTX_MAX_PARALLEL=1 STORYCTX_BUILD_MODE=delta STORYCTX_MAX_MISSING_EPISODES=20`을 명시한다. 20화 수동 가속 테스트가 성공해 백로그 회복 속도를 높였고, 병렬도는 1로 유지한다.
 - 시간은 매시 10분이다.
+- `failed` 상품은 누락 foundation이 있으면 delta 재시도 대상이고, 누락 foundation 없이 `character_inventory`/`character_inventory_v3`가 이미 있으면 LLM 호출 없이 status-only repair 대상으로 잡는다.
 
 ```cron
 10 * * * * STORYCTX_MAX_PARALLEL=1 STORYCTX_BUILD_MODE=delta STORYCTX_MAX_MISSING_EPISODES=20 bash /home/ln-admin/likenovel/batch/build_story_agent_context_batch.sh >> /home/ln-admin/likenovel/batch/build_story_agent_context_batch.log 2>&1
