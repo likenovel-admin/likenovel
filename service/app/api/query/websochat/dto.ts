@@ -4,6 +4,7 @@ export interface IWebsochatProductItem {
   authorNickname?: string | null;
   coverImagePath?: string | null;
   statusCode?: string | null;
+  priceType?: "free" | "paid" | null;
   latestEpisodeNo: number;
   publishedLatestEpisodeNo?: number;
   syncedLatestEpisodeNo?: number;
@@ -34,6 +35,7 @@ export interface IWebsochatSessionItem {
   productTitle?: string | null;
   productAuthorNickname?: string | null;
   coverImagePath?: string | null;
+  productPriceType?: "free" | "paid" | null;
   readScopeState?: "unknown" | "none" | "known";
   readEpisodeNo?: number | null;
   readEpisodeTitle?: string | null;
