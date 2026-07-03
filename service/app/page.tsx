@@ -19,6 +19,8 @@ import TasteSection from "@/components/recommendation/TasteSection";
 import OnboardingModal from "@/components/recommendation/OnboardingModal";
 import { IProduct } from "@/types";
 import { useEffect, useMemo, useState } from "react";
+import { useSelectPanels } from "./api/query/banner";
+import type { IPanel } from "./api/query/banner/dto";
 import {
   useGetDirectRecommend,
   useGetHomeTicker,
@@ -39,6 +41,19 @@ import {
 import useAuthStore from "@/store/authStore";
 import { getHomeQueryState } from "@/utils/homeQueryState";
 import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
+
+const COMPANY_NOTICE_BANNER_POSITION = "companyNotice";
+
+const getCompanyNoticeItemsFromPanels = (panels?: IPanel[]) => {
+  return (panels ?? [])
+    .map((panel) => ({
+      id: panel.id,
+      imageSrc: panel.pcImgPath || panel.mobileImgPath,
+      linkPath: panel.linkPath,
+      ariaLabel: `${panel.id}번 회사 공지 배너`,
+    }))
+    .filter((item) => item.imageSrc);
+};
 
 export default function Home() {
   const { user, isAuthenticated, accessToken, isAuthInitialized } = useAuthStore();
@@ -101,6 +116,10 @@ export default function Home() {
     homeQueryState.enabled,
     mainProductCacheIdentity
   );
+  const { data: companyNoticeBannerData } = useSelectPanels({
+    division: COMPANY_NOTICE_BANNER_POSITION,
+    enabled: homeQueryState.enabled,
+  });
   const { data: tasteRecommendationsData } = useGetTasteRecommendations(
     adultYn,
     homeQueryState.enabled && canUseTasteRecommend,
@@ -232,6 +251,10 @@ export default function Home() {
   const recommendProducts = Array.isArray(data?.topsProducts)
     ? data.topsProducts.slice(0, 8)
     : [];
+  const companyNoticeItems = useMemo(
+    () => getCompanyNoticeItemsFromPanels(companyNoticeBannerData?.data),
+    [companyNoticeBannerData?.data]
+  );
 
   return (
     <>
@@ -273,7 +296,7 @@ export default function Home() {
             <div className="w-full mt-30pxr md:mt-80pxr bg-[#212123]">
               <PaidTop data={paidTopProducts} />
             </div>
-            <CompanyNoticeCarousel />
+            <CompanyNoticeCarousel items={companyNoticeItems} />
             <div className="w-full">
               <MiddleBanner
                 secondaryPanels={data?.banners?.secondaryPanels ?? []}

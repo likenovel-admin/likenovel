@@ -14,6 +14,11 @@ export const bannerPositions = [
     label: "메인 : 고정배너(하단)",
     shortLabel: "메인 하단",
   },
+  {
+    value: "companyNotice",
+    label: "메인 : 미니캐러셀(방금 들어온 무료신작 위)",
+    shortLabel: "메인 미니캐러셀",
+  },
   { value: "viewer", label: "뷰어", shortLabel: "뷰어" },
   {
     value: "paid",

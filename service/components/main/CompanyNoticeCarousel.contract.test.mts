@@ -9,6 +9,10 @@ const pageSource = readFileSync(
   new URL("../../app/page.tsx", import.meta.url),
   "utf8",
 );
+const bannerQuerySource = readFileSync(
+  new URL("../../app/api/query/banner/index.ts", import.meta.url),
+  "utf8",
+);
 
 assert.match(
   componentSource,
@@ -188,6 +192,36 @@ assert.match(
 );
 assert.match(
   pageSource,
-  /<PaidTop[\s\S]*?<\/div>\s*<CompanyNoticeCarousel \/>/,
+  /COMPANY_NOTICE_BANNER_POSITION\s*=\s*"companyNotice"/,
+  "home page should bind company notice carousel to the CMS companyNotice banner position",
+);
+assert.match(
+  pageSource,
+  /useSelectPanels\(\{\s*division:\s*COMPANY_NOTICE_BANNER_POSITION,\s*enabled:\s*homeQueryState\.enabled,\s*\}\)/,
+  "home page should fetch the CMS-managed company notice banners through the public banner query",
+);
+assert.match(
+  pageSource,
+  /getCompanyNoticeItemsFromPanels\(companyNoticeBannerData\?\.data\)/,
+  "home page should map public banner panels into company notice carousel items",
+);
+assert.match(
+  pageSource,
+  /const companyNoticeItems = useMemo\([\s\S]*getCompanyNoticeItemsFromPanels\(companyNoticeBannerData\?\.data\)[\s\S]*\);/,
+  "home page should use the CMS company notice banner list as the carousel item list",
+);
+assert.doesNotMatch(
+  pageSource,
+  /companyNoticeCmsItems\.length > 0 \? companyNoticeCmsItems : undefined|COMPANY_NOTICE_ITEMS/,
+  "home page should not fall back to built-in notice cards when CMS has no company notice banners",
+);
+assert.match(
+  pageSource,
+  /<PaidTop[\s\S]*?<\/div>\s*<CompanyNoticeCarousel items=\{companyNoticeItems\} \/>/,
   "company notice carousel should be placed in the main middle area after PaidTop",
+);
+assert.match(
+  bannerQuerySource,
+  /enabled:\s*enabled && Boolean\(division\)/,
+  "public banner query should support disabling the company notice request until home queries are enabled",
 );
