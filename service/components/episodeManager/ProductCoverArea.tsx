@@ -2,7 +2,10 @@ import { useSelectUserInfo } from "@/app/api/query/mypage/user";
 import AdultAgeBadge from "@/components/common/AdultAgeBadge";
 import { IComment } from "@/components/common/CommentArea";
 import ProductReaction from "@/components/common/ProductReaction";
-import { resolveProductCoverImage } from "@/constants/common";
+import {
+  resolveProductCoverImage,
+  SHOW_PRODUCT_EVALUATION_SURFACE,
+} from "@/constants/common";
 import { AlarmContents } from "@/components/modal/SendAlarmModal";
 import WarningModal from "@/components/modal/WarningModal";
 import useModalStore from "@/store/modalStore";
@@ -50,7 +53,7 @@ const ProductCoverArea = ({
   const { data: userInfo } = useSelectUserInfo();
   const isCpUser = userInfo?.data?.userRole === "CP";
   const coverImagePath = resolveProductCoverImage(data?.image?.coverImagePath);
-  const shouldShowEvaluationContainer = false;
+  const shouldShowEvaluationContainer = SHOW_PRODUCT_EVALUATION_SURFACE;
   const handleGoBack = () => {
     // router.back();
     router.push("/product/author");

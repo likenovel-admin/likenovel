@@ -17,6 +17,7 @@ export interface IWebsochatLaunchPayload {
   title: string;
   authorNickname?: string | null;
   coverImagePath?: string | null;
+  priceType?: string | null;
   latestEpisodeNo?: number | null;
   publishedLatestEpisodeNo?: number | null;
   syncedLatestEpisodeNo?: number | null;
@@ -215,13 +216,8 @@ export const getWebsochatLaunchEligibility = (
   const syncedLatestEpisodeNo = normalizeWebsochatEpisodeNo(
     source.syncedLatestEpisodeNo
   );
-  const isFreeProduct =
-    source.priceType != null
-      ? source.priceType === "free"
-      : source.isPaidProduct === false;
   const hasProductIdentity = !!source.productId && !!source.title;
   const canLaunch =
-    isFreeProduct &&
     source.contextStatus === "ready" &&
     hasProductIdentity &&
     publishedLatestEpisodeNo > 0 &&
@@ -253,6 +249,12 @@ export const buildWebsochatLaunchPayload = (
     title: source.title,
     authorNickname: source.authorNickname || null,
     coverImagePath: source.coverImagePath || null,
+    priceType:
+      source.priceType === "paid"
+        ? "paid"
+        : source.priceType === "free"
+          ? "free"
+          : null,
     latestEpisodeNo: eligibility.publishedLatestEpisodeNo,
     publishedLatestEpisodeNo: eligibility.publishedLatestEpisodeNo,
     syncedLatestEpisodeNo: eligibility.syncedLatestEpisodeNo,
@@ -417,6 +419,12 @@ export const consumePendingWebsochatLaunch =
         title: parsed.title,
         authorNickname: parsed.authorNickname || null,
         coverImagePath: parsed.coverImagePath || null,
+        priceType:
+          parsed.priceType === "paid"
+            ? "paid"
+            : parsed.priceType === "free"
+              ? "free"
+              : null,
         latestEpisodeNo: parsed.latestEpisodeNo || 0,
         publishedLatestEpisodeNo:
           typeof parsed.publishedLatestEpisodeNo === "number"

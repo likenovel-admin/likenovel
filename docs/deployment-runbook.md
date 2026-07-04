@@ -141,6 +141,37 @@ dev/prod 반영 중 conflict resolution은 배포를 위한 최소 정합화만 
 
 이 규칙을 어기면 배포 성공 여부와 무관하게 `부분 조치`로 보고하고, 새로 작성한 conflict resolution 내용을 별도 review 대상으로 분리한다.
 
+## 2.4 Root Submodule Pointer-Only Boundary
+
+Backend prod workflow는 merge commit 뒤에 `version update` 커밋을 추가할 수 있다.
+따라서 backend prod Actions가 끝난 뒤에는 반드시 backend repo에서 다시 fetch하고
+최종 `origin/prod` SHA를 확정한 다음 root prod gitlink를 맞춘다.
+중간 backend merge SHA를 root prod pointer로 쓰면 downgrade로 본다.
+
+Root gitlink 정렬만 있는 커밋은 web 배포가 아니다.
+
+- `.github/workflows/docker-dev.yml` / `.github/workflows/docker-prod.yml`의 push path는
+  `service/**`, `partner/**`, `cms/**`, workflow 파일뿐이다.
+- Docker build context도 각각 `service`, `partner`, `cms`라서
+  `likenovel-service-api/likenovel-service-api` gitlink는 web image 내용에 들어가지 않는다.
+- 따라서 root diff가 submodule pointer-only이면 root repo 정합성 커밋/푸시만 수행하고,
+  `workflow_dispatch`로 web image rebuild/redeploy를 기본 실행하지 않는다.
+- 완료 보고는 아래처럼 분리한다.
+  - backend runtime: 최종 backend `origin/prod` SHA가 hard gate를 통과했는지
+  - root repo: root `origin/prod` gitlink가 최종 backend `origin/prod` SHA를 가리키는지
+  - web runtime: `service`/`partner`/`cms` 변경이 없어서 web 재배포가 없었는지
+- `service`/`partner`/`cms` 실제 변경, workflow 파일 변경, 또는 사용자 명시 승인 없이
+  pointer-only 커밋 때문에 root web `workflow_dispatch`를 실행하지 않는다.
+
+Pointer-only 판정과 readback:
+
+```bash
+git diff --name-status <base>..HEAD
+git diff --submodule=log <base>..HEAD -- likenovel-service-api/likenovel-service-api
+git ls-tree origin/prod likenovel-service-api/likenovel-service-api
+git -C likenovel-service-api/likenovel-service-api rev-parse origin/prod
+```
+
 ---
 
 ## 3) 환경별 기본 매핑

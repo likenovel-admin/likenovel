@@ -3,6 +3,7 @@ import {
   useCreateAuthorEpisodePrediction,
   useOpenEpisode,
 } from "@/app/api/query/author/episode";
+import { SHOW_PRODUCT_EVALUATION_SURFACE } from "@/constants/common";
 import useToastStore from "@/store/toastStore";
 import { IEpisode } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
@@ -618,13 +619,15 @@ const EpisodeRoundItem = ({
                 {episode.countComment}
                 <IncresedCount increasedCount={episode.countCommentIndicator || 0} />
               </div>
-              <div className="text-dark-gray-300 text-13pxr flex gap-1 items-center">
-                <Rating className="w-[14px] h-[14px] text-dark-gray-300" />
-                {episode.countEvaluation}
-                <IncresedCount
-                  increasedCount={episode.countEvaluationIndicator || 0}
-                />
-              </div>
+              {SHOW_PRODUCT_EVALUATION_SURFACE && (
+                <div className="text-dark-gray-300 text-13pxr flex gap-1 items-center">
+                  <Rating className="w-[14px] h-[14px] text-dark-gray-300" />
+                  {episode.countEvaluation}
+                  <IncresedCount
+                    increasedCount={episode.countEvaluationIndicator || 0}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}

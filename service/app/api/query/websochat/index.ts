@@ -317,6 +317,17 @@ export const useCreateWebsochatSession = () => {
       product_id: number;
       guest_key?: string | null;
       title?: string | null;
+      session_kind?: "websochat" | "character_chat" | null;
+      entry_source?:
+        | "home_character_slot"
+        | "websochat_rp_mode"
+        | "product_detail_websochat"
+        | "viewer_websochat"
+        | "character_chat_handoff"
+        | null;
+      locked_character_scope_key?: string | null;
+      rp_mode?: "free" | "scene" | null;
+      active_character?: string | null;
       adult_yn?: "Y" | "N";
       game_read_episode_to?: number | null;
       account_read_episode_to?: number | null;

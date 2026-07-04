@@ -2,24 +2,32 @@ interface WebsochatButtonProps {
   label: string;
   onClick?: () => void;
   className?: string;
+  variant?: "solid" | "subtle";
 }
 
 const WebsochatButton = ({
   label,
   onClick,
   className = "",
+  variant = "solid",
 }: WebsochatButtonProps) => {
+  const variantClassName =
+    variant === "subtle"
+      ? "border border-primary-100 bg-white text-primary-100 hover:bg-light-gray-100 hover:text-primary-200"
+      : "border-0 bg-primary-100 text-white hover:bg-primary-200";
+  const iconClassName = variant === "subtle" ? "text-primary-100" : "text-white";
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex shrink-0 items-center justify-center gap-7pxr whitespace-nowrap rounded-[999px] border-0 bg-primary-100 font-semibold leading-none tracking-[0] text-white transition-colors hover:bg-primary-200 ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center gap-7pxr whitespace-nowrap rounded-[999px] font-semibold leading-none tracking-[0] transition-colors ${variantClassName} ${className}`}
       aria-label={label}
     >
       <svg
         aria-hidden="true"
         viewBox="0 0 24 24"
-        className="h-16pxr w-16pxr shrink-0 text-white"
+        className={`h-16pxr w-16pxr shrink-0 ${iconClassName}`}
         focusable="false"
       >
         <path

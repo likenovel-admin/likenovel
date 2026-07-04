@@ -34,12 +34,16 @@ import {
   defaultProductTypeWeights,
   getAiReaderAgentListLastPage,
   getNextAiReaderAgentIndexOffset,
-  MAX_AI_READER_IMMEDIATE_BATCH_SIZE,
-  MAX_AI_READER_AGENT_COUNT,
   aiReaderActionToneClassName,
   formatAiReaderActionScoreLabel,
   formatAiReaderActionStatusLabel,
 } from "./_lib";
+import {
+  AI_READER_IMMEDIATE_BATCH_SIZE_CAP,
+  AI_READER_TARGET_QUICK_COUNTS,
+  MAX_AI_READER_AGENT_COUNT,
+  getRecommendedImmediateBatchSize,
+} from "./limits";
 import { getAiReaderTargetOperation } from "./target-operations";
 
 const numberFormat = (value: unknown) => Number(value || 0).toLocaleString();
@@ -147,12 +151,6 @@ const blocksFromSingleHours = (hours: number[]) =>
       sessionsPerAgent: 1,
     }));
 
-const getRecommendedImmediateBatchSize = (agentCount: number) => {
-  if (agentCount <= 20) return Math.max(1, agentCount || 1);
-  if (agentCount <= 50) return 10;
-  return 20;
-};
-
 const roundUpToNextFiveMinutes = (value: Date) => {
   const next = new Date(value);
   next.setSeconds(0, 0);
@@ -179,7 +177,7 @@ const buildImmediateSchedulePreview = ({
 }) => {
   const today = format(new Date(), "yyyy-MM-dd");
   if (!startImmediately || scheduleDate !== today || agentCount < 1) return [];
-  const normalizedBatchSize = Math.max(1, Math.min(MAX_AI_READER_IMMEDIATE_BATCH_SIZE, batchSize || 1));
+  const normalizedBatchSize = Math.max(1, Math.min(AI_READER_IMMEDIATE_BATCH_SIZE_CAP, batchSize || 1));
   const normalizedInterval = Math.max(1, Math.min(120, batchIntervalMinutes || 10));
   const windowMinutes = Math.max(30, normalizedInterval);
   const firstStartAt = roundUpToNextFiveMinutes(new Date());
@@ -1127,8 +1125,8 @@ export default function Page() {
         setOperationMessage(activityScheduleError);
         return;
       }
-      if (immediateBatchSizeValue < 1 || immediateBatchSizeValue > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
-        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
+      if (immediateBatchSizeValue < 1 || immediateBatchSizeValue > AI_READER_IMMEDIATE_BATCH_SIZE_CAP) {
+        setOperationMessage(`즉시 시작 배치 수는 1~${AI_READER_IMMEDIATE_BATCH_SIZE_CAP}명 사이로 입력하세요.`);
         return;
       }
       if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -1280,8 +1278,8 @@ export default function Page() {
       setOperationMessage(activityScheduleError);
       return false;
     }
-    if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
-      setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
+    if (immediateBatchSize < 1 || immediateBatchSize > AI_READER_IMMEDIATE_BATCH_SIZE_CAP) {
+      setOperationMessage(`즉시 시작 배치 수는 1~${AI_READER_IMMEDIATE_BATCH_SIZE_CAP}명 사이로 입력하세요.`);
       return false;
     }
     if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -1396,8 +1394,8 @@ export default function Page() {
       setOperationMessage(activityScheduleError);
       return false;
     }
-    if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
-      setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
+    if (immediateBatchSize < 1 || immediateBatchSize > AI_READER_IMMEDIATE_BATCH_SIZE_CAP) {
+      setOperationMessage(`즉시 시작 배치 수는 1~${AI_READER_IMMEDIATE_BATCH_SIZE_CAP}명 사이로 입력하세요.`);
       return false;
     }
     if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -1551,8 +1549,8 @@ export default function Page() {
         setOperationMessage(activityScheduleError);
         return;
       }
-      if (immediateBatchSize < 1 || immediateBatchSize > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
-        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
+      if (immediateBatchSize < 1 || immediateBatchSize > AI_READER_IMMEDIATE_BATCH_SIZE_CAP) {
+        setOperationMessage(`즉시 시작 배치 수는 1~${AI_READER_IMMEDIATE_BATCH_SIZE_CAP}명 사이로 입력하세요.`);
         return;
       }
       if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -1668,8 +1666,8 @@ export default function Page() {
         setOperationMessage(activityScheduleError);
         return;
       }
-      if (resumeImmediateBatchSizeValue < 1 || resumeImmediateBatchSizeValue > MAX_AI_READER_IMMEDIATE_BATCH_SIZE) {
-        setOperationMessage(`즉시 시작 배치 수는 1~${MAX_AI_READER_IMMEDIATE_BATCH_SIZE}명 사이로 입력하세요.`);
+      if (resumeImmediateBatchSizeValue < 1 || resumeImmediateBatchSizeValue > AI_READER_IMMEDIATE_BATCH_SIZE_CAP) {
+        setOperationMessage(`즉시 시작 배치 수는 1~${AI_READER_IMMEDIATE_BATCH_SIZE_CAP}명 사이로 입력하세요.`);
         return;
       }
       if (immediateBatchIntervalValue < 1 || immediateBatchIntervalValue > 120) {
@@ -1822,7 +1820,7 @@ export default function Page() {
     if (nextRunMode === "setup") {
       return "투입 가능한 AI가 부족합니다. 먼저 신규 AI 독자를 생성하거나 목표 인원을 낮춰야 합니다.";
     }
-    return `목표 활동 인원은 0~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`;
+    return `목표 활동 인원은 1~${MAX_AI_READER_AGENT_COUNT}명 사이로 입력하세요.`;
   })();
   const llmSuccessRate = percentFormat(
     summary?.success_decision_count,
@@ -2053,7 +2051,7 @@ export default function Page() {
                   </div>
                 </label>
                 <div className="flex flex-wrap gap-1.5">
-                  {[0, 50, 100, 200].map((count) => (
+                  {AI_READER_TARGET_QUICK_COUNTS.map((count) => (
                     <Button
                       key={count}
                       type="button"
