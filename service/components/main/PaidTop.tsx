@@ -107,7 +107,7 @@ const PaidTop = ({ data }: Props) => {
         }}
       />
       <div className="relative h-[260px] md:h-[360px]">
-        <div className="mt-10pxr md:pt-20pxr flex gap-[16px] bg-[#212123] scroll-hidden overflow-x-auto lg:overflow-hidden pl-16pxr md:pl-0">
+        <div className="mt-10pxr md:pt-20pxr flex gap-16pxr md:gap-18pxr bg-[#212123] scroll-hidden overflow-x-auto lg:overflow-hidden pl-16pxr md:pl-0">
           {(currentProducts as unknown as IProduct[]).map((product) => (
             <div
               key={product.productId}
