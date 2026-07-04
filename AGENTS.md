@@ -68,6 +68,10 @@ docker compose up -d --build cms       # http://localhost:3002
 - 다른 포트가 필요하면 먼저 이유와 현재 점유 프로세스를 readback한다.
 - `npm run dev`, `yarn dev`, `pnpm dev`, `bun dev`는 사용자가 명시하거나 runbook이 해당 경로를 요구할 때만 쓴다.
 - Docker rebuild 후에는 `docker ps`와 해당 localhost URL 응답을 확인한다.
+- Backend local Docker compose is not part of the normal local frontend rebuild path.
+  - `likenovel-service-api/likenovel-service-api/fastapi_be_server/docker-compose.yml` starts `api` through `/app/dist/batch/start-cron.sh`, which installs container cron.
+  - Do not run `docker compose up -d --build api`, `docker-compose up -d`, or any backend local compose command unless the user explicitly asks for local backend container execution and confirms the cron/batch risk after `docs/wiki/deployment-and-batch.md`, `docs/deployment-runbook.md`, and the backend compose command have been read back.
+  - If the user asks to rebuild local for browser/frontend confirmation, rebuild only root `service`/`partner`/`cms` unless they explicitly include backend API.
 
 ## 4) Change Policy
 
@@ -183,8 +187,19 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
 
 ## 8) DB And Batch
 
+- dev 환경 작업을 시작할 때는 `likenovel-dev` RDS 상태를 먼저 확인한다.
+  - dev 배포, `api.likenovel.dev`, `*.likenovel.dev` 브라우저 검증, local-to-dev RDS tunnel(`host.docker.internal:13306`), dev DB/batch 작업이 포함된다.
+  - 시작 전 기본 순서: `bash devtools/dev-rds.sh status` → stopped이면 `bash devtools/dev-rds.sh up`.
+  - dev DB connection error, `likenovel-dev` stopped/stopping, `api.likenovel.dev` DB 연결 실패를 보면 원인분석보다 먼저 `bash devtools/dev-rds.sh up`을 실행한다.
+  - 작업 중에는 반복해서 끄지 않는다. 기본 종료 정책은 `.github/workflows/dev-rds.yml`의 idle-stop이며, 최근 1시간 `DatabaseConnections` max가 0일 때만 끈다.
+  - 사용자가 명시적으로 "지금 꺼", "끄고 마무리"라고 하면 `bash devtools/dev-rds.sh down`으로 stopped 상태를 확인한다. 사용자가 "끄지 마"라고 하면 유지한다.
+  - prod `ln-rds`와는 절대 혼동하지 않는다.
 - 로컬 백엔드/배치 검증 기본 DB 채널은 `host.docker.internal:13306`이다. 이는 SSH tunnel 뒤 dev RDS다.
 - `localhost:3806` Docker MySQL은 별도 로컬 격리 DB다. 기본 검증 채널로 가정하지 않는다.
+- Git Bash tunnel ownership stop rule:
+  - If the user says they opened a tunnel in Git Bash, treat that Windows-side tunnel as user-owned. Do not open, kill, replace, or "fix" WSL/tmux/ssh tunnels unless the user explicitly asks.
+  - WSL or Docker not seeing `localhost`/`host.docker.internal` is not proof that the user's Git Bash tunnel is absent. Report the Windows-vs-WSL boundary and ask before any tunnel command.
+  - Do not use CMS/admin credentials, admin login API calls, password reset routes, or signin probes as tunnel/connectivity checks unless the user explicitly requests that exact account operation. Such probes can leave login audit state such as `latest_signed_date`.
 - DB/cron/batch 작업 전에는 `docs/wiki/deployment-and-batch.md`, `docs/deployment-runbook.md`, backend batch source를 읽는다.
 - batch/log 판정은 최근성, exit code, DB row/readback 기준으로 한다. 타임스탬프 없는 grep으로 정상/실패를 단정하지 않는다.
 - batch 정상 판정 전에는 `ERROR`, `Traceback`, `1205`, `timeout`, `deadlock`와 마지막 성공 marker를 함께 확인한다.

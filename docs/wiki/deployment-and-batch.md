@@ -58,7 +58,7 @@ SHA.
 |---|---|---|---|
 | Local Docker MySQL | isolated local backend container DB | `likenovel-service-api/likenovel-service-api/fastapi_be_server/docker-compose.yml`, host port `localhost:3806`, in-container host `mysql:3306` | default LikeNovel local verification channel |
 | Local-to-dev RDS tunnel | normal local backend/batch verification unless user says otherwise | `host.docker.internal:13306` via SSH tunnel to dev RDS, documented in `docs/deployment-runbook.md` | local Docker MySQL `3806` |
-| Dev API DB | staging backend runtime | `DB_IP=<dev-rds-endpoint>`, `DB_PORT=3306` from runtime env | prod RDS or file-only `.env.dev` assumptions |
+| Dev API DB | on-demand staging backend runtime; default target is stopped outside work windows | RDS instance `likenovel-dev`, started with `devtools/dev-rds.sh up` or the `Dev RDS on-demand` workflow | prod RDS or file-only `.env.dev` assumptions |
 | Prod API DB | production backend runtime | `DB_IP=<prod-rds-endpoint>`, `DB_PORT=3306` from runtime env | dev RDS or public docs guesses |
 
 Backend DB URL construction is in `likenovel-service-api/likenovel-service-api/fastapi_be_server/app/const.py`.
@@ -69,6 +69,31 @@ For local backend/batch checks, root `AGENTS.md` treats `host.docker.internal:13
 as the default dev RDS tunnel channel. Switching to Docker MySQL `3806` needs an
 explicit user decision.
 
+Git Bash tunnel boundary:
+
+- If the user says they opened the tunnel in Git Bash, treat that Windows-side
+  tunnel as user-owned state.
+- WSL or Docker not seeing `localhost` or `host.docker.internal` is not proof
+  that the Git Bash tunnel is absent. It is a Windows-vs-WSL boundary issue.
+- Do not open, kill, replace, or "fix" WSL, tmux, or ssh tunnels unless the user
+  explicitly asks for that exact tunnel operation.
+- Do not use CMS/admin credentials, signin API calls, password reset routes, or
+  admin login probes as tunnel/connectivity checks. Those probes can leave login
+  audit state such as `latest_signed_date`.
+
+Dev RDS cost guard:
+
+- `likenovel-dev` is an on-demand DB. Start it before dev work.
+- Start it with `bash devtools/dev-rds.sh up`; stop it with
+  `bash devtools/dev-rds.sh down`; inspect it with `bash devtools/dev-rds.sh status`.
+- If dev DB connection fails or `likenovel-dev` is stopped/stopping, run
+  `bash devtools/dev-rds.sh up` before root-cause analysis.
+- `.github/workflows/dev-rds.yml` provides manual start/stop/status/idle-stop
+  and checks every 30 minutes. It stops `likenovel-dev` only when the last-hour
+  `DatabaseConnections` max is 0.
+- `.github/workflows/docker-dev.yml` starts `likenovel-dev` before root dev
+  frontend deploy so the dev web surface does not deploy against a stopped DB.
+
 ## Batch And Cron Paths
 
 | Context | Source/template | Runtime path | Cron owner/activation |
@@ -77,6 +102,15 @@ explicit user decision.
 | Docker/container cron | `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/cron_job.sh` | absolute container path: `/app/dist/batch/*.sh`, logs `/app/logs/*.log` | `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/start-cron.sh` installs `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/cron_job.sh` into container crontab |
 | Dev server cron | `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/cron_job.dev.sh` | absolute server path: `/home/ln-admin/likenovel/batch-dev/*.sh`, logs beside scripts | `/etc/cron.d/likenovel-dev`, user `ln-admin`, not auto-installed by `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh` |
 | Prod server cron | prod `crontab -l` plus `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh` guard lines | absolute server path: `/home/ln-admin/likenovel/batch/*.sh`, logs beside scripts | user crontab, must be read back with `crontab -l` |
+
+Backend local Docker compose is not the normal frontend/browser confirmation
+path. `likenovel-service-api/likenovel-service-api/fastapi_be_server/docker-compose.yml`
+runs the `api` service through `/app/dist/batch/start-cron.sh`, which installs
+container cron. Do not run `docker compose up -d --build api`,
+`docker-compose up -d`, or any backend local compose command unless the user
+explicitly asks for local backend container execution and confirms the
+cron/batch risk after this guide, `docs/deployment-runbook.md`, and the compose
+command have been read back.
 
 `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`
 copies deployed batch files from the active dev release to

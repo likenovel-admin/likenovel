@@ -193,6 +193,7 @@ docker compose down
 참조: root `docker-compose.yml`.
 
 사용자가 `3000`에서 확인하겠다고 하면 `likenovel-service-local` 컨테이너를 rebuild/readback한다. 다른 임시 포트로 우회하지 않는다.
+백엔드 local Docker compose는 일반 프론트/브라우저 확인 경로가 아니다. 백엔드 compose의 `api` 서비스는 `/app/dist/batch/start-cron.sh`로 시작해 container cron을 설치한다. 사용자가 명시적으로 backend API 컨테이너 실행을 요청하고, 아래 `4.3` 및 `9.1.1`/`9.3.1`의 DB/cron/tunnel 위험을 확인한 뒤 승인하기 전에는 backend compose를 실행하지 않는다.
 
 ## 4.2 User Web dev server 예외 경로 (명시 요청 시)
 
@@ -209,6 +210,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\user-web-dev.ps1 -Port 3000
 이 스크립트는 `service/`에서 `corepack enable`, `yarn --immutable`, `yarn dev`를 실행한다.
 
 ## 4.3 Backend API 로컬 실행
+
+주의: 이 섹션은 backend API 컨테이너 실행 자체를 사용자가 명시한 경우에만 적용한다. 일반적인 `localhost:3000` 프론트 확인, UI 검수, service 재빌드에는 사용하지 않는다. `fastapi_be_server/docker-compose.yml`의 `api` command는 `/app/dist/batch/start-cron.sh`를 타며 `/app/dist/batch/cron_job.sh`를 container crontab에 설치한다. 실행 전에는 `docs/wiki/deployment-and-batch.md`와 이 섹션을 읽어 cron/batch 영향과 DB 채널을 사용자에게 보고하고 승인을 받아야 한다.
+
 옵션 A: 전체 의존성 포함(Docker Compose)
 
 ```bash
@@ -531,8 +535,33 @@ docker compose -f /home/ln-admin/likenovel/service/prod.docker-compose.yml up -d
 |---|---|---|---|
 | Local Docker MySQL | 완전 로컬 격리 검증 | `localhost:3806` 또는 컨테이너 내부 `mysql:3306` | LikeNovel 기본 검증 채널로 가정하지 않는다 |
 | Local -> dev RDS tunnel | 로컬 백엔드/배치 검증 기본값 | `host.docker.internal:13306` | SSH 터널 뒤 dev RDS다. `3806`과 다르다 |
-| Dev API DB | `api.likenovel.dev` 런타임 | `DB_IP=<dev-rds-endpoint>`, `DB_PORT=3306` | `.env.dev` 파일 존재만으로 반영됐다고 보지 않는다 |
+| Dev API DB | on-demand `api.likenovel.dev` 런타임 | RDS `likenovel-dev`, 기본값은 작업 외 시간 stopped | `.env.dev` 파일 존재만으로 반영됐다고 보지 않는다 |
 | Prod API DB | `api.likenovel.net` 런타임 | 운영 `.env`/프로세스 env의 `DB_IP`, `DB_PORT=3306` | endpoint 추측 금지, 서버 env readback 필요 |
+
+Git Bash 터널 소유권 규칙:
+- 사용자가 Git Bash에서 터널을 열었다고 말하면 Windows-side user-owned 상태로 취급한다.
+- WSL/Docker에서 `localhost` 또는 `host.docker.internal`이 안 보인다는 사실은 Git Bash 터널 부재 증거가 아니다. Windows-vs-WSL 경계 이슈로 보고하고, 터널 명령을 실행하기 전에 사용자 확인을 받는다.
+- 명시 요청 없이 WSL/tmux/ssh 터널을 열거나 끄거나 교체하지 않는다.
+- 연결 확인용으로 CMS/admin credential, signin API, password reset route, admin login probe를 쓰지 않는다. 로그인 probe는 `latest_signed_date` 같은 audit state를 남길 수 있다.
+
+Dev RDS cost guard:
+- `likenovel-dev`는 on-demand RDS다. dev deploy, dev API, local-to-dev RDS
+  검증이 필요할 때 먼저 켠다.
+- Local/manual commands:
+  - `bash devtools/dev-rds.sh status`
+  - `bash devtools/dev-rds.sh up`
+  - `bash devtools/dev-rds.sh down`
+  - `bash devtools/dev-rds.sh idle-stop`
+- GitHub Actions:
+  - `.github/workflows/dev-rds.yml` supports manual `status`/`start`/`stop`/`idle-stop`.
+  - The same workflow checks every 30 minutes and stops `likenovel-dev` only
+    when the last-hour `DatabaseConnections` max is 0.
+  - `.github/workflows/docker-dev.yml` starts `likenovel-dev` before root dev
+    frontend deploy.
+- If `api.likenovel.dev` or local `host.docker.internal:13306` checks fail with
+  DB connection errors, run `bash devtools/dev-rds.sh up` before debugging
+  application code. Treat stopped/stopping dev RDS as an expected cost guard,
+  not as an application incident.
 
 ## 9.2 Local DB 세팅 표준
 대상: 로컬 API 개발/검증
@@ -571,6 +600,11 @@ docker-compose up -d
 - 즉, 스테이징에서 `.env.dev` 파일을 두기만 해서는 부족하고, 실제 프로세스 환경변수로 주입되어야 한다.
 
 ### 9.3.1 로컬 PC에서 dev RDS 붙여서 검증할 때 (SSH 터널)
+
+소유권 stop rule:
+- 아래 절차는 사용자가 터널 실행을 요청했을 때의 안내다. 사용자가 이미 Git Bash에서 열었다고 말하면 에이전트가 WSL/tmux 터널을 새로 열지 않는다.
+- WSL/Docker에서 포트가 안 보이면 "Git Bash 터널이 없다"가 아니라 Windows/Git Bash와 WSL/Docker 네트워크 경계로 분리해 보고한다.
+- 터널 확인은 PowerShell/Git Bash 쪽 포트 확인을 우선 안내하고, 에이전트가 직접 터널을 조작하려면 명시 허가를 먼저 받는다.
 
 증상:
 - 로컬에서 API가 dev RDS로 직접 붙지 못하면(사설망/보안그룹), 유저웹은 `localhost:3000`에서 스피너가 계속 돌 수 있다.

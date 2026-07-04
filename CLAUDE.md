@@ -25,6 +25,28 @@ Do not use nested legacy `CLAUDE.md` files as the main project runbook.
 
 - Codebase is the source of truth. If docs conflict with code/runtime readback,
   trust code/runtime and update the relevant document in the same task.
+- Before any LikeNovel dev-environment work, check `likenovel-dev` RDS with
+  `bash devtools/dev-rds.sh status`; if it is stopped, run
+  `bash devtools/dev-rds.sh up` before starting. This applies to dev deploys,
+  `api.likenovel.dev`, `*.likenovel.dev` browser checks, local-to-dev RDS tunnel
+  work through `host.docker.internal:13306`, and dev DB/batch work. If a dev DB
+  connection error appears or `likenovel-dev` is stopped/stopping, run
+  `bash devtools/dev-rds.sh up` before root-cause analysis. Do not turn it off
+  repeatedly during a work loop; the default stop policy is idle-stop after one
+  hour with zero DB connections. Never confuse this with prod `ln-rds`.
+- If the user says a tunnel is open in Git Bash, treat it as user-owned Windows
+  state. Do not open, kill, replace, or "fix" WSL/tmux/ssh tunnels unless the
+  user explicitly asks. WSL or Docker not seeing `localhost` or
+  `host.docker.internal` is only a Windows-vs-WSL boundary signal, not proof the
+  Git Bash tunnel is absent.
+- Do not run backend local Docker compose (`fastapi_be_server/docker-compose.yml`)
+  for ordinary local frontend/browser confirmation. Its `api` service starts via
+  `/app/dist/batch/start-cron.sh` and installs container cron. Read back the
+  deployment/batch runbooks and get explicit user confirmation before running
+  backend compose or any cron/batch-affecting local backend command.
+- Do not use CMS/admin credentials, signin API calls, password reset routes, or
+  admin login probes as connectivity checks unless the user explicitly requests
+  that exact account operation. These probes can leave login audit state.
 - `AGENTS.md` is the shared operational rulebook for Codex and Claude in this
   workspace when present. It may be local-only/ignored, so check file existence
   separately from git tracking.
