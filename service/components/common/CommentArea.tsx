@@ -497,9 +497,7 @@ const CommentArea = ({
                             <div className="flex items-center h-[20px] px-9pxr gap-3pxr bg-dark-gray-500 rounded-full mt-[10px]">
                               <Pin />
                               <span className="text-8pxr md:text-12pxr text-white">
-                                {comment.authorNickName ||
-                                  comment.authorNickname}{" "}
-                                님이 고정함
+                                작가가 고정함
                               </span>
                             </div>
                           )}

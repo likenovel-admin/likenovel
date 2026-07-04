@@ -11,6 +11,39 @@ const sortableTableSource = readFileSync(
   new URL("./SortableBannersTable.tsx", import.meta.url),
   "utf8",
 );
+const bannerConstantsSource = readFileSync(
+  new URL("../../constants/banner.ts", import.meta.url),
+  "utf8",
+);
+const bannerEnumSource = readFileSync(
+  new URL("../../enums/banner.ts", import.meta.url),
+  "utf8",
+);
+const bannerImagePolicySource = readFileSync(
+  new URL("../../lib/bannerImagePolicy.ts", import.meta.url),
+  "utf8",
+);
+
+assert.match(
+  bannerConstantsSource,
+  /value:\s*"companyNotice"[\s\S]*label:\s*"메인 : 미니캐러셀\(방금 들어온 무료신작 위\)"[\s\S]*shortLabel:\s*"메인 미니캐러셀"/,
+  "CMS banner position tabs should expose the main company notice mini carousel slot",
+);
+assert.match(
+  bannerEnumSource,
+  /companyNotice:\s*"메인 : 미니캐러셀\(방금 들어온 무료신작 위\)"/,
+  "CMS banner table should label company notice mini carousel banners",
+);
+assert.match(
+  bannerImagePolicySource,
+  /UNIFIED_CAROUSEL_BANNER_POSITIONS[\s\S]*"companyNotice"/,
+  "company notice mini carousel should reuse one uploaded image across viewports",
+);
+assert.match(
+  bannerImagePolicySource,
+  /position === "companyNotice" \? "734x367\(2:1\)" : "364x414"/,
+  "company notice mini carousel should show the 2:1 image guide",
+);
 
 for (const [name, source] of [
   ["add banner page", addSource],

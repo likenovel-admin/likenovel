@@ -561,11 +561,13 @@ const buildWebsochatProductSnapshot = ({
   publishedLatestEpisodeNo,
   syncedLatestEpisodeNo,
   contextStatus,
+  priceType,
 }: {
   productId: number;
   title: string;
   authorNickname?: string | null;
   coverImagePath?: string | null;
+  priceType?: string | null;
   latestEpisodeNo?: number | null;
   publishedLatestEpisodeNo?: number | null;
   syncedLatestEpisodeNo?: number | null;
@@ -588,6 +590,7 @@ const buildWebsochatProductSnapshot = ({
         syncedLatestEpisodeNo
   ),
   contextStatus: contextStatus || "ready",
+  priceType: priceType === "paid" ? "paid" : priceType === "free" ? "free" : null,
 });
 
 const normalizeWebsochatProductCover = <T extends { coverImagePath?: string | null }>(
@@ -769,6 +772,16 @@ const isVisibleWebsochatShortcutAction = (
   action: IWebsochatStarterActionItem
 ) => action.modeKey !== "ideal_worldcup";
 
+const withoutHiddenWebsochatGameActions = (
+  starter: IWebsochatStarterItem,
+  hideGameActions: boolean
+): IWebsochatStarterItem => ({
+  ...starter,
+  actions: hideGameActions
+    ? (starter.actions || []).filter(isVisibleWebsochatShortcutAction)
+    : (starter.actions || []),
+});
+
 const parseWebsochatCreatedAt = (value?: string | null) => {
   if (!value) return 0;
   const parsed = Date.parse(value);
@@ -801,16 +814,21 @@ const renderWebsochatActionCards = ({
   onClick,
   disabled,
   activeStateKey,
+  hideGameActions,
 }: {
   actionCards: IWebsochatStarterActionItem[] | null | undefined;
   onClick: (action: IWebsochatStarterActionItem) => void;
   disabled?: boolean;
   activeStateKey?: WebsochatShortcutStateKey | null;
+  hideGameActions?: boolean;
 }) => {
-  if (!actionCards?.length) return null;
+  const visibleActionCards = hideGameActions
+    ? (actionCards || []).filter(isVisibleWebsochatShortcutAction)
+    : (actionCards || []);
+  if (!visibleActionCards.length) return null;
   return (
     <div className="mt-8pxr flex flex-nowrap overflow-x-auto gap-6pxr pb-4pxr">
-      {actionCards.map((action) => (
+      {visibleActionCards.map((action) => (
         (() => {
           const isActive = activeStateKey === resolveWebsochatShortcutStateKey(action);
           return (
@@ -1380,7 +1398,22 @@ export default function WebsochatPage() {
     ?? selectedProduct?.syncedLatestEpisodeNo
     ?? selectedProductSnapshot?.syncedLatestEpisodeNo
     ?? null;
-  const effectiveStarter = messagesData?.data?.starter || stickyStarter;
+  const websochatProductPriceType =
+    selectedProduct?.priceType
+    ?? selectedProductSnapshot?.priceType
+    ?? activeSession?.productPriceType
+    ?? activeSessionMeta?.productPriceType
+    ?? null;
+  const shouldHideWebsochatGameActions = websochatProductPriceType === "paid";
+  const effectiveStarter = useMemo(
+    () => {
+      const starter = messagesData?.data?.starter || stickyStarter;
+      return starter
+        ? withoutHiddenWebsochatGameActions(starter, shouldHideWebsochatGameActions)
+        : null;
+    },
+    [messagesData?.data?.starter, shouldHideWebsochatGameActions, stickyStarter]
+  );
   const activeSessionReadScopeState = activeSessionMeta?.readScopeState
     ?? activeSession?.readScopeState
     ?? (pendingSessionPreview?.sessionId === activeSessionId
@@ -1389,7 +1422,9 @@ export default function WebsochatPage() {
     ?? null;
   const availableShortcutActions = (
     effectiveStarter?.actions || DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS
-  ).filter(isVisibleWebsochatShortcutAction);
+  ).filter((action) => (
+    !shouldHideWebsochatGameActions || isVisibleWebsochatShortcutAction(action)
+  ));
   const userReadEpisodeNo = activeSessionId
     ? activeSessionMeta?.readEpisodeNo
       ?? activeSession?.readEpisodeNo
@@ -2129,13 +2164,13 @@ export default function WebsochatPage() {
           sessionId: sessionId ?? null,
           productId: productId ?? null,
           createdAt,
-          starter,
+          starter: withoutHiddenWebsochatGameActions(starter, shouldHideWebsochatGameActions),
           cardSnapshot: cardSnapshot ?? null,
         },
       ]);
       return starterId;
     },
-    [activeSessionId, effectiveProductId]
+    [activeSessionId, effectiveProductId, shouldHideWebsochatGameActions]
   );
 
   const bindDraftPreludeToSession = useCallback((sessionId: number, productId: number | null) => {
@@ -2507,6 +2542,7 @@ export default function WebsochatPage() {
         syncedLatestEpisodeNo:
           activeSession?.syncedLatestEpisodeNo ?? activeSessionMeta?.syncedLatestEpisodeNo,
         contextStatus: activeSession?.contextStatus ?? activeSessionMeta?.contextStatus,
+        priceType: activeSession?.productPriceType ?? activeSessionMeta?.productPriceType,
       });
     });
   }, [selectedProduct, activeSession, activeSessionMeta]);
@@ -2714,6 +2750,7 @@ export default function WebsochatPage() {
         publishedLatestEpisodeNo: pendingLaunch.publishedLatestEpisodeNo,
         syncedLatestEpisodeNo: pendingLaunch.syncedLatestEpisodeNo,
         contextStatus: pendingLaunch.contextStatus,
+        priceType: pendingLaunch.priceType,
       })
     );
     setSelectedProductId(pendingLaunch.productId);
@@ -4308,10 +4345,10 @@ export default function WebsochatPage() {
 
   const composerShortcutActions = useMemo(
     () => (effectiveStarter?.actions || DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS).filter((action) => (
-      isVisibleWebsochatShortcutAction(action)
+      (!shouldHideWebsochatGameActions || isVisibleWebsochatShortcutAction(action))
       && (canUseAccountScope || action.qaActionKey !== "next_episode_write")
     )),
-    [canUseAccountScope, effectiveStarter?.actions]
+    [canUseAccountScope, effectiveStarter?.actions, shouldHideWebsochatGameActions]
   );
   const [isShortcutMenuOpen, setIsShortcutMenuOpen] = useState(false);
   const shortcutMenuRef = useRef<HTMLDivElement | null>(null);
@@ -4579,6 +4616,7 @@ export default function WebsochatPage() {
                           onClick: handleClickStarterAction,
                           disabled: areShortcutActionsDisabled,
                           activeStateKey: effectiveShortcutState,
+                          hideGameActions: shouldHideWebsochatGameActions,
                         })
                         : null}
                       {message.role === "assistant"

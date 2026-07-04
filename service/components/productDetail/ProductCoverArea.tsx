@@ -1,6 +1,9 @@
 import { useReportProduct } from "@/app/api/query/product";
 import AdultAgeBadge from "@/components/common/AdultAgeBadge";
-import { resolveProductCoverImage } from "@/constants/common";
+import {
+  resolveProductCoverImage,
+  SHOW_PRODUCT_EVALUATION_SURFACE,
+} from "@/constants/common";
 import Modal from "@/components/common/Modal";
 import ReportModal from "@/components/modal/ReportModal";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
@@ -171,7 +174,7 @@ const ProductCoverArea = ({
   const shouldShowWebsochatEntryCta = websochatLaunchEligibility.canLaunch;
   const shouldShowWebsochatUnavailable =
     websochatLaunchEligibility.displayState === "unavailable";
-  const shouldShowEvaluationContainer = false;
+  const shouldShowEvaluationContainer = SHOW_PRODUCT_EVALUATION_SURFACE;
   const shouldShowRightPanel =
     shouldShowWebsochatEntryCta ||
     shouldShowWebsochatUnavailable ||

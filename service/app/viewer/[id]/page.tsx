@@ -360,6 +360,7 @@ const Viewer = () => {
       productId: episode.product_id,
       title: episode.title,
       coverImagePath: episode.coverImagePath || null,
+      priceType: episode.priceType || null,
       latestEpisodeNo: publishedLatestEpisodeNo,
       publishedLatestEpisodeNo,
       syncedLatestEpisodeNo: episode.websochatSyncedLatestEpisodeNo || null,

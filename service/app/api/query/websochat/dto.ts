@@ -4,6 +4,7 @@ export interface IWebsochatProductItem {
   authorNickname?: string | null;
   coverImagePath?: string | null;
   statusCode?: string | null;
+  priceType?: "free" | "paid" | null;
   latestEpisodeNo: number;
   publishedLatestEpisodeNo?: number;
   syncedLatestEpisodeNo?: number;
@@ -29,11 +30,16 @@ export interface IWebsochatSessionItem {
   sessionId: number;
   productId: number;
   title: string;
+  sessionKind?: "websochat" | "character_chat";
+  entrySource?: string | null;
+  lockedCharacterScopeKey?: string | null;
+  allowedModes?: Array<"qa" | "rp" | "ideal_worldcup">;
   createdDate: string;
   updatedDate: string;
   productTitle?: string | null;
   productAuthorNickname?: string | null;
   coverImagePath?: string | null;
+  productPriceType?: "free" | "paid" | null;
   readScopeState?: "unknown" | "none" | "known";
   readEpisodeNo?: number | null;
   readEpisodeTitle?: string | null;
@@ -57,6 +63,10 @@ export interface ICreateWebsochatSessionResponse {
     sessionId: number;
     productId: number;
     title: string;
+    sessionKind?: "websochat" | "character_chat";
+    entrySource?: string | null;
+    lockedCharacterScopeKey?: string | null;
+    allowedModes?: Array<"qa" | "rp" | "ideal_worldcup">;
     product: IWebsochatProductItem;
   };
 }

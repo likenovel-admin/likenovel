@@ -1,5 +1,6 @@
 const UNIFIED_CAROUSEL_BANNER_POSITIONS = new Set([
   "main-top",
+  "companyNotice",
   "paid",
   "review",
 ]);
@@ -15,7 +16,10 @@ export function getBannerImageSpec(position: string): {
   mobile: string | null;
 } | null {
   if (usesUnifiedBannerImage(position)) {
-    return { primary: "364x414", mobile: null };
+    return {
+      primary: position === "companyNotice" ? "734x367(2:1)" : "364x414",
+      mobile: null,
+    };
   }
   if (position === "main-mid") return { primary: "1080x116", mobile: null };
   if (position === "viewer") return { primary: "839x122", mobile: "375x122" };

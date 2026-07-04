@@ -29,6 +29,12 @@
 - 위 파일은 git ignore 대상이며 비밀번호를 포함할 수 있다. 비밀번호를 채팅, tracked 문서, 커밋, PR 본문에 출력하지 않는다.
 - CMS/admin 계정 작업은 해당 문서의 계정으로 로그인한 뒤 대상 이메일 exact search, `latest_signed_type`, `use_yn`, reset, signin 검증 순서로 진행한다.
 
+## 0.4) User-Facing File Deliverables
+
+- 사용자에게 생성/수정한 파일을 보여주거나 전달할 때는 repo/output 경로만 말하지 말고, 먼저 Windows 다운로드 폴더 `/mnt/c/Users/Hongsan/Downloads`에 복사한다.
+- 완료 보고에는 Windows 경로 `C:\Users\Hongsan\Downloads\...`를 포함하고, `ls`, `test -f`, workbook readback 등으로 복사 여부를 확인한다.
+- repo 내부 산출물 경로는 보조 정보로만 보고한다. Windows 다운로드 폴더 접근이 실패하면 실패 이유와 미복사 상태를 명시한다.
+
 ## 1) Source Of Truth
 
 - 코드베이스와 런타임 readback이 SSOT다. 문서가 코드와 다르면 코드/런타임을 믿고 문서를 고친다.
@@ -168,6 +174,11 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
   - dev root pointer: backend `origin/dev`
   - prod root pointer: backend workflow 완료 후 다시 fetch한 backend `origin/prod`
 - backend prod workflow가 `version update` 커밋을 만든 경우, root prod pointer는 그 최신 backend `origin/prod` SHA로 맞춘다. 중간 merge SHA나 backend dev SHA를 넣으면 downgrade다.
+- Root submodule pointer-only 변경은 web 배포가 아니다.
+  - `.github/workflows/docker-dev.yml` / `.github/workflows/docker-prod.yml`는 `service/**`, `partner/**`, `cms/**`, workflow 파일 변경만 web image build/deploy 대상으로 본다.
+  - `likenovel-service-api/likenovel-service-api` gitlink만 바뀐 커밋은 root repo lineage 정합성 작업으로 커밋/푸시하되, root web `workflow_dispatch`를 기본 실행하지 않는다.
+  - pointer-only push 뒤에는 backend runtime hard gate, root `git ls-tree origin/<target> likenovel-service-api/likenovel-service-api`, prod monitor/public health를 분리해 보고한다.
+  - `service`/`partner`/`cms` 이미지 재생성이 필요한 실제 파일 변경이나 사용자의 명시 승인이 있을 때만 root web workflow를 수동 실행하고, 이 경우 `강제발동` 또는 `workaround`로 보고한다.
 
 ## 7) Deployment And Runtime Gates
 

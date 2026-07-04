@@ -95,6 +95,45 @@ The story-agent routers currently call websochat schemas/services. Treat
 `docs/story-agent-prd.md` as historical product planning, not current
 implementation SSOT.
 
+### Read Scope And Paid Access
+
+> Last verified: 2026-07-03
+> Source of truth: backend `websochat_service.py`, viewer episode service, and
+> `service/utils/websochatLaunch.ts`.
+
+Websochat is not free-product-only. Paid products may enter Websochat when the
+product is public, context-ready, has synced story-agent context, and the actor
+has at least one contiguous readable episode from episode 1.
+
+The backend is the authority for access. Frontend launch eligibility must not
+decide paid ownership; it may only check product identity, context status, and
+published/synced episode counts. Session creation and every message request
+must recompute the readable ceiling from current server state.
+
+Read scope is:
+
+```text
+min(user requested/read episode, highest contiguous server-authorized episode, synced latest episode)
+```
+
+Server-authorized episodes are open episodes that are free, owned, or under an
+unexpired rental in `tb_user_productbook`. Non-contiguous purchases do not extend
+the scope past the first missing/unauthorized episode, because current
+Websochat retrieval uses an integer `read_episode_to` range.
+
+Important examples:
+
+- If a user purchased through episode 50 but the viewer launch says the last
+  read episode is 27, Websochat starts from episode 27.
+- If a client sends 50 but server authorization or context sync only reaches
+  27, Websochat clamps to 27.
+- If rental/ownership is revoked or expired after a session was created, the
+  next message/list/readback must clamp or clear the stored session scope before
+  exposing episode references or retrieval context.
+- If no episode is currently readable, Websochat rejects the session/message
+  before character resolution, summary lookup, RP context, game setup, or QA
+  retrieval can run.
+
 ### Character Chat Pipeline
 
 > Last verified: 2026-06-28

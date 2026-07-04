@@ -19,3 +19,19 @@ assert.doesNotMatch(
   source,
   /pendingLaunchPayload\.launchSource === "viewer_bottom_nav"[\s\S]{0,300}setDraft/
 );
+assert.match(
+  source,
+  /const shouldHideWebsochatGameActions = websochatProductPriceType === "paid";/
+);
+assert.match(
+  source,
+  /withoutHiddenWebsochatGameActions\(starter, shouldHideWebsochatGameActions\)/
+);
+assert.match(
+  source,
+  /!shouldHideWebsochatGameActions \|\| isVisibleWebsochatShortcutAction\(action\)/
+);
+assert.doesNotMatch(
+  source,
+  /const visibleActionCards = \(actionCards \|\| \[\]\)\.filter\(isVisibleWebsochatShortcutAction\);/
+);
