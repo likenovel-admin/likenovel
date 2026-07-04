@@ -1,13 +1,10 @@
-import { useMyEvaluation, useMySummary } from "@/app/api/query/author/product";
+import { useMySummary } from "@/app/api/query/author/product";
 import { useSelectUserInfo } from "@/app/api/query/mypage/user";
-import ProductReaction from "@/components/common/ProductReaction";
 import Spinner from "@/components/common/Spinner";
 import WarningModal from "@/components/modal/WarningModal";
 import useModalStore from "@/store/modalStore";
-import { mergeKeysEvaluation, sumTimesEvaluation } from "@/utils/common";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo } from "react";
 import RankIndicator from "../common/RankIndicator";
 import UserNickname from "../common/UserNickname";
 import ArrowRight from "/public/images/arrow-right-medium.svg";
@@ -15,18 +12,6 @@ import FireDetail from "/public/images/fire-detail.svg";
 import FireEmptyDetail from "/public/images/fire-empty-detail.svg";
 import Office from "/public/images/office.svg";
 import ViewDetail from "/public/images/view-detail.svg";
-const ratingLabels: Record<string, string> = {
-  highlyPositive: "서둘러 연참해주세요",
-  veryPositive: "내용이 신선해요",
-  positive: "국가권력급 필력이에요",
-  somewhatPositive: "건필하세요",
-  neutral: "그럭저럭 볼 만은 해요",
-  somewhatNegative: "응원합니다",
-  negative: "유치해서 보기 힘들어요",
-  veryNegative: "내용이 조금 지루해요",
-  highlyNegative: "다들 시간낭비하지 마세요",
-};
-
 const summaryGuideLines = [
   "조회수·선작수·추천수·CP 조회수는 현재 누적 기준이며, 우측 증감 수치는 전일 대비입니다.",
   "관심 관련 지표는 무료작품 기준으로 집계되며, 당일 읽기 기록은 익일 반영될 수 있습니다.",
@@ -35,12 +20,9 @@ const summaryGuideLines = [
 const MyProductManageArea = () => {
   const router = useRouter();
   const { data: summaryData, isLoading, error } = useMySummary();
-  const { data: evaluationData, isLoading: evaluationLoading } =
-    useMyEvaluation();
   const { data: userInfo } = useSelectUserInfo();
   const { setModal } = useModalStore();
 
-  const ratingData = evaluationData?.data || {};
   const isCpUser = userInfo?.data?.userRole === "CP";
 
   const handleCreateProductClick = () => {
@@ -59,17 +41,6 @@ const MyProductManageArea = () => {
 
     router.push("/product/author/making-product");
   };
-
-  const totalParticipants = useMemo(() => {
-    if (evaluationData?.data) {
-      return (
-        sumTimesEvaluation(
-          evaluationData?.data as unknown as Record<string, number>
-        ) || 0
-      ).toLocaleString("ko-KR");
-    }
-    return 0;
-  }, [evaluationData]);
 
   const manageData = summaryData?.data
     ? [
@@ -132,7 +103,7 @@ const MyProductManageArea = () => {
       ]
     : [];
 
-  if (isLoading || evaluationLoading) {
+  if (isLoading) {
     return (
       <div className="w-full min-h-screen flex justify-center items-center mt-[-100px]">
         <Spinner />
@@ -239,7 +210,6 @@ const MyProductManageArea = () => {
                 </div>
               </div>
             ))}
-            <div className="min-w-[155px]" />
           </div>
           <div className="flex flex-col gap-6pxr">
             {summaryGuideLines.map((line) => (
@@ -248,27 +218,6 @@ const MyProductManageArea = () => {
               </span>
             ))}
           </div>
-        </div>
-      </div>
-      <div className="flex min-w-[327px] justify-center bg-white px-25pxr py-20pxr rounded-r-[20px] border border-l-light-gray-400 border-r-0 border-t-0 border-b-0">
-        <div className="w-full ">
-          <div className="flex gap-10pxr items-center mb-15pxr">
-            <span className="text-18pxr font-semibold">평가</span>
-            <div className="h-[12px] border border-t-0 border-b-0 border-l-light-gray-500 border-r-0" />
-            <div>
-              <span className="text-13pxr text-dark-gray-300">총</span>
-              <span className="text-13pxr text-primary-100 font-semibold">
-                &nbsp;{totalParticipants}명&nbsp;
-              </span>
-              <span className="text-13pxr text-dark-gray-300">참여 중</span>
-            </div>
-          </div>
-          {/* TODO: api 데이터로 바꾸기 */}
-          <ProductReaction
-            evaluations={mergeKeysEvaluation(
-              ratingData as unknown as Record<string, number>
-            )}
-          />
         </div>
       </div>
     </div>

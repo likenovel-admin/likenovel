@@ -1,6 +1,7 @@
 import { useSelectCommentByEpisode } from "@/app/api/query/comment";
 import CommentList from "@/components/viewer/CommentList";
 import RatingForm from "@/components/viewer/RatingForm";
+import { SHOW_PRODUCT_EVALUATION_SURFACE } from "@/constants/common";
 import { Dispatch, SetStateAction, useMemo, useState } from "react";
 
 interface RatingProps {
@@ -36,7 +37,11 @@ export default function Rating({
   }, [episodeComments]);
 
   return (
-    <div className="mt-[109px] mb-[60px] flex flex-col items-center">
+    <div
+      className={`mb-[60px] flex flex-col items-center ${
+        SHOW_PRODUCT_EVALUATION_SURFACE ? "mt-[109px]" : "mt-24pxr"
+      }`}
+    >
       <div className="w-full md:w-[784px] px-16pxr md:px-0">
         <RatingForm
           productId={productId}

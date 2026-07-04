@@ -1,13 +1,10 @@
-import { useMyEvaluation, useMySummary } from "@/app/api/query/author/product";
+import { useMySummary } from "@/app/api/query/author/product";
 import { useSelectUserInfo } from "@/app/api/query/mypage/user";
-import ProductReaction from "@/components/common/ProductReaction";
 import Spinner from "@/components/common/Spinner";
 import WarningModal from "@/components/modal/WarningModal";
 import useModalStore from "@/store/modalStore";
-import { mergeKeysEvaluation, sumTimesEvaluation } from "@/utils/common";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo } from "react";
 import RankIndicator from "../common/RankIndicator";
 import UserNickname from "../common/UserNickname";
 import ArrowRight from "/public/images/arrow-right-medium.svg";
@@ -26,12 +23,9 @@ const summaryGuideLines = [
 const MyProductManageAreaMobile = () => {
   const router = useRouter();
   const { data: summaryData, isLoading, error } = useMySummary();
-  const { data: evaluationData, isLoading: evaluationLoading } =
-    useMyEvaluation();
   const { data: userInfo } = useSelectUserInfo();
   const { setModal } = useModalStore();
 
-  const ratingData = evaluationData?.data || {};
   const isCpUser = userInfo?.data?.userRole === "CP";
 
   const handleCreateProductClick = () => {
@@ -50,15 +44,6 @@ const MyProductManageAreaMobile = () => {
 
     router.push("/product/author/making-product");
   };
-
-  const totalParticipants = useMemo(() => {
-    if (evaluationData?.data) {
-      return sumTimesEvaluation(
-        evaluationData?.data as unknown as Record<string, number>
-      ).toLocaleString("ko-KR");
-    }
-    return 0;
-  }, [evaluationData]);
 
   const manageData = summaryData?.data
     ? [
@@ -107,7 +92,7 @@ const MyProductManageAreaMobile = () => {
       ]
     : [];
 
-  if (isLoading || evaluationLoading) {
+  if (isLoading) {
     return (
       <div className="w-full min-h-screen flex justify-center items-center mt-[-100px]">
         <Spinner />
@@ -192,28 +177,6 @@ const MyProductManageAreaMobile = () => {
           ))}
         </div>
       </div>
-      <div className="w-full h-[10px] bg-light-gray-200 mt-30pxr" />
-      <div className="md:hidden flex w-full justify-center bg-white px-16pxr">
-        <div className="w-full ">
-          <div className="flex gap-10pxr items-center mt-30pxr mb-15pxr">
-            <span className="text-17pxr font-semibold">평가</span>
-            <div className="h-[12px] border border-t-0 border-b-0 border-l-light-gray-500 border-r-0" />
-            <div>
-              <span className="text-13pxr text-dark-gray-300">총</span>
-              <span className="text-13pxr text-primary-100 font-semibold">
-                &nbsp;{totalParticipants}명&nbsp;
-              </span>
-              <span className="text-13pxr text-dark-gray-300">참여 중</span>
-            </div>
-          </div>
-          <ProductReaction
-            evaluations={mergeKeysEvaluation(
-              ratingData as unknown as Record<string, number>
-            )}
-          />
-        </div>
-      </div>
-      <div className="w-full border border-t-light-gray-400 border-b-0 border-l-0 border-r-0 mt-30pxr" />
     </div>
   );
 };

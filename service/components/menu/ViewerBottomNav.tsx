@@ -53,49 +53,76 @@ const ViewerBottomNav = ({
     >
       {showNav && (
         <>
-          <div className="flex md:hidden items-center gap-16pxr min-[390px]:gap-[22px]">
-            <button className=" relative" onClick={handleCommentState}>
-              <Image
-                src="/images/comment.svg"
-                alt="댓글"
-                width={22}
-                height={22}
-              />
-              {commentCount && commentCount > 0 ? (
-                <span className="absolute -top-[8px] -right-[13px] min-w-[22px] h-[16px] px-[5px] rounded-[100px] bg-[#111317] text-white text-[11px] flex items-center justify-center font-medium">
-                  {commentCount > 99 ? "99+" : commentCount}
-                </span>
-              ) : null}
-            </button>
-            <div className="">
+          <div className="flex w-full md:hidden items-center justify-between gap-6pxr">
+            <div className="flex shrink-0 items-center gap-1pxr min-[390px]:gap-2pxr">
+              <button
+                className="relative flex h-40pxr w-32pxr items-center justify-center"
+                onClick={handleCommentState}
+                aria-label="댓글"
+              >
+                <Image
+                  src="/images/comment.svg"
+                  alt=""
+                  width={21}
+                  height={21}
+                />
+                {commentCount && commentCount > 0 ? (
+                  <span className="absolute right-0 top-[4px] flex h-[15px] min-w-[20px] items-center justify-center rounded-[100px] bg-black-100 px-[5px] text-[10px] font-medium text-white">
+                    {commentCount > 99 ? "99+" : commentCount}
+                  </span>
+                ) : null}
+              </button>
               <LikeButton
                 likeYN={likedYN || "N"}
-                buttonStyle=""
-                likeStyle="w-[24px] h-[22px] text-dark-gray-500 hover:text-dark-gray-600"
-                activeLikeStyle="w-[24px] h-[22px]"
+                buttonStyle="flex h-40pxr w-32pxr items-center justify-center"
+                likeStyle="h-[21px] w-[23px] text-dark-gray-500 hover:text-dark-gray-600"
+                activeLikeStyle="h-[21px] w-[23px]"
               />
-            </div>
-            <div className="flex items-center gap-10pxr">
               <BookmarkButton
                 productId={productId || 0}
                 bookmarkYn={bookmarkYn || "N"}
-                buttonStyle=""
-                bookmarkStyle="w-[16px] h-[22px] text-dark-gray-500 hover:text-dark-gray-600"
-                activeBookmarkStyle="w-[16px] h-[22px]"
+                buttonStyle="flex h-40pxr w-28pxr items-center justify-center"
+                bookmarkStyle="h-[21px] w-[15px] text-dark-gray-500 hover:text-dark-gray-600"
+                activeBookmarkStyle="h-[21px] w-[15px]"
               />
               {showWebsochatButton && (
                 <WebsochatButton
                   label="웹소챗"
                   onClick={handleWebsochatClick}
-                  className="h-42pxr min-w-[104px] px-14pxr text-15pxr [&>svg]:h-18pxr [&>svg]:w-18pxr min-[390px]:min-w-[112px] min-[390px]:px-16pxr"
+                  variant="subtle"
+                  className="ml-3pxr h-34pxr min-w-[82px] px-10pxr text-13pxr [&>svg]:h-15pxr [&>svg]:w-15pxr min-[390px]:ml-5pxr min-[390px]:min-w-[88px]"
                 />
               )}
+            </div>
+            <div className="flex shrink-0 items-center gap-2pxr border-l border-light-gray-500 pl-8pxr min-[390px]:gap-4pxr min-[390px]:pl-10pxr">
+              <button
+                onClick={handleNavigatePrevChap}
+                disabled={!previousEpisodeId}
+                className="flex h-40pxr items-center justify-center rounded-[6px] px-1pxr text-dark-gray-500 disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label="이전화"
+              >
+                <div className="flex items-center gap-4pxr">
+                  <ArrowLeft className="h-[11px] w-[6px] text-black-200" />
+                  <span className="text-12pxr leading-none">이전화</span>
+                </div>
+              </button>
+              <button
+                onClick={handleNavigateNextChap}
+                disabled={!nextEpisodeId}
+                className="flex h-40pxr items-center justify-center rounded-[6px] px-1pxr font-medium text-black-100 disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label="다음화"
+              >
+                <div className="flex items-center gap-4pxr">
+                  <span className="text-12pxr leading-none">다음화</span>
+                  <ArrowRight className="h-[11px] w-[6px] text-black-200" />
+                </div>
+              </button>
             </div>
           </div>
           <button
             onClick={handleNavigatePrevChap}
             disabled={!previousEpisodeId}
-            className="disabled:opacity-50 disabled:cursor-not-allowed"
+            className="hidden disabled:cursor-not-allowed disabled:opacity-50 md:block"
           >
             <div className="hidden md:flex items-center gap-4">
               <ArrowLeft className="w-[10px] h-[18px] text-black-200" />
@@ -106,41 +133,20 @@ const ViewerBottomNav = ({
             <WebsochatButton
               label="이번 회차로 웹소챗"
               onClick={handleWebsochatClick}
+              variant="subtle"
               className="hidden h-40pxr min-w-[172px] px-22pxr text-15pxr md:inline-flex"
             />
           )}
           <button
             onClick={handleNavigateNextChap}
             disabled={!nextEpisodeId}
-            className="disabled:opacity-50 disabled:cursor-not-allowed"
+            className="hidden disabled:cursor-not-allowed disabled:opacity-50 md:block"
           >
             <div className="hidden md:flex items-center gap-4">
               <span className="text-15pxr">다음화</span>
               <ArrowRight className="w-[10px] h-[18px] text-black-200" />
             </div>
           </button>
-          <div className="flex md:hidden gap-12pxr min-[390px]:gap-20pxr">
-            <button
-              onClick={handleNavigatePrevChap}
-              disabled={!previousEpisodeId}
-              className="disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <div className="flex items-center gap-5pxr">
-                <ArrowLeft className="w-[7px] h-[12px] text-black-200" />
-                <span className="text-13pxr">이전화</span>
-              </div>
-            </button>
-            <button
-              onClick={handleNavigateNextChap}
-              disabled={!nextEpisodeId}
-              className="disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <div className="flex items-center gap-5pxr">
-                <span className="text-13pxr">다음화</span>
-                <ArrowRight className="w-[7px] h-[12px] text-black-200" />
-              </div>
-            </button>
-          </div>
         </>
       )}
     </div>

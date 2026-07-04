@@ -8,6 +8,7 @@ import {
 } from "@/app/api/query/episode";
 import { EvaluationItems } from "@/components/common/ProductEvaluation";
 import ProductReaction from "@/components/viewer/ProductReaction";
+import { SHOW_PRODUCT_EVALUATION_SURFACE } from "@/constants/common";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useAuthStore from "@/store/authStore";
 import useToastStore from "@/store/toastStore";
@@ -15,8 +16,23 @@ import { IEvaluation } from "@/types";
 import { mergeKeysEvaluation } from "@/utils/common";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { sumTimesEvaluation } from "../../utils/common";
+
+const QUICK_COMMENT_CHIPS = [
+  "잘 보고 갑니다",
+  "잘 읽었습니다",
+  "잘 봤습니다",
+  "오늘도 잘 봤습니다",
+  "건필하세요",
+  "작가님 화이팅",
+  "응원합니다",
+  "감사합니다",
+  "재밌어요",
+  "다음화 기다립니다",
+];
+const QUICK_COMMENT_CHIP_CLASS =
+  "shrink-0 whitespace-nowrap rounded-full border border-light-gray-400 bg-white px-12pxr py-8pxr text-13pxr font-medium tracking-[-2%] text-dark-gray-500 transition-colors hover:border-primary-100 hover:text-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-100/30";
 
 interface RatingFormProps {
   productId?: number;
@@ -37,13 +53,15 @@ export default function RatingForm({
   const [selected, setSelected] = useState<string>("");
   const [comment, setComment] = useState<string>("");
   const [submitted, setSubmitted] = useState(false);
+  const commentInputRef = useRef<HTMLInputElement | null>(null);
 
   const { withAuth } = useAuthWrapper();
   const { setToast } = useToastStore();
   const evaluateEpisode = useEvaluateEpisode();
   const addCommentEpisode = useAddCommentEpisode();
   const isCommentOpen = commentOpenYn !== "N";
-  const isEvaluationOpen = evaluationOpenYn !== "N";
+  const isEvaluationOpen =
+    SHOW_PRODUCT_EVALUATION_SURFACE && evaluationOpenYn !== "N";
 
   const { data: episodeData, refetch } = useSelectViewerPath(episodeId || 0);
   const { data: episodeEvaluationData, refetch: refetchEvaluation } =
@@ -182,6 +200,14 @@ export default function RatingForm({
     }
   });
 
+  const handleSelectQuickComment = (quickComment: string) => {
+    if (!isCommentOpen) return;
+    setComment(quickComment);
+    requestAnimationFrame(() => {
+      commentInputRef.current?.focus();
+    });
+  };
+
   return (
     <div className="mx-auto max-w-5xl ">
       {isEvaluationOpen && !hasUserEvaluated ? (
@@ -291,7 +317,7 @@ export default function RatingForm({
       ) : null}
 
       {/* Comment box */}
-      <div className="mt-[23px]">
+      <div className={isEvaluationOpen ? "mt-[23px]" : "mt-0"}>
         <h3 className="text-[22px] font-bold tracking-[-2%]">
           작품 댓글 {commentTotalCount}
         </h3>
@@ -301,6 +327,7 @@ export default function RatingForm({
           }`}
         >
           <input
+            ref={commentInputRef}
             type="text"
             value={comment}
             onChange={(e) => {
@@ -314,7 +341,7 @@ export default function RatingForm({
                 : "아직 댓글을 받을 준비가 안됐어요."
             }
             disabled={!isCommentOpen}
-            className={`flex-1 outline-none focus:border-0 focus:outline-none ${
+            className={`min-w-0 flex-1 outline-none focus:border-0 focus:outline-none ${
               isCommentOpen
                 ? "bg-[#F7F7F7]"
                 : "cursor-not-allowed bg-light-gray-100 text-dark-gray-300 placeholder:text-dark-gray-300"
@@ -335,6 +362,23 @@ export default function RatingForm({
             {/* {addCommentEpisode.isPending ? "등록 중..." : "등록"} */}
           </button>
         </div>
+        {isCommentOpen ? (
+          <div
+            className="mt-10pxr flex max-w-full gap-8pxr overflow-x-auto pb-4pxr md:flex-wrap md:overflow-visible"
+            aria-label="빠른 댓글"
+          >
+            {QUICK_COMMENT_CHIPS.map((quickComment) => (
+              <button
+                key={quickComment}
+                type="button"
+                onClick={() => handleSelectQuickComment(quickComment)}
+                className={QUICK_COMMENT_CHIP_CLASS}
+              >
+                {quickComment}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );

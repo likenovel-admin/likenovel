@@ -30,6 +30,10 @@ export interface IWebsochatSessionItem {
   sessionId: number;
   productId: number;
   title: string;
+  sessionKind?: "websochat" | "character_chat";
+  entrySource?: string | null;
+  lockedCharacterScopeKey?: string | null;
+  allowedModes?: Array<"qa" | "rp" | "ideal_worldcup">;
   createdDate: string;
   updatedDate: string;
   productTitle?: string | null;
@@ -59,6 +63,10 @@ export interface ICreateWebsochatSessionResponse {
     sessionId: number;
     productId: number;
     title: string;
+    sessionKind?: "websochat" | "character_chat";
+    entrySource?: string | null;
+    lockedCharacterScopeKey?: string | null;
+    allowedModes?: Array<"qa" | "rp" | "ideal_worldcup">;
     product: IWebsochatProductItem;
   };
 }
