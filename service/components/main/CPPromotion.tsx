@@ -49,7 +49,7 @@ const CPPromotion = ({
       />
       <div className="overflow-auto scroll-hidden">
         <div className="w-[800px] md:w-[1120px]">
-          <div className="mt-10pxr md:mt-20pxr flex md:grid md:grid-cols-6 gap-[10px] md:gap-[18px] pl-16pxr md:pl-0">
+          <div className="mt-10pxr md:mt-20pxr flex md:grid md:grid-cols-6 gap-16pxr md:gap-18pxr pl-16pxr md:pl-0">
             {data.map((product) => (
               <div
                 key={product.productId}
