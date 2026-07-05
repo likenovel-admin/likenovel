@@ -2,9 +2,9 @@ export const LIKENOVEL_APP_USER_AGENT_TOKEN = "LikeNovelApp";
 export const LIKENOVEL_APP_HEADER = "x-likenovel-app";
 
 export const APP_PAYMENT_UNSUPPORTED_MESSAGE =
-  "앱에서는 구매를 지원하지 않습니다.";
+  "앱에서는 캐시 충전을 이용할 수 없습니다.";
 export const APP_PURCHASED_CONTENT_MESSAGE =
-  "이미 구매한 콘텐츠는 앱에서도 이용할 수 있습니다.";
+  "이미 구매하신 콘텐츠는 앱에서도 계속 감상하실 수 있습니다.";
 
 type HeaderReader = {
   get(name: string): string | null;
