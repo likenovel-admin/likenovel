@@ -14,9 +14,11 @@ import {
   getEpisodeIdFromViewerPathname,
   getOriginPageTypeFromPathname,
 } from "@/utils/funnelResume";
+import { isLikenovelAppBrowser } from "@/utils/likenovelApp";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import AppPaymentUnsupportedNotice from "../common/AppPaymentUnsupportedNotice";
 import BottomSheetContainer from "../common/BottomSheetContainer";
 import Button from "../common/Button";
 import ModalBottomButton from "../common/ModalBottomButton";
@@ -82,6 +84,25 @@ const CacheUseContents = ({
   const rentalPrice = data?.rentalPrice || 0;
   const purchaseMode = data?.purchaseMode || "serial";
   const episodeCount = data?.episodeCount || 0;
+  const isLikenovelApp = isLikenovelAppBrowser();
+
+  if (isLikenovelApp) {
+    return (
+      <div className="h-fit flex flex-col items-center md:w-[300px]">
+        <div className="w-full p-6">
+          <AppPaymentUnsupportedNotice />
+        </div>
+        <div className="w-full sticky bottom-0 bg-white mt-6 md:mt-0">
+          <ModalBottomButton
+            leftButton={{
+              text: "확인",
+              onClick: onClose,
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   const handlePurchase = async (purchaseType: "own" | "rental" = "own") => {
     if (purchaseMutation.isPending) return;

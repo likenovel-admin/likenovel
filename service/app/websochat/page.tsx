@@ -42,6 +42,11 @@ import GlobalNav from "@/components/menu/GlobalNav";
 import WebsochatGuideBubble from "@/components/websochat/WebsochatGuideBubble";
 import useAuthStore from "@/store/authStore";
 import useConfirmStore from "@/store/confirmStore";
+import {
+  APP_PAYMENT_UNSUPPORTED_MESSAGE,
+  APP_PURCHASED_CONTENT_MESSAGE,
+  isLikenovelAppBrowser,
+} from "@/utils/likenovelApp";
 import { STORAGE_KEYS } from "@/utils/localStorage";
 import { buildProductDetailPath } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
@@ -887,6 +892,7 @@ export default function WebsochatPage() {
   const pathname = usePathname();
   const { user, isAuthenticated, accessToken, isAuthInitialized } = useAuthStore();
   const { setConfirm } = useConfirmStore();
+  const isLikenovelApp = isLikenovelAppBrowser();
   const adultYn: "Y" | "N" = user?.isOnAdult ? "Y" : "N";
   const [keyword, setKeyword] = useState("");
   const [submittedKeyword, setSubmittedKeyword] = useState("");
@@ -2845,6 +2851,15 @@ export default function WebsochatPage() {
   };
 
   const openCashChargeConfirm = (cashCost?: number | null) => {
+    if (isLikenovelApp) {
+      setConfirm({
+        content: `${APP_PAYMENT_UNSUPPORTED_MESSAGE}\n${APP_PURCHASED_CONTENT_MESSAGE}`,
+        confirmText: "확인",
+        buttonCount: 1,
+      });
+      return;
+    }
+
     const resolvedCashCost = Number(cashCost || 0);
     setConfirm({
       content:

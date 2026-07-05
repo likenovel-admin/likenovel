@@ -7,10 +7,12 @@ import {
   getFunnelResumeParamFromSearchParams,
   getFunnelResumeReturnPath,
 } from "@/utils/funnelResume";
+import { isLikenovelAppBrowser } from "@/utils/likenovelApp";
 import PortOne, { Entity } from "@portone/browser-sdk/v2";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useSelectUserInfo } from "@/app/api/query/mypage/user";
+import AppPaymentUnsupportedNotice from "../common/AppPaymentUnsupportedNotice";
 import CashHowToUse from "./CashHowToUse";
 import ChargeList from "./ChargeList";
 import PaymentMethod from "./PaymentMethod";
@@ -111,6 +113,7 @@ const CashCharge = () => {
   const searchParams = useSearchParams();
   const encodedResume = getFunnelResumeParamFromSearchParams(searchParams);
   const resumeReturnPath = getFunnelResumeReturnPath(searchParams);
+  const isLikenovelApp = isLikenovelAppBrowser();
 
   const getVirtualAccountStorageKey = () => {
     if (!user?.userId) {
@@ -177,6 +180,8 @@ const CashCharge = () => {
   };
 
   useEffect(() => {
+    if (isLikenovelApp) return;
+
     const restorePendingVirtualAccount = async () => {
       const pending = loadPendingVirtualAccount();
       if (!pending) {
@@ -221,7 +226,11 @@ const CashCharge = () => {
 
     restorePendingVirtualAccount();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryClient, user?.userId]);
+  }, [isLikenovelApp, queryClient, user?.userId]);
+
+  if (isLikenovelApp) {
+    return <AppPaymentUnsupportedNotice className="mt-4" />;
+  }
 
   // useEffect(() => {
   //   async function loadItem() {

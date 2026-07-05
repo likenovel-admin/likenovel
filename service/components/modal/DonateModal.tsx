@@ -4,9 +4,11 @@ import { TYPE_MODAL } from "@/constants/common";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
+import { isLikenovelAppBrowser } from "@/utils/likenovelApp";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useState } from "react";
+import AppPaymentUnsupportedNotice from "../common/AppPaymentUnsupportedNotice";
 import BottomSheetContainer from "../common/BottomSheetContainer";
 import Button from "../common/Button";
 import ModalBottomButton from "../common/ModalBottomButton";
@@ -89,6 +91,26 @@ const DonateContents = ({
 
   // Sponsor mutation - using useUserSponsorProduct
   const sponsorMutation = useUserSponsorProduct();
+  const isLikenovelApp = isLikenovelAppBrowser();
+
+  if (isLikenovelApp) {
+    return (
+      <div className="h-fit flex flex-col items-center md:w-[500px]">
+        <div className="w-full p-6">
+          <AppPaymentUnsupportedNotice />
+        </div>
+        <div className="w-full sticky bottom-0 bg-white md:mt-6">
+          <ModalBottomButton
+            leftButton={{
+              text: "확인",
+              onClick: onClose,
+              className: "border-0 border-t border-t-[#EFF0F4]",
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   // Handle donate amount input - only allow numbers
   const handleDonateAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,5 +1,6 @@
 import useConfirmStore from "@/store/confirmStore";
 import { getUser } from "@/utils/getUser";
+import { isLikenovelAppBrowser } from "@/utils/likenovelApp";
 import { usePathname, useRouter } from "next/navigation";
 import Coin from "/public/images/coin.svg";
 import Event from "/public/images/event.svg";
@@ -13,6 +14,7 @@ const MiddleMenu = () => {
   const pathname = usePathname();
   const user = getUser();
   const { setConfirm } = useConfirmStore();
+  const isLikenovelApp = isLikenovelAppBrowser();
 
   const handleLoginNeeded = () => {
     setConfirm({
@@ -29,6 +31,7 @@ const MiddleMenu = () => {
     {
       icon: Favorite,
       text: "선호작",
+      hideInLikenovelApp: false,
       onClick: () => {
         if (!user?.userRole) {
           handleLoginNeeded();
@@ -41,6 +44,7 @@ const MiddleMenu = () => {
     {
       icon: Promotion,
       text: "프로모션",
+      hideInLikenovelApp: false,
       onClick: () => {
         router.push("/product/promotion");
       },
@@ -49,6 +53,7 @@ const MiddleMenu = () => {
     {
       icon: Coin,
       text: "코인충전",
+      hideInLikenovelApp: true,
       onClick: () => {
         if (!user?.userRole) {
           handleLoginNeeded();
@@ -61,6 +66,7 @@ const MiddleMenu = () => {
     {
       icon: Review,
       text: "작품리뷰",
+      hideInLikenovelApp: false,
       onClick: () => {
         router.push("/product/review");
       },
@@ -69,6 +75,7 @@ const MiddleMenu = () => {
     {
       icon: Quest,
       text: "퀘스트",
+      hideInLikenovelApp: false,
       onClick: () => {
         if (!user?.userRole) {
           handleLoginNeeded();
@@ -93,24 +100,32 @@ const MiddleMenu = () => {
         <span className="text-14pxr text-center mt-10pxr">이벤트</span>
       </div>
       <div className="flex gap-20pxr md:gap-34pxr">
-        {menuList.map((menu) => (
-          <div className="relative flex flex-col" key={menu.text}>
-            {menu.text === "코인충전" && (
-              <div className="absolute z-1 top-[-10px] left-5 md:left-10 w-[29px] h-[18px] md:w-[36px] md:h-[22px]">
-                <Sale />
-              </div>
-            )}
-            <button
-              className="flex justify-center items-center w-[51px] h-[51px] md:w-[76px] md:h-[76px] bg-light-gray-100 hover:bg-light-gray-300 rounded-full"
-              onClick={menu.onClick}
+        {menuList
+          .filter((menu) => !(isLikenovelApp && menu.hideInLikenovelApp))
+          .map((menu) => (
+            <div
+              className="relative flex flex-col"
+              data-hide-in-likenovel-app={
+                menu.hideInLikenovelApp ? "true" : undefined
+              }
+              key={menu.text}
             >
-              <menu.icon className={menu.style} />
-            </button>
-            <span className="text-11pxr md:text-14pxr text-center mt-10pxr">
-              {menu.text}
-            </span>
-          </div>
-        ))}
+              {menu.text === "코인충전" && (
+                <div className="absolute z-1 top-[-10px] left-5 md:left-10 w-[29px] h-[18px] md:w-[36px] md:h-[22px]">
+                  <Sale />
+                </div>
+              )}
+              <button
+                className="flex justify-center items-center w-[51px] h-[51px] md:w-[76px] md:h-[76px] bg-light-gray-100 hover:bg-light-gray-300 rounded-full"
+                onClick={menu.onClick}
+              >
+                <menu.icon className={menu.style} />
+              </button>
+              <span className="text-11pxr md:text-14pxr text-center mt-10pxr">
+                {menu.text}
+              </span>
+            </div>
+          ))}
       </div>
     </div>
   );

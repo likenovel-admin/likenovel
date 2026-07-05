@@ -22,6 +22,10 @@ html {
   font-synthesis: none;
 }
 
+html[data-likenovel-app="true"] [data-hide-in-likenovel-app="true"] {
+  display: none !important;
+}
+
 @layer base {
   :root {
     --pc-web-width: 1280px;

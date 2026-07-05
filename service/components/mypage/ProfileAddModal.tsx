@@ -9,6 +9,11 @@ import {
 import { useUpdateUpload } from "@/app/api/query/upload";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
+import {
+  APP_PAYMENT_UNSUPPORTED_MESSAGE,
+  APP_PURCHASED_CONTENT_MESSAGE,
+  isLikenovelAppBrowser,
+} from "@/utils/likenovelApp";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
@@ -74,6 +79,7 @@ const ProfileAddModal = ({ profileId }: ProfileAddModalProps) => {
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
 
   const isEditMode = !!profileId;
+  const isLikenovelApp = isLikenovelAppBrowser();
 
   const handleCloseModal = () => {
     setIsCheckedNickname(false);
@@ -294,6 +300,14 @@ const ProfileAddModal = ({ profileId }: ProfileAddModalProps) => {
       data.nickname !== originalNickname &&
       nicknameChangeableCount === 0
     ) {
+      if (isLikenovelApp) {
+        setToast({
+          message: `${APP_PAYMENT_UNSUPPORTED_MESSAGE} ${APP_PURCHASED_CONTENT_MESSAGE}`,
+          type: "warning",
+        });
+        return;
+      }
+
       // Show confirm modal for purchasing nickname change
       setPendingFormData(data);
       setShowConfirmChangeNickname(true);

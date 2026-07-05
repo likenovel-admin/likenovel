@@ -4,11 +4,13 @@ import ExclamationTooltip from "@/components/common/ExclamationTooltip";
 import Spinner from "@/components/common/Spinner";
 import HomeItem from "@/components/mypage/HomeItem";
 import TasteDashboard from "@/components/recommendation/TasteDashboard";
+import { isLikenovelAppBrowser } from "@/utils/likenovelApp";
 import { useRouter } from "next/navigation";
 
 const Page = () => {
   const router = useRouter();
   const { data: userInfo, isLoading } = useSelectUserInfo();
+  const isLikenovelApp = isLikenovelAppBrowser();
 
   if (isLoading) {
     return (
@@ -37,14 +39,17 @@ const Page = () => {
               </div>
             }
             rightContent={
-              <div
-                className="rounded-full bg-primary-100 text-white flex items-center justify-center text-12pxr md:text-14pxr px-[10px] h-[30px] md:h-[32px] my-auto cursor-pointer"
-                onClick={() => {
-                  router.push("/product/mypage/cash");
-                }}
-              >
-                캐시충전
-              </div>
+              isLikenovelApp ? null : (
+                <div
+                  data-hide-in-likenovel-app="true"
+                  className="rounded-full bg-primary-100 text-white flex items-center justify-center text-12pxr md:text-14pxr px-[10px] h-[30px] md:h-[32px] my-auto cursor-pointer"
+                  onClick={() => {
+                    router.push("/product/mypage/cash");
+                  }}
+                >
+                  캐시충전
+                </div>
+              )
             }
           />
         </li>

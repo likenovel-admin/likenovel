@@ -12,6 +12,7 @@ import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import { ProductInterestStatus } from "@/types";
 import { isEndDateExpired } from "@/utils/getLatestEpisodeDate";
+import { isLikenovelAppBrowser } from "@/utils/likenovelApp";
 import {
   buildWebsochatLaunchPayload,
   savePendingWebsochatLaunch,
@@ -78,6 +79,7 @@ const ButtonBottom = ({
     contextStatus,
   };
   const shouldShowWebsochatButton = false;
+  const isLikenovelApp = isLikenovelAppBrowser();
 
   const handleWebsochatClick = () => {
     const payload = buildWebsochatLaunchPayload(websochatLaunchSource, {
@@ -270,19 +272,22 @@ const ButtonBottom = ({
               관심유지중
             </Button>
           ) : null}
-          <Button
-            onClick={handleDonateClick}
-            className="flex gap-3pxr md:gap-9pxr items-center justify-center flex-1 md:flex-none md:w-[176px] md:h-[52px] h-[48px] bg-white border border-primary-200 rounded-10px md:rounded-14px text-12pxr md:text-14pxr !text-black-200 hover:!bg-white hover:opacity-70 px-8pxr md:px-16pxr whitespace-nowrap"
-          >
-            <Image
-              src="/images/coin-outline.svg"
-              alt="후원하기"
-              width={16}
-              height={21}
-              className="w-[16px] h-[21px] md:w-[20px] md:h-[26px]"
-            />
-            후원하기
-          </Button>
+          {!isLikenovelApp ? (
+            <Button
+              data-hide-in-likenovel-app="true"
+              onClick={handleDonateClick}
+              className="flex gap-3pxr md:gap-9pxr items-center justify-center flex-1 md:flex-none md:w-[176px] md:h-[52px] h-[48px] bg-white border border-primary-200 rounded-10px md:rounded-14px text-12pxr md:text-14pxr !text-black-200 hover:!bg-white hover:opacity-70 px-8pxr md:px-16pxr whitespace-nowrap"
+            >
+              <Image
+                src="/images/coin-outline.svg"
+                alt="후원하기"
+                width={16}
+                height={21}
+                className="w-[16px] h-[21px] md:w-[20px] md:h-[26px]"
+              />
+              후원하기
+            </Button>
+          ) : null}
           {shouldShowWebsochatButton ? (
             <Button
               onClick={handleWebsochatClick}
@@ -302,9 +307,11 @@ const ButtonBottom = ({
               대여권 {ticketCounts.total}장
             </Button>
           )}
-          {((isVolumeProduct && ownPrice > 0) ||
+          {!isLikenovelApp &&
+          ((isVolumeProduct && ownPrice > 0) ||
             (!isVolumeProduct && episodeTypePaidCount && episodeTypePaidCount > 0)) ? (
             <Button
+              data-hide-in-likenovel-app="true"
               className="flex gap-3pxr md:gap-7pxr items-center justify-center flex-1 md:flex-none md:w-[176px] md:h-[52px] h-[48px] bg-primary-200 rounded-10px md:rounded-14px text-12pxr md:text-14pxr !text-white hover:opacity-70 px-8pxr md:px-16pxr"
               onClick={handleBulkPurchaseClick}
             >

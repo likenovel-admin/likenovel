@@ -5,6 +5,7 @@ import useOutsideListener from "@/hooks/useOutsideListener";
 import useAuthStore from "@/store/authStore";
 import useToastStore from "@/store/toastStore";
 import { IRole } from "@/types";
+import { isLikenovelAppBrowser } from "@/utils/likenovelApp";
 import { setLocalStorage, STORAGE_KEYS } from "@/utils/localStorage";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -102,6 +103,7 @@ const GlobalMenuModal = ({ isOpen, setIsOpen, onClose }: CommonModalProps) => {
     user?.userId,
     isOpen && Boolean(user?.userId)
   );
+  const isLikenovelApp = isLikenovelAppBrowser();
 
   const handleSignOut = async () => {
     try {
@@ -262,14 +264,17 @@ const GlobalMenuModal = ({ isOpen, setIsOpen, onClose }: CommonModalProps) => {
                 </div>
               </div>
             </div>
-            <Button
-              size="sm"
-              onClick={() => {
-                router.push("/product/mypage/cash");
-              }}
-            >
-              캐시충전
-            </Button>
+            {!isLikenovelApp ? (
+              <Button
+                data-hide-in-likenovel-app="true"
+                size="sm"
+                onClick={() => {
+                  router.push("/product/mypage/cash");
+                }}
+              >
+                캐시충전
+              </Button>
+            ) : null}
           </div>
           <div className="flex gap-4 mx-6 py-5 justify-evenly border-b">
             <MenuItem
