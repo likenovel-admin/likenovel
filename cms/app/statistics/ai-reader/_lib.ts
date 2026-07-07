@@ -106,7 +106,7 @@ export const ageGroupLabel: Record<string, string> = {
 export const ageGroupKeys = ["10s", "20s", "30s", "40s", "50s"];
 export const genderKeys = ["M", "F"];
 
-export const MAX_AI_READER_AGENT_COUNT = 200;
+export const AI_READER_AGENT_QUERY_PAGE_SIZE = 200;
 export const MAX_AI_READER_IMMEDIATE_BATCH_SIZE = 100;
 export const AI_READER_PRESET_STORAGE_KEY = "likenovel.cms.aiReader.customPresets.v1";
 
@@ -123,7 +123,7 @@ export const parseAiReaderAgentIndex = (agentKey?: string | null) => {
 
 export const getAiReaderAgentListLastPage = (
   totalCount: unknown,
-  countPerPage = MAX_AI_READER_AGENT_COUNT
+  countPerPage = AI_READER_AGENT_QUERY_PAGE_SIZE
 ) => {
   const safeTotalCount = Math.max(0, Number(totalCount || 0));
   const safeCountPerPage = Math.max(1, Number(countPerPage || 1));

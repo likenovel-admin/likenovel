@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
 import {
+  AI_READER_AGENT_QUERY_PAGE_SIZE,
   defaultFreeProductTypeWeights,
   defaultPresets,
   defaultProductTypeWeights,
@@ -10,6 +11,7 @@ import {
   sumRatios,
 } from "./_lib.ts";
 
+assert.equal(AI_READER_AGENT_QUERY_PAGE_SIZE, 200);
 assert.equal(parseAiReaderAgentIndex("ai-reader-0000"), 0);
 assert.equal(parseAiReaderAgentIndex("ai-reader-0309"), 309);
 assert.equal(parseAiReaderAgentIndex("reader-0309"), null);

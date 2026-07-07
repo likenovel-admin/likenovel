@@ -1,4 +1,4 @@
-import { MAX_AI_READER_AGENT_COUNT } from "./_lib";
+import { MAX_AI_READER_AGENT_COUNT } from "./limits";
 
 export type AiReaderTargetOperationKind =
   | "invalid"
