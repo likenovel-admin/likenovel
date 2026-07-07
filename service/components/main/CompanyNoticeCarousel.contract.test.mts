@@ -207,13 +207,13 @@ assert.match(
 );
 assert.match(
   pageSource,
-  /const companyNoticeItems = useMemo\([\s\S]*getCompanyNoticeItemsFromPanels\(companyNoticeBannerData\?\.data\)[\s\S]*\);/,
-  "home page should use the CMS company notice banner list as the carousel item list",
+  /const companyNoticeCmsItems = useMemo\([\s\S]*getCompanyNoticeItemsFromPanels\(companyNoticeBannerData\?\.data\)[\s\S]*\);/,
+  "home page should map the CMS company notice banner list before choosing the carousel item list",
 );
-assert.doesNotMatch(
+assert.match(
   pageSource,
-  /companyNoticeCmsItems\.length > 0 \? companyNoticeCmsItems : undefined|COMPANY_NOTICE_ITEMS/,
-  "home page should not fall back to built-in notice cards when CMS has no company notice banners",
+  /const companyNoticeItems =\s*companyNoticeCmsItems\.length > 0\s*\?\s*companyNoticeCmsItems\s*:\s*undefined;/,
+  "home page should preserve the built-in notice carousel when CMS has no company notice banners",
 );
 assert.match(
   pageSource,

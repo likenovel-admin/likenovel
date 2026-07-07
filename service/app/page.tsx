@@ -251,10 +251,12 @@ export default function Home() {
   const recommendProducts = Array.isArray(data?.topsProducts)
     ? data.topsProducts.slice(0, 8)
     : [];
-  const companyNoticeItems = useMemo(
+  const companyNoticeCmsItems = useMemo(
     () => getCompanyNoticeItemsFromPanels(companyNoticeBannerData?.data),
     [companyNoticeBannerData?.data]
   );
+  const companyNoticeItems =
+    companyNoticeCmsItems.length > 0 ? companyNoticeCmsItems : undefined;
 
   return (
     <>
