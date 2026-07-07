@@ -39,7 +39,11 @@ const Login = ({ pageType, setIsOpen }: Props) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const methods = useForm<ILoginForm>();
+  const methods = useForm<ILoginForm>({
+    defaultValues: {
+      isKeepSignIn: true,
+    },
+  });
   const { signIn } = useAuthStore((state) => ({ signIn: state.signIn }));
   const { mutateAsync: signInMutate, isPending } = useEmailSignIn();
   const { setToast } = useToastStore();
@@ -280,7 +284,7 @@ const Login = ({ pageType, setIsOpen }: Props) => {
             <Controller
               name="isKeepSignIn"
               control={control}
-              defaultValue={false}
+              defaultValue={true}
               render={({ field }) => (
                 <Checkbox
                   label="로그인 유지"
