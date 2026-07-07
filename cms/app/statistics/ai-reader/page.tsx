@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatAiReaderDisplayName } from "@/lib/ai-reader-display-name";
 import { calculatePageCount, cn } from "@/lib/utils";
 import {
+  AI_READER_AGENT_QUERY_PAGE_SIZE,
   defaultFreeProductTypeWeights,
   defaultProductTypeWeights,
   getAiReaderAgentListLastPage,
@@ -639,11 +640,11 @@ export default function Page() {
     schedule_date: scheduleDateInput,
     status: "all",
     page: 1,
-    count_per_page: MAX_AI_READER_AGENT_COUNT,
+    count_per_page: AI_READER_AGENT_QUERY_PAGE_SIZE,
   });
   const allAgentsLastPage = getAiReaderAgentListLastPage(
     allAgentsData?.total_count,
-    MAX_AI_READER_AGENT_COUNT
+    AI_READER_AGENT_QUERY_PAGE_SIZE
   );
   const {
     data: allAgentsLastPageData,
@@ -654,7 +655,7 @@ export default function Page() {
     schedule_date: scheduleDateInput,
     status: "all",
     page: allAgentsLastPage,
-    count_per_page: MAX_AI_READER_AGENT_COUNT,
+    count_per_page: AI_READER_AGENT_QUERY_PAGE_SIZE,
   });
   const bootstrapMutation = useBootstrapAiReaderAgents();
   const pauseAllMutation = usePauseAllAiReaderAgents();
