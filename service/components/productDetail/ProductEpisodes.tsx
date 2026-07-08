@@ -66,6 +66,9 @@ interface Props {
   authorId?: number;
   notices: INotice[];
   waitForFreeYn?: "Y" | "N";
+  episodeOwnPrice?: number;
+  bulkPurchasePrice?: number;
+  bulkPurchaseEpisodeCount?: number;
   entrySource?: ProductDetailEntrySource | null;
   initialOwnerEpisodes?: IEpisode[];
 }
@@ -79,6 +82,9 @@ const ProductEpisodes = ({
   authorId,
   notices,
   waitForFreeYn,
+  episodeOwnPrice = 100,
+  bulkPurchasePrice = 0,
+  bulkPurchaseEpisodeCount = 0,
   entrySource,
   initialOwnerEpisodes,
 }: Props) => {
@@ -122,46 +128,79 @@ const ProductEpisodes = ({
   }, [defaultIsDescSort, hasResolvedPriceType, sortReadyKey]);
 
   // 기다무 대여권 수 조회 (React Query가 ButtonBottom 호출과 중복 제거)
-  const { data: ticketsData } = useGetAvailableTickets({
+  const { data: ticketsData, refetch: refetchTickets } = useGetAvailableTickets({
     product_id: showWaitForFreeCard ? productId : undefined,
   });
   const wffTicketCount = ticketsData?.count_by_type?.waiting_for_free || 0;
   const wffNextChargeAt = ticketsData?.wff_next_charge_at ?? null;
+  const wffNextChargeAtMs = ticketsData?.wff_next_charge_at_ms ?? null;
+  const wffRechargePending = ticketsData?.wff_recharge_pending ?? false;
+  const hasWffTicket = wffTicketCount > 0;
 
   // 기다무 충전 카운트다운 타이머 (게이지)
   const queryClient = useQueryClient();
   const [wffTimeRemaining, setWffTimeRemaining] = useState<string | null>(null);
   const [wffProgress, setWffProgress] = useState(0);
   useEffect(() => {
-    if (!wffNextChargeAt || wffTicketCount > 0) {
+    if (
+      wffRechargePending ||
+      (!wffNextChargeAt && wffNextChargeAtMs == null) ||
+      hasWffTicket
+    ) {
       setWffTimeRemaining(null);
       setWffProgress(0);
       return;
     }
 
-    const targetTime = new Date(wffNextChargeAt).getTime();
+    const targetTime =
+      typeof wffNextChargeAtMs === "number"
+        ? wffNextChargeAtMs
+        : new Date(wffNextChargeAt || "").getTime();
+    if (!Number.isFinite(targetTime)) {
+      setWffTimeRemaining(null);
+      setWffProgress(0);
+      return;
+    }
     const totalMs = 24 * 60 * 60 * 1000;
+    let interval: ReturnType<typeof setInterval> | null = null;
 
     const updateTimer = () => {
       const diff = targetTime - Date.now();
       if (diff <= 0) {
         setWffTimeRemaining(null);
         setWffProgress(100);
-        clearInterval(interval);
+        if (interval) clearInterval(interval);
         queryClient.invalidateQueries({ queryKey: ["getEpisodeList"] });
+        void refetchTickets();
         return;
       }
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      setWffTimeRemaining(`${hours}시간 ${String(minutes).padStart(2, '0')}분 ${String(seconds).padStart(2, '0')}초`);
+      setWffTimeRemaining(`${hours}시간 ${minutes}분`);
       setWffProgress(Math.min(((totalMs - diff) / totalMs) * 100, 100));
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [wffNextChargeAt, wffTicketCount, queryClient]);
+    interval = setInterval(updateTimer, 1000);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [
+    hasWffTicket,
+    wffNextChargeAt,
+    wffNextChargeAtMs,
+    wffRechargePending,
+    queryClient,
+    refetchTickets,
+  ]);
+
+  useEffect(() => {
+    if (!showWaitForFreeCard || hasWffTicket || !wffRechargePending) return;
+    const retryInterval = setInterval(() => {
+      void refetchTickets();
+    }, 5000);
+    return () => clearInterval(retryInterval);
+  }, [hasWffTicket, refetchTickets, showWaitForFreeCard, wffRechargePending]);
 
   const { data: episodes, fetchNextPage } = useSelectEpisodes(
     productId,
@@ -239,12 +278,19 @@ const ProductEpisodes = ({
           episode.rentalRemaining?.hours === 0)) &&
       episode.ownType !== "own"
     ) {
+      const isWaitForFreePaidEpisode = waitForFreeYn === "Y";
       setTypeModal(TYPE_MODAL.RENT_OWN, {
-        title: `${productTitle} ${episode.episodeNo}화`,
+        title: isWaitForFreePaidEpisode
+          ? `${episode.episodeNo}화. ${episode.episodeTitle}`
+          : `${productTitle} ${episode.episodeNo}화`,
         episodeId: episode.episodeId,
         productId: productId,
         episodeTitle: episode.episodeTitle,
         entrySource,
+        waitForFreeYn: isWaitForFreePaidEpisode ? "Y" : "N",
+        episodeOwnPrice,
+        bulkPurchasePrice,
+        bulkPurchaseEpisodeCount,
       });
       return;
     }
@@ -281,18 +327,28 @@ const ProductEpisodes = ({
               <Clock className="absolute left-[15px] top-1/2 w-[20px] h-[20px] -translate-y-1/2 text-[#52CFF8]" />
               <span className="text-13pxr md:text-[0.9rem] font-normal text-dark-gray-500 tracking-[-2%]">
                 기다무 대여권{" "}
-                <span className="text-[#52CFF8] font-bold">
-                  {wffTicketCount}장
-                </span>
+                {hasWffTicket ? (
+                  <span className="text-[#52CFF8] font-bold">
+                    {wffTicketCount}장 사용가능
+                  </span>
+                ) : wffRechargePending ? (
+                  <span className="text-[#52CFF8] font-bold">
+                    충전 확인중
+                  </span>
+                ) : (
+                  <span className="text-[#52CFF8] font-bold">
+                    충전중
+                  </span>
+                )}
               </span>
             </div>
-            {wffTimeRemaining && (
+            {!hasWffTicket && !wffRechargePending && wffTimeRemaining && (
               <span className="text-12pxr md:text-13pxr font-normal text-dark-gray-400 tracking-[-2%]">
                 {wffTimeRemaining} 남음
               </span>
             )}
           </div>
-          {wffTimeRemaining && (
+          {!hasWffTicket && !wffRechargePending && wffTimeRemaining && (
             <div className="h-[6px] bg-light-gray-300 rounded-full overflow-hidden mx-16pxr mt-6pxr">
               <div
                 className="h-full bg-[#52CFF8] rounded-full transition-all duration-500"

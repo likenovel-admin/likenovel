@@ -123,6 +123,8 @@ export interface IGetAvailableTicketsResponse {
     event: number;
   };
   wff_next_charge_at: string | null;
+  wff_next_charge_at_ms: number | null;
+  wff_recharge_pending: boolean;
 }
 
 export interface ISuggestByRecentViewedResponse {
