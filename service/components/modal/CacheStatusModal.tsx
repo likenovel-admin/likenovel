@@ -9,6 +9,7 @@ import { TYPE_MODAL } from "@/constants/common";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
+import type { IRentalTicket } from "@/types";
 import {
   appendFunnelResumeToPath,
   getCurrentInternalPath,
@@ -91,6 +92,7 @@ const CacheStatusContents = ({
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const { setToast } = useToastStore();
+  const { setTypeModal } = useModalStore();
 
   // Fetch user info (includes total cash)
   const { data: userInfo } = useSelectUserInfo();
@@ -115,17 +117,45 @@ const CacheStatusContents = ({
   //       ticket.use_yn === "N"
   //   ) || [];
 
+  const isWaitForFreeMode = typeModalData?.waitForFreeYn === "Y";
+
   // Get available rental tickets from new API
   const availableRentalTickets = ticketData?.data || [];
+  const ticketTypeKey = (ticket: IRentalTicket) =>
+    String(ticket.type || ticket.rental_source || "")
+      .replace(/([a-z])([A-Z])/g, "$1-$2")
+      .replace(/_/g, "-")
+      .toLowerCase();
+  const waitForFreeTickets = availableRentalTickets.filter((ticket) => {
+    const typeKey = ticketTypeKey(ticket);
+    return (
+      typeKey === "waiting-for-free" ||
+      typeKey === "wait-for-free" ||
+      typeKey === "waitingforfree" ||
+      typeKey === "waitforfree"
+    );
+  });
+  const waitForFreeTicketCount =
+    ticketData?.count_by_type?.waiting_for_free ?? waitForFreeTickets.length;
 
   // Calculate total rental tickets count
-  const rentalTicketCount = availableRentalTickets.length;
+  const rentalTicketCount = isWaitForFreeMode
+    ? Math.max(availableRentalTickets.length - waitForFreeTicketCount, 0)
+    : availableRentalTickets.length;
+  const possessionTicketCount = 0;
 
   // Get total cash from user info
   const totalCash = userInfo?.data?.totalCash || 0;
 
   // Get episode price with default value 100
-  const episodePrice = 100;
+  const episodePrice = Number(typeModalData?.episodeOwnPrice ?? 100);
+  const bulkPurchasePrice = Number(typeModalData?.bulkPurchasePrice || 0);
+  const bulkPurchaseEpisodeCount = Number(
+    typeModalData?.bulkPurchaseEpisodeCount || 0
+  );
+  const wffRechargePending = !!ticketData?.wff_recharge_pending;
+  const isWaitForFreeButtonPending =
+    waitForFreeTickets.length === 0 && wffRechargePending;
 
   // Check if user has enough cash
   const hasEnoughCash = totalCash >= episodePrice;
@@ -139,6 +169,16 @@ const CacheStatusContents = ({
       refetch();
     }
   }, [refetch, typeModalData?.episodeId, typeModalData?.productId]);
+
+  useEffect(() => {
+    if (!isWaitForFreeMode || waitForFreeTickets.length > 0 || !wffRechargePending) {
+      return;
+    }
+    const retryInterval = setInterval(() => {
+      void refetch();
+    }, 5000);
+    return () => clearInterval(retryInterval);
+  }, [isWaitForFreeMode, refetch, waitForFreeTickets.length, wffRechargePending]);
 
   if (isLikenovelApp) {
     return (
@@ -214,6 +254,26 @@ const CacheStatusContents = ({
     onClose();
   };
 
+  const handleBulkPurchaseClick = () => {
+    const productId = Number(typeModalData?.productId || 0);
+    if (!productId || bulkPurchasePrice <= 0) {
+      setToast({
+        message: "일괄구매 정보를 불러올 수 없습니다.",
+        type: "error",
+      });
+      return;
+    }
+
+    setTypeModal(TYPE_MODAL.CASH_USE, {
+      productId,
+      price: bulkPurchasePrice,
+      ownPrice: bulkPurchasePrice,
+      rentalPrice: 0,
+      purchaseMode: "serial",
+      episodeCount: bulkPurchaseEpisodeCount,
+    });
+  };
+
   const handleUseRentalTicket = async () => {
     if (useRentalTicket.isPending) return;
 
@@ -225,16 +285,22 @@ const CacheStatusContents = ({
       return;
     }
 
-    if (availableRentalTickets.length === 0) {
+    const usableRentalTickets = isWaitForFreeMode
+      ? waitForFreeTickets
+      : availableRentalTickets;
+
+    if (usableRentalTickets.length === 0) {
       setToast({
-        message: "사용 가능한 무료 대여권이 없습니다.",
+        message: isWaitForFreeMode
+          ? "사용 가능한 기다무 대여권이 없습니다."
+          : "사용 가능한 무료 대여권이 없습니다.",
         type: "error",
       });
       return;
     }
 
     // Get the first available rental ticket
-    const firstTicket = availableRentalTickets[0];
+    const firstTicket = usableRentalTickets[0];
 
     try {
       await useRentalTicket.mutateAsync(
@@ -245,7 +311,9 @@ const CacheStatusContents = ({
         {
           onSuccess: () => {
             setToast({
-              message: "무료 대여권을 사용했습니다.",
+              message: isWaitForFreeMode
+                ? "기다무 대여권을 사용했습니다."
+                : "무료 대여권을 사용했습니다.",
               type: "success",
             });
 
@@ -274,7 +342,9 @@ const CacheStatusContents = ({
             setToast({
               message:
                 error?.response?.data?.message ||
-                "무료 대여권 사용에 실패했습니다.",
+                (isWaitForFreeMode
+                  ? "기다무 대여권 사용에 실패했습니다."
+                  : "무료 대여권 사용에 실패했습니다."),
               type: "error",
             });
           },
@@ -283,7 +353,10 @@ const CacheStatusContents = ({
     } catch (error: any) {
       setToast({
         message:
-          error?.response?.data?.message || "무료 대여권 사용에 실패했습니다.",
+          error?.response?.data?.message ||
+          (isWaitForFreeMode
+            ? "기다무 대여권 사용에 실패했습니다."
+            : "무료 대여권 사용에 실패했습니다."),
         type: "error",
       });
     }
@@ -351,6 +424,76 @@ const CacheStatusContents = ({
       });
     }
   };
+
+  if (isWaitForFreeMode) {
+    return (
+      <div className="h-fit flex flex-col items-center md:w-[358px]">
+        <div className="w-full px-10 pt-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-16pxr text-black-100">
+            <span>
+              대여권{" "}
+              <span className="font-semibold">{rentalTicketCount}장</span>
+            </span>
+            <span>·</span>
+            <span>
+              소장권{" "}
+              <span className="font-semibold">{possessionTicketCount}장</span>
+            </span>
+            <span>·</span>
+            <span className="font-semibold">
+              {totalCash.toLocaleString()}캐시
+            </span>
+          </div>
+        </div>
+        {bulkPurchasePrice > 0 && (
+          <div className="w-full flex justify-center pt-4">
+            <button
+              type="button"
+              className="text-primary-100 flex items-center gap-1 text-14pxr"
+              onClick={handleBulkPurchaseClick}
+            >
+              일괄구매 {bulkPurchasePrice.toLocaleString()}캐시
+              <ArrowRight className="h-3 w-3" />
+            </button>
+          </div>
+        )}
+        <div className="w-full p-6 pt-4 flex flex-col gap-1.5">
+          <Button
+            className="w-full"
+            onClick={handleUseRentalTicket}
+            disabled={
+              waitForFreeTickets.length === 0 ||
+              useRentalTicket.isPending
+            }
+          >
+            {isWaitForFreeButtonPending ? "충전 확인중" : "기다무 대여권"}
+          </Button>
+          {hasEnoughCash ? (
+            <Button
+              className="w-full"
+              variant="black"
+              onClick={handlePurchaseEpisode}
+              disabled={purchaseEpisode.isPending}
+            >
+              소장권({episodePrice.toLocaleString()}캐시)
+            </Button>
+          ) : (
+            <Button className="w-full" onClick={handleMoveToRecharge}>
+              캐시 충전하기
+            </Button>
+          )}
+        </div>
+        <div className="w-full sticky bottom-0 bg-white mt-6 md:mt-0">
+          <ModalBottomButton
+            leftButton={{
+              text: "취소",
+              onClick: onClose,
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-fit flex flex-col items-center md:w-[358px]">

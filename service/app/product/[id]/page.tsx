@@ -261,10 +261,7 @@ export default function ProductDetail() {
   } = useMemo(() => {
     const episodeTypePaidCount =
       data?.data.episodes.filter(
-        (ep) =>
-          ep.priceType === "paid" &&
-          ep.ownType !== "own" &&
-          ep.ownType !== "rental"
+        (ep) => ep.priceType === "paid" && ep.ownType !== "own"
       ).length || 0;
     return {
       productData: data?.data.product as IProduct,
@@ -285,6 +282,15 @@ export default function ProductDetail() {
   const displayEpisodeCount = shouldUseOwnerEpisodeList
     ? ownerEpisodes.length
     : episodeCount;
+  const productWaitForFreeYn =
+    productData?.badge?.waitForFreeYn === "Y" ||
+    productData?.badge?.waitingForFreeYn === "Y"
+      ? "Y"
+      : "N";
+  const serialEpisodeOwnPrice =
+    (productData?.seriesRegularPrice ?? 0) > 0
+      ? productData?.seriesRegularPrice ?? 100
+      : 100;
   const { data: aiBriefsData } = useGetAiProductBriefs(
     [productId],
     productData?.adultYn === "Y" ? "Y" : "N",
@@ -711,6 +717,9 @@ export default function ProductDetail() {
         queryClient.invalidateQueries({
           queryKey: ["selectUserInfo"],
         });
+        queryClient.invalidateQueries({
+          queryKey: ["getEpisodeList"],
+        });
 
         // setToast({
         //   message,
@@ -925,7 +934,14 @@ export default function ProductDetail() {
               priceType={productData?.priceType}
               episodeCount={displayEpisodeCount}
               paidEpisodeNo={productData?.paidEpisodeNo}
-              waitForFreeYn={productData?.badge?.waitForFreeYn || productData?.badge?.waitingForFreeYn}
+              waitForFreeYn={productWaitForFreeYn}
+              episodeOwnPrice={serialEpisodeOwnPrice}
+              bulkPurchasePrice={
+                episodeTypePaidCount
+                  ? episodeTypePaidCount * serialEpisodeOwnPrice
+                  : 0
+              }
+              bulkPurchaseEpisodeCount={episodeTypePaidCount}
               entrySource={viewerEntrySource}
               initialOwnerEpisodes={shouldUseOwnerEpisodeList ? ownerEpisodes : undefined}
             />
