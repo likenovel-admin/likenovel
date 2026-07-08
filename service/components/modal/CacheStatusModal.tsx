@@ -22,12 +22,10 @@ import {
   setPendingProductDetailEntrySource,
   shouldPersistProductDetailEntrySourceForRecharge,
 } from "@/utils/productPath";
-import { isLikenovelAppBrowser } from "@/utils/likenovelApp";
 import { buildViewerPath } from "@/utils/viewerPath";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import AppPaymentUnsupportedNotice from "../common/AppPaymentUnsupportedNotice";
 import BottomSheetContainer from "../common/BottomSheetContainer";
 import Button from "../common/Button";
 import ModalBottomButton from "../common/ModalBottomButton";
@@ -159,7 +157,6 @@ const CacheStatusContents = ({
 
   // Check if user has enough cash
   const hasEnoughCash = totalCash >= episodePrice;
-  const isLikenovelApp = isLikenovelAppBrowser();
   const entrySource = getProductDetailEntrySource(
     typeModalData?.signalContext?.entrySource ?? typeModalData?.entrySource ?? null
   );
@@ -179,24 +176,6 @@ const CacheStatusContents = ({
     }, 5000);
     return () => clearInterval(retryInterval);
   }, [isWaitForFreeMode, refetch, waitForFreeTickets.length, wffRechargePending]);
-
-  if (isLikenovelApp) {
-    return (
-      <div className="h-fit flex flex-col items-center md:w-[358px]">
-        <div className="w-full p-6">
-          <AppPaymentUnsupportedNotice />
-        </div>
-        <div className="w-full sticky bottom-0 bg-white mt-6 md:mt-0">
-          <ModalBottomButton
-            leftButton={{
-              text: "확인",
-              onClick: onClose,
-            }}
-          />
-        </div>
-      </div>
-    );
-  }
 
   const invalidateViewerPathQueries = () => {
     const destinationEpisodeId = Number(typeModalData?.episodeId || 0);
