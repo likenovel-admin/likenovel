@@ -185,3 +185,18 @@ export interface IMainSingleSlotItem {
 export interface IGetMainSingleSlotsResponse {
   data: IMainSingleSlotItem[];
 }
+
+export interface IMainCharacterSlotItem {
+  characterSlotId: number;
+  productId: number;
+  characterScopeKey: string;
+  characterName: string;
+  characterImagePath: string | null;
+  cardOrder: number;
+  productTitle: string;
+  authorNickname: string;
+}
+
+export interface IGetMainCharacterSlotsResponse {
+  data: IMainCharacterSlotItem[];
+}

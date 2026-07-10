@@ -4,6 +4,7 @@ import Spinner from "@/components/common/Spinner";
 import BottomBanner from "@/components/main/BottomBanner";
 import BottomProducts from "@/components/main/BottomProducts";
 import Carousel from "@/components/main/Carousel";
+import CharacterSlot from "@/components/main/CharacterSlot";
 import CompanyNoticeCarousel from "@/components/main/CompanyNoticeCarousel";
 import CPPromotion from "@/components/main/CPPromotion";
 import FreeTop from "@/components/main/FreeTop";
@@ -24,6 +25,7 @@ import type { IPanel } from "./api/query/banner/dto";
 import {
   useGetDirectRecommend,
   useGetHomeTicker,
+  useGetMainCharacterSlots,
   useGetMainSingleSlots,
   useSelectInterestDropSoonUpdateProducts,
   useSelectLatestUpdateProducts,
@@ -112,6 +114,11 @@ export default function Home() {
     mainProductCacheIdentity
   );
   const { data: mainSingleSlotsData } = useGetMainSingleSlots(
+    adultYn,
+    homeQueryState.enabled,
+    mainProductCacheIdentity
+  );
+  const { data: mainCharacterSlotsData } = useGetMainCharacterSlots(
     adultYn,
     homeQueryState.enabled,
     mainProductCacheIdentity
@@ -257,6 +264,7 @@ export default function Home() {
   );
   const companyNoticeItems =
     companyNoticeCmsItems.length > 0 ? companyNoticeCmsItems : undefined;
+  const mainCharacterSlotItems = mainCharacterSlotsData?.data ?? [];
 
   return (
     <>
@@ -280,6 +288,11 @@ export default function Home() {
                 <RecentlyView />
               </div>
             </div>
+            {mainCharacterSlotItems.length > 0 && (
+              <div className="mt-30pxr md:mt-70pxr">
+                <CharacterSlot items={mainCharacterSlotItems} adultYn={adultYn} />
+              </div>
+            )}
             {mainRuleSlotSections.length > 0 && (
               <div className="w-full max-w-[1120px] mx-auto flex flex-col mt-44pxr md:mt-88pxr gap-44pxr md:gap-88pxr">
                 {mainRuleSlotSections.map((section) => (
