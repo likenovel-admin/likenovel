@@ -20,6 +20,21 @@ interface Props {
   refetch: () => void;
 }
 
+const DEFAULT_PAID_EPISODE_NO = 26;
+const DEFAULT_WAITING_FOR_FREE_PERIOD_MONTHS = 12;
+const WAITING_FOR_FREE_PERIOD_OPTIONS = [
+  { label: "3개월", value: 3 },
+  { label: "6개월", value: 6 },
+  { label: "1년", value: 12 },
+  { label: "3년", value: 36 },
+];
+
+interface PaidConversionModalValue {
+  paidEpisodeNo: number;
+  waitingForFreeEnabled: boolean;
+  waitingForFreePeriodMonths: number;
+}
+
 export default function ApplyRankTable({ data, loading, refetch }: Props) {
   const acceptApplyRank = useAcceptApplyRank();
   const denyApplyRank = useDenyApplyRank();
@@ -72,20 +87,35 @@ export default function ApplyRankTable({ data, loading, refetch }: Props) {
   const handleApplyPaidConversion = async (row: IApplyRank) => {
     if (applyPaidConversion.isPending) return;
     const maxPaidEpisodeNo = (row.count_episode ?? 0) + 1;
+    const defaultPaidEpisodeNo =
+      row.paid_episode_no && row.paid_episode_no > 0
+        ? row.paid_episode_no
+        : Math.min(DEFAULT_PAID_EPISODE_NO, maxPaidEpisodeNo);
 
     const result = await Swal.fire({
       title: "유료 전환 적용",
-      text: "유료 시작 회차를 입력해주세요.",
-      input: "number",
-      inputValue:
-        row.paid_episode_no && row.paid_episode_no > 0
-          ? String(row.paid_episode_no)
-          : "1",
-      inputAttributes: {
-        min: "1",
-        max: String(maxPaidEpisodeNo),
-        step: "1",
-      },
+      html: `
+        <label for="paidEpisodeNo">유료 시작 회차</label>
+        <input id="paidEpisodeNo" class="swal2-input" type="number"
+          min="1" max="${maxPaidEpisodeNo}" step="1" value="${defaultPaidEpisodeNo}" />
+        <label style="display:flex;align-items:center;justify-content:center;gap:8px;margin:16px 0 8px">
+          <input id="waitingForFreeEnabled" type="checkbox" checked />
+          기다무 적용
+        </label>
+        <select id="waitingForFreePeriodMonths" class="swal2-select">
+          ${WAITING_FOR_FREE_PERIOD_OPTIONS.map(
+            ({ label, value }) =>
+              `<option value="${value}" ${
+                value === DEFAULT_WAITING_FOR_FREE_PERIOD_MONTHS
+                  ? "selected"
+                  : ""
+              }>${label}</option>`
+          ).join("")}
+        </select>
+        <p style="font-size:12px;color:#6b7280;margin-top:8px">
+          24시간 구좌 편성은 별도 수동 반영입니다.
+        </p>
+      `,
       showCancelButton: true,
       confirmButtonText: "적용",
       cancelButtonText: "취소",
@@ -95,8 +125,20 @@ export default function ApplyRankTable({ data, loading, refetch }: Props) {
         confirmButton: "swal-confirm-btn",
         cancelButton: "swal-cancel-btn",
       },
-      preConfirm: (value) => {
-        const paidEpisodeNo = Number(value);
+      focusConfirm: false,
+      preConfirm: () => {
+        const popup = Swal.getPopup();
+        const paidEpisodeNo = Number(
+          popup?.querySelector<HTMLInputElement>("#paidEpisodeNo")?.value
+        );
+        const waitingForFreeEnabled =
+          popup?.querySelector<HTMLInputElement>("#waitingForFreeEnabled")
+            ?.checked ?? true;
+        const waitingForFreePeriodMonths = Number(
+          popup?.querySelector<HTMLSelectElement>(
+            "#waitingForFreePeriodMonths"
+          )?.value ?? DEFAULT_WAITING_FOR_FREE_PERIOD_MONTHS
+        );
         if (!Number.isInteger(paidEpisodeNo) || paidEpisodeNo <= 0) {
           Swal.showValidationMessage("유료 시작 회차는 1 이상의 정수로 입력해주세요.");
           return false;
@@ -107,7 +149,11 @@ export default function ApplyRankTable({ data, loading, refetch }: Props) {
           );
           return false;
         }
-        return paidEpisodeNo;
+        return {
+          paidEpisodeNo,
+          waitingForFreeEnabled,
+          waitingForFreePeriodMonths,
+        };
       },
       didOpen: () => {
         const style = document.createElement("style");
@@ -134,19 +180,43 @@ export default function ApplyRankTable({ data, loading, refetch }: Props) {
           }
         `;
         document.head.appendChild(style);
+
+        const toggle = document.getElementById(
+          "waitingForFreeEnabled"
+        ) as HTMLInputElement | null;
+        const period = document.getElementById(
+          "waitingForFreePeriodMonths"
+        ) as HTMLSelectElement | null;
+        const syncPeriod = () => {
+          if (toggle && period) period.disabled = !toggle.checked;
+        };
+        toggle?.addEventListener("change", syncPeriod);
+        syncPeriod();
       },
     });
 
-    if (!result.isConfirmed || typeof result.value !== "number") return;
+    if (!result.isConfirmed || !result.value) return;
+    const options = result.value as PaidConversionModalValue;
 
     applyPaidConversion.mutate(
       {
         id: row.apply_id + "",
-        paidEpisodeNo: result.value,
+        paidEpisodeNo: options.paidEpisodeNo,
+        waitingForFreeEnabled: options.waitingForFreeEnabled,
+        waitingForFreePeriodMonths: options.waitingForFreePeriodMonths,
       },
       {
-        onSuccess: () => {
-          showAlert("완료", "유료 전환 설정이 적용되었습니다.", "확인");
+        onSuccess: (response) => {
+          const waitFreeMessage = response.data.waitingForFreeEnabled
+            ? `기다무는 약 ${response.data.waitingForFreeActivationDelayMinutes}분 뒤 활성화됩니다. 24시간 구좌는 별도 수동 반영입니다.`
+            : "";
+          showAlert(
+            "완료",
+            ["유료 전환 설정이 적용되었습니다.", waitFreeMessage]
+              .filter(Boolean)
+              .join("\n"),
+            "확인"
+          );
           refetch();
         },
         onError: (err: any) => {
