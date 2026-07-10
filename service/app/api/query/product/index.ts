@@ -7,6 +7,7 @@ import {
   IGetDirectRecommendResponse,
   IGetEpisodeProductParams,
   IGetHomeTickerResponse,
+  IGetMainCharacterSlotsResponse,
   IGetMainSingleSlotsResponse,
   IGetRecentProductResponse,
   IPublisherPromotionProductsResponse,
@@ -778,6 +779,26 @@ export const useGetMainSingleSlots = (
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/products/main-single-slots?adult_yn=${adultYnParam}`
+      );
+      return response.data;
+    },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
+    enabled,
+  });
+};
+
+export const useGetMainCharacterSlots = (
+  adult_yn?: string,
+  enabled: boolean = true,
+  cacheIdentity: string = "guest"
+) => {
+  const adultYnParam = adult_yn || "N";
+  return useQuery<IGetMainCharacterSlotsResponse>({
+    queryKey: ["getMainCharacterSlots", adultYnParam, cacheIdentity],
+    queryFn: async () => {
+      const response = await instance.get(
+        `/v1/query/products/main-character-slots?adult_yn=${adultYnParam}`
       );
       return response.data;
     },
