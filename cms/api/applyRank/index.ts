@@ -54,12 +54,19 @@ export const useApplyPaidConversion = () => {
     Error,
     IApplyPaidConversionRequest
   >({
-    mutationFn: async ({ id, paidEpisodeNo }) => {
+    mutationFn: async ({
+      id,
+      paidEpisodeNo,
+      waitingForFreeEnabled,
+      waitingForFreePeriodMonths,
+    }) => {
       return await apiClient.request<IApplyPaidConversionResponse>({
         url: `/v1/command/admins/apply-rank-up/${id}/apply-paid`,
         method: "POST",
         body: {
           paid_episode_no: paidEpisodeNo,
+          waiting_for_free_enabled: waitingForFreeEnabled,
+          waiting_for_free_period_months: waitingForFreePeriodMonths,
         },
       });
     },

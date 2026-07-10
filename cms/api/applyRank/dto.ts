@@ -29,11 +29,18 @@ export interface IDenyApplyRankResponse {
 export interface IApplyPaidConversionRequest {
   id: string;
   paidEpisodeNo: number;
+  waitingForFreeEnabled: boolean;
+  waitingForFreePeriodMonths: number;
 }
 
 export interface IApplyPaidConversionResponse {
   data: {
     productId: number;
     paidEpisodeNo: number;
+    waitingForFreeEnabled: boolean;
+    waitingForFreePromotionId: number | null;
+    waitingForFreePeriodMonths: number | null;
+    waitingForFreeActivationDelayMinutes: number | null;
+    waitingForFreeDirectSlotManual: boolean;
   };
 }
