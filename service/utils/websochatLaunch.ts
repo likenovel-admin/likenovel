@@ -12,6 +12,23 @@ const WEBSOCHAT_MINI_PREVIEW_STATE_STORAGE_KEY =
 export type WebsochatLaunchModeKey = "qa" | "rp" | "ideal_worldcup";
 export type WebsochatLaunchQaActionKey = "predict" | "next_episode_write" | null;
 
+export const isWebsochatModeAllowed = (
+  modeKey: WebsochatLaunchModeKey,
+  allowedModes?: WebsochatLaunchModeKey[] | null
+) => allowedModes == null || allowedModes.includes(modeKey);
+
+export const filterWebsochatActionsByAllowedModes = <
+  T extends { modeKey?: WebsochatLaunchModeKey | null },
+>(
+  actions: T[],
+  allowedModes?: WebsochatLaunchModeKey[] | null
+) => {
+  if (allowedModes == null) return actions;
+  return actions.filter((action) => (
+    isWebsochatModeAllowed(action.modeKey || "qa", allowedModes)
+  ));
+};
+
 export interface IWebsochatLaunchPayload {
   productId: number;
   title: string;

@@ -35,3 +35,19 @@ assert.doesNotMatch(
   source,
   /const visibleActionCards = \(actionCards \|\| \[\]\)\.filter\(isVisibleWebsochatShortcutAction\);/
 );
+assert.match(
+  source,
+  /allowedModes: enforcedActiveSessionAllowedModes/
+);
+assert.match(
+  source,
+  /if \(!isWebsochatModeAllowed\(resolvedModeKey, enforcedActiveSessionAllowedModes\)\) return;/
+);
+assert.match(
+  source,
+  /if \(!isWebsochatModeAllowed\(requestedModeKey, enforcedActiveSessionAllowedModes\)\) \{\s*return null;\s*\}/
+);
+assert.doesNotMatch(
+  source,
+  /availableShortcutActions\.find[\s\S]{0,240}DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS\.find/
+);
