@@ -1,6 +1,7 @@
 "use client";
 import React, { PropsWithChildren } from "react";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
+import { usePathname } from "next/navigation";
 
 const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
   return (
@@ -11,9 +12,24 @@ const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
   );
 };
 
-const ErrorBoundaryWrapper = ({ children }: PropsWithChildren) => {
+export const RouteAwareErrorBoundary = ({
+  children,
+  pathname,
+}: PropsWithChildren<{ pathname: string }>) => {
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>{children}</ErrorBoundary>
+    <ErrorBoundary FallbackComponent={ErrorFallback} resetKeys={[pathname]}>
+      {children}
+    </ErrorBoundary>
+  );
+};
+
+const ErrorBoundaryWrapper = ({ children }: PropsWithChildren) => {
+  const pathname = usePathname();
+
+  return (
+    <RouteAwareErrorBoundary pathname={pathname}>
+      {children}
+    </RouteAwareErrorBoundary>
   );
 };
 
