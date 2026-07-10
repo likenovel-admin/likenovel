@@ -55,8 +55,10 @@ import {
   buildWebsochatStarterGuideMessage,
   consumePendingWebsochatLaunch,
   consumeWebsochatSessionPendingDraft,
+  filterWebsochatActionsByAllowedModes,
   formatWebsochatReadScope,
   IWebsochatLaunchPayload,
+  isWebsochatModeAllowed,
   WEBSOCHAT_ACTIVE_SESSION_STORAGE_KEY,
   WEBSOCHAT_SESSION_SHORTCUT_PROMPTS_STORAGE_KEY,
 } from "@/utils/websochatLaunch";
@@ -814,16 +816,21 @@ const renderWebsochatActionCards = ({
   disabled,
   activeStateKey,
   hideGameActions,
+  allowedModes,
 }: {
   actionCards: IWebsochatStarterActionItem[] | null | undefined;
   onClick: (action: IWebsochatStarterActionItem) => void;
   disabled?: boolean;
   activeStateKey?: WebsochatShortcutStateKey | null;
   hideGameActions?: boolean;
+  allowedModes?: Array<"qa" | "rp" | "ideal_worldcup"> | null;
 }) => {
-  const visibleActionCards = hideGameActions
-    ? (actionCards || []).filter(isVisibleWebsochatShortcutAction)
-    : (actionCards || []);
+  const visibleActionCards = filterWebsochatActionsByAllowedModes(
+    hideGameActions
+      ? (actionCards || []).filter(isVisibleWebsochatShortcutAction)
+      : (actionCards || []),
+    allowedModes
+  );
   if (!visibleActionCards.length) return null;
   return (
     <div className="mt-8pxr flex flex-nowrap overflow-x-auto gap-6pxr pb-4pxr">
@@ -1404,6 +1411,33 @@ export default function WebsochatPage() {
     ?? activeSessionMeta?.productPriceType
     ?? null;
   const shouldHideWebsochatGameActions = websochatProductPriceType === "paid";
+  const activeSessionAllowedModes = useMemo<Array<"qa" | "rp" | "ideal_worldcup"> | null>(() => {
+    const sessionKind = activeSessionMeta?.sessionKind
+      ?? activeSession?.sessionKind
+      ?? (pendingSessionPreview?.sessionId === activeSessionId
+        ? pendingSessionPreview.sessionKind
+        : null)
+      ?? null;
+    if (sessionKind === "character_chat") return ["rp"];
+    return activeSessionMeta?.allowedModes
+      ?? activeSession?.allowedModes
+      ?? (pendingSessionPreview?.sessionId === activeSessionId
+        ? pendingSessionPreview.allowedModes
+        : null)
+      ?? null;
+  }, [
+    activeSession?.allowedModes,
+    activeSession?.sessionKind,
+    activeSessionId,
+    activeSessionMeta?.allowedModes,
+    activeSessionMeta?.sessionKind,
+    pendingSessionPreview?.allowedModes,
+    pendingSessionPreview?.sessionId,
+    pendingSessionPreview?.sessionKind,
+  ]);
+  const enforcedActiveSessionAllowedModes = activeSessionId
+    ? activeSessionAllowedModes
+    : null;
   const effectiveStarter = useMemo(
     () => {
       const starter = messagesData?.data?.starter || stickyStarter;
@@ -1419,11 +1453,12 @@ export default function WebsochatPage() {
       ? pendingSessionPreview.readScopeState
       : null)
     ?? null;
-  const availableShortcutActions = (
-    effectiveStarter?.actions || DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS
-  ).filter((action) => (
-    !shouldHideWebsochatGameActions || isVisibleWebsochatShortcutAction(action)
-  ));
+  const availableShortcutActions = filterWebsochatActionsByAllowedModes(
+    (effectiveStarter?.actions || DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS).filter((action) => (
+      !shouldHideWebsochatGameActions || isVisibleWebsochatShortcutAction(action)
+    )),
+    enforcedActiveSessionAllowedModes
+  );
   const userReadEpisodeNo = activeSessionId
     ? activeSessionMeta?.readEpisodeNo
       ?? activeSession?.readEpisodeNo
@@ -1531,20 +1566,31 @@ export default function WebsochatPage() {
   const promptedShortcutAction = useMemo(
     () => (
       availableShortcutActions.find((action) => action.prompt.trim() === activeShortcutPrompt.trim())
-      || DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS.find((action) => action.prompt.trim() === activeShortcutPrompt.trim())
       || null
     ),
     [activeShortcutPrompt, availableShortcutActions]
+  );
+  const isQaModeAllowed = isWebsochatModeAllowed(
+    "qa",
+    enforcedActiveSessionAllowedModes
   );
   const effectiveShortcutState: WebsochatShortcutStateKey = useMemo(() => {
     if (pendingModeSyncKey === "rp" || effectiveMode === "rp") return "rp";
     if (pendingModeSyncKey === "ideal_worldcup" || effectiveMode === "ideal_worldcup") {
       return "ideal_worldcup";
     }
-    if (serverPendingQaActionKey === "predict") return "qa_predict";
-    if (serverPendingQaActionKey === "next_episode_write") return "qa_next_episode_write";
+    if (isQaModeAllowed && serverPendingQaActionKey === "predict") return "qa_predict";
+    if (isQaModeAllowed && serverPendingQaActionKey === "next_episode_write") {
+      return "qa_next_episode_write";
+    }
     return resolveWebsochatShortcutStateKey(promptedShortcutAction);
-  }, [effectiveMode, pendingModeSyncKey, promptedShortcutAction, serverPendingQaActionKey]);
+  }, [
+    effectiveMode,
+    isQaModeAllowed,
+    pendingModeSyncKey,
+    promptedShortcutAction,
+    serverPendingQaActionKey,
+  ]);
   const scopedModeNotices = useMemo(
     () => modeNotices
       .filter((notice) => {
@@ -3188,6 +3234,15 @@ export default function WebsochatPage() {
       || isReadScopeGuardPending
       || isAssistantTurnPending
     ) return null;
+    const requestedModeKey = options?.starterModeKey
+      || (options?.rpMode || options?.activeCharacter
+        ? "rp"
+        : options?.gameMode
+          ? "ideal_worldcup"
+          : effectiveMode);
+    if (!isWebsochatModeAllowed(requestedModeKey, enforcedActiveSessionAllowedModes)) {
+      return null;
+    }
       appendWebsochatDebugLog("handle_send:start", {
         activeSessionId,
         effectiveProductId,
@@ -4099,6 +4154,8 @@ export default function WebsochatPage() {
   const triggerStarterAction = (action: IWebsochatStarterActionItem) => {
     if (!action.prompt.trim()) return;
     if (pendingModeSyncKey || isAssistantTurnPending || isStreamingMessage) return;
+    const resolvedModeKey = action.modeKey || "qa";
+    if (!isWebsochatModeAllowed(resolvedModeKey, enforcedActiveSessionAllowedModes)) return;
     appendWebsochatDebugLog("trigger_starter_action", {
       label: action.label,
       modeKey: action.modeKey || null,
@@ -4114,7 +4171,6 @@ export default function WebsochatPage() {
       isAssistantTurnPending,
     });
     queueScrollMessageListToBottom("smooth");
-    const resolvedModeKey = action.modeKey || null;
     const resolvedQaActionKey = action.qaActionKey || null;
     const rpModeAction = {
       label: "인물과 대화",
@@ -4343,11 +4399,19 @@ export default function WebsochatPage() {
   };
 
   const composerShortcutActions = useMemo(
-    () => (effectiveStarter?.actions || DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS).filter((action) => (
-      (!shouldHideWebsochatGameActions || isVisibleWebsochatShortcutAction(action))
-      && (canUseAccountScope || action.qaActionKey !== "next_episode_write")
-    )),
-    [canUseAccountScope, effectiveStarter?.actions, shouldHideWebsochatGameActions]
+    () => filterWebsochatActionsByAllowedModes(
+      (effectiveStarter?.actions || DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS).filter((action) => (
+        (!shouldHideWebsochatGameActions || isVisibleWebsochatShortcutAction(action))
+        && (canUseAccountScope || action.qaActionKey !== "next_episode_write")
+      )),
+      enforcedActiveSessionAllowedModes
+    ),
+    [
+      canUseAccountScope,
+      enforcedActiveSessionAllowedModes,
+      effectiveStarter?.actions,
+      shouldHideWebsochatGameActions,
+    ]
   );
   const [isShortcutMenuOpen, setIsShortcutMenuOpen] = useState(false);
   const shortcutMenuRef = useRef<HTMLDivElement | null>(null);
@@ -4617,6 +4681,7 @@ export default function WebsochatPage() {
                           disabled: areShortcutActionsDisabled,
                           activeStateKey: effectiveShortcutState,
                           hideGameActions: shouldHideWebsochatGameActions,
+                          allowedModes: enforcedActiveSessionAllowedModes,
                         })
                         : null}
                       {message.role === "assistant"
