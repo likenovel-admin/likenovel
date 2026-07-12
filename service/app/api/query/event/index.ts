@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 
 export const useSelectEvents = (close_yn: "Y" | "N", disable?: boolean) => {
   return useQuery<SelectEventsResponse>({
-    queryKey: ["selectEvents"],
+    queryKey: ["selectEvents", close_yn],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/events?close_yn=${close_yn}`

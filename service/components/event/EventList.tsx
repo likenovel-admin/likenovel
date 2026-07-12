@@ -6,7 +6,7 @@ import { IEvent } from "@/types";
 import { getFormattingDate } from "@/utils/getFormattingDate";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { memo, useEffect, useState } from "react";
+import { memo, useState } from "react";
 import RoundBadge from "../common/RoundBadge";
 import Tab from "../common/Tab";
 
@@ -15,15 +15,11 @@ const EventList = () => {
     "progress"
   );
 
-  const { data, isLoading, isFetching, refetch } = useSelectEvents(
+  const { data, isLoading } = useSelectEvents(
     selectedTab === "progress" ? "N" : "Y"
   );
 
   const events = data?.data;
-
-  useEffect(() => {
-    refetch();
-  }, [selectedTab]);
 
   return (
     <div className="w-full h-full md:max-w-[1120px] mx-auto flex flex-col md:px-0 px-4">
@@ -47,7 +43,7 @@ const EventList = () => {
           onTabChange={(value) => setSelectedTab(value as "progress" | "end")}
         />
       </div>
-      {isLoading || isFetching ? (
+      {isLoading ? (
         <div className="w-full mt-70pxr flex justify-center items-center">
           <Spinner />
         </div>
@@ -92,7 +88,12 @@ const EventItem = memo((props: IEvent & { type: "progress" | "end" }) => {
       onClick={() => router.push(`/product/event/${props.id}`)}
     >
       <div className="relative w-full h-auto aspect-[256/140] rounded-lg overflow-hidden">
-        <Image src={props.thumbnail_image_path} alt="event" fill />
+        <Image
+          src={props.thumbnail_image_path}
+          alt="event"
+          fill
+          sizes="(max-width: 767px) 50vw, (max-width: 1120px) 25vw, 280px"
+        />
       </div>
       <div className="text-left">
         <span className="text-16pxr font-semibold mt-12pxr line-clamp-1">
