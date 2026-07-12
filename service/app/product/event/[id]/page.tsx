@@ -77,7 +77,7 @@ const Page = () => {
     fetchProductDetails();
   }, [event]);
 
-  if (isLoading || isFetching) {
+  if (isLoading) {
     return (
       <div className="w-full h-full md:max-w-[1120px] mx-auto flex items-center justify-center">
         <Spinner />
@@ -101,6 +101,7 @@ const Page = () => {
             alt={event?.title}
             width={700}
             height={920}
+            priority
             className="w-full h-auto"
           />
         </div>
@@ -112,14 +113,20 @@ const Page = () => {
           </h1>
         </div>
         <div className="flex flex-col gap-10pxr w-full">
-          {sortedData.map((product) => (
-            <ProductListCard
-              key={product.productId}
-              data={product}
-              hasPromotionBadge
-              entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.EVENT_PRODUCT}
-            />
-          ))}
+          {isFetching ? (
+            <div className="w-full py-20 flex justify-center items-center">
+              <Spinner />
+            </div>
+          ) : (
+            sortedData.map((product) => (
+              <ProductListCard
+                key={product.productId}
+                data={product}
+                hasPromotionBadge
+                entrySource={PRODUCT_DETAIL_ENTRY_SOURCE.EVENT_PRODUCT}
+              />
+            ))
+          )}
         </div>
         {event?.information && (
           <div className="mt-[66px] bg-[#FAFAFA] w-full p-[22px]">
