@@ -141,7 +141,7 @@ const Page = () => {
         <Button
           variant="secondary"
           className="w-full"
-          onClick={() => router.back()}
+          onClick={() => router.push("/product/event")}
         >
           목록
         </Button>

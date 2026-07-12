@@ -228,6 +228,8 @@ test("event detail keeps its header visible while product cards are loading", as
   await expect(
     page.locator("span:visible").filter({ hasText: /^이벤트 작품 102$/ })
   ).toBeVisible();
+  await page.getByRole("button", { name: "목록" }).click();
+  await expect(page).toHaveURL("/product/event");
   expect(counters.unexpected).toEqual([]);
 });
 
