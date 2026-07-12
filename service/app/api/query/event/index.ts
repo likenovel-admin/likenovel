@@ -14,6 +14,7 @@ export const useSelectEvents = (close_yn: "Y" | "N", disable?: boolean) => {
       );
       return response.data;
     },
+    staleTime: 30_000,
     enabled: !disable,
   });
 };

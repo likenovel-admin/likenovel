@@ -11,7 +11,7 @@ import {
 
 export const useSelectAutoComplete = (keyword: string, adult_yn: string) => {
   return useQuery<IUseSelectSuggestProductsResponse, unknown>({
-    queryKey: ["selectAutoComplete", keyword],
+    queryKey: ["selectAutoComplete", keyword, adult_yn],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/search/autocomplete?keyword=${keyword}&adult_yn=${
@@ -31,7 +31,7 @@ export const useSelectSearchResult = (
   orderby: string
 ) => {
   return useQuery<IUseSelectSearchResultResponse, unknown>({
-    queryKey: ["selectSearchResult", keyword],
+    queryKey: ["selectSearchResult", keyword, adult_yn, orderby],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/search?keyword=${keyword}&adult_yn=${
@@ -71,7 +71,11 @@ export const useSelectWeeklyMostSearched = (
   limit?: number
 ) => {
   return useQuery<IUseSelectWeeklyMostSearchedResponse, unknown>({
-    queryKey: ["selectWeeklyMostSearched"],
+    queryKey: [
+      "selectWeeklyMostSearched",
+      adult_yn || "N",
+      limit || 6,
+    ],
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/search/weekly-most-searched?adult_yn=${

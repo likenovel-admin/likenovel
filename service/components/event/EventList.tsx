@@ -50,8 +50,13 @@ const EventList = () => {
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 gap-y-5">
-            {events?.map((event) => (
-              <EventItem key={event.id} {...event} type={selectedTab} />
+            {events?.map((event, index) => (
+              <EventItem
+                key={event.id}
+                {...event}
+                type={selectedTab}
+                priority={index === 0}
+              />
             ))}
           </div>
         </>
@@ -60,7 +65,8 @@ const EventList = () => {
   );
 };
 
-const EventItem = memo((props: IEvent & { type: "progress" | "end" }) => {
+const EventItem = memo(
+  (props: IEvent & { type: "progress" | "end"; priority?: boolean }) => {
   const router = useRouter();
 
   const dateRange = props.end_date
@@ -92,6 +98,7 @@ const EventItem = memo((props: IEvent & { type: "progress" | "end" }) => {
           src={props.thumbnail_image_path}
           alt="event"
           fill
+          priority={props.priority}
           sizes="(max-width: 767px) 50vw, (max-width: 1120px) 25vw, 280px"
         />
       </div>
@@ -136,7 +143,8 @@ const EventItem = memo((props: IEvent & { type: "progress" | "end" }) => {
       </div>
     </button>
   );
-});
+  }
+);
 
 EventItem.displayName = "EventItem";
 

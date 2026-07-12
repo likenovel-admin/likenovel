@@ -1,9 +1,8 @@
 import { useSelectAutoComplete } from "@/app/api/query/search";
 import useAuthStore from "@/store/authStore";
 import useSearchModalStore from "@/store/searchModalStore";
-import { debounce } from "es-toolkit";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Close from "/public/images/close.svg";
 import Search from "/public/images/search.svg";
 import Trash from "/public/images/trash.svg";
@@ -18,6 +17,7 @@ interface Props {
   searchKeyword?: string;
 }
 const MAX_HISTORY_LENGTH = 10;
+const hasChosung = (value: string) => /[ㄱ-ㅎ]/.test(value);
 const sampleAutoCompleteData: IAutoCompleteData[] = [
   { key: "product", content: "나의 작은 히어로를 위해 - 김작가" },
   { key: "keyword", content: "회귀복수물" },
@@ -39,11 +39,13 @@ const NormalSearch = ({
   const [isDropdownVisible, setDropdownVisible] = useState(false);
   const [isAutoCompleteVisible, setAutoCompleteVisible] = useState(false);
   const [value, setValue] = useState(searchKeyword || "");
+  const [autoCompleteInput, setAutoCompleteInput] = useState("");
+  const [debouncedValue, setDebouncedValue] = useState("");
   const [hasRemoveButton, setHasRemoveButton] = useState(false);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
   const adultYn = user?.isOnAdult ? "Y" : "N";
-  const { data, isSuccess } = useSelectAutoComplete(value, adultYn);
+  const { data, isSuccess } = useSelectAutoComplete(debouncedValue, adultYn);
 
   const sortAutoCompleteData = (data: IAutoCompleteData[]) => {
     const priority: { [key: string]: number } = {
@@ -84,26 +86,28 @@ const NormalSearch = ({
     );
   };
 
-  const hasChosung = (value: string) => {
-    const choSungRange = /[ㄱ-ㅎ]/;
-    return choSungRange.test(value);
-  };
+  useEffect(() => {
+    if (
+      autoCompleteInput.trim().length <= 1 ||
+      hasChosung(autoCompleteInput)
+    ) {
+      setDebouncedValue("");
+      return;
+    }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const handleInputChange = useCallback(
-    debounce((value) => {
-      if (value.length > 1 && value.trim() !== "" && !hasChosung(value)) {
-        // TODO: 오토컴플릿 API 호출
-        setAutoCompleteVisible(true);
-        setDropdownVisible(false);
-      }
-    }, 300),
-    [setAutoCompleteVisible, setDropdownVisible, hasChosung]
-  );
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedValue(autoCompleteInput);
+      setAutoCompleteVisible(true);
+      setDropdownVisible(false);
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [autoCompleteInput]);
 
   const onChange = (e: { target: { value: any } }) => {
     const { value } = e.target;
     setValue(value);
+    setAutoCompleteInput(value);
     if (value.length > 0) {
       setHasRemoveButton(true);
     } else {
@@ -111,7 +115,6 @@ const NormalSearch = ({
       setAutoCompleteVisible(false);
     }
     setDropdownVisible(!isAutoCompleteVisible);
-    handleInputChange(value);
   };
 
   const updateLocalStorage = (newHistory: string[]) => {
@@ -163,6 +166,9 @@ const NormalSearch = ({
   useEffect(() => {
     if (searchKeyword) {
       setValue(searchKeyword);
+      setAutoCompleteInput("");
+      setDebouncedValue("");
+      setAutoCompleteVisible(false);
     }
   }, [searchKeyword]);
 
@@ -197,6 +203,7 @@ const NormalSearch = ({
             className="flex justify-center items-center absolute top-[10px] md:top-[19px] right-[45px] md:right-[60px] w-[19px] h-[19px] md:w-[22px] md:h-[22px] bg-dark-gray-400 rounded-full hover:bg-dark-gray-100"
             onClick={() => {
               setValue("");
+              setAutoCompleteInput("");
               setHasRemoveButton(false);
               setAutoCompleteVisible(false);
             }}

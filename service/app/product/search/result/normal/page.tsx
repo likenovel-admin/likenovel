@@ -1,7 +1,6 @@
 "use client";
 import {
   useSelectSearchResult,
-  useSelectTrendingKeywords,
 } from "@/app/api/query/search";
 import NormalSearch from "@/components/search/NormalSearch";
 import OngoingEvent from "@/components/search/OngoingEvent";
@@ -18,8 +17,8 @@ export default function NormalSearchResult() {
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState("normal");
-  const [keyword, setKeyword] = useState("");
-  const [orderby, setOrderby] = useState("update");
+  const keyword = searchParams.get("keyword") || "";
+  const orderby = searchParams.get("orderby") || "update";
 
   const adultYn = useMemo(() => {
     if (user?.isOnAdult) {
@@ -30,10 +29,7 @@ export default function NormalSearchResult() {
   const {
     data: searchResult,
     isSuccess,
-    refetch: refetchSearch,
   } = useSelectSearchResult(keyword, adultYn, orderby);
-  const { data: trendingKeywords, isSuccess: isTrendingKeywordsSuccess } =
-    useSelectTrendingKeywords();
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -44,21 +40,6 @@ export default function NormalSearchResult() {
       router.push("/product/search/result/story");
     }
   }, [activeTab, router]);
-
-  useEffect(() => {
-    const keywordParam = searchParams.get("keyword");
-    const orderbyParam = searchParams.get("orderby");
-    if (keywordParam) {
-      setKeyword(keywordParam);
-      if (orderbyParam) {
-        setOrderby(orderbyParam);
-      }
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    refetchSearch();
-  }, [adultYn]);
 
   return (
     <div className="flex flex-col w-full max-w-[1120px] mx-auto items-center mt-20pxr gap-20pxr">
@@ -97,6 +78,7 @@ export default function NormalSearchResult() {
             <ProductArea
               data={searchResult.data.products as unknown as IProduct[]}
               keyword={keyword}
+              orderby={orderby}
             />
           </>
         )}

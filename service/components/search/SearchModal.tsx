@@ -11,6 +11,7 @@ import Close from "/public/images/close.svg";
 const SearchModal = () => {
   const { isOpen, isScrolled, closeSearchModal } = useSearchModalStore();
   const [activeTab, setActiveTab] = useState("normal");
+  const [isDeferredContentReady, setIsDeferredContentReady] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -46,6 +47,19 @@ const SearchModal = () => {
     return () => {
       window.removeEventListener("wheel", preventScrollOutside);
     };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsDeferredContentReady(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsDeferredContentReady(true);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -107,15 +121,19 @@ const SearchModal = () => {
                 <StorySearch />
               </div>
             )}
-            <div className="px-16pxr md:px-0">
-              <TrendingSearchWord isTitle={true} limit={0} />
-            </div>
-            <div className="w-full border border-t-light-gray-400 border-b-0 border-l-0 border-r-0" />
-            <RecommendProductArea type="mostSearched" />
-            <div className="w-full border border-t-light-gray-400 border-b-0 border-l-0 border-r-0" />
-            <RecommendProductArea type="recommend" />
-            <div className="w-full border border-t-light-gray-400 border-b-0 border-l-0 border-r-0" />
-            <OngoingEvent />
+            {isDeferredContentReady && (
+              <>
+                <div className="px-16pxr md:px-0">
+                  <TrendingSearchWord isTitle={true} limit={0} />
+                </div>
+                <div className="w-full border border-t-light-gray-400 border-b-0 border-l-0 border-r-0" />
+                <RecommendProductArea type="mostSearched" />
+                <div className="w-full border border-t-light-gray-400 border-b-0 border-l-0 border-r-0" />
+                <RecommendProductArea type="recommend" />
+                <div className="w-full border border-t-light-gray-400 border-b-0 border-l-0 border-r-0" />
+                <OngoingEvent />
+              </>
+            )}
           </div>
         </div>
       </div>

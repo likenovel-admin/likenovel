@@ -3,17 +3,15 @@ import Tab from "@/components/common/Tab";
 import { IProduct } from "@/types";
 import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 interface Props {
   data: IProduct[];
   keyword?: string;
+  orderby?: string;
 }
-const ProductArea = ({ data, keyword = "" }: Props) => {
-  const [activeTab, setActiveTab] = useState("update");
+const ProductArea = ({ data, keyword = "", orderby = "update" }: Props) => {
   const router = useRouter();
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
     router.push(
       `/product/search/result/normal?keyword=${keyword}&orderby=${value}`
     );
@@ -29,7 +27,7 @@ const ProductArea = ({ data, keyword = "" }: Props) => {
               { label: "조회 순", value: "view" },
             ]}
             style="check"
-            activeTab={activeTab}
+            activeTab={orderby}
             onTabChange={handleTabChange} />
       </>
       )}
