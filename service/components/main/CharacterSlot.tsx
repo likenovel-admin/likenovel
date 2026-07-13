@@ -1,16 +1,27 @@
 "use client";
 
+import { getEpisodeListQueryOptions } from "@/app/api/query/product";
 import { IMainCharacterSlotItem } from "@/app/api/query/product/dto";
 import {
   DEFAULT_PRODUCT_IMAGE,
   resolveProductCoverImage,
 } from "@/constants/common";
+import useAuthStore from "@/store/authStore";
 import useToastStore from "@/store/toastStore";
-import { savePendingHomeCharacterChatLaunch } from "@/utils/characterChatLaunch";
-import { saveActiveWebsochatSessionId } from "@/utils/websochatLaunch";
+import {
+  buildHomeCharacterChatSessionRequest,
+  createSingleFlightRunner,
+  queueHomeCharacterChatLaunch,
+} from "@/utils/characterChatLaunch";
+import { getWebsochatSafeUserMessage } from "@/utils/websochatError";
+import {
+  getOrCreateWebsochatGuestKey,
+  saveActiveWebsochatSessionId,
+} from "@/utils/websochatLaunch";
+import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import CircleArrow from "../common/CircleArrow";
 import MainHeader from "../common/MainHeader";
 
@@ -43,8 +54,15 @@ const useResponsivePageSize = () => {
 
 const CharacterSlot = ({ items, adultYn }: Props) => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { setToast } = useToastStore();
+  const { user, isAuthenticated, accessToken } = useAuthStore((state) => ({
+    user: state.user,
+    isAuthenticated: state.isAuthenticated,
+    accessToken: state.accessToken,
+  }));
   const pageSize = useResponsivePageSize();
+  const launchOnceRef = useRef(createSingleFlightRunner());
   const [page, setPage] = useState(0);
   const [launchingScopeKey, setLaunchingScopeKey] = useState<string | null>(null);
   const list = useMemo(() => items ?? [], [items]);
@@ -63,26 +81,64 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
 
   if (list.length === 0) return null;
 
-  const handleCharacterClick = (item: IMainCharacterSlotItem) => {
-    if (launchingScopeKey !== null) return;
-    setLaunchingScopeKey(item.characterScopeKey);
-    try {
-      savePendingHomeCharacterChatLaunch({
-        productId: item.productId,
-        productTitle: item.productTitle,
-        characterScopeKey: item.characterScopeKey,
-        characterName: item.characterName,
-        adultYn,
-      });
-      saveActiveWebsochatSessionId(null);
-      router.push("/websochat");
-    } catch {
-      setLaunchingScopeKey(null);
-      setToast({
-        type: "error",
-        message: "캐릭터 대화를 시작하지 못했어요. 잠시 후 다시 시도해 주세요.",
-      });
-    }
+  const handleCharacterClick = async (item: IMainCharacterSlotItem) => {
+    await launchOnceRef.current(async () => {
+      setLaunchingScopeKey(item.characterScopeKey);
+      try {
+        const storedAccessToken =
+          window.localStorage.getItem("access_token") ||
+          window.sessionStorage.getItem("access_token");
+        const hasAccountScope =
+          !!accessToken || isAuthenticated || !!user?.userId || !!storedAccessToken;
+        const response = await queryClient.fetchQuery(
+          getEpisodeListQueryOptions(
+            {
+              product_id: String(item.productId),
+              page: 1,
+              limit: 1,
+              order_by: "episodeNo",
+              order_dir: "desc",
+            },
+            true
+          )
+        );
+        const accountReadEpisodeTo =
+          response.data.episodes[0]?.episodeNo || response.data.latestEpisodeNo || null;
+
+        const request = buildHomeCharacterChatSessionRequest({
+          productId: item.productId,
+          characterScopeKey: item.characterScopeKey,
+          characterName: item.characterName,
+          adultYn,
+          guestKey: hasAccountScope ? null : getOrCreateWebsochatGuestKey(),
+          accountReadEpisodeTo,
+        });
+
+        queueHomeCharacterChatLaunch({
+          payload: {
+            request,
+            characterName: item.characterName,
+            characterImagePath: item.characterImagePath,
+            productTitle: item.productTitle,
+            authorNickname: item.authorNickname || null,
+          },
+          clearActiveSession: () => saveActiveWebsochatSessionId(null),
+          clearSessionListCache: () =>
+            queryClient.removeQueries({ queryKey: ["websochatSessions"] }),
+          navigate: () => router.push("/websochat"),
+        });
+      } catch (error) {
+        setToast({
+          type: "error",
+          message: getWebsochatSafeUserMessage(
+            error,
+            "캐릭터 대화를 시작하지 못했어요. 잠시 후 다시 시도해 주세요."
+          ),
+        });
+      } finally {
+        setLaunchingScopeKey(null);
+      }
+    });
   };
 
   return (
@@ -121,7 +177,7 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
                 aria-label={`${item.characterName} · ${item.productTitle}`}
                 aria-busy={isLaunching}
                 disabled={launchingScopeKey !== null}
-                onClick={() => handleCharacterClick(item)}
+                onClick={() => void handleCharacterClick(item)}
                 className="group flex w-full flex-col text-left disabled:cursor-wait"
               >
                 <div className="relative isolate aspect-[364/414] w-full overflow-hidden rounded-[10px] bg-light-gray-100">

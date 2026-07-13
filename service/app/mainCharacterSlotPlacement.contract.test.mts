@@ -48,6 +48,16 @@ assert.match(
 );
 assert.match(
   characterSlotSource,
-  /savePendingHomeCharacterChatLaunch\([\s\S]*router\.push\("\/websochat"\)/,
-  "CharacterSlot should hand off the launch and navigate immediately"
+  /buildHomeCharacterChatSessionRequest\([\s\S]*queueHomeCharacterChatLaunch\([\s\S]*router\.push\("\/websochat"\)/,
+  "CharacterSlot should hand off a dedicated character-chat request and navigate immediately"
+);
+assert.doesNotMatch(
+  characterSlotSource,
+  /if \(hasAccountScope\) \{[\s\S]*getEpisodeListQueryOptions/,
+  "CharacterSlot should resolve a backend-clamped read scope for guests as well as signed-in readers"
+);
+assert.match(
+  characterSlotSource,
+  /order_dir: "desc"[\s\S]*response\.data\.episodes\[0\]\?\.episodeNo/,
+  "CharacterSlot should use the latest public episode row instead of the account read-progress field"
 );

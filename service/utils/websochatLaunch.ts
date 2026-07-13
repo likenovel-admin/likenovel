@@ -12,6 +12,88 @@ const WEBSOCHAT_MINI_PREVIEW_STATE_STORAGE_KEY =
 export type WebsochatLaunchModeKey = "qa" | "rp" | "ideal_worldcup";
 export type WebsochatLaunchQaActionKey = "predict" | "next_episode_write" | null;
 
+export const resolveWebsochatActorKey = ({
+  isAuthInitialized,
+  canUseAccountScope,
+  userId,
+  guestKey,
+}: {
+  isAuthInitialized: boolean;
+  canUseAccountScope: boolean;
+  userId?: number | string | null;
+  guestKey?: string | null;
+}) => {
+  if (!isAuthInitialized) return "";
+  if (!canUseAccountScope) return String(guestKey || "").trim();
+
+  const normalizedUserId = String(userId ?? "").trim();
+  return normalizedUserId ? `user:${normalizedUserId}` : "";
+};
+
+type WebsochatActiveSessionResolution =
+  | { action: "wait" }
+  | { action: "keep" }
+  | { action: "clear" }
+  | { action: "select"; sessionId: number };
+
+export const resolveWebsochatActiveSession = ({
+  actorReady,
+  sessionsReady,
+  activeSessionId,
+  storedSessionId,
+  sessionIds,
+  hasDraftComposerContext,
+  pendingSessionId,
+}: {
+  actorReady: boolean;
+  sessionsReady: boolean;
+  activeSessionId: number | null;
+  storedSessionId: number | null;
+  sessionIds: number[];
+  hasDraftComposerContext: boolean;
+  pendingSessionId: number | null;
+}): WebsochatActiveSessionResolution => {
+  if (!actorReady || !sessionsReady) return { action: "wait" };
+
+  if (!sessionIds.length) {
+    return pendingSessionId ? { action: "keep" } : { action: "clear" };
+  }
+
+  if (pendingSessionId) {
+    return { action: "keep" };
+  }
+
+  if (!activeSessionId) {
+    if (hasDraftComposerContext) return { action: "keep" };
+    const restoredSessionId = storedSessionId && sessionIds.includes(storedSessionId)
+      ? storedSessionId
+      : sessionIds[0];
+    return { action: "select", sessionId: restoredSessionId };
+  }
+
+  if (sessionIds.includes(activeSessionId)) return { action: "keep" };
+  return { action: "select", sessionId: sessionIds[0] };
+};
+
+export const shouldShowWebsochatStickyGuide = ({
+  activeSessionId,
+  effectiveProductId,
+  guideSessionId,
+  guideProductId,
+  isHomeCharacterLaunchPending,
+}: {
+  activeSessionId: number | null;
+  effectiveProductId: number | null;
+  guideSessionId: number | null;
+  guideProductId: number | null;
+  isHomeCharacterLaunchPending: boolean;
+}) => {
+  if (isHomeCharacterLaunchPending) return false;
+  if (activeSessionId) return guideSessionId === activeSessionId;
+  return guideSessionId == null
+    && (guideProductId == null || guideProductId === effectiveProductId);
+};
+
 export const isWebsochatModeAllowed = (
   modeKey: WebsochatLaunchModeKey,
   allowedModes?: WebsochatLaunchModeKey[] | null

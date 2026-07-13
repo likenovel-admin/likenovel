@@ -1,16 +1,3 @@
-const PENDING_HOME_CHARACTER_CHAT_LAUNCH_KEY =
-  "pending_home_character_chat_launch";
-const PENDING_HOME_CHARACTER_CHAT_LAUNCH_TTL_MS = 60 * 1000;
-
-export interface PendingHomeCharacterChatLaunch {
-  productId: number;
-  productTitle: string;
-  characterScopeKey: string;
-  characterName: string;
-  adultYn: "Y" | "N";
-  createdAt: number;
-}
-
 export interface HomeCharacterChatSessionRequest {
   product_id: number;
   guest_key?: string;
@@ -22,6 +9,48 @@ export interface HomeCharacterChatSessionRequest {
   adult_yn: "Y" | "N";
   account_read_episode_to?: number;
 }
+
+export interface PendingHomeCharacterChatLaunch {
+  request: HomeCharacterChatSessionRequest;
+  characterName: string;
+  characterImagePath: string | null;
+  productTitle: string;
+  authorNickname: string | null;
+  createdAt: number;
+}
+
+interface RecoverableHomeCharacterChatSession {
+  sessionId: number;
+  productId: number;
+  sessionKind?: string | null;
+  entrySource?: string | null;
+  lockedCharacterScopeKey?: string | null;
+  createdDate?: string | null;
+}
+
+const MYSQL_LOCAL_DATETIME_PATTERN =
+  /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(?:\.\d+)?$/;
+
+const parseHomeCharacterChatSessionCreatedAt = (value?: string | null) => {
+  const normalized = String(value || "").trim();
+  const mysqlMatch = normalized.match(MYSQL_LOCAL_DATETIME_PATTERN);
+  return Date.parse(
+    mysqlMatch
+      ? `${mysqlMatch[1]}T${mysqlMatch[2]}+09:00`
+      : normalized
+  );
+};
+
+type PendingHomeCharacterChatLaunchInput = Omit<
+  PendingHomeCharacterChatLaunch,
+  "createdAt"
+>;
+
+type CharacterChatStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+const PENDING_HOME_CHARACTER_CHAT_LAUNCH_KEY =
+  "pending_home_character_chat_launch";
+const PENDING_HOME_CHARACTER_CHAT_LAUNCH_TTL_MS = 60_000;
 
 export const buildHomeCharacterWarmupMessages = ({
   productTitle,
@@ -42,58 +71,6 @@ export const buildHomeCharacterWarmupMessages = ({
     "캐릭터가 무대에 오를 준비를 하고 있어요.",
     "캐릭터가 지금까지의 스토리 맥락을 읽고 있어요.",
   ];
-};
-
-export const savePendingHomeCharacterChatLaunch = (
-  payload: Omit<PendingHomeCharacterChatLaunch, "createdAt">
-) => {
-  if (typeof window === "undefined") {
-    throw new Error("브라우저에서만 캐릭터 대화를 시작할 수 있습니다.");
-  }
-  window.sessionStorage.setItem(
-    PENDING_HOME_CHARACTER_CHAT_LAUNCH_KEY,
-    JSON.stringify({ ...payload, createdAt: Date.now() })
-  );
-};
-
-export const consumePendingHomeCharacterChatLaunch = () => {
-  if (typeof window === "undefined") return null;
-  const raw = window.sessionStorage.getItem(
-    PENDING_HOME_CHARACTER_CHAT_LAUNCH_KEY
-  );
-  window.sessionStorage.removeItem(PENDING_HOME_CHARACTER_CHAT_LAUNCH_KEY);
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<PendingHomeCharacterChatLaunch>;
-    const productId = Number(parsed.productId || 0);
-    const productTitle = String(parsed.productTitle || "").trim();
-    const characterScopeKey = String(parsed.characterScopeKey || "").trim();
-    const characterName = String(parsed.characterName || "").trim();
-    const createdAt = Number(parsed.createdAt || 0);
-    if (
-      !Number.isInteger(productId)
-      || productId <= 0
-      || !productTitle
-      || !characterScopeKey
-      || !characterName
-      || !createdAt
-      || Date.now() - createdAt > PENDING_HOME_CHARACTER_CHAT_LAUNCH_TTL_MS
-      || (parsed.adultYn !== "Y" && parsed.adultYn !== "N")
-    ) {
-      return null;
-    }
-    return {
-      productId,
-      productTitle,
-      characterScopeKey,
-      characterName,
-      adultYn: parsed.adultYn,
-      createdAt,
-    } satisfies PendingHomeCharacterChatLaunch;
-  } catch {
-    return null;
-  }
 };
 
 interface BuildHomeCharacterChatRequestParams {
@@ -126,32 +103,122 @@ export const buildHomeCharacterChatSessionRequest = ({
     : {}),
 });
 
-interface LaunchHomeCharacterChatParams {
-  request: HomeCharacterChatSessionRequest;
-  createSession: (
-    request: HomeCharacterChatSessionRequest
-  ) => Promise<{ data?: { sessionId?: number | null } }>;
-  saveSessionId: (sessionId: number) => void;
+interface QueueHomeCharacterChatLaunchParams {
+  payload: PendingHomeCharacterChatLaunchInput;
+  storage?: CharacterChatStorage;
+  now?: number;
+  clearActiveSession: () => void;
   clearSessionListCache: () => void;
   navigate: () => void;
 }
 
-export const launchHomeCharacterChat = async ({
-  request,
-  createSession,
-  saveSessionId,
+const getCharacterChatSessionStorage = () =>
+  typeof window === "undefined" ? null : window.sessionStorage;
+
+export const savePendingHomeCharacterChatLaunch = ({
+  payload,
+  storage = getCharacterChatSessionStorage() ?? undefined,
+  now = Date.now(),
+}: {
+  payload: PendingHomeCharacterChatLaunchInput;
+  storage?: CharacterChatStorage;
+  now?: number;
+}) => {
+  if (!storage) return;
+  storage.setItem(
+    PENDING_HOME_CHARACTER_CHAT_LAUNCH_KEY,
+    JSON.stringify({ ...payload, createdAt: now } satisfies PendingHomeCharacterChatLaunch)
+  );
+};
+
+export const consumePendingHomeCharacterChatLaunch = ({
+  storage = getCharacterChatSessionStorage() ?? undefined,
+  now = Date.now(),
+}: {
+  storage?: CharacterChatStorage;
+  now?: number;
+} = {}): PendingHomeCharacterChatLaunch | null => {
+  if (!storage) return null;
+
+  const raw = storage.getItem(PENDING_HOME_CHARACTER_CHAT_LAUNCH_KEY);
+  storage.removeItem(PENDING_HOME_CHARACTER_CHAT_LAUNCH_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<PendingHomeCharacterChatLaunch>;
+    const request = parsed.request;
+    const createdAt = Number(parsed.createdAt || 0);
+    const isExpired =
+      !createdAt
+      || createdAt > now + 5_000
+      || now - createdAt > PENDING_HOME_CHARACTER_CHAT_LAUNCH_TTL_MS;
+    const isValidRequest =
+      request?.session_kind === "character_chat"
+      && request.entry_source === "home_character_slot"
+      && Number.isInteger(Number(request.product_id))
+      && Number(request.product_id) > 0
+      && Boolean(String(request.locked_character_scope_key || "").trim());
+    const characterName = String(parsed.characterName || "").trim();
+    const productTitle = String(parsed.productTitle || "").trim();
+
+    if (isExpired || !isValidRequest || !characterName || !productTitle) {
+      return null;
+    }
+
+    return {
+      request: request as HomeCharacterChatSessionRequest,
+      characterName,
+      characterImagePath: parsed.characterImagePath || null,
+      productTitle,
+      authorNickname: parsed.authorNickname || null,
+      createdAt,
+    };
+  } catch {
+    return null;
+  }
+};
+
+export const findRecoverableHomeCharacterChatSession = <
+  T extends RecoverableHomeCharacterChatSession,
+>({
+  sessions,
+  launch,
+  now = Date.now(),
+}: {
+  sessions: T[];
+  launch: PendingHomeCharacterChatLaunch;
+  now?: number;
+}): T | null => {
+  const earliestCreatedAt = launch.createdAt - 5_000;
+  const latestCreatedAt = now + 5_000;
+
+  return sessions.find((session) => {
+    const createdAt = parseHomeCharacterChatSessionCreatedAt(
+      session.createdDate
+    );
+    return session.sessionKind === "character_chat"
+      && session.entrySource === "home_character_slot"
+      && session.productId === launch.request.product_id
+      && session.lockedCharacterScopeKey
+        === launch.request.locked_character_scope_key
+      && Number.isFinite(createdAt)
+      && createdAt >= earliestCreatedAt
+      && createdAt <= latestCreatedAt;
+  }) ?? null;
+};
+
+export const queueHomeCharacterChatLaunch = ({
+  payload,
+  storage,
+  now,
+  clearActiveSession,
   clearSessionListCache,
   navigate,
-}: LaunchHomeCharacterChatParams) => {
-  const response = await createSession(request);
-  const sessionId = Number(response.data?.sessionId || 0);
-  if (!Number.isInteger(sessionId) || sessionId <= 0) {
-    throw new Error("캐릭터 대화 세션을 만들지 못했습니다.");
-  }
-  saveSessionId(sessionId);
+}: QueueHomeCharacterChatLaunchParams) => {
+  savePendingHomeCharacterChatLaunch({ payload, storage, now });
+  clearActiveSession();
   clearSessionListCache();
   navigate();
-  return sessionId;
 };
 
 export const createSingleFlightRunner = () => {
@@ -166,4 +233,25 @@ export const createSingleFlightRunner = () => {
       inFlight = false;
     }
   };
+};
+
+export const buildCharacterChatChoiceMessage = ({
+  dialogue,
+  narration,
+}: {
+  label: string;
+  dialogue: string;
+  narration: string;
+}) => {
+  const normalizedDialogue = String(dialogue || "").trim();
+  const normalizedNarration = String(narration || "")
+    .trim()
+    .replace(/^\*\s*/, "");
+
+  return [
+    normalizedDialogue,
+    normalizedNarration ? `* ${normalizedNarration}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 };
