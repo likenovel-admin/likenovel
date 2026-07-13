@@ -34,11 +34,13 @@ export interface IWebsochatSessionItem {
   entrySource?: string | null;
   lockedCharacterScopeKey?: string | null;
   allowedModes?: Array<"qa" | "rp" | "ideal_worldcup">;
+  characterDisplayName?: string | null;
   createdDate: string;
   updatedDate: string;
   productTitle?: string | null;
   productAuthorNickname?: string | null;
   coverImagePath?: string | null;
+  characterImagePath?: string | null;
   productPriceType?: "free" | "paid" | null;
   readScopeState?: "unknown" | "none" | "known";
   readEpisodeNo?: number | null;
@@ -67,6 +69,8 @@ export interface ICreateWebsochatSessionResponse {
     entrySource?: string | null;
     lockedCharacterScopeKey?: string | null;
     allowedModes?: Array<"qa" | "rp" | "ideal_worldcup">;
+    characterDisplayName?: string | null;
+    characterImagePath?: string | null;
     product: IWebsochatProductItem;
   };
 }
@@ -85,6 +89,22 @@ export interface IPatchWebsochatSessionModeResponse {
     sessionId: number;
     modeKey: "qa" | "rp" | "ideal_worldcup";
     pendingRpCharacterSelection: boolean;
+  };
+}
+
+export interface IWebsochatCharacterChatChoiceItem {
+  label: string;
+  dialogue: string;
+  narration: string;
+  intentKind?: "observe" | "ask" | "move" | "interact" | "assist" | "wait";
+  targetAnchor?: string;
+}
+
+export interface IPostWebsochatCharacterChatChoicesResponse {
+  data: {
+    choices: IWebsochatCharacterChatChoiceItem[];
+    sourceAssistantMessageId: number;
+    generationSource: "generated" | "floor" | "none";
   };
 }
 

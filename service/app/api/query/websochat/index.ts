@@ -1,4 +1,4 @@
-import { instance } from "../../axios";
+import { instance, type AxiosRequestConfigWithAuthBypass } from "../../axios";
 import { queryOptions, useMutation, useQuery } from "@tanstack/react-query";
 import {
   ICreateWebsochatSessionResponse,
@@ -8,6 +8,7 @@ import {
   IGetWebsochatSessionsResponse,
   IPatchWebsochatSessionModeResponse,
   IPatchWebsochatSessionReadScopeResponse,
+  IPostWebsochatCharacterChatChoicesResponse,
   IPostWebsochatMessageResponse,
 } from "./dto";
 
@@ -212,6 +213,26 @@ export const postWebsochatNextEpisodeMessageOnce = async (
   return parsed;
 };
 
+export const postWebsochatCharacterChatChoices = async ({
+  sessionId,
+  guest_key,
+  source_assistant_message_id,
+}: {
+  sessionId: number;
+  guest_key?: string | null;
+  source_assistant_message_id: number;
+}) => {
+  const response = await instance.post(
+    `/v1/command/websochat/sessions/${sessionId}/character-chat/choices`,
+    {
+      guest_key,
+      source_assistant_message_id,
+    },
+    { skipAuthRedirectOn401: true } as AxiosRequestConfigWithAuthBypass
+  );
+  return response.data as IPostWebsochatCharacterChatChoicesResponse;
+};
+
 export const getWebsochatBillingStatusQueryOptions = (
   actorKey: string,
   guestKey?: string | null,
@@ -305,6 +326,7 @@ export const getWebsochatMessagesQueryOptions = (
       return response.data;
     },
     enabled: !!sessionId && !!actorKey,
+    throwOnError: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
