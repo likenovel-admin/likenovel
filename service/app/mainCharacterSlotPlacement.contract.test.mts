@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const characterSlotSource = readFileSync(
+  new URL("../components/main/CharacterSlot.tsx", import.meta.url),
+  "utf8"
+);
 const recentlyViewIndex = source.indexOf("<RecentlyView");
 const characterSlotIndex = source.indexOf("<CharacterSlot", recentlyViewIndex);
 const mainRuleSlotIndex = source.indexOf(
@@ -26,4 +30,24 @@ assert.match(
   source,
   /<CharacterSlot items=\{mainCharacterSlotItems\} adultYn=\{adultYn\}/,
   "CharacterSlot should receive both cards and the current adult scope"
+);
+assert.match(
+  characterSlotSource,
+  /aspect-\[364\/414\]/,
+  "CharacterSlot images should preserve the main banner 364:414 ratio"
+);
+assert.match(
+  characterSlotSource,
+  /grid-cols-2/,
+  "CharacterSlot should keep two columns on mobile"
+);
+assert.match(
+  characterSlotSource,
+  /text-dark-gray-400[^>]*>\s*\{item\.productTitle\}\s*<\/span>\s*<span[^>]*text-black-100[^>]*>\s*\{item\.characterName\}/,
+  "CharacterSlot should show the work title as context before the emphasized character name"
+);
+assert.match(
+  characterSlotSource,
+  /savePendingHomeCharacterChatLaunch\([\s\S]*router\.push\("\/websochat"\)/,
+  "CharacterSlot should hand off the launch and navigate immediately"
 );
