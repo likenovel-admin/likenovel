@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildHomeCharacterChatSessionRequest,
+  buildHomeCharacterWarmupMessages,
+  consumePendingHomeCharacterChatLaunch,
   createSingleFlightRunner,
   launchHomeCharacterChat,
+  savePendingHomeCharacterChatLaunch,
 } from "./characterChatLaunch.ts";
 
 test("홈 캐릭터 카드 요청은 선택 인물과 캐릭터챗 계약을 고정한다", () => {
@@ -39,6 +42,61 @@ test("읽은 범위가 없으면 임의 회차를 요청하지 않는다", () =>
   });
   assert.equal("account_read_episode_to" in request, false);
   assert.equal("guest_key" in request, false);
+});
+
+test("캐릭터챗 웜업은 작품 읽은 범위와 준비 단계를 순서대로 안내한다", () => {
+  assert.deepEqual(
+    buildHomeCharacterWarmupMessages({
+      productTitle: "멸망한 도련님",
+      readEpisodeNo: 14,
+    }),
+    [
+      "〈멸망한 도련님〉을 14화까지 읽은 기록을 반영하고 있어요.",
+      "캐릭터를 소환하고 있어요.",
+      "캐릭터가 무대에 오를 준비를 하고 있어요.",
+      "캐릭터가 지금까지의 스토리 맥락을 읽고 있어요.",
+    ]
+  );
+  assert.equal(
+    buildHomeCharacterWarmupMessages({
+      productTitle: "멸망한 도련님",
+      readEpisodeNo: null,
+    })[0],
+    "〈멸망한 도련님〉의 읽은 범위를 확인하고 있어요."
+  );
+});
+
+test("홈 캐릭터 진입 handoff는 브라우저 세션에서 한 번만 소비된다", () => {
+  const values = new Map<string, string>();
+  const sessionStorage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+    removeItem: (key: string) => values.delete(key),
+  };
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: { sessionStorage },
+  });
+
+  try {
+    savePendingHomeCharacterChatLaunch({
+      productId: 2005,
+      productTitle: "멸망한 도련님",
+      characterScopeKey: "character:루벤세이린",
+      characterName: "루벤 세이린",
+      adultYn: "N",
+    });
+    const consumed = consumePendingHomeCharacterChatLaunch();
+    assert.equal(consumed?.productId, 2005);
+    assert.equal(consumed?.productTitle, "멸망한 도련님");
+    assert.equal(consumed?.characterScopeKey, "character:루벤세이린");
+    assert.equal(consumed?.characterName, "루벤 세이린");
+    assert.equal(consumed?.adultYn, "N");
+    assert.equal(Number.isFinite(consumed?.createdAt), true);
+    assert.equal(consumePendingHomeCharacterChatLaunch(), null);
+  } finally {
+    Reflect.deleteProperty(globalThis, "window");
+  }
 });
 
 test("세션 생성 성공 후에만 저장하고 이동한다", async () => {

@@ -42,6 +42,13 @@ import GlobalNav from "@/components/menu/GlobalNav";
 import WebsochatGuideBubble from "@/components/websochat/WebsochatGuideBubble";
 import useAuthStore from "@/store/authStore";
 import useConfirmStore from "@/store/confirmStore";
+import {
+  buildHomeCharacterChatSessionRequest,
+  buildHomeCharacterWarmupMessages,
+  consumePendingHomeCharacterChatLaunch,
+  launchHomeCharacterChat,
+  PendingHomeCharacterChatLaunch,
+} from "@/utils/characterChatLaunch";
 import { STORAGE_KEYS } from "@/utils/localStorage";
 import { buildProductDetailPath } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
@@ -931,8 +938,16 @@ export default function WebsochatPage() {
   const [hasStoredAuthToken, setHasStoredAuthToken] = useState(false);
   const [pendingLaunchPayload, setPendingLaunchPayload] =
     useState<IWebsochatLaunchPayload | null>(null);
+  const [pendingHomeCharacterLaunch, setPendingHomeCharacterLaunch] =
+    useState<PendingHomeCharacterChatLaunch | null>(null);
+  const [homeCharacterReadEpisodeNo, setHomeCharacterReadEpisodeNo] =
+    useState<number | null>(null);
+  const [homeCharacterWarmupIndex, setHomeCharacterWarmupIndex] = useState(0);
+  const [homeCharacterLaunchError, setHomeCharacterLaunchError] = useState("");
+  const [homeCharacterLaunchRetry, setHomeCharacterLaunchRetry] = useState(0);
   const [pendingModeSyncKey, setPendingModeSyncKey] =
     useState<WebsochatComposerMode | null>(null);
+  const homeCharacterLaunchAttemptRef = useRef<string | null>(null);
   const syncPendingNoticeKeyRef = useRef<string | null>(null);
   const mergedReadScopeSyncNoticeKeyRef = useRef<string | null>(null);
   const modeSyncQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -1296,6 +1311,7 @@ export default function WebsochatPage() {
   const {
     data: messagesData,
     isFetching: isMessagesFetching,
+    isError: isMessagesError,
     refetch: refetchMessages,
   } = useGetWebsochatMessages(
     activeSessionId,
@@ -2696,6 +2712,65 @@ export default function WebsochatPage() {
     !!activeSessionId
     && activeSessionMessageCount === 0
     && !effectiveStarter;
+  const homeCharacterWarmupMessages = useMemo(
+    () => buildHomeCharacterWarmupMessages({
+      productTitle: pendingHomeCharacterLaunch?.productTitle || "",
+      readEpisodeNo: homeCharacterReadEpisodeNo,
+    }),
+    [homeCharacterReadEpisodeNo, pendingHomeCharacterLaunch?.productTitle]
+  );
+  const homeCharacterWarmupMessage =
+    homeCharacterWarmupMessages[
+      homeCharacterWarmupIndex % homeCharacterWarmupMessages.length
+    ];
+  const shouldShowHomeCharacterWarmup = !!pendingHomeCharacterLaunch;
+
+  useEffect(() => {
+    if (!shouldShowHomeCharacterWarmup || homeCharacterLaunchError) return;
+    const intervalId = window.setInterval(() => {
+      setHomeCharacterWarmupIndex((current) => (
+        (current + 1) % homeCharacterWarmupMessages.length
+      ));
+    }, 1800);
+    return () => window.clearInterval(intervalId);
+  }, [
+    homeCharacterLaunchError,
+    homeCharacterWarmupMessages.length,
+    shouldShowHomeCharacterWarmup,
+  ]);
+
+  useEffect(() => {
+    if (!pendingHomeCharacterLaunch || !activeSessionId) return;
+    if (isMessagesError) {
+      setHomeCharacterLaunchError(
+        "캐릭터의 첫 장면을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
+      );
+      return;
+    }
+    if (isMessagesFetching) return;
+    if (activeSessionMessageCount === 0 && !effectiveStarter) return;
+    homeCharacterLaunchAttemptRef.current = null;
+    setPendingHomeCharacterLaunch(null);
+    setHomeCharacterWarmupIndex(0);
+  }, [
+    activeSessionId,
+    activeSessionMessageCount,
+    effectiveStarter,
+    isMessagesError,
+    isMessagesFetching,
+    pendingHomeCharacterLaunch,
+  ]);
+
+  const handleRetryHomeCharacterLaunch = () => {
+    setHomeCharacterLaunchError("");
+    if (activeSessionId) {
+      void refetchMessages();
+      return;
+    }
+    homeCharacterLaunchAttemptRef.current = null;
+    setIsPreparingNewSession(true);
+    setHomeCharacterLaunchRetry((current) => current + 1);
+  };
   const shouldShowMessagesLoadingSpinner =
     isMessagesFetching
     && !messageFeedItems.length
@@ -2777,6 +2852,26 @@ export default function WebsochatPage() {
       window.removeEventListener(WEBSOCHAT_PREPARE_NAV_EVENT, handlePrepareNav);
     };
   }, [writeStoredActiveSessionId]);
+
+  useEffect(() => {
+    const pendingLaunch = consumePendingHomeCharacterChatLaunch();
+    if (!pendingLaunch) return;
+
+    consumePendingWebsochatLaunch();
+    enterDraftSession(false);
+    setPendingHomeCharacterLaunch(pendingLaunch);
+    setHomeCharacterReadEpisodeNo(null);
+    setHomeCharacterWarmupIndex(0);
+    setHomeCharacterLaunchError("");
+    setSelectedProductSnapshot(
+      buildWebsochatProductSnapshot({
+        productId: pendingLaunch.productId,
+        title: pendingLaunch.productTitle,
+        contextStatus: "ready",
+      })
+    );
+    setSelectedProductId(pendingLaunch.productId);
+  }, [enterDraftSession]);
 
   useEffect(() => {
     const pendingLaunch = consumePendingWebsochatLaunch();
@@ -2873,6 +2968,81 @@ export default function WebsochatPage() {
       actorKey: runtimeActorKey,
     };
   }, [accessToken, guestKey, isAuthenticated, user?.userId]);
+
+  useEffect(() => {
+    if (!pendingHomeCharacterLaunch) return;
+    if (!isAuthInitialized) return;
+
+    const runtimeActorScope = resolveRuntimeWebsochatActorScope();
+    if (!runtimeActorScope.canUseAccountScope && !runtimeActorScope.guestKey) {
+      return;
+    }
+
+    const attemptKey = `${pendingHomeCharacterLaunch.createdAt}:${homeCharacterLaunchRetry}`;
+    if (homeCharacterLaunchAttemptRef.current === attemptKey) return;
+    homeCharacterLaunchAttemptRef.current = attemptKey;
+    setHomeCharacterLaunchError("");
+
+    void (async () => {
+      const accountReadEpisodeTo = await fetchLatestAccountReadEpisodeNo(
+        pendingHomeCharacterLaunch.productId,
+        runtimeActorScope.canUseAccountScope
+      );
+      setHomeCharacterReadEpisodeNo(accountReadEpisodeTo);
+
+      const sessionId = await launchHomeCharacterChat({
+        request: buildHomeCharacterChatSessionRequest({
+          productId: pendingHomeCharacterLaunch.productId,
+          characterScopeKey: pendingHomeCharacterLaunch.characterScopeKey,
+          characterName: pendingHomeCharacterLaunch.characterName,
+          adultYn: pendingHomeCharacterLaunch.adultYn,
+          guestKey: runtimeActorScope.guestKey,
+          accountReadEpisodeTo,
+        }),
+        createSession,
+        saveSessionId: writeStoredActiveSessionId,
+        clearSessionListCache: () =>
+          queryClient.removeQueries({ queryKey: ["websochatSessions"] }),
+        navigate: () => undefined,
+      });
+      const createdDate = new Date().toISOString();
+      setIsPreparingNewSession(false);
+      setActiveSessionId(sessionId);
+      setPendingSessionPreview({
+        sessionId,
+        productId: pendingHomeCharacterLaunch.productId,
+        title: `${pendingHomeCharacterLaunch.characterName}과의 대화`,
+        sessionKind: "character_chat",
+        entrySource: "home_character_slot",
+        lockedCharacterScopeKey: pendingHomeCharacterLaunch.characterScopeKey,
+        allowedModes: ["rp"],
+        createdDate,
+        updatedDate: createdDate,
+        productTitle: pendingHomeCharacterLaunch.productTitle,
+        readScopeState: accountReadEpisodeTo ? "known" : "unknown",
+        readEpisodeNo: accountReadEpisodeTo,
+        readEpisodeTitle: null,
+        contextStatus: "ready",
+        canSendMessage: true,
+        unavailableMessage: null,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["websochatSessions"] });
+    })().catch(() => {
+      setIsPreparingNewSession(false);
+      setHomeCharacterLaunchError(
+        "캐릭터와의 대화를 준비하지 못했어요. 잠시 후 다시 시도해 주세요."
+      );
+    });
+  }, [
+    createSession,
+    fetchLatestAccountReadEpisodeNo,
+    homeCharacterLaunchRetry,
+    isAuthInitialized,
+    pendingHomeCharacterLaunch,
+    queryClient,
+    resolveRuntimeWebsochatActorScope,
+    writeStoredActiveSessionId,
+  ]);
 
   const openLoginConfirm = () => {
     const currentUrl = encodeURIComponent(pathname || "/websochat");
@@ -4542,7 +4712,7 @@ export default function WebsochatPage() {
                 </div>
               </div>
 
-              <div className="bg-white flex flex-col gap-12pxr h-full min-h-0 overflow-hidden">
+              <div className="relative bg-white flex flex-col gap-12pxr h-full min-h-0 overflow-hidden">
                 <div className="md:hidden flex items-center justify-between px-16pxr h-[44px] shrink-0 border-b border-light-gray-200">
                   <button
                     type="button"
@@ -4562,6 +4732,30 @@ export default function WebsochatPage() {
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
                   </button>
                 </div>
+                {shouldShowHomeCharacterWarmup ? (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    aria-busy={!homeCharacterLaunchError}
+                    className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-white px-24pxr text-center"
+                  >
+                    {homeCharacterLaunchError ? null : <Spinner size={32} />}
+                    <div className="mt-20pxr text-18pxr font-semibold text-black-100 md:text-20pxr">
+                      {pendingHomeCharacterLaunch?.characterName}
+                    </div>
+                    <div className="mt-10pxr min-h-[44px] max-w-[420px] text-14pxr leading-[22px] text-dark-gray-400 md:text-15pxr">
+                      {homeCharacterLaunchError || homeCharacterWarmupMessage}
+                    </div>
+                    {homeCharacterLaunchError ? (
+                      <Button
+                        className="mt-20pxr min-w-[120px]"
+                        onClick={handleRetryHomeCharacterLaunch}
+                      >
+                        다시 시도
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
             <div
               ref={messageListRef}
               onScroll={handleMessageListScroll}
