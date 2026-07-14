@@ -235,9 +235,11 @@ export default function ApplyRankTable({ data, loading, refetch }: Props) {
     },
     {
       header: "신청 일자",
-      key: "apply_date",
+      key: "req_apply_date",
       render: (_, row: IApplyRank) =>
-        row?.apply_date ? format(new Date(row?.apply_date), "yyyy-MM-dd") : "",
+        row?.req_apply_date
+          ? format(new Date(row.req_apply_date), "yyyy-MM-dd")
+          : "",
     },
     { header: "작품명", key: "title" },
     { header: "작품 ID", key: "product_id" },
