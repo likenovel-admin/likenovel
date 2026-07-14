@@ -24,18 +24,14 @@ export const useGetMainCharacterSlots = (
       }),
   });
 
-export const useSearchMainCharacterSlotProducts = (
-  searchWord: string,
-  enabled: boolean
-) =>
+export const useGetMainCharacterSlotProducts = () =>
   useQuery<ISearchMainCharacterSlotProductResponse>({
-    queryKey: ["SearchMainCharacterSlotProducts", searchWord],
-    enabled,
+    queryKey: ["GetMainCharacterSlotProducts"],
     queryFn: () =>
       apiClient.request<ISearchMainCharacterSlotProductResponse>({
         url: "/v1/query/admins/main-character-slots/products/search",
         method: "GET",
-        queryParams: { search_word: searchWord, limit: 20 },
+        queryParams: { search_word: "", limit: 100 },
       }),
   });
 

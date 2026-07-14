@@ -3,10 +3,10 @@
 import {
   useCreateMainCharacterSlot,
   useDeleteMainCharacterSlot,
+  useGetMainCharacterSlotProducts,
   useGetMainCharacterSlotRoster,
   useGetMainCharacterSlots,
   usePublishMainCharacterSlotNow,
-  useSearchMainCharacterSlotProducts,
   useUpdateMainCharacterSlot,
 } from "@/api/mainCharacterSlot";
 import {
@@ -28,13 +28,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PageHeader from "@/components/ui/page-header";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { SidebarInset } from "@/components/ui/sidebar";
 import {
   Table,
@@ -46,6 +39,7 @@ import {
 } from "@/components/ui/table";
 import { catchErrorMessage, confirm, showAlert } from "@/lib/utils";
 import { format } from "date-fns";
+import { Check, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 const PAGE_SIZE = 20;
@@ -76,8 +70,7 @@ const getSlotStatus = (row: IMainCharacterSlot) => {
 
 export default function Page() {
   const [page, setPage] = useState(1);
-  const [searchInput, setSearchInput] = useState("");
-  const [searchWord, setSearchWord] = useState("");
+  const [productFilter, setProductFilter] = useState("");
   const [selectedProduct, setSelectedProduct] =
     useState<IMainCharacterSlotProduct | null>(null);
   const [characterScopeKey, setCharacterScopeKey] = useState("");
@@ -91,8 +84,8 @@ export default function Page() {
     page,
     count_per_page: PAGE_SIZE,
   });
-  const { data: productSearchData, isFetching: isSearching } =
-    useSearchMainCharacterSlotProducts(searchWord, searchWord.length >= 2);
+  const { data: productListData, isFetching: isLoadingProducts } =
+    useGetMainCharacterSlotProducts();
   const { data: rosterData, isFetching: isLoadingRoster } =
     useGetMainCharacterSlotRoster(selectedProduct?.productId ?? null);
   const createSlot = useCreateMainCharacterSlot();
@@ -105,9 +98,6 @@ export default function Page() {
   const rows = data?.results ?? [];
   const totalPages = Math.max(1, Math.ceil((data?.total_count ?? 0) / PAGE_SIZE));
   const roster = rosterData?.data ?? [];
-  const selectedCharacter = roster.find(
-    (item) => item.scopeKey === characterScopeKey
-  );
   const isSaving =
     createSlot.isPending ||
     publishNow.isPending ||
@@ -115,8 +105,17 @@ export default function Page() {
     createUpload.isPending ||
     updateUpload.isPending;
   const productResults = useMemo(
-    () => productSearchData?.data ?? [],
-    [productSearchData?.data]
+    () => {
+      const products = productListData?.data ?? [];
+      const filter = productFilter.trim().toLocaleLowerCase("ko-KR");
+      if (!filter) return products;
+      return products.filter((product) =>
+        `${product.title} ${product.authorNickname}`
+          .toLocaleLowerCase("ko-KR")
+          .includes(filter)
+      );
+    },
+    [productFilter, productListData?.data]
   );
 
   const resetForm = () => {
@@ -287,79 +286,121 @@ export default function Page() {
             <CardTitle>{editingSlot ? "캐릭터 카드 수정" : "캐릭터 카드 등록"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="character-product-search">작품 검색</Label>
-              <div className="flex max-w-2xl gap-2">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="character-product-filter">작품 선택</Label>
+                  <span className="text-xs text-muted-foreground">
+                    {productResults.length}개
+                  </span>
+                </div>
                 <Input
-                  id="character-product-search"
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      setSearchWord(searchInput.trim());
-                    }
-                  }}
-                  placeholder="작품명 또는 작가명"
+                  id="character-product-filter"
+                  value={productFilter}
+                  onChange={(event) => setProductFilter(event.target.value)}
+                  placeholder="작품명·작가명으로 목록 필터"
                 />
-                <Button
-                  variant="outline"
-                  onClick={() => setSearchWord(searchInput.trim())}
-                  disabled={searchInput.trim().length < 2 || isSearching}
-                >
-                  검색
-                </Button>
-              </div>
-              {productResults.length > 0 && (
-                <div className="max-w-2xl overflow-hidden rounded-md border">
+                <div className="max-h-[360px] overflow-y-auto rounded-md border">
+                  {isLoadingProducts && (
+                    <div className="flex h-20 items-center justify-center text-sm text-muted-foreground">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      작품 불러오는 중
+                    </div>
+                  )}
                   {productResults.map((product) => (
                     <button
                       type="button"
                       key={product.productId}
                       onClick={() => selectProduct(product)}
-                      className="flex w-full items-center justify-between border-b px-3 py-2 text-left text-sm last:border-b-0 hover:bg-muted"
+                      aria-pressed={selectedProduct?.productId === product.productId}
+                      className={`flex min-h-16 w-full items-center gap-3 border-b px-3 py-2 text-left last:border-b-0 ${
+                        selectedProduct?.productId === product.productId
+                          ? "bg-muted"
+                          : "hover:bg-muted/50"
+                      }`}
                     >
-                      <span className="font-medium">{product.title}</span>
-                      <span className="text-muted-foreground">{product.authorNickname}</span>
+                      {product.coverImagePath ? (
+                        <img
+                          src={getCdnUrl(product.coverImagePath)}
+                          alt=""
+                          className="h-12 w-9 shrink-0 rounded-sm object-cover"
+                        />
+                      ) : (
+                        <span className="h-12 w-9 shrink-0 rounded-sm bg-muted-foreground/10" />
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">
+                          {product.title}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {product.authorNickname} · 공개 {product.openEpisodeCount}화
+                        </span>
+                      </span>
+                      {selectedProduct?.productId === product.productId && (
+                        <Check className="h-4 w-4 shrink-0" aria-hidden />
+                      )}
                     </button>
                   ))}
+                  {!isLoadingProducts && productResults.length === 0 && (
+                    <div className="flex h-20 items-center justify-center text-sm text-muted-foreground">
+                      표시할 작품이 없습니다.
+                    </div>
+                  )}
                 </div>
-              )}
-              {selectedProduct && (
-                <div className="text-sm">
-                  선택 작품: <strong>{selectedProduct.title}</strong> · {selectedProduct.authorNickname}
+              </div>
+              <div className="space-y-2">
+                <Label>주인공 선택</Label>
+                <div className="max-h-[406px] overflow-y-auto rounded-md border">
+                  {!selectedProduct && (
+                    <div className="flex h-20 items-center justify-center text-sm text-muted-foreground">
+                      선택된 작품이 없습니다.
+                    </div>
+                  )}
+                  {selectedProduct && isLoadingRoster && (
+                    <div className="flex h-20 items-center justify-center text-sm text-muted-foreground">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      주인공 불러오는 중
+                    </div>
+                  )}
+                  {selectedProduct &&
+                    !isLoadingRoster &&
+                    roster.map((item) => (
+                      <button
+                        type="button"
+                        key={item.scopeKey}
+                        onClick={() => setCharacterScopeKey(item.scopeKey)}
+                        aria-pressed={characterScopeKey === item.scopeKey}
+                        className={`flex min-h-14 w-full items-center justify-between gap-3 border-b px-3 py-2 text-left last:border-b-0 ${
+                          characterScopeKey === item.scopeKey
+                            ? "bg-muted"
+                            : "hover:bg-muted/50"
+                        }`}
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium">
+                            {item.displayName}
+                          </span>
+                          {item.aliases.length > 0 && (
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {item.aliases.join(", ")}
+                            </span>
+                          )}
+                        </span>
+                        {characterScopeKey === item.scopeKey && (
+                          <Check className="h-4 w-4 shrink-0" aria-hidden />
+                        )}
+                      </button>
+                    ))}
+                  {selectedProduct && !isLoadingRoster && roster.length === 0 && (
+                    <div className="flex h-20 items-center justify-center text-sm text-muted-foreground">
+                      선택 가능한 주인공이 없습니다.
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>주인공</Label>
-                <Select
-                  value={characterScopeKey}
-                  onValueChange={setCharacterScopeKey}
-                  disabled={!selectedProduct || isLoadingRoster}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="노출할 주인공 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roster.map((item) => (
-                      <SelectItem key={item.scopeKey} value={item.scopeKey}>
-                        {item.displayName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedProduct && !isLoadingRoster && roster.length === 0 && (
-                  <p className="text-sm text-muted-foreground">공개 적격 주인공이 없습니다.</p>
-                )}
-                {selectedCharacter?.aliases?.length ? (
-                  <p className="text-xs text-muted-foreground">
-                    별칭: {selectedCharacter.aliases.join(", ")}
-                  </p>
-                ) : null}
-              </div>
               <div className="space-y-2">
                 <Label>캐릭터 이미지</Label>
                 <FileUpload

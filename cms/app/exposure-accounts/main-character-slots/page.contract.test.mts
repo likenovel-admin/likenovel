@@ -14,6 +14,26 @@ assert.match(
 );
 assert.match(
   apiSource,
+  /queryParams:\s*\{\s*search_word:\s*"",\s*limit:\s*100\s*\}/,
+  "CMS should load the full product list without requiring a search submission"
+);
+assert.match(
+  pageSource,
+  /aria-pressed=\{selectedProduct\?\.productId === product\.productId\}/,
+  "CMS should expose products as a directly selectable list"
+);
+assert.match(
+  pageSource,
+  /aria-pressed=\{characterScopeKey === item\.scopeKey\}/,
+  "CMS should expose the selected product's characters as a directly selectable list"
+);
+assert.doesNotMatch(
+  pageSource,
+  /character-product-search/,
+  "CMS should not gate product selection behind the legacy search form"
+);
+assert.match(
+  apiSource,
   /\/v1\/command\/admins\/main-character-slots\/publish-now/,
   "CMS should support immediate publication without replacing another card"
 );
