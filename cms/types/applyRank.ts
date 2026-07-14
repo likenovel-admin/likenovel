@@ -43,7 +43,7 @@ export interface IApplyRank {
   series_regular_price: number;
   sale_price: number;
 
-  apply_date: string; // e.g. "2024-08-01"
+  req_apply_date: string; // ISO timestamp from product/application request date
   created_date: string; // ISO string
   updated_date: string;
 
