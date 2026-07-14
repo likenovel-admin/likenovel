@@ -443,6 +443,7 @@ PRODUCT_IDS=1102,1106 INTERVAL_SEC=30 ITERATIONS=20 /home/hongsan/work/likenovel
 ```
 
 Story context 비용 가드:
+- 정규 배치와 직접 실행은 공개·비블라인드 작품 중 `ai_content_service_enabled_yn='Y'`이고 story context가 `disabled`가 아닌 작품만 수집한다. 동의 철회 또는 웹소챗 비활성화 상태에서는 신규·증분 적재를 시작하지 않는다.
 - `build_story_agent_context.py --build-mode delta`는 기본적으로 RP profile/example refresh를 하지 않는다.
 - delta 중 RP refresh가 필요한 경우에만 `--refresh-rp`를 명시한다. 일반 cron/증분 수집에서는 사용하지 않는다.
 - DeepSeek 모델은 공식 API를 직접 호출하지 않는다. `episode_character_signals`는 OpenRouter의 `STORY_AGENT_CHARACTER_SIGNALS_OPENROUTER_MODEL`을 사용하며 기본값은 `deepseek/deepseek-v4-pro`다. `episode_scene_extraction`도 `STORY_AGENT_SCENE_EXTRACTION_OPENROUTER_MODEL` 기본값 `deepseek/deepseek-v4-pro`로 핵심 장면 2~3개를 추출하고 기본 출력 상한은 5,000토큰이다. AI DNA fallback과 provider health도 `OPENROUTER_API_KEY`/`OPENROUTER_BASE_URL`만 사용한다.
