@@ -79,6 +79,7 @@ import {
   filterWebsochatActionsByAllowedModes,
   formatWebsochatReadScope,
   IWebsochatLaunchPayload,
+  isVisibleWebsochatComposerShortcutAction,
   isWebsochatModeAllowed,
   resolveWebsochatActiveSession,
   resolveWebsochatActorKey,
@@ -5042,6 +5043,7 @@ export default function WebsochatPage() {
     () => filterWebsochatActionsByAllowedModes(
       (effectiveStarter?.actions || DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS).filter((action) => (
         (!shouldHideWebsochatGameActions || isVisibleWebsochatShortcutAction(action))
+        && isVisibleWebsochatComposerShortcutAction(action)
         && (canUseAccountScope || action.qaActionKey !== "next_episode_write")
       )),
       enforcedActiveSessionAllowedModes
