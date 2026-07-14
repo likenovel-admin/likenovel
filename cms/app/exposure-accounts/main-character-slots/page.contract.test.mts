@@ -14,8 +14,28 @@ assert.match(
 );
 assert.match(
   apiSource,
-  /queryParams:\s*\{\s*search_word:\s*"",\s*limit:\s*100\s*\}/,
-  "CMS should load the full product list without requiring a search submission"
+  /url:\s*"\/v1\/query\/admins\/main-character-slots\/products"/,
+  "CMS should use the paginated slot-eligible product endpoint"
+);
+assert.match(
+  apiSource,
+  /queryParams:\s*params/,
+  "CMS should send product search and pagination parameters"
+);
+assert.match(
+  pageSource,
+  /id="character-product-search"/,
+  "CMS should retain server-side product search"
+);
+assert.match(
+  pageSource,
+  /setProductPage\(\(current\) => Math\.max\(1, current - 1\)\)/,
+  "CMS should support the previous product page"
+);
+assert.match(
+  pageSource,
+  /setProductPage\(\(current\) => Math\.min\(productTotalPages, current \+ 1\)\)/,
+  "CMS should support the next product page"
 );
 assert.match(
   pageSource,
@@ -26,11 +46,6 @@ assert.match(
   pageSource,
   /aria-pressed=\{characterScopeKey === item\.scopeKey\}/,
   "CMS should expose the selected product's characters as a directly selectable list"
-);
-assert.doesNotMatch(
-  pageSource,
-  /character-product-search/,
-  "CMS should not gate product selection behind the legacy search form"
 );
 assert.match(
   apiSource,

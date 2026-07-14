@@ -40,9 +40,10 @@ import {
 import { catchErrorMessage, confirm, showAlert } from "@/lib/utils";
 import { format } from "date-fns";
 import { Check, Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 const PAGE_SIZE = 20;
+const PRODUCT_PAGE_SIZE = 20;
 
 const toApiDateTime = (value: string) => (value ? `${value}:00+09:00` : "");
 
@@ -70,7 +71,9 @@ const getSlotStatus = (row: IMainCharacterSlot) => {
 
 export default function Page() {
   const [page, setPage] = useState(1);
-  const [productFilter, setProductFilter] = useState("");
+  const [productPage, setProductPage] = useState(1);
+  const [productSearchInput, setProductSearchInput] = useState("");
+  const [productSearchWord, setProductSearchWord] = useState("");
   const [selectedProduct, setSelectedProduct] =
     useState<IMainCharacterSlotProduct | null>(null);
   const [characterScopeKey, setCharacterScopeKey] = useState("");
@@ -85,7 +88,11 @@ export default function Page() {
     count_per_page: PAGE_SIZE,
   });
   const { data: productListData, isFetching: isLoadingProducts } =
-    useGetMainCharacterSlotProducts();
+    useGetMainCharacterSlotProducts({
+      page: productPage,
+      count_per_page: PRODUCT_PAGE_SIZE,
+      search_word: productSearchWord,
+    });
   const { data: rosterData, isFetching: isLoadingRoster } =
     useGetMainCharacterSlotRoster(selectedProduct?.productId ?? null);
   const createSlot = useCreateMainCharacterSlot();
@@ -98,26 +105,17 @@ export default function Page() {
   const rows = data?.results ?? [];
   const totalPages = Math.max(1, Math.ceil((data?.total_count ?? 0) / PAGE_SIZE));
   const roster = rosterData?.data ?? [];
+  const productResults = productListData?.results ?? [];
+  const productTotalPages = Math.max(
+    1,
+    Math.ceil((productListData?.total_count ?? 0) / PRODUCT_PAGE_SIZE)
+  );
   const isSaving =
     createSlot.isPending ||
     publishNow.isPending ||
     updateSlot.isPending ||
     createUpload.isPending ||
     updateUpload.isPending;
-  const productResults = useMemo(
-    () => {
-      const products = productListData?.data ?? [];
-      const filter = productFilter.trim().toLocaleLowerCase("ko-KR");
-      if (!filter) return products;
-      return products.filter((product) =>
-        `${product.title} ${product.authorNickname}`
-          .toLocaleLowerCase("ko-KR")
-          .includes(filter)
-      );
-    },
-    [productFilter, productListData?.data]
-  );
-
   const resetForm = () => {
     setSelectedProduct(null);
     setCharacterScopeKey("");
@@ -131,6 +129,11 @@ export default function Page() {
   const selectProduct = (product: IMainCharacterSlotProduct) => {
     setSelectedProduct(product);
     setCharacterScopeKey("");
+  };
+
+  const searchProducts = () => {
+    setProductSearchWord(productSearchInput.trim());
+    setProductPage(1);
   };
 
   const handleEdit = (row: IMainCharacterSlot) => {
@@ -289,17 +292,33 @@ export default function Page() {
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="character-product-filter">작품 선택</Label>
+                  <Label htmlFor="character-product-search">작품 선택</Label>
                   <span className="text-xs text-muted-foreground">
-                    {productResults.length}개
+                    {productListData?.total_count ?? 0}개
                   </span>
                 </div>
-                <Input
-                  id="character-product-filter"
-                  value={productFilter}
-                  onChange={(event) => setProductFilter(event.target.value)}
-                  placeholder="작품명·작가명으로 목록 필터"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="character-product-search"
+                    value={productSearchInput}
+                    onChange={(event) => setProductSearchInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        searchProducts();
+                      }
+                    }}
+                    placeholder="작품명 또는 작가명"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={searchProducts}
+                    disabled={isLoadingProducts}
+                  >
+                    검색
+                  </Button>
+                </div>
                 <div className="max-h-[360px] overflow-y-auto rounded-md border">
                   {isLoadingProducts && (
                     <div className="flex h-20 items-center justify-center text-sm text-muted-foreground">
@@ -346,6 +365,31 @@ export default function Page() {
                       표시할 작품이 없습니다.
                     </div>
                   )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setProductPage((current) => Math.max(1, current - 1))}
+                    disabled={productPage <= 1 || isLoadingProducts}
+                  >
+                    이전
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {productPage} / {productTotalPages}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setProductPage((current) => Math.min(productTotalPages, current + 1))
+                    }
+                    disabled={productPage >= productTotalPages || isLoadingProducts}
+                  >
+                    다음
+                  </Button>
                 </div>
               </div>
               <div className="space-y-2">
