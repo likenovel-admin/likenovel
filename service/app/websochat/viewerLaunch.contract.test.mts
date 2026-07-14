@@ -29,6 +29,10 @@ assert.match(
 );
 assert.match(
   source,
+  /composerShortcutActions[\s\S]*isVisibleWebsochatComposerShortcutAction/
+);
+assert.match(
+  source,
   /!shouldHideWebsochatGameActions \|\| isVisibleWebsochatShortcutAction\(action\)/
 );
 assert.doesNotMatch(
