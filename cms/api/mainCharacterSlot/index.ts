@@ -2,11 +2,12 @@
 
 import {
   IGetMainCharacterSlotParams,
+  IGetMainCharacterSlotProductParams,
+  IGetMainCharacterSlotProductResponse,
   IGetMainCharacterSlotResponse,
   IGetMainCharacterSlotRosterResponse,
   IMainCharacterSlotCommandResponse,
   IMainCharacterSlotRequest,
-  ISearchMainCharacterSlotProductResponse,
 } from "@/api/mainCharacterSlot/dto";
 import apiClient from "@/lib/apiClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -24,18 +25,16 @@ export const useGetMainCharacterSlots = (
       }),
   });
 
-export const useSearchMainCharacterSlotProducts = (
-  searchWord: string,
-  enabled: boolean
+export const useGetMainCharacterSlotProducts = (
+  params: IGetMainCharacterSlotProductParams
 ) =>
-  useQuery<ISearchMainCharacterSlotProductResponse>({
-    queryKey: ["SearchMainCharacterSlotProducts", searchWord],
-    enabled,
+  useQuery<IGetMainCharacterSlotProductResponse>({
+    queryKey: ["GetMainCharacterSlotProducts", JSON.stringify(params)],
     queryFn: () =>
-      apiClient.request<ISearchMainCharacterSlotProductResponse>({
-        url: "/v1/query/admins/main-character-slots/products/search",
+      apiClient.request<IGetMainCharacterSlotProductResponse>({
+        url: "/v1/query/admins/main-character-slots/products",
         method: "GET",
-        queryParams: { search_word: searchWord, limit: 20 },
+        queryParams: params,
       }),
   });
 
