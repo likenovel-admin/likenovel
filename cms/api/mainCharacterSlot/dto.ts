@@ -39,8 +39,17 @@ export interface IGetMainCharacterSlotResponse {
   results: IMainCharacterSlot[];
 }
 
-export interface ISearchMainCharacterSlotProductResponse {
-  data: IMainCharacterSlotProduct[];
+export interface IGetMainCharacterSlotProductParams {
+  page: number;
+  count_per_page: number;
+  search_word: string;
+}
+
+export interface IGetMainCharacterSlotProductResponse {
+  total_count: number;
+  page: number;
+  count_per_page: number;
+  results: IMainCharacterSlotProduct[];
 }
 
 export interface IGetMainCharacterSlotRosterResponse {

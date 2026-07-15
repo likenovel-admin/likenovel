@@ -14,6 +14,46 @@ assert.match(
 );
 assert.match(
   apiSource,
+  /url:\s*"\/v1\/query\/admins\/main-character-slots\/products"/,
+  "CMS should use the paginated slot-eligible product endpoint"
+);
+assert.match(
+  apiSource,
+  /queryParams:\s*params/,
+  "CMS should send product search and pagination parameters"
+);
+assert.match(
+  pageSource,
+  /id="character-product-search"/,
+  "CMS should retain server-side product search"
+);
+assert.match(
+  pageSource,
+  /setProductPage\(\(current\) => Math\.max\(1, current - 1\)\)/,
+  "CMS should support the previous product page"
+);
+assert.match(
+  pageSource,
+  /setProductPage\(\(current\) => Math\.min\(productTotalPages, current \+ 1\)\)/,
+  "CMS should support the next product page"
+);
+assert.match(
+  pageSource,
+  /aria-pressed=\{selectedProduct\?\.productId === product\.productId\}/,
+  "CMS should expose products as a directly selectable list"
+);
+assert.match(
+  pageSource,
+  /onValueChange=\{setCharacterScopeKey\}/,
+  "CMS should populate a character dropdown after product selection"
+);
+assert.match(
+  pageSource,
+  /disabled=\{!selectedProduct \|\| isLoadingRoster \|\| roster\.length === 0\}/,
+  "CMS should disable the character dropdown until a selectable roster is ready"
+);
+assert.match(
+  apiSource,
   /\/v1\/command\/admins\/main-character-slots\/publish-now/,
   "CMS should support immediate publication without replacing another card"
 );
