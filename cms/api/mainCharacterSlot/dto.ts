@@ -19,6 +19,7 @@ export interface IMainCharacterSlotProduct {
   authorNickname: string;
   coverImagePath: string | null;
   openEpisodeCount: number;
+  chatQuality: "good" | "normal" | "insufficient";
 }
 
 export interface IMainCharacterSlotRosterItem {
