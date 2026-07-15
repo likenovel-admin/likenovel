@@ -42,6 +42,18 @@ assert.match(
   /aria-pressed=\{selectedProduct\?\.productId === product\.productId\}/,
   "CMS should expose products as a directly selectable list"
 );
+for (const label of ["양호", "보통", "부족"]) {
+  assert.match(
+    pageSource,
+    new RegExp(label),
+    `CMS should render the ${label} chat quality label`
+  );
+}
+assert.match(
+  pageSource,
+  /product\.chatQuality/,
+  "CMS should render quality from the product API instead of a local guess"
+);
 assert.match(
   pageSource,
   /onValueChange=\{setCharacterScopeKey\}/,

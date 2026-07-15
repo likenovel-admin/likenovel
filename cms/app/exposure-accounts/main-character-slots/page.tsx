@@ -51,6 +51,23 @@ import { useState } from "react";
 
 const PAGE_SIZE = 20;
 const PRODUCT_PAGE_SIZE = 20;
+const CHAT_QUALITY = {
+  good: {
+    label: "양호",
+    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    description: "상위 캐릭터의 회차·RP 예시·장면 데이터가 충분합니다.",
+  },
+  normal: {
+    label: "보통",
+    className: "border-amber-200 bg-amber-50 text-amber-700",
+    description: "채팅은 가능하지만 일부 캐릭터의 대화 재료가 적습니다.",
+  },
+  insufficient: {
+    label: "부족",
+    className: "border-rose-200 bg-rose-50 text-rose-700",
+    description: "선택 가능한 캐릭터 중 장면 데이터가 없는 인물이 있습니다.",
+  },
+} as const;
 
 const toApiDateTime = (value: string) => (value ? `${value}:00+09:00` : "");
 
@@ -151,6 +168,7 @@ export default function Page() {
       authorNickname: row.authorNickname,
       coverImagePath: null,
       openEpisodeCount: 0,
+      chatQuality: "normal",
     });
     setCharacterScopeKey(row.characterScopeKey);
     setCharacterImage(null);
@@ -361,6 +379,12 @@ export default function Page() {
                         <span className="block truncate text-xs text-muted-foreground">
                           {product.authorNickname} · 공개 {product.openEpisodeCount}화
                         </span>
+                      </span>
+                      <span
+                        title={CHAT_QUALITY[product.chatQuality].description}
+                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${CHAT_QUALITY[product.chatQuality].className}`}
+                      >
+                        {CHAT_QUALITY[product.chatQuality].label}
                       </span>
                       {selectedProduct?.productId === product.productId && (
                         <Check className="h-4 w-4 shrink-0" aria-hidden />
