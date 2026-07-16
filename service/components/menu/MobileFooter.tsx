@@ -1,4 +1,3 @@
-import { ADMIN_EMAIL } from "@/constants/common";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Arrow from "/public/images/footer-arrow-bottom.svg";
@@ -88,7 +87,7 @@ const MobileFooter = () => {
             FAQ
           </button>
           <a
-            href={ADMIN_EMAIL}
+            href="/product/customer-service/inquiry"
             className="flex w-full justify-center items-center gap-[9px] text-white text-11pxr border border-dark-gray-400 rounded-lg py-[8px] hover:bg-black-100"
           >
             1:1고객상담
