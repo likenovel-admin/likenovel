@@ -33,10 +33,17 @@ assert.match(
 assert.match(productCardSource, /episodeCount === 0 \? "신규회차쓰기" : "회차쓰기"/);
 assert.match(productCardSource, /episodeCount === 0 \? "primary" : "black"/);
 assert.match(productCardSource, /router\.push\(`\/making-episode\/\$\{data\.productId\}`\)/);
+assert.match(productCardSource, />\s*작품관리\s*<\/Button>/);
+assert.match(productCardSource, /variant="secondary"/);
 const authorFooterSource = productCardSource.slice(
   productCardSource.indexOf(
     'className="flex w-full flex-col items-center gap-10pxr'
   )
+);
+assert.ok(
+  authorFooterSource.indexOf("작품관리") <
+    authorFooterSource.indexOf("신규회차쓰기"),
+  "작품관리 버튼은 회차쓰기 버튼 왼쪽에 렌더링되어야 합니다."
 );
 assert.ok(
   authorFooterSource.indexOf("신규회차쓰기") <

@@ -924,18 +924,34 @@ const ProductListCard = ({
 
         {isAuthorPage && (
           <div className="flex w-full flex-col items-center gap-10pxr px-16pxr pb-16pxr md:px-20pxr md:pb-20pxr">
-            <Button
-              type="button"
-              variant={episodeCount === 0 ? "primary" : "black"}
-              size="sm"
-              className="min-w-[150px] px-24pxr"
-              onClick={(event) => {
-                event.stopPropagation();
-                router.push(`/making-episode/${data.productId}`);
-              }}
-            >
-              {episodeCount === 0 ? "신규회차쓰기" : "회차쓰기"}
-            </Button>
+            <div className="flex items-center justify-center gap-8pxr">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="min-w-[120px] px-20pxr"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  router.push(
+                    `/product/author/episode-manager/${data.productId}`
+                  );
+                }}
+              >
+                작품관리
+              </Button>
+              <Button
+                type="button"
+                variant={episodeCount === 0 ? "primary" : "black"}
+                size="sm"
+                className="min-w-[150px] px-24pxr"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  router.push(`/making-episode/${data.productId}`);
+                }}
+              >
+                {episodeCount === 0 ? "신규회차쓰기" : "회차쓰기"}
+              </Button>
+            </div>
 
             {canShowApplyNormalButton ? (
               <div className="flex items-center gap-12pxr">
