@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const serverPageSource = readFileSync(
+  new URL("./page.tsx", import.meta.url),
+  "utf8"
+);
+const source = readFileSync(
+  new URL("./ProductDetailClient.tsx", import.meta.url),
+  "utf8"
+);
 const commentQuerySource = readFileSync(
   new URL("../../api/query/comment/index.ts", import.meta.url),
   "utf8"
@@ -25,6 +32,47 @@ const productCoverAreaSource = readFileSync(
 const episodeManagerProductCoverAreaSource = readFileSync(
   new URL("../../../components/episodeManager/ProductCoverArea.tsx", import.meta.url),
   "utf8"
+);
+
+assert.doesNotMatch(
+  serverPageSource,
+  /^"use client";/,
+  "product detail route should remain a server component"
+);
+assert.match(
+  serverPageSource,
+  /\/v1\/query\/products\/\$\{productId\}\/detail-shell/,
+  "product detail route should fetch the public render shell before hydration"
+);
+assert.match(
+  serverPageSource,
+  /cache:\s*"no-store"/,
+  "public render shell must not leak stale private visibility through a shared cache"
+);
+assert.match(
+  serverPageSource,
+  /initialProduct=\{initialProduct\}/,
+  "server-rendered product data should be passed to the client detail surface"
+);
+assert.doesNotMatch(
+  serverPageSource,
+  /Authorization|cookies\(|headers\(/,
+  "public render shell must not forward authenticated user state"
+);
+assert.match(
+  source,
+  /initialProduct:\s*IProduct \| null/,
+  "product detail client should accept the public server-rendered product"
+);
+assert.match(
+  source,
+  /data\?\.data\.product \?\? initialProduct/,
+  "authenticated product detail should replace the public render shell when ready"
+);
+assert.match(
+  productCoverAreaSource,
+  /fetchPriority="high"/,
+  "the above-the-fold cover should request high browser priority"
 );
 
 assert.match(source, /const aiLibrarianBrief = aiBriefsData\?\.data\?\.\[0\] \?\? null/);
