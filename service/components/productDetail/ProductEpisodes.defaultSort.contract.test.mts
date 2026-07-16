@@ -7,7 +7,7 @@ const episodeHookSource = readFileSync(
   "utf8"
 );
 const productPageSource = readFileSync(
-  new URL("../../app/product/[id]/page.tsx", import.meta.url),
+  new URL("../../app/product/[id]/ProductDetailClient.tsx", import.meta.url),
   "utf8"
 );
 const productDtoSource = readFileSync(

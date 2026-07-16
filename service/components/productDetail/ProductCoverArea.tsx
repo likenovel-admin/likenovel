@@ -441,6 +441,7 @@ const ProductCoverArea = ({
               alt={data.title}
               width={150}
               height={230}
+              fetchPriority="high"
               className={`object-cover min-w-[150px] h-[230px] rounded-[10px]`}
             />
             <AdultAgeBadge product={data} />
@@ -472,6 +473,7 @@ const ProductCoverArea = ({
                     alt={data.title}
                     width={210}
                     height={300}
+                    fetchPriority="high"
                     className={`object-cover md:min-w-[150px] lg:min-w-[210px] md:h-[220px] lg:h-[300px] rounded-[10px]`}
                   />
                   <AdultAgeBadge product={data} />
