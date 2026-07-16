@@ -200,6 +200,7 @@ const FormArea = ({ productId }: Props) => {
     Partial<Record<keyof IMakeProductForm, HTMLDivElement | null>>
   >({});
   const router = useRouter();
+  const submitIntentRef = useRef<"default" | "episode">("default");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(false);
   const [usePaidStartDate, setUsePaidStartDate] = useState(true);
@@ -583,6 +584,10 @@ const FormArea = ({ productId }: Props) => {
             });
             setIsSubmitting(false);
             // Use window.location.href to bypass history manipulation
+            if (submitIntentRef.current === "episode") {
+              window.location.href = `/making-episode/${productId}`;
+              return;
+            }
             window.location.href = `/product/author/episode-manager/${productId}`;
           },
           onError: (error: any) => {
@@ -598,13 +603,18 @@ const FormArea = ({ productId }: Props) => {
     } else {
       const requestData = transformFormDataToRequestData(data);
       makeProduct(requestData, {
-        onSuccess: () => {
+        onSuccess: (response) => {
           setToast({
             message: "작품이 등록되었습니다",
             type: "success",
           });
           setIsSubmitting(false);
           // Use window.location.href to bypass history manipulation
+          if (submitIntentRef.current === "episode") {
+            const newProductId = response.data.data.product_id;
+            window.location.href = `/making-episode/${newProductId}`;
+            return;
+          }
           window.location.href = "/product/author";
         },
         onError: (error: any) => {
@@ -619,6 +629,7 @@ const FormArea = ({ productId }: Props) => {
     }
   };
   const onError = (errors: Record<string, any>) => {
+    submitIntentRef.current = "default";
     const errorKeys = Object.keys(errors);
     const firstErrorName = getFirstErrorName(errors);
     const firstErrorMessage = getErrorMessage(
@@ -1471,6 +1482,9 @@ const FormArea = ({ productId }: Props) => {
           isDirty={formState.isDirty}
           isSubmitting={isSubmitting}
           isCoverUploading={isCoverUploading}
+          onSubmitIntentChange={(intent) => {
+            submitIntentRef.current = intent;
+          }}
         />
       </form>
       <Modal size="md" />

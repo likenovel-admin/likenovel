@@ -9,9 +9,11 @@ import {
   ISelectMakingProductResponse,
   ISelectMySummaryResponse,
   ISelectPresignedFilePathResponse,
+  IProductMutationResponse,
   IUpdateProductRequest,
   IValidateCpNicknameResponse,
 } from "./dto";
+import type { AxiosResponse } from "axios";
 
 export const useSelectPresignedFilePath = () => {
   return useMutation<ISelectPresignedFilePathResponse, Error, string>({
@@ -81,9 +83,12 @@ export const useValidateCpNickname = () => {
 };
 
 export const useMakeProduct = () => {
-  return useMutation<unknown, Error, IMakeProductRequest>({
+  return useMutation<AxiosResponse<IProductMutationResponse>, Error, IMakeProductRequest>({
     mutationFn: async (data: IMakeProductRequest) => {
-      return await instance.post("/v1/command/products", data);
+      return await instance.post<IProductMutationResponse>(
+        "/v1/command/products",
+        data
+      );
     },
   });
 };

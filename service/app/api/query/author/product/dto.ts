@@ -43,6 +43,10 @@ export interface IMakeProductRequest {
   product_type?: "normal" | null;
 }
 
+export interface IProductMutationResponse {
+  data: { product_id: number };
+}
+
 export interface ISelectEpisodeCountResponse {
   data: { hasEpisodeCount: number };
 }

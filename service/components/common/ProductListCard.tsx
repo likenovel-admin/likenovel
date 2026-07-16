@@ -138,6 +138,7 @@ const ProductListCard = ({
     data.state.convertToPaidState !== "review" &&
     data.state.convertToPaidState !== "approval" &&
     data.state.canApplyForPaid === true;
+  const episodeCount = data.trendindex?.hasEpisodeCount ?? 0;
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
   const navigateToProductDetail = () => {
     if (entrySource) {
@@ -278,14 +279,18 @@ const ProductListCard = ({
     <>
       <div
         ref={aiLibrarianDwellRef}
-        className={`relative flex w-full justify-between min-h-[155px] md:min-h-[208px] rounded-[10px] md:border border-light-gray-500 ${
+        className={`relative flex w-full justify-between rounded-[10px] md:border border-light-gray-500 ${
+          isAuthorPage
+            ? "min-h-[210px] flex-wrap md:min-h-[260px]"
+            : "min-h-[155px] md:min-h-[208px]"
+        } ${
           isAuthorPage ? "" : "cursor-pointer"
         }  md:hover:shadow-lg`}
       >
         <div
           className={`relative flex items-start ${
             isAuthorPage ? "w-[60%] cursor-pointer" : "w-full"
-          }  gap-12pxr md:gap-20pxr p-[16px] md:p-[20px]`}
+          } gap-12pxr md:gap-20pxr p-[16px] md:p-[20px]`}
           onClick={() => {
             // Navigate to author page if user is the product author (in review page context)
             // Otherwise navigate to regular product detail page
@@ -313,7 +318,14 @@ const ProductListCard = ({
           )}
           <div
             className="relative min-w-[86px] md:min-w-[110px] h-[130px] md:h-[166px] rounded-[10px] overflow-hidden"
-            onClick={() => {
+            onClick={(event) => {
+              if (isAuthorPage) {
+                event.stopPropagation();
+                router.push(
+                  `/product/author/episode-manager/${data.productId}`
+                );
+                return;
+              }
               setIsClicked(!isClicked);
             }}
           >
@@ -581,77 +593,6 @@ const ProductListCard = ({
                   </div>
                 )}
 
-                {canShowApplyNormalButton ? (
-                  <div className="md:hidden flex gap-12pxr items-center">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="flex w-[130px] gap-5pxr text-12pxr font-normal"
-                      onClick={handleOpenGeneralPromotion}
-                    >
-                      <Medal />
-                      일반 승급 신청
-                    </Button>
-                    <button
-                      className={`flex justify-center items-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
-                        isOpenHelper.isOpen
-                          ? "bg-black-100 hover:bg-dark-gray-600"
-                          : "hover:bg-light-gray-100"
-                      }`}
-                      onClick={() => {
-                        setIsOpenHelper({
-                          type: "normal",
-                          isOpen: !isOpenHelper.isOpen,
-                        });
-                      }}
-                    >
-                      <ExclamationMark
-                        className={`${
-                          isOpenHelper.isOpen
-                            ? "text-white"
-                            : "text-dark-gray-300"
-                        }`}
-                      />
-                    </button>
-                  </div>
-                ) : canShowApplyPaidButton ? (
-                  <div className="md:hidden flex gap-12pxr items-center">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="flex w-[135px] gap-5pxr text-12pxr font-normal"
-                      onClick={handleOpenApplyPaid}
-                    >
-                      <div className="flex justify-center items-center w-[18px] h-[18px] bg-[#FFBC39] rounded-full">
-                        <Won className="w-[11px] h-[6px] ml-[1px]" />
-                      </div>
-                      유료 전환 신청
-                    </Button>
-                    <button
-                      className={`flex justify-center items-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
-                        isOpenHelper.isOpen
-                          ? "bg-black-100 hover:bg-dark-gray-600"
-                          : "hover:bg-light-gray-100"
-                      }`}
-                      onClick={() => {
-                        setIsOpenHelper({
-                          type: "paid",
-                          isOpen: !isOpenHelper.isOpen,
-                        });
-                      }}
-                    >
-                      <ExclamationMark
-                        className={`${
-                          isOpenHelper.isOpen
-                            ? "text-white"
-                            : "text-dark-gray-300"
-                        }`}
-                      />
-                    </button>
-                  </div>
-                ) : (
-                  ""
-                )}
               </>
             ) : (
               <>
@@ -712,72 +653,6 @@ const ProductListCard = ({
             )}
           </div>
         </div>
-        {isAuthorPage &&
-          (canShowApplyNormalButton ? (
-            <div className="hidden md:flex absolute bottom-[30px] right-[230px] gap-12pxr items-center">
-              <button
-                className={`flex justify-center items-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
-                  isOpenHelper.isOpen
-                    ? "bg-black-100 hover:bg-dark-gray-600"
-                    : "hover:bg-light-gray-100"
-                }`}
-                onClick={() => {
-                  setIsOpenHelper({
-                    type: "normal",
-                    isOpen: !isOpenHelper.isOpen,
-                  });
-                }}
-              >
-                <ExclamationMark
-                  className={`${
-                    isOpenHelper.isOpen ? "text-white" : "text-dark-gray-300"
-                  }`}
-                />
-              </button>
-              <Button
-                variant="secondary"
-                className="flex w-[130px] gap-5pxr text-14pxr font-normal"
-                onClick={handleOpenGeneralPromotion}
-              >
-                <Medal />
-                일반 승급 신청
-              </Button>
-            </div>
-          ) : canShowApplyPaidButton ? (
-            <div className="hidden md:flex absolute bottom-[30px] right-[230px] gap-12pxr items-center">
-              <button
-                className={`flex justify-center items-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
-                  isOpenHelper.isOpen
-                    ? "bg-black-100 hover:bg-dark-gray-600"
-                    : "hover:bg-light-gray-100"
-                }`}
-                onClick={() => {
-                  setIsOpenHelper({
-                    type: "paid",
-                    isOpen: !isOpenHelper.isOpen,
-                  });
-                }}
-              >
-                <ExclamationMark
-                  className={`${
-                    isOpenHelper.isOpen ? "text-white" : "text-dark-gray-300"
-                  }`}
-                />
-              </button>
-              <Button
-                variant="secondary"
-                className="flex w-[135px] gap-5pxr text-14pxr font-normal"
-                onClick={handleOpenApplyPaid}
-              >
-                <div className="flex justify-center items-center w-[18px] h-[18px] bg-[#FFBC39] rounded-full">
-                  <Won className="w-[11px] h-[6px] ml-[1px]" />
-                </div>
-                유료 전환 신청
-              </Button>
-            </div>
-          ) : (
-            ""
-          ))}
         {isAuthorPage &&
           data?.productType === "normal" &&
           data.state &&
@@ -1045,6 +920,111 @@ const ProductListCard = ({
               />
             </div>
           </>
+        )}
+
+        {isAuthorPage && (
+          <div className="flex w-full flex-col items-center gap-10pxr px-16pxr pb-16pxr md:px-20pxr md:pb-20pxr">
+            <div className="flex items-center justify-center gap-8pxr">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="min-w-[120px] px-20pxr"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  router.push(
+                    `/product/author/episode-manager/${data.productId}`
+                  );
+                }}
+              >
+                작품관리
+              </Button>
+              <Button
+                type="button"
+                variant={episodeCount === 0 ? "primary" : "black"}
+                size="sm"
+                className="min-w-[150px] px-24pxr"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  router.push(`/making-episode/${data.productId}`);
+                }}
+              >
+                {episodeCount === 0 ? "신규회차쓰기" : "회차쓰기"}
+              </Button>
+            </div>
+
+            {canShowApplyNormalButton ? (
+              <div className="flex items-center gap-12pxr">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="flex w-[130px] gap-5pxr text-12pxr md:text-14pxr font-normal"
+                  onClick={handleOpenGeneralPromotion}
+                >
+                  <Medal />
+                  일반 승급 신청
+                </Button>
+                <button
+                  type="button"
+                  className={`flex justify-center items-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
+                    isOpenHelper.isOpen
+                      ? "bg-black-100 hover:bg-dark-gray-600"
+                      : "hover:bg-light-gray-100"
+                  }`}
+                  onClick={() => {
+                    setIsOpenHelper({
+                      type: "normal",
+                      isOpen: !isOpenHelper.isOpen,
+                    });
+                  }}
+                >
+                  <ExclamationMark
+                    className={`${
+                      isOpenHelper.isOpen
+                        ? "text-white"
+                        : "text-dark-gray-300"
+                    }`}
+                  />
+                </button>
+              </div>
+            ) : canShowApplyPaidButton ? (
+              <div className="flex items-center gap-12pxr">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="flex w-[135px] gap-5pxr text-12pxr md:text-14pxr font-normal"
+                  onClick={handleOpenApplyPaid}
+                >
+                  <div className="flex justify-center items-center w-[18px] h-[18px] bg-[#FFBC39] rounded-full">
+                    <Won className="w-[11px] h-[6px] ml-[1px]" />
+                  </div>
+                  유료 전환 신청
+                </Button>
+                <button
+                  type="button"
+                  className={`flex justify-center items-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
+                    isOpenHelper.isOpen
+                      ? "bg-black-100 hover:bg-dark-gray-600"
+                      : "hover:bg-light-gray-100"
+                  }`}
+                  onClick={() => {
+                    setIsOpenHelper({
+                      type: "paid",
+                      isOpen: !isOpenHelper.isOpen,
+                    });
+                  }}
+                >
+                  <ExclamationMark
+                    className={`${
+                      isOpenHelper.isOpen
+                        ? "text-white"
+                        : "text-dark-gray-300"
+                    }`}
+                  />
+                </button>
+              </div>
+            ) : null}
+          </div>
         )}
 
         {isAuthorPage && isOpenHelper.isOpen && (

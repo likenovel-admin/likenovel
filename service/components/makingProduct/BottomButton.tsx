@@ -6,12 +6,14 @@ interface Props {
   isDirty?: boolean;
   isSubmitting?: boolean;
   isCoverUploading?: boolean;
+  onSubmitIntentChange: (intent: "default" | "episode") => void;
 }
 
 const BottomButton = ({
   isDirty,
   isSubmitting = false,
   isCoverUploading = false,
+  onSubmitIntentChange,
 }: Props) => {
   const router = useRouter();
   const { setConfirm } = useConfirmStore();
@@ -43,7 +45,7 @@ const BottomButton = ({
 
   return (
     <div className="flex gap-1 w-full justify-center pt-8 px-16pxr pb-16pxr bg-[#F7F8FA] ">
-      <div className="hidden md:flex md:max-w-[50%] gap-1 w-full">
+      <div className="hidden md:flex md:max-w-[65%] gap-1 w-full">
         <Button
           type="button"
           className="flex-[35] rounded-[14px]"
@@ -54,31 +56,55 @@ const BottomButton = ({
           취소
         </Button>
         <Button
-          className="flex-[65] rounded-[14px]"
+          className="flex-[30] rounded-[14px]"
           size={"xl"}
           disabled={isSubmitDisabled}
           isLoading={isSubmitting}
+          onClick={() => onSubmitIntentChange("default")}
         >
           {submitLabel}
         </Button>
-      </div>
-      <div className="flex md:hidden gap-1 w-full">
         <Button
-          type="button"
-          className="flex-[15]"
-          variant="secondary"
-          size={"md"}
-          onClick={handleCancel}
+          variant="black"
+          className="flex-[40] rounded-[14px]"
+          size={"xl"}
+          disabled={isSubmitDisabled}
+          isLoading={isSubmitting}
+          onClick={() => onSubmitIntentChange("episode")}
         >
-          취소
+          저장하고 회차쓰기
         </Button>
+      </div>
+      <div className="flex md:hidden flex-col gap-1 w-full">
+        <div className="flex gap-1 w-full">
+          <Button
+            type="button"
+            className="flex-[30]"
+            variant="secondary"
+            size={"md"}
+            onClick={handleCancel}
+          >
+            취소
+          </Button>
+          <Button
+            className="flex-[70]"
+            size={"md"}
+            disabled={isSubmitDisabled}
+            isLoading={isSubmitting}
+            onClick={() => onSubmitIntentChange("default")}
+          >
+            {submitLabel}
+          </Button>
+        </div>
         <Button
-          className="flex-[85]"
+          variant="black"
+          className="w-full"
           size={"md"}
           disabled={isSubmitDisabled}
           isLoading={isSubmitting}
+          onClick={() => onSubmitIntentChange("episode")}
         >
-          {submitLabel}
+          저장하고 회차쓰기
         </Button>
       </div>
     </div>

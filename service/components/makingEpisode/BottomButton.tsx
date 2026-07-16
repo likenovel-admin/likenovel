@@ -8,6 +8,7 @@ type Props = {
   actionType?: "save" | "submit";
   isSubmitting?: boolean;
   isActionDisabled?: boolean;
+  productId?: number;
 };
 
 const BottomButton = ({
@@ -17,8 +18,14 @@ const BottomButton = ({
   actionType,
   isSubmitting,
   isActionDisabled,
+  productId,
 }: Props) => {
   const router = useRouter();
+  const handleCancel = () => {
+    if (!productId) return;
+    router.push(`/product/author/episode-manager/${productId}`);
+  };
+
   return (
     <div className="flex gap-1 w-full justify-center pt-[80px] px-16pxr pb-16pxr bg-white">
       <div className="hidden md:flex md:max-w-[70%] gap-8pxr w-full">
@@ -50,7 +57,7 @@ const BottomButton = ({
               className="flex-1 rounded-[14px]"
               variant="secondary"
               size={"xl"}
-              onClick={() => router.back()}
+              onClick={handleCancel}
               type="button"
               disabled={isSubmitting || isActionDisabled}
             >
@@ -98,7 +105,7 @@ const BottomButton = ({
               variant="secondary"
               size={"md"}
               type="button"
-              onClick={() => router.back()}
+              onClick={handleCancel}
               disabled={isSubmitting}
             >
               취소

@@ -729,6 +729,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
         {actionType === "save" ? (
           <BottomButton
             actionType="save"
+            productId={productId}
             isSubmitting={isMutating}
             isActionDisabled={isReserveScheduleInvalid}
             onSave={() => handleSubmit(handleSave, onError)()}
@@ -737,6 +738,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
         ) : (
           <BottomButton
             actionType="submit"
+            productId={productId}
             isSubmitting={isMutating}
             isActionDisabled={isReserveScheduleInvalid}
             onSave={() => handleSubmit(handleSave, onError)()}
