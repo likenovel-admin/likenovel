@@ -1,6 +1,5 @@
 "use client";
 import LastPageNotice from "@/components/common/LastPageNotice";
-import { ADMIN_EMAIL } from "@/constants/common";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import MobileFooter from "./MobileFooter";
@@ -100,7 +99,7 @@ const Footer = () => {
                   <Arrow />
                 </button>
                 <a
-                  href={ADMIN_EMAIL}
+                  href="/product/customer-service/inquiry"
                   className="flex justify-center items-center gap-[9px] text-white text-14pxr border border-dark-gray-400 rounded-lg px-[22px] py-[8px] hover:bg-black-100"
                 >
                   1:1고객상담
