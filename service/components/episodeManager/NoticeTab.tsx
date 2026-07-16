@@ -9,6 +9,7 @@ import Button from "../common/Button";
 import RoundBadge from "../common/RoundBadge";
 import SimpleMenu from "../common/SimpleMenu";
 import ArrowUpDown from "/public/images/arrow-up-down.svg";
+import Write from "/public/images/write.svg";
 
 interface NoticeTabProps {
   notices: INotice[];
@@ -130,11 +131,11 @@ const NoticeItem = ({ notice }: INoticeItemProps) => {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="text-12pxr md:text-14pxr font-semibold underline underline-offset-2"
+            className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-light-gray-100"
             onClick={handleOpenEditNotice}
             aria-label={`공지 수정: ${notice.subject}`}
           >
-            수정
+            <Write className="h-[17px] w-[17px]" aria-hidden="true" />
           </button>
           <SimpleMenu
             menuList={[
