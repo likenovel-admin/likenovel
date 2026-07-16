@@ -362,7 +362,7 @@ const Editor = ({ value, onChange, preferPlainTextPaste = false }: Props) => {
         />
       </div>
       <div
-        className={`editor-container w-full rounded-b-[6px] min-h-[500px] max-h-[880px] md:h-[500px] md:min-h-[100px] md:max-h-none md:resize-y overflow-y-auto pb-[45px] ${
+        className={`editor-container w-full rounded-b-[6px] min-h-[500px] max-h-[880px] md:h-[500px] md:min-h-[100px] md:max-h-none md:resize-y overflow-y-auto pb-[45px] cursor-text ${
           isFocused
             ? "border-[2px] border-primary-100"
             : "border border-light-gray-500"
@@ -370,7 +370,7 @@ const Editor = ({ value, onChange, preferPlainTextPaste = false }: Props) => {
       >
         <EditorContent
           editor={editor}
-          className="episode-editor prose max-w-full w-full px-4 py-2 focus:border-primary-100"
+          className="episode-editor prose max-w-full w-full h-full min-h-[455px] px-4 py-2 cursor-text focus:border-primary-100 [&_.ProseMirror]:h-full [&_.ProseMirror]:min-h-[439px] [&_.ProseMirror]:cursor-text"
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
         />
