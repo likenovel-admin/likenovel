@@ -130,6 +130,9 @@ export default function Page() {
   const rows = data?.results ?? [];
   const totalPages = Math.max(1, Math.ceil((data?.total_count ?? 0) / PAGE_SIZE));
   const roster = rosterData?.data ?? [];
+  const selectedCharacter = roster.find(
+    (item) => item.scopeKey === characterScopeKey
+  );
   const productResults = productListData?.results ?? [];
   const productTotalPages = Math.max(
     1,
@@ -451,17 +454,26 @@ export default function Page() {
                               ? "선택 가능한 인물이 없습니다"
                               : "노출할 인물을 선택해 주세요"
                       }
-                    />
+                    >
+                      {selectedCharacter?.displayName}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {roster.map((item) => (
-                      <SelectItem key={item.scopeKey} value={item.scopeKey}>
-                        {item.displayName}
-                        {item.aliases.length > 0
-                          ? ` (${item.aliases.join(", ")})`
-                          : ""}
-                      </SelectItem>
-                    ))}
+                    {roster.map((item) => {
+                      const aliases = item.aliases.filter(
+                        (alias) => alias !== item.displayName
+                      );
+                      return (
+                        <SelectItem key={item.scopeKey} value={item.scopeKey}>
+                          <span>{item.displayName}</span>
+                          {aliases.length > 0 ? (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              ({aliases.join(", ")})
+                            </span>
+                          ) : null}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>

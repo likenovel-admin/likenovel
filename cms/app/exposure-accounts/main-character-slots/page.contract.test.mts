@@ -65,6 +65,16 @@ assert.match(
   "CMS should disable the character dropdown until a selectable roster is ready"
 );
 assert.match(
+  pageSource,
+  /\{selectedCharacter\?\.displayName\}/,
+  "CMS should show only the canonical display name in the selected value"
+);
+assert.match(
+  pageSource,
+  /item\.aliases\.filter\(\s*\(alias\) => alias !== item\.displayName\s*\)/,
+  "CMS should remove the canonical display name from alias helper text"
+);
+assert.match(
   apiSource,
   /\/v1\/command\/admins\/main-character-slots\/publish-now/,
   "CMS should support immediate publication without replacing another card"
