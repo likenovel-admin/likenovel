@@ -44,6 +44,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { prepareCharacterImageFromCover } from "@/lib/imageOptimize";
 import { catchErrorMessage, confirm, showAlert } from "@/lib/utils";
 import { format } from "date-fns";
 import { Check, Loader2 } from "lucide-react";
@@ -178,16 +179,29 @@ export default function Page() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const uploadCharacterImage = async () => {
-    if (!characterImage) return undefined;
+  const uploadCharacterImage = async (
+    product: IMainCharacterSlotProduct,
+  ) => {
+    if (!characterImage && editingSlot) return undefined;
+
+    const uploadableImage = characterImage
+      ? {
+          file: characterImage,
+          fileName: characterImage.name,
+          contentType: characterImage.type || "application/octet-stream",
+        }
+      : await prepareCharacterImageFromCover(
+          getCdnUrl(product.coverImagePath),
+          product.productId,
+        );
     const upload = await createUpload.mutateAsync({
       group_type: "character",
-      file_name: characterImage.name,
+      file_name: uploadableImage.fileName,
     });
     await updateUpload.mutateAsync({
       url: upload.data.uploadPath,
-      file: characterImage,
-      file_type: characterImage.type || "application/octet-stream",
+      file: uploadableImage.file,
+      file_type: uploadableImage.contentType,
     });
     return upload.data.fileId;
   };
@@ -195,10 +209,6 @@ export default function Page() {
   const buildRequest = async (requireStart: boolean) => {
     if (!selectedProduct || !characterScopeKey) {
       showAlert("오류", "작품과 주인공을 선택해 주세요.", "확인");
-      return null;
-    }
-    if (!editingSlot && !characterImage) {
-      showAlert("오류", "캐릭터 이미지를 선택해 주세요.", "확인");
       return null;
     }
     const order = Number(cardOrder);
@@ -219,7 +229,7 @@ export default function Page() {
       return null;
     }
 
-    const imageFileId = await uploadCharacterImage();
+    const imageFileId = await uploadCharacterImage(selectedProduct);
     return {
       product_id: selectedProduct.productId,
       character_scope_key: characterScopeKey,
@@ -466,6 +476,9 @@ export default function Page() {
                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                   disabled={isSaving}
                 />
+                <p className="text-xs text-muted-foreground">
+                  미등록 시 작품 표지를 상단 기준으로 자동 크롭합니다.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="character-card-order">카드 순서</Label>
