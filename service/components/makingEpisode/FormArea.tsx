@@ -229,6 +229,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
       category: "notice",
       title: data.data.title,
       content: data.data.content,
+      isEpisodeOpen: data.data.openYn,
       hasPublishEpisodeDate: data.data.publishReserveYn,
       publishEpisodeDate: normalizePublishReserveDate(
         data.data.publishReserveDate
