@@ -76,6 +76,26 @@ assert.match(
 );
 assert.match(
   pageSource,
+  /prepareCharacterImageFromCover/,
+  "CMS should generate a character image from the selected cover when no portrait is uploaded"
+);
+assert.match(
+  pageSource,
+  /getCdnUrl\(product\.coverImagePath\)/,
+  "CMS should use the selected product cover for automatic character image generation"
+);
+assert.doesNotMatch(
+  pageSource,
+  /캐릭터 이미지를 선택해 주세요\./,
+  "Character image upload must remain optional"
+);
+assert.match(
+  pageSource,
+  /미등록 시 작품 표지를 상단 기준으로 자동 크롭합니다\./,
+  "CMS should explain the automatic cover crop behavior"
+);
+assert.match(
+  pageSource,
   /character_scope_key:\s*characterScopeKey/,
   "The selected canonical character scope should be sent to the backend"
 );

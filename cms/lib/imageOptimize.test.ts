@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { calculateImageResizeDimensions } from "./imageOptimize.ts";
+import {
+  calculateImageResizeDimensions,
+  calculateTopCropSourceRect,
+} from "./imageOptimize.ts";
 
 const source = readFileSync(new URL("./imageOptimize.ts", import.meta.url), "utf8");
 const coverUploadSource = source.slice(
@@ -31,6 +34,27 @@ assert.deepEqual(calculateImageResizeDimensions(3000, 1200, 1024), {
   height: 410,
 });
 
+assert.deepEqual(calculateTopCropSourceRect(717, 1024, 364, 414), {
+  x: 0,
+  y: 0,
+  width: 717,
+  height: 815,
+});
+
+assert.deepEqual(calculateTopCropSourceRect(1200, 800, 364, 414), {
+  x: 248,
+  y: 0,
+  width: 703,
+  height: 800,
+});
+
+assert.deepEqual(calculateTopCropSourceRect(364, 414, 364, 414), {
+  x: 0,
+  y: 0,
+  width: 364,
+  height: 414,
+});
+
 assert.match(source, /blob\.type !== WEBP_MIME_TYPE/);
 assert.match(source, /const BANNER_WEBP_QUALITY = 0\.95/);
 assert.match(source, /const COVER_WEBP_QUALITY = 0\.92/);
@@ -49,3 +73,10 @@ assert.match(
 );
 assert.doesNotMatch(coverUploadSource, /원본으로 업로드합니다/);
 assert.doesNotMatch(coverUploadSource, /fileName: file\.name/);
+assert.match(source, /export async function prepareCharacterImageFromCover/);
+assert.match(source, /fetch\(coverImageUrl,\s*\{\s*credentials: "omit"\s*\}\)/);
+assert.match(source, /const CHARACTER_IMAGE_WIDTH = 728/);
+assert.match(source, /const CHARACTER_IMAGE_HEIGHT = 828/);
+assert.match(source, /canvas\.width = CHARACTER_IMAGE_WIDTH/);
+assert.match(source, /canvas\.height = CHARACTER_IMAGE_HEIGHT/);
+assert.match(source, /character-\$\{productId\}\.webp/);

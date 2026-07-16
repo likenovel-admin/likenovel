@@ -2,6 +2,8 @@ const BANNER_WEBP_QUALITY = 0.95;
 const COVER_WEBP_QUALITY = 0.92;
 const WEBP_MIME_TYPE = "image/webp";
 export const PRODUCT_COVER_MAX_IMAGE_DIMENSION = 1024;
+const CHARACTER_IMAGE_WIDTH = 728;
+const CHARACTER_IMAGE_HEIGHT = 828;
 
 type UploadableImageFile = {
   file: File;
@@ -42,6 +44,48 @@ export const calculateImageResizeDimensions = (
   return {
     width: Math.max(1, Math.round(width * scale)),
     height: Math.max(1, Math.round(height * scale)),
+  };
+};
+
+export const calculateTopCropSourceRect = (
+  sourceWidth: number,
+  sourceHeight: number,
+  targetWidth: number,
+  targetHeight: number,
+) => {
+  if (
+    sourceWidth <= 0 ||
+    sourceHeight <= 0 ||
+    targetWidth <= 0 ||
+    targetHeight <= 0
+  ) {
+    throw new Error("이미지 크기가 올바르지 않습니다.");
+  }
+
+  const sourceAspectRatio = sourceWidth / sourceHeight;
+  const targetAspectRatio = targetWidth / targetHeight;
+
+  if (sourceAspectRatio > targetAspectRatio) {
+    const width = Math.min(
+      sourceWidth,
+      Math.round(sourceHeight * targetAspectRatio),
+    );
+    return {
+      x: Math.floor((sourceWidth - width) / 2),
+      y: 0,
+      width,
+      height: sourceHeight,
+    };
+  }
+
+  return {
+    x: 0,
+    y: 0,
+    width: sourceWidth,
+    height: Math.min(
+      sourceHeight,
+      Math.round(sourceWidth / targetAspectRatio),
+    ),
   };
 };
 
@@ -194,5 +238,73 @@ export async function prepareCoverImageForUpload(
   } catch (error) {
     console.error("표지 이미지 webp 변환 실패", error);
     throw new Error("표지 이미지 변환에 실패했습니다.");
+  }
+}
+
+export async function prepareCharacterImageFromCover(
+  coverImageUrl: string,
+  productId: number,
+): Promise<UploadableImageFile> {
+  if (!coverImageUrl) {
+    throw new Error(
+      "선택한 작품에 표지 이미지가 없습니다. 캐릭터 이미지를 직접 등록해 주세요.",
+    );
+  }
+
+  try {
+    const response = await fetch(coverImageUrl, { credentials: "omit" });
+    if (!response.ok) {
+      throw new Error(`표지 이미지 응답 오류: ${response.status}`);
+    }
+
+    const sourceBlob = await response.blob();
+    if (!sourceBlob.type.startsWith("image/")) {
+      throw new Error("표지 파일이 이미지 형식이 아닙니다.");
+    }
+
+    const sourceFile = new File([sourceBlob], `cover-${productId}`, {
+      type: sourceBlob.type,
+    });
+    const image = await loadImageBitmap(sourceFile);
+    const sourceRect = calculateTopCropSourceRect(
+      image.naturalWidth || image.width,
+      image.naturalHeight || image.height,
+      CHARACTER_IMAGE_WIDTH,
+      CHARACTER_IMAGE_HEIGHT,
+    );
+    const canvas = document.createElement("canvas");
+    canvas.width = CHARACTER_IMAGE_WIDTH;
+    canvas.height = CHARACTER_IMAGE_HEIGHT;
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("이미지 변환 컨텍스트를 만들 수 없습니다.");
+    }
+
+    context.drawImage(
+      image,
+      sourceRect.x,
+      sourceRect.y,
+      sourceRect.width,
+      sourceRect.height,
+      0,
+      0,
+      CHARACTER_IMAGE_WIDTH,
+      CHARACTER_IMAGE_HEIGHT,
+    );
+
+    const blob = await canvasToWebpBlob(canvas, COVER_WEBP_QUALITY);
+    const fileName = `character-${productId}.webp`;
+
+    return {
+      file: new File([blob], fileName, { type: WEBP_MIME_TYPE }),
+      fileName,
+      contentType: WEBP_MIME_TYPE,
+    };
+  } catch (error) {
+    console.error("표지 기반 캐릭터 이미지 생성 실패", error);
+    throw new Error(
+      "표지 이미지로 캐릭터 이미지를 만들지 못했습니다. 캐릭터 이미지를 직접 등록해 주세요.",
+    );
   }
 }
