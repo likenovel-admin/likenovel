@@ -50,6 +50,11 @@ assert.match(
   /initialProduct=\{initialProduct\}/,
   "server-rendered product data should be passed to the client detail surface"
 );
+assert.match(
+  serverPageSource,
+  /initialSearchParamString=\{initialSearchParamString\}/,
+  "server-rendered product detail should pass query state without a client rendering bailout"
+);
 assert.doesNotMatch(
   serverPageSource,
   /Authorization|cookies\(|headers\(/,
@@ -64,6 +69,11 @@ assert.match(
   source,
   /data\?\.data\.product \?\? initialProduct/,
   "authenticated product detail should replace the public render shell when ready"
+);
+assert.doesNotMatch(
+  source,
+  /useSearchParams/,
+  "product detail should not opt the server-rendered cover into client-only rendering"
 );
 assert.match(
   productCoverAreaSource,
