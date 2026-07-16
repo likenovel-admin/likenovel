@@ -1,4 +1,3 @@
-import { ADMIN_EMAIL } from "@/constants/common";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useMemo } from "react";
 import Tab from "../common/Tab";
@@ -18,12 +17,7 @@ const CustomerServiceLayout = ({
   }, [pathName]);
 
   const handleTabChange = (value: string) => {
-    if (value === "inquiry") {
-      // Open email client for 1:1 inquiry
-      window.location.href = ADMIN_EMAIL;
-    } else {
-      router.push(`/product/customer-service/${value}`);
-    }
+    router.push(`/product/customer-service/${value}`);
   };
 
   return (
@@ -47,9 +41,6 @@ const CustomerServiceLayout = ({
             },
           ]}
           style="black"
-          // onTabChange={(value) => {
-          //   router.push(`/product/customer-service/${value}`);
-          // }}
           onTabChange={handleTabChange}
           activeTab={tabName ?? "notice"}
         />

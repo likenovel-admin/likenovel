@@ -127,20 +127,30 @@ const NoticeItem = ({ notice }: INoticeItemProps) => {
             {notice.open_yn === "Y" && <RoundBadge type="release" />}
           </div>
         </div>
-        <SimpleMenu
-          menuList={[
-            {
-              title: "수정",
-              onClick() {
-                handleOpenEditNotice();
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="text-12pxr md:text-14pxr font-semibold underline underline-offset-2"
+            onClick={handleOpenEditNotice}
+            aria-label={`공지 수정: ${notice.subject}`}
+          >
+            수정
+          </button>
+          <SimpleMenu
+            menuList={[
+              {
+                title: "수정",
+                onClick() {
+                  handleOpenEditNotice();
+                },
               },
-            },
-            {
-              title: notice.open_yn === "Y" ? "비공개" : "공개",
-              onClick: handleToggleVisibility,
-            },
-          ]}
-        />
+              {
+                title: notice.open_yn === "Y" ? "비공개" : "공개",
+                onClick: handleToggleVisibility,
+              },
+            ]}
+          />
+        </div>
       </div>
       {notice.publish_reserve_date ? (
         <span className="text-primary-100 text-11pxr md:text-13pxr">
