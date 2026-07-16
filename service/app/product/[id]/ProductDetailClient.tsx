@@ -67,17 +67,19 @@ import {
   type GuestReadProgressRecord,
 } from "@/utils/guestReadProgress";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface Props {
   productId: number;
   initialProduct: IProduct | null;
+  initialSearchParamString: string;
 }
 
 export default function ProductDetailClient({
   productId,
   initialProduct,
+  initialSearchParamString,
 }: Props) {
   const { user, isAuthenticated, accessToken, isAuthInitialized } = useAuthStore((state) => ({
     user: state.user,
@@ -91,8 +93,11 @@ export default function ProductDetailClient({
     isAuthInitialized && !!accessToken && isAuthenticated && !user?.userId;
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const searchParamString = searchParams.toString();
+  const searchParams = useMemo(
+    () => new URLSearchParams(initialSearchParamString),
+    [initialSearchParamString]
+  );
+  const searchParamString = initialSearchParamString;
   const entrySourceParam = searchParams.get("entrySource");
   const focusParam = searchParams.get("focus");
   const shouldPrioritizeAiLibrarian = shouldFocusAiLibrarian(focusParam);

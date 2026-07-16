@@ -5,6 +5,7 @@ interface Props {
   params: {
     id: string;
   };
+  searchParams?: Record<string, string | string[] | undefined>;
 }
 
 interface ProductDetailShellResponse {
@@ -51,14 +52,30 @@ const getInitialProduct = async (productId: number): Promise<IProduct | null> =>
   }
 };
 
-export default async function ProductDetailPage({ params }: Props) {
+const getSearchParamString = (searchParams: Props["searchParams"]): string => {
+  const params = new URLSearchParams();
+
+  Object.entries(searchParams ?? {}).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      value.forEach((item) => params.append(key, item));
+    } else if (value !== undefined) {
+      params.set(key, value);
+    }
+  });
+
+  return params.toString();
+};
+
+export default async function ProductDetailPage({ params, searchParams }: Props) {
   const productId = Number(params.id);
   const initialProduct = await getInitialProduct(productId);
+  const initialSearchParamString = getSearchParamString(searchParams);
 
   return (
     <ProductDetailClient
       productId={productId}
       initialProduct={initialProduct}
+      initialSearchParamString={initialSearchParamString}
     />
   );
 }
