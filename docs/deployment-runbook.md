@@ -452,6 +452,10 @@ Story context 비용 가드:
 - `episode_character_signals`는 기본적으로 DeepSeek direct API(`DEEPSEEK_BASE_URL`, 기본 `https://api.deepseek.com`)의 `STORY_AGENT_RP_DEEPSEEK_FALLBACK_MODEL` 기본값 `deepseek-v4-pro`를 사용한다. `STORY_AGENT_RP_REASONING_MODEL`을 명시한 경우에만 Anthropic reasoning 경로를 먼저 탄다.
 - RP character plan/profile refresh는 `STORY_AGENT_RP_OPENROUTER_MODEL` 기본값 `google/gemma-4-31b-it`와 `STORY_AGENT_RP_OPENROUTER_PROVIDER_ONLY` 기본값 `deepinfra,together`를 사용한다. `deepinfra`를 우선하고 `together`만 제한 fallback으로 허용한다. `:free` 모델 변형은 사용하지 않는다.
 - RP plan/profile 결과가 없거나, 캐릭터 표시명이 일반어이거나, exact-match 대사 예시가 `STORY_AGENT_RP_PROFILE_MIN_EXAMPLES` 기본값 3개 미만이면 새 profile/example을 저장하지 않고 기존 active 값을 유지한다.
+- `character_inventory_v3`의 canonical key가 관측 순서 변화로 달라져도 unique source/identity alias가 있으면 기존 durable key를 승계한다. 이름만 같은 경우에는 자동 병합하지 않고 `identity_continuity_ambiguous`로 실패 처리한다.
+- 정상 delta는 이미 exact canonical key로 성공한 RP profile/example을 덮어쓰거나, 현재 후보에서 잠시 빠졌다는 이유로 기존 성공 자산을 비활성화하지 않는다. 새 key와 같은 인물임이 unique alias로 증명되면 기존 profile/example 쌍을 provider 호출 없이 새 key에 materialize한다.
+- 캐릭터챗 readiness가 `hold`/`failed`이거나 legacy key mismatch/identity ambiguity가 남으면 작품 context를 `failed`로 기록해 다음 delta가 재시도하게 한다. 다른 캐릭터 하나가 ready여도 mismatch를 작품 성공으로 숨기지 않는다.
+- 운영 감사는 `scripts/audit_character_chat_asset_readiness_db.py --fail-on-actionable`을 사용한다. 이는 DB read-only이며 `ops/monitor-prod/monitor.sh deep`에서만 실행한다. `quick`/`full`에는 추가하지 않는다.
 - 정상 비용가드 로그는 verbose 실행 기준 `[delta-rp-skip] product_id=... affected_scope_keys=...`다.
 - full build는 `STORYCTX_ALLOW_FULL=1` 없이는 차단된다. 수동 backfill 외에는 full build를 쓰지 않는다.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`의 cron 보장 로직은 기존 crontab에 같은 batch path가 있으면 건드리지 않는다. prod 배포 전후에는 반드시 `crontab -l`로 실제 active line이 위 기준인지 readback한다.
