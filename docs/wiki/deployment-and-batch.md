@@ -117,7 +117,9 @@ selects env by runtime directory:
 - Character identity continuity uses strong source/identity aliases to retain a
   durable `character_inventory_v3` key. Name-only matches fail closed, and
   normal delta preserves successful RP assets instead of deactivating or
-  overwriting them. `ops/monitor-prod/monitor.sh deep` runs the deployed
+  overwriting them. Existing drift may bridge from inactive inventory history
+  only when a stable source alias and an active RP asset pair both match.
+  `ops/monitor-prod/monitor.sh deep` runs the deployed
   read-only audit with `--fail-on-actionable`; `UNKNOWN` means the audit runtime
   itself could not be verified.
 - Batch docs must be refreshed whenever cron timing, lock behavior, max parallel,
