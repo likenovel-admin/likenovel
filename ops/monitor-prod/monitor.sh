@@ -10,7 +10,7 @@ source "$HERE/lib.sh"
 # 레벨별 체크 목록
 CHECKS_QUICK=(disk memory containers http_health actions)
 CHECKS_FULL=(disk memory containers http_health actions batch_recent journal_errors backend_process nginx_errors)
-CHECKS_DEEP=(disk memory containers http_health actions batch_recent journal_errors backend_process nginx_errors cpu_load network mysql_status ssl_cert websochat)
+CHECKS_DEEP=(disk memory containers http_health actions batch_recent journal_errors backend_process nginx_errors cpu_load network mysql_status ssl_cert websochat character_chat_assets)
 
 case "$LEVEL" in
   quick) CHECKS=("${CHECKS_QUICK[@]}") ;;

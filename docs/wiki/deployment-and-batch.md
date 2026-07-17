@@ -114,6 +114,12 @@ selects env by runtime directory:
 - Story context prod cron has live-state history and source fallback differences.
   Do not infer current max parallel from one file; verify active `crontab -l` and
   then compare with `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`.
+- Character identity continuity uses strong source/identity aliases to retain a
+  durable `character_inventory_v3` key. Name-only matches fail closed, and
+  normal delta preserves successful RP assets instead of deactivating or
+  overwriting them. `ops/monitor-prod/monitor.sh deep` runs the deployed
+  read-only audit with `--fail-on-actionable`; `UNKNOWN` means the audit runtime
+  itself could not be verified.
 - Batch docs must be refreshed whenever cron timing, lock behavior, max parallel,
   cost gates, runtime paths, or output tables change.
 
