@@ -20,3 +20,7 @@ assert.doesNotMatch(source, /variant="blueBorder"/);
 assert.doesNotMatch(source, /min-w-\[188px\]/);
 assert.doesNotMatch(source, /border-light-gray-500 bg-light-gray-100 px-9pxr/);
 assert.doesNotMatch(source, /websochat/i);
+assert.match(source, /isLoading\?: boolean/);
+assert.match(source, /AI 사서 브리핑 불러오는 중/);
+assert.match(source, /animate-pulse/);
+assert.match(source, /isLoading && !copy/);
