@@ -3,6 +3,10 @@ import { readFileSync } from "node:fs";
 
 const axiosSource = readFileSync(new URL("./axios/index.ts", import.meta.url), "utf8");
 const authStoreSource = readFileSync(new URL("../../store/authStore.ts", import.meta.url), "utf8");
+const authorHomeSource = readFileSync(
+  new URL("../product/author/page.tsx", import.meta.url),
+  "utf8"
+);
 
 assert.match(
   authStoreSource,
@@ -81,4 +85,38 @@ assert.doesNotMatch(
   clearStaleAuthBody,
   /recent_viewed_products/,
   "axios stale auth cleanup should preserve local recent-viewed signals"
+);
+
+const noRefreshTokenBranch = axiosSource.match(
+  /\/\/ refresh token 없음(?<body>[\s\S]*?)\n\s*}\n\s*}\n\s*return Promise\.reject/
+);
+
+assert.ok(
+  noRefreshTokenBranch?.groups?.body,
+  "axios interceptor should keep an explicit no-refresh-token branch"
+);
+assert.doesNotMatch(
+  noRefreshTokenBranch.groups.body,
+  /window\.location\.reload\(\)/,
+  "a 401 without a refresh token must not reload the protected page"
+);
+assert.match(
+  noRefreshTokenBranch.groups.body,
+  /window\.location\.href = `\/login\?redirect=\$\{currentUrl\}`/,
+  "a 401 without a refresh token should redirect to login once"
+);
+
+assert.match(authorHomeSource, /isAuthInitialized/);
+assert.match(authorHomeSource, /isAuthenticated/);
+assert.match(
+  authorHomeSource,
+  /router\.replace\("\/login\?redirect=%2Fproduct%2Fauthor"/
+);
+const authorAuthGuardIndex = authorHomeSource.indexOf(
+  "if (!isAuthInitialized || !isAuthenticated) return null;"
+);
+const authorProductAreaIndex = authorHomeSource.indexOf("<ProductArea />");
+assert.ok(
+  authorAuthGuardIndex >= 0 && authorAuthGuardIndex < authorProductAreaIndex,
+  "author home must block ProductArea before authenticated queries can render"
 );
