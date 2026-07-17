@@ -454,6 +454,7 @@ Story context 비용 가드:
 - RP plan/profile 결과가 없거나, 캐릭터 표시명이 일반어이거나, exact-match 대사 예시가 `STORY_AGENT_RP_PROFILE_MIN_EXAMPLES` 기본값 3개 미만이면 새 profile/example을 저장하지 않고 기존 active 값을 유지한다.
 - `character_inventory_v3`의 canonical key가 관측 순서 변화로 달라져도 unique source/identity alias가 있으면 기존 durable key를 승계한다. 이름만 같은 경우에는 자동 병합하지 않고 `identity_continuity_ambiguous`로 실패 처리한다.
 - 정상 delta는 이미 exact canonical key로 성공한 RP profile/example을 덮어쓰거나, 현재 후보에서 잠시 빠졌다는 이유로 기존 성공 자산을 비활성화하지 않는다. 새 key와 같은 인물임이 unique alias로 증명되면 기존 profile/example 쌍을 provider 호출 없이 새 key에 materialize한다.
+- 이미 key drift가 발생한 작품은 inactive `character_inventory_v3` history에서 현재 key와 같은 stable source alias를 공유하고, 그 historical scope에 active profile/example 쌍이 모두 있을 때만 현재 key로 복구한다. display name만 같은 history는 복구 근거로 쓰지 않는다.
 - 캐릭터챗 readiness가 `hold`/`failed`이거나 legacy key mismatch/identity ambiguity가 남으면 작품 context를 `failed`로 기록해 다음 delta가 재시도하게 한다. 다른 캐릭터 하나가 ready여도 mismatch를 작품 성공으로 숨기지 않는다.
 - 운영 감사는 `scripts/audit_character_chat_asset_readiness_db.py --fail-on-actionable`을 사용한다. 이는 DB read-only이며 `ops/monitor-prod/monitor.sh deep`에서만 실행한다. `quick`/`full`에는 추가하지 않는다.
 - 정상 비용가드 로그는 verbose 실행 기준 `[delta-rp-skip] product_id=... affected_scope_keys=...`다.
