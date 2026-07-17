@@ -151,6 +151,8 @@ export default function ProductDetailClient({
     productDetailCacheIdentity,
     isAuthInitialized && !isUserScopePending
   );
+  const canLoadAiBrief =
+    initialProduct?.productId === productId || isSuccess;
   const { setToast } = useToastStore();
   const { setHasNew } = useGiftBoxStore();
   const setAiLibrarianPanelOpen = useChatStore((state) => state.setIsOpen);
@@ -302,10 +304,10 @@ export default function ProductDetailClient({
     (productData?.seriesRegularPrice ?? 0) > 0
       ? productData?.seriesRegularPrice ?? 100
       : 100;
-  const { data: aiBriefsData } = useGetAiProductBriefs(
+  const { data: aiBriefsData, isFetching: isAiBriefLoading } = useGetAiProductBriefs(
     [productId],
     productData?.adultYn === "Y" ? "Y" : "N",
-    !!productId && isSuccess && shouldLoadSecondaryProductDetailData
+    !!productId && canLoadAiBrief
   );
   const aiLibrarianBrief = aiBriefsData?.data?.[0] ?? null;
   const aiLibrarianCopy = useMemo(
@@ -330,7 +332,7 @@ export default function ProductDetailClient({
   };
 
   useEffect(() => {
-    if (!isSuccess || !shouldPrioritizeAiLibrarian) return;
+    if (!aiLibrarianCopy || !shouldPrioritizeAiLibrarian) return;
 
     const timer = window.setTimeout(() => {
       aiLibrarianRef.current?.scrollIntoView({
@@ -340,7 +342,7 @@ export default function ProductDetailClient({
     }, 120);
 
     return () => window.clearTimeout(timer);
-  }, [isSuccess, shouldPrioritizeAiLibrarian]);
+  }, [aiLibrarianCopy, shouldPrioritizeAiLibrarian]);
 
   useEffect(() => {
     if (!pathname || typeof document === "undefined") {
@@ -885,13 +887,14 @@ export default function ProductDetailClient({
             backFallbackPath={productDetailBackFallbackPath}
           />
         </div>
-        {productData && aiLibrarianCopy && (
+        {productData && (isAiBriefLoading || aiLibrarianCopy) && (
           <div
             ref={aiLibrarianRef}
             className="w-full max-w-[800px] mt-20pxr md:mt-24pxr scroll-mt-[88px]"
           >
             <AiLibrarianDetailCard
               copy={aiLibrarianCopy}
+              isLoading={isAiBriefLoading && !aiLibrarianCopy}
               onAskMore={handleAskAiLibrarianMore}
             />
           </div>

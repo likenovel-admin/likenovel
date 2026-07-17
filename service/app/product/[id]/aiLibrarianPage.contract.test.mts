@@ -82,6 +82,28 @@ assert.match(
 );
 
 assert.match(source, /const aiLibrarianBrief = aiBriefsData\?\.data\?\.\[0\] \?\? null/);
+assert.match(
+  source,
+  /const canLoadAiBrief =\s*initialProduct\?\.productId === productId \|\| isSuccess;/,
+  "AI brief should use the initial product shell without waiting for details-group"
+);
+assert.match(
+  source,
+  /!!productId && canLoadAiBrief/,
+  "AI brief should start as soon as either the shell or full detail is available"
+);
+assert.doesNotMatch(
+  source,
+  /!!productId && isSuccess && shouldLoadSecondaryProductDetailData/,
+  "AI brief must not wait for the full detail response"
+);
+assert.match(source, /isFetching: isAiBriefLoading/);
+assert.match(source, /isLoading=\{isAiBriefLoading && !aiLibrarianCopy\}/);
+assert.match(
+  source,
+  /if \(!aiLibrarianCopy \|\| !shouldPrioritizeAiLibrarian\) return;/,
+  "Focused entry should scroll only after the brief copy is rendered"
+);
 assert.match(source, /aiLibrarianBrief\s+\?\s+buildAiLibrarianCopy/);
 assert.match(source, /openAiLibrarianPanel/);
 assert.doesNotMatch(source, /openAiLibrarianPanelOrLogin/);
