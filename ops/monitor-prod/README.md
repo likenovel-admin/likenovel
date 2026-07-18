@@ -10,6 +10,18 @@ bash ops/monitor-prod/monitor.sh full
 bash ops/monitor-prod/monitor.sh deep
 ```
 
+`deep` includes the read-only `ai_pipeline_batches` check. It covers:
+
+- `build_story_agent_context_batch.sh`: websochat story context, character
+  signals/inventory/relations, character-chat RP/profile/examples/opening assets
+- `ai_dna_extract_daily_batch.sh`
+- `ai_signal_daily_batch.sh`
+- `ai_taste_hourly_batch.sh` plus the manual-replay scheduling guard
+
+For each scheduled AI batch it reads the live crontab, matching processes and
+locks, the latest timestamped run block, and DB/result rows. It never starts a
+batch or changes cron/DB state.
+
 The Codex skill wrapper at
 `/home/hongsan/.codex/skills/likenovel-prod-monitoring/scripts/run_monitor.sh`
 should delegate to this tracked entrypoint.
