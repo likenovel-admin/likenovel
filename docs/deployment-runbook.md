@@ -397,6 +397,8 @@ docker compose -f /home/ln-admin/likenovel/cms/docker-compose.prod.yml up -d --r
 - 2.1의 Actions Gate와 Prod hard gate를 반드시 통과한다.
 - prod `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`는 `set -euo pipefail`, `.env.production` 검증, `.venv-next` 준비, DB smoke check, systemd stop/start, 이전 orphan gunicorn 정리, AI-reader worker 재시작, batch 파일 동기화를 수행한다.
 - prod runtime 확인은 public `/docs`만 보지 말고 `verify_backend_prod_deploy.sh`와 changed file/behavior readback을 같이 본다.
+- AI-reader worker의 만료 에이전트 정리는 한 사이클 최대 50건을 `FOR UPDATE SKIP LOCKED`로 선점하고 session/action claim 전에 즉시 commit한다. daemon은 MySQL `1205`/`1213`만 interval 뒤 재시도하며, `--once` 실행과 그 밖의 DB 오류는 실패를 그대로 반환한다.
+- 배포 직후 worker PID는 살아 있는데 fresh-log 검사만 실패하면 정상으로 간주하지 않는다. worker log mtime 전진과 새 cycle을 확인한 뒤 `verify_backend_prod_deploy.sh`를 다시 실행해 실제 정상 여부와 단순 타이밍 실패를 구분한다.
 
 주의:
 - prod backend 워크플로는 자동으로 버전 커밋을 추가 생성한다.
