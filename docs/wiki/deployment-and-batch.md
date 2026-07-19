@@ -119,6 +119,16 @@ selects env by runtime directory:
   v1/v3 is missing. Reaggregation itself has no provider call, preserves LKG/RP
   assets, and rolls back per product on failure; it does not replace missing signal
   generation.
+- Apply operator-authored identity corrections only through
+  `scripts/apply_story_agent_identity_review.py`: run without `--apply` first, verify
+  the preview, then apply the same active-signal-pinned request. A reviewed target may
+  bridge legacy RP without a provider call only when the reviewed display matches the
+  legacy profile identity, both RP assets belong to the same legacy key, and example
+  episode evidence is present or recovered by a unique exact-text match. Otherwise
+  keep the existing LKG and report no progress.
+- Character-asset readiness is observability/consumer-gate state, not a reason to
+  rewrite product `context_status` to `failed`. Incomplete characters stay hidden by
+  the exact-key readiness gate while the story context remains available.
 - `--max-delta-episodes 0` means unlimited, not zero work. For a manual no-provider
   reaggregation check, follow the dry-run `plans=0` gate and fingerprint verification
   in `docs/deployment-runbook.md`; do not treat this option as a cost guard.
