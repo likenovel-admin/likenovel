@@ -258,26 +258,55 @@ WHERE cp.context_status='failed'
   AND p.open_yn='Y'
   AND p.blind_yn='N';
 
-SELECT 'STORY_FOUNDATION_MISMATCH_PRODUCTS', COUNT(*)
-FROM (
+WITH foundation_mismatches AS (
   SELECT p.product_id,
+         CASE
+           WHEN COALESCE(p.ai_content_service_enabled_yn, 'N') = 'Y'
+            AND COALESCE(cp.context_status, 'pending') <> 'disabled'
+            AND (
+              COALESCE(cp.context_status, 'pending') = 'ready'
+              OR EXISTS (
+                SELECT 1
+                FROM tb_product_episode cohort_episode
+                WHERE cohort_episode.product_id = p.product_id
+                  AND cohort_episode.use_yn = 'Y'
+                  AND cohort_episode.open_yn = 'Y'
+                GROUP BY cohort_episode.product_id
+                HAVING COUNT(*) >= 15
+                   AND MIN(COALESCE(
+                     cohort_episode.open_changed_date,
+                     cohort_episode.publish_reserve_date,
+                     cohort_episode.created_date
+                   )) >= '2026-03-01 00:00:00'
+              )
+            )
+           THEN 1
+           ELSE 0
+         END AS actionable,
          COUNT(DISTINCT CASE WHEN s.summary_type='episode_summary' THEN s.scope_key END) AS episode_summary_count,
          COUNT(DISTINCT CASE WHEN s.summary_type='episode_character_signals' THEN s.scope_key END) AS signal_count,
          COUNT(DISTINCT CASE WHEN s.summary_type='character_inventory' THEN s.scope_key END) AS inventory_count,
          COUNT(DISTINCT CASE WHEN s.summary_type='character_inventory_v3' THEN s.scope_key END) AS inventory_v3_count
   FROM tb_product p
+  LEFT JOIN tb_story_agent_context_product cp
+    ON cp.product_id=p.product_id
   LEFT JOIN tb_story_agent_context_summary s
     ON s.product_id=p.product_id
    AND s.is_active='Y'
   WHERE p.price_type IN ('free','paid')
     AND p.status_code='ongoing'
     AND p.open_yn='Y'
-    AND p.blind_yn='N'
-  GROUP BY p.product_id
+    AND COALESCE(p.blind_yn, 'N')='N'
+  GROUP BY p.product_id, p.ai_content_service_enabled_yn, cp.context_status
   HAVING episode_summary_count <> signal_count
       OR (signal_count > 0 AND inventory_count = 0)
       OR (signal_count > 0 AND inventory_v3_count = 0)
-) mismatches;
+)
+SELECT 'STORY_FOUNDATION_MISMATCH_ACTIONABLE', COALESCE(SUM(actionable), 0)
+FROM foundation_mismatches
+UNION ALL
+SELECT 'STORY_FOUNDATION_MISMATCH_OUT_OF_POLICY', COALESCE(SUM(actionable = 0), 0)
+FROM foundation_mismatches;
 
 SELECT CONCAT('SUMMARY_', UPPER(summary_type)), COUNT(*)
 FROM tb_story_agent_context_summary s
@@ -485,7 +514,8 @@ emit_job JOB_AI_SIGNAL_DAILY_BATCH_SH ai_signal PROC_AI_SIGNAL
 emit_job JOB_AI_TASTE_HOURLY_BATCH_SH ai_taste PROC_AI_TASTE
 
 emit_nonzero_warn CONTEXT_FAILED_VISIBLE_ONGOING "ai_pipeline:storyctx_failed_products" "visible ongoing free/paid products"
-emit_nonzero_warn STORY_FOUNDATION_MISMATCH_PRODUCTS "ai_pipeline:story_foundation_mismatch" "episode summary/signal/inventory invariant"
+emit_nonzero_warn STORY_FOUNDATION_MISMATCH_ACTIONABLE "ai_pipeline:story_foundation_mismatch" "collector-eligible episode summary/signal/inventory invariant"
+emit_informational_count STORY_FOUNDATION_MISMATCH_OUT_OF_POLICY "ai_pipeline:story_foundation_mismatch_out_of_policy" "mismatches outside current collection policy"
 
 summary_types=(
   EPISODE_SUMMARY RANGE_SUMMARY PRODUCT_SUMMARY
