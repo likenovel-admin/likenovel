@@ -435,7 +435,7 @@ PRODUCT_IDS=1102,1106 INTERVAL_SEC=30 ITERATIONS=20 /home/hongsan/work/likenovel
 - read-only 관측 도구다. 배치/DB 상태를 수정하지 않는다.
 - 중간 진행률은 `ready_episode_count`보다 `로그 + recent summaries + summary count`를 우선 신뢰한다.
 
-현재 운영 기준(2026-06-15):
+현재 운영 기준(2026-07-19):
 - prod crontab active line은 `STORYCTX_MAX_PARALLEL=1 STORYCTX_BUILD_MODE=delta STORYCTX_MAX_MISSING_EPISODES=20`을 명시한다. 20화 수동 가속 테스트가 성공해 백로그 회복 속도를 높였고, 병렬도는 1로 유지한다.
 - 시간은 매시 10분이다.
 
@@ -446,6 +446,11 @@ PRODUCT_IDS=1102,1106 INTERVAL_SEC=30 ITERATIONS=20 /home/hongsan/work/likenovel
 Story context 비용 가드:
 - `build_story_agent_context.py --build-mode delta`는 기본적으로 RP profile/example refresh를 하지 않는다.
 - delta 중 RP refresh가 필요한 경우에만 `--refresh-rp`를 명시한다. 일반 cron/증분 수집에서는 사용하지 않는다.
+- delta 후보 SQL은 누락 character signal이 있거나, active signal은 있지만 character inventory v1/v3가 없는 작품에 `--reaggregate-character-inventory`를 자동 전달한다. 재집계 자체는 기존 active signal만 읽으며 provider를 호출하지 않고, 실패 시 해당 작품 트랜잭션을 rollback한다.
+- 재집계는 누락 signal을 새로 만들지 않는다. signal 누락 작품은 기존 delta 수집이 먼저 신호를 생성하고, 같은 실행의 재집계가 전체 active signal에서 inventory/relation을 다시 계산한다. 순수 inventory drift 작품은 provider 호출 없이 복구할 수 있다.
+- 기존 active RP profile/example/internal prompt/opening은 재집계 대상이 아니며, character inventory delta의 protagonist lock과 LKG 보존 규칙을 그대로 적용한다.
+- `--max-delta-episodes 0`은 0건 처리가 아니라 무제한이다. 무비용 수동 재집계 검증에서 provider 차단 용도로 사용하지 않는다. 먼저 이미 완비된 단일 `--episode-no`로 apply 없는 delta dry-run이 `plans=0`인지 확인한 뒤, 동일 scope에 `--apply --reaggregate-character-inventory`를 사용하고 생성 카운터 0과 기존 signal/RP fingerprint 불변을 확인한다.
+- deep monitor의 foundation mismatch는 현재 collector 대상(AI 동의 + 코호트 또는 기존 ready grandfather + disabled 아님)만 WARN으로 집계하고, 정책 밖 mismatch는 별도 정보성 카운트로 남긴다.
 - DeepSeek 모델은 공식 API를 직접 호출하지 않는다. `episode_character_signals`는 OpenRouter의 `STORY_AGENT_CHARACTER_SIGNALS_OPENROUTER_MODEL`을 사용하며 기본값은 `deepseek/deepseek-v4-pro`다. `episode_scene_extraction`도 `STORY_AGENT_SCENE_EXTRACTION_OPENROUTER_MODEL` 기본값 `deepseek/deepseek-v4-pro`로 핵심 장면 2~3개를 추출하고 기본 출력 상한은 5,000토큰이다. AI DNA fallback과 provider health도 `OPENROUTER_API_KEY`/`OPENROUTER_BASE_URL`만 사용한다.
 - RP character plan/profile refresh는 `STORY_AGENT_RP_OPENROUTER_MODEL` 기본값 `google/gemma-4-31b-it`와 `STORY_AGENT_RP_OPENROUTER_PROVIDER_ONLY` 기본값 `deepinfra,together`를 사용한다. `deepinfra`를 우선하고 `together`만 제한 fallback으로 허용한다. `:free` 모델 변형은 사용하지 않는다.
 - RP plan/profile 결과가 없거나, 캐릭터 표시명이 일반어이거나, exact-match 대사 예시가 `STORY_AGENT_RP_PROFILE_MIN_EXAMPLES` 기본값 2개 미만이면 새 profile/example을 저장하지 않고 기존 active 값을 유지한다.

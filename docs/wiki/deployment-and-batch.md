@@ -114,6 +114,17 @@ selects env by runtime directory:
 - Story context prod cron has live-state history and source fallback differences.
   Do not infer current max parallel from one file; verify active `crontab -l` and
   then compare with `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`.
+- Story context delta cron automatically reaggregates character/relation inventory
+  from existing active character signals when signal coverage advances or inventory
+  v1/v3 is missing. Reaggregation itself has no provider call, preserves LKG/RP
+  assets, and rolls back per product on failure; it does not replace missing signal
+  generation.
+- `--max-delta-episodes 0` means unlimited, not zero work. For a manual no-provider
+  reaggregation check, follow the dry-run `plans=0` gate and fingerprint verification
+  in `docs/deployment-runbook.md`; do not treat this option as a cost guard.
+- Deep monitoring warns only for foundation mismatches inside the active collector
+  policy. Mismatches outside the cohort/grandfather/AI-consent policy remain visible
+  as an informational count.
 - Batch docs must be refreshed whenever cron timing, lock behavior, max parallel,
   cost gates, runtime paths, or output tables change.
 

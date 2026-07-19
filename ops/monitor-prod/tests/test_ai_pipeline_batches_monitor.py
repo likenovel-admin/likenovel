@@ -53,7 +53,21 @@ class AiPipelineBatchesMonitorTest(unittest.TestCase):
             with self.subTest(summary_type=summary_type):
                 self.assertIn(summary_type, self.check_script.lower())
 
-        self.assertIn("STORY_FOUNDATION_MISMATCH_PRODUCTS", self.check_script)
+        self.assertIn("STORY_FOUNDATION_MISMATCH_ACTIONABLE", self.check_script)
+        self.assertIn("STORY_FOUNDATION_MISMATCH_OUT_OF_POLICY", self.check_script)
+        self.assertNotIn("STORY_FOUNDATION_MISMATCH_PRODUCTS", self.check_script)
+        self.assertIn("COALESCE(p.ai_content_service_enabled_yn, 'N') = 'Y'", self.check_script)
+        self.assertIn("COUNT(*) >= 15", self.check_script)
+        self.assertIn("2026-03-01 00:00:00", self.check_script)
+        self.assertIn("COALESCE(cp.context_status, 'pending') = 'ready'", self.check_script)
+        self.assertIn(
+            'emit_nonzero_warn STORY_FOUNDATION_MISMATCH_ACTIONABLE',
+            self.check_script,
+        )
+        self.assertIn(
+            'emit_informational_count STORY_FOUNDATION_MISMATCH_OUT_OF_POLICY',
+            self.check_script,
+        )
         self.assertIn("character_chat_*.log", self.check_script)
         self.assertIn('"active rows on visible ongoing products" 1', self.check_script)
 
