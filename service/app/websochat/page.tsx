@@ -57,6 +57,7 @@ import {
   consumePendingHomeCharacterChatLaunch,
   findRecoverableHomeCharacterChatSession,
   PendingHomeCharacterChatLaunch,
+  resolveCharacterChatComposerPlaceholder,
 } from "@/utils/characterChatLaunch";
 import { STORAGE_KEYS } from "@/utils/localStorage";
 import { buildProductDetailPath } from "@/utils/productPath";
@@ -79,6 +80,7 @@ import { getStableWebsochatProductSnapshot } from "@/utils/websochatProductSnaps
 import {
   buildWebsochatIdleGuideMessage,
   buildWebsochatStarterGuideMessage,
+  consumeWebsochatReturnPath,
   consumePendingWebsochatLaunch,
   consumeWebsochatSessionPendingDraft,
   filterWebsochatActionsByAllowedModes,
@@ -98,6 +100,7 @@ import dayjs from "dayjs";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import ArrowLeft from "/public/images/arrow-left.svg";
 import List from "/public/images/list.svg";
 
 const useBrowserLayoutEffect =
@@ -202,16 +205,16 @@ const buildWebsochatDraftReadScopeNotice = ({
 
   if (hasDetectedReadRecord && conversationScopeText) {
     if (isSyncPending) {
-      return `최신 공개 회차 컨텍스트는 아직 준비 중입니다. 현재 웹소챗 세션에서 대화 가능한 기준은 ${conversationScopeText}입니다.`;
+      return `최신 회차는 아직 반영 중이에요. 우선 ${conversationScopeText} 무렵의 맥락에서 주인공과 새로운 이야기를 이어가볼게요.`;
     }
-    return `현재 웹소챗 세션에서 대화 가능한 기준은 ${conversationScopeText}입니다.`;
+    return `${conversationScopeText}까지 읽으셨네요. 그 무렵의 맥락에서 주인공과 새로운 이야기를 이어가볼게요.`;
   }
 
   if (conversationScopeText) {
-    return `해당 작품의 읽은 기록이 없어 현재 웹소챗 세션에서 대화 가능한 기준은 ${conversationScopeText}입니다.`;
+    return `${conversationScopeText}까지의 이야기에서 주인공과 새로운 이야기를 시작할게요.`;
   }
 
-  return "해당 작품의 읽은 범위를 자동으로 확인하지 못했습니다. 읽은 화수를 직접 입력하면 그 기준으로 대화를 맞출 수 있습니다.";
+  return "어디까지 읽으셨나요? 알려주시면 그 무렵의 이야기에서 시작할게요.";
 };
 
 const buildWebsochatReadScopeAppliedNotice = ({
@@ -226,9 +229,9 @@ const buildWebsochatReadScopeAppliedNotice = ({
   const scopeText = formatWebsochatReadScope(episodeNo, episodeTitle);
   if (!scopeText) return "";
   if (isSyncPending) {
-    return `읽은 범위가 반영되었습니다. 최신 공개 회차 컨텍스트는 아직 준비 중입니다. 현재 웹소챗 세션에서 대화 가능한 기준은 ${scopeText}입니다.`;
+    return `최신 회차는 아직 반영 중이에요. 우선 ${scopeText} 무렵의 맥락에서 주인공과 새로운 이야기를 이어가볼게요.`;
   }
-  return `읽은 범위가 반영되었습니다. 현재 웹소챗 세션에서 대화 가능한 기준은 ${scopeText}입니다.`;
+  return `${scopeText}까지 읽은 것으로 반영했어요. 그 무렵의 맥락에서 주인공과 새로운 이야기를 이어가볼게요.`;
 };
 
 const extractWebsochatReadScopeEpisodeNo = (content: string) => {
@@ -477,6 +480,7 @@ const formatWebsochatRelativeUpdatedAt = (value?: string | null) => {
 const WEBSOCHAT_MODE_NOTICES_STORAGE_KEY = "websochat_mode_notices";
 const WEBSOCHAT_STICKY_GUIDES_STORAGE_KEY = "websochat_sticky_guides";
 const WEBSOCHAT_DEBUG_LOG_STORAGE_KEY = "websochat_debug_log";
+const WEBSOCHAT_SCOPE_NOTICE_TTL_MS = 5_000;
 
 const buildWebsochatSessionEpisodeLabel = (
   readEpisodeNo?: number | null,
@@ -569,18 +573,13 @@ const buildWebsochatNextEpisodeBlockedNotice = (
 };
 
 const buildWebsochatSyncPendingNotice = (
-  publishedLatestEpisodeNo?: number | null,
   syncedLatestEpisodeNo?: number | null
 ) => {
-  const resolvedPublishedLatestEpisodeNo = Math.max(Number(publishedLatestEpisodeNo || 0), 0);
   const resolvedSyncedLatestEpisodeNo = Math.max(Number(syncedLatestEpisodeNo || 0), 0);
-  if (resolvedPublishedLatestEpisodeNo > 0 && resolvedSyncedLatestEpisodeNo > 0) {
-    return `최신 공개 회차 컨텍스트는 아직 준비 중입니다. 현재 웹소챗 세션에서 대화 가능한 기준은 ${resolvedSyncedLatestEpisodeNo}화입니다.`;
-  }
   if (resolvedSyncedLatestEpisodeNo > 0) {
-    return `최신 공개 회차 컨텍스트는 아직 준비 중입니다. 현재 웹소챗 세션에서 대화 가능한 기준은 ${resolvedSyncedLatestEpisodeNo}화입니다.`;
+    return `최신 회차는 아직 반영 중이에요. 우선 ${resolvedSyncedLatestEpisodeNo}화 무렵의 맥락에서 주인공과 새로운 이야기를 이어가볼게요.`;
   }
-  return "최신 공개 회차 컨텍스트는 아직 준비 중입니다. 준비된 범위 안에서만 대화할 수 있습니다.";
+  return "최신 회차는 아직 반영 중이에요. 준비된 이야기에서 주인공과 새로운 이야기를 이어가볼게요.";
 };
 
 const buildWebsochatProductSnapshot = ({
@@ -638,8 +637,12 @@ type WebsochatModeNoticeItem = {
   content: string;
   createdAt: number;
   anchorClientMessageId?: string | null;
-  kind: "mode" | "action" | "sync_pending";
+  kind: "mode" | "action" | "read_scope" | "sync_pending";
 };
+
+const isTransientWebsochatScopeNoticeKind = (
+  kind?: WebsochatModeNoticeItem["kind"] | null
+) => kind === "read_scope" || kind === "sync_pending";
 
 type WebsochatStickyGuideItem = {
   guideId: string;
@@ -952,6 +955,14 @@ export default function WebsochatPage() {
   const [activeCharacterLabel, setActiveCharacterLabel] = useState<string | null>(null);
   const [activeShortcutPrompt, setActiveShortcutPrompt] = useState("");
   const [modeNotices, setModeNotices] = useState<WebsochatModeNoticeItem[]>([]);
+  const clearTransientWebsochatScopeNotices = useCallback(() => {
+    setModeNotices((current) => {
+      const next = current.filter(
+        (notice) => !isTransientWebsochatScopeNoticeKind(notice.kind)
+      );
+      return next.length === current.length ? current : next;
+    });
+  }, []);
   const [stickyGuides, setStickyGuides] = useState<WebsochatStickyGuideItem[]>([]);
   const [localStarters, setLocalStarters] = useState<WebsochatLocalStarterItem[]>([]);
   const [transientMessages, setTransientMessages] = useState<WebsochatTransientMessageItem[]>([]);
@@ -1108,6 +1119,7 @@ export default function WebsochatPage() {
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [] as WebsochatModeNoticeItem[];
       return parsed
+        .filter((item) => !isTransientWebsochatScopeNoticeKind(item?.kind))
         .map((item): WebsochatModeNoticeItem => ({
           noticeId: String(item?.noticeId || ""),
           sessionId:
@@ -1140,13 +1152,16 @@ export default function WebsochatPage() {
 
   const writeStoredModeNotices = useCallback((items: WebsochatModeNoticeItem[]) => {
     if (typeof window === "undefined") return;
-    if (!items.length) {
+    const persistentItems = items.filter(
+      (item) => !isTransientWebsochatScopeNoticeKind(item.kind)
+    );
+    if (!persistentItems.length) {
       window.sessionStorage.removeItem(WEBSOCHAT_MODE_NOTICES_STORAGE_KEY);
       return;
     }
     window.sessionStorage.setItem(
       WEBSOCHAT_MODE_NOTICES_STORAGE_KEY,
-      JSON.stringify(items.slice(-200))
+      JSON.stringify(persistentItems.slice(-200))
     );
   }, []);
 
@@ -1270,6 +1285,36 @@ export default function WebsochatPage() {
   }, [modeNotices, writeStoredModeNotices]);
 
   useEffect(() => {
+    const transientNotices = modeNotices.filter((notice) =>
+      isTransientWebsochatScopeNoticeKind(notice.kind)
+    );
+    if (!transientNotices.length) return;
+
+    const nextExpiresAt = Math.min(
+      ...transientNotices.map(
+        (notice) => notice.createdAt + WEBSOCHAT_SCOPE_NOTICE_TTL_MS
+      )
+    );
+    const timer = window.setTimeout(() => {
+      const now = Date.now();
+      setModeNotices((current) =>
+        current.filter(
+          (notice) =>
+            !isTransientWebsochatScopeNoticeKind(notice.kind)
+            || notice.createdAt + WEBSOCHAT_SCOPE_NOTICE_TTL_MS > now
+        )
+      );
+    }, Math.max(nextExpiresAt - Date.now(), 0));
+
+    return () => window.clearTimeout(timer);
+  }, [modeNotices]);
+
+  useEffect(() => {
+    if (characterChatChoices.length === 0) return;
+    clearTransientWebsochatScopeNotices();
+  }, [characterChatChoices.length, clearTransientWebsochatScopeNotices]);
+
+  useEffect(() => {
     writeStoredStickyGuides(stickyGuides);
   }, [stickyGuides, writeStoredStickyGuides]);
 
@@ -1338,7 +1383,8 @@ export default function WebsochatPage() {
   const { data: billingStatusData } = useGetWebsochatBillingStatus(
     websochatActorKey,
     websochatGuestKey,
-    null
+    null,
+    activeSessionId
   );
   const freeRemainingMessages = Math.max(
     Number(billingStatusData?.data?.freeRemainingMessages ?? 0),
@@ -2051,7 +2097,10 @@ export default function WebsochatPage() {
   const composerPlaceholder = isRpAwaitingCharacter
     ? "대화하고 싶은 인물 이름을 적어줘. 예: 레이너"
     : isRpChatting
-      ? `${addKoreanPostposition(activeCharacterLabel || "인물", "에게", "에게")} 말 걸어봐. 예: 왜 그래?`
+      ? resolveCharacterChatComposerPlaceholder({
+        freeRemainingMessages,
+        firstChoiceDialogue: characterChatChoices[0]?.dialogue,
+      })
       : `${composerGhostQuestion}${freeRemainingMessageSuffix}`;
   const composerPlaceholderWithShortcutHint = `${composerPlaceholder}\nShift+Enter로 줄바꿈`;
   const composerModeDetail = isRpAwaitingCharacter
@@ -2904,10 +2953,7 @@ export default function WebsochatPage() {
     }
 
     appendModeNotice(
-      buildWebsochatSyncPendingNotice(
-        publishedLatestEpisodeNo,
-        syncedLatestEpisodeNo
-      ),
+      buildWebsochatSyncPendingNotice(syncedLatestEpisodeNo),
       "sync_pending"
     );
     syncPendingNoticeKeyRef.current = noticeKey;
@@ -3244,7 +3290,7 @@ export default function WebsochatPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handlePrepareNav = () => {
-      writeStoredActiveSessionId(null);
+      consumeWebsochatReturnPath();
       setIsPreparingNewSession(true);
       setActiveSessionId(null);
       setSelectedProductId(null);
@@ -3254,7 +3300,7 @@ export default function WebsochatPage() {
     return () => {
       window.removeEventListener(WEBSOCHAT_PREPARE_NAV_EVENT, handlePrepareNav);
     };
-  }, [writeStoredActiveSessionId]);
+  }, []);
 
   useEffect(() => {
     const pendingLaunch = consumePendingWebsochatLaunch();
@@ -3352,10 +3398,13 @@ export default function WebsochatPage() {
     };
   }, [accessToken, guestKey, isAuthenticated, user?.userId]);
 
-  const openLoginConfirm = () => {
+  const openLoginConfirm = (dailyFreeMessageLimit?: number | null) => {
     const currentUrl = encodeURIComponent(pathname || "/websochat");
+    const resolvedFreeLimit = Math.max(Number(dailyFreeMessageLimit || 0), 0);
     setConfirm({
-      content: "오늘 무료 3회를 모두 썼어요. 로그인해 주세요.",
+      content: resolvedFreeLimit > 0
+        ? `오늘 무료 ${resolvedFreeLimit}회를 모두 썼어요. 로그인해 주세요.`
+        : "오늘 무료 이용 횟수를 모두 썼어요. 로그인해 주세요.",
       confirmText: "로그인하기",
       onConfirm: () => {
         window.location.href = `/login?redirect=${currentUrl}`;
@@ -3671,6 +3720,15 @@ export default function WebsochatPage() {
     enterDraftSession(false);
   };
 
+  const handleGoBack = () => {
+    const returnPath = consumeWebsochatReturnPath();
+    const fallbackPath = effectiveProductId
+      ? buildProductDetailPath(effectiveProductId)
+      : "/";
+    window.dispatchEvent(new Event(WEBSOCHAT_PREPARE_NAV_EVENT));
+    window.requestAnimationFrame(() => router.replace(returnPath || fallbackPath));
+  };
+
   const handleSelectSession = (sessionId: number, productId: number | null) => {
     queueScrollMessageListToBottom("auto");
     clearSessionScopedComposerState();
@@ -3738,6 +3796,7 @@ export default function WebsochatPage() {
     if (!isWebsochatModeAllowed(requestedModeKey, enforcedActiveSessionAllowedModes)) {
       return null;
     }
+    clearTransientWebsochatScopeNotices();
       appendWebsochatDebugLog("handle_send:start", {
         activeSessionId,
         effectiveProductId,
@@ -3807,12 +3866,13 @@ export default function WebsochatPage() {
         getWebsochatBillingStatusQueryOptions(
           requestActorKey,
           requestGuestKey,
-          resolvedQaActionKey
+          resolvedQaActionKey,
+          activeSessionId
         )
       );
       const billingStatus = latestBillingStatusResponse.data;
       if (billingStatus.requiresLoginForNextMessage && !requestCanUseAccountScope) {
-        openLoginConfirm();
+        openLoginConfirm(billingStatus.dailyFreeMessageLimit);
         return null;
       }
       if (
@@ -4056,7 +4116,7 @@ export default function WebsochatPage() {
         }
         appendScopedModeNotice({
           content: requestedReadScopeNotice,
-          kind: "mode",
+          kind: "read_scope",
             sessionId: activeSessionId ?? null,
             productId: effectiveProductId,
             createdAt: tempSeed + 1,
@@ -4409,7 +4469,7 @@ export default function WebsochatPage() {
       }
 
       if (errorInfo.status === 401 && !requestCanUseAccountScope) {
-        openLoginConfirm();
+        openLoginConfirm(billingStatusData?.data?.dailyFreeMessageLimit);
         return null;
       }
 
@@ -4622,7 +4682,7 @@ export default function WebsochatPage() {
     ) => {
       appendScopedModeNotice({
         content,
-        kind: "mode",
+        kind: "read_scope",
         sessionId: null,
         productId: product.productId,
         createdAt,
@@ -5210,13 +5270,22 @@ export default function WebsochatPage() {
               <div className="relative bg-white flex flex-col gap-12pxr h-full min-h-0 overflow-hidden">
                 <div
                   data-character-chat-header={isCharacterChatExperience ? "true" : undefined}
-                  className={`${isCharacterChatExperience ? "flex" : "flex md:hidden"} min-h-[52px] shrink-0 items-center justify-between gap-12pxr border-b border-light-gray-200 px-16pxr py-8pxr`}
+                  className="flex h-[52px] shrink-0 items-center justify-between gap-4pxr border-b border-light-gray-200 px-4pxr py-4pxr md:gap-12pxr md:px-12pxr"
                   aria-busy={isCharacterOpeningBusy}
                 >
                   <button
                     type="button"
+                    onClick={handleGoBack}
+                    className="flex h-[44px] shrink-0 items-center justify-center gap-8pxr rounded-full px-12pxr text-dark-gray-500 hover:bg-light-gray-100 hover:text-primary-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100 md:min-w-[96px] md:rounded-[8px]"
+                    aria-label="이전 화면으로 돌아가기"
+                  >
+                    <ArrowLeft className="h-[20px] w-[11px]" />
+                    <span className="hidden text-14pxr font-medium md:inline">돌아가기</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setIsSessionDrawerOpen(true)}
-                    className="-ml-4pxr rounded-full p-4pxr text-dark-gray-500 hover:text-primary-100 md:hidden"
+                    className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full text-dark-gray-500 hover:bg-light-gray-100 hover:text-primary-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100 md:hidden"
                     aria-label="세션 목록"
                   >
                     <List className="w-[22px] h-[22px]" />
@@ -5248,7 +5317,18 @@ export default function WebsochatPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex-1" />
+                    <div className="flex min-w-0 flex-1 items-center px-4pxr">
+                      <div className="min-w-0">
+                        <div className="truncate text-14pxr font-semibold text-black-100">
+                          {sessionProductSummary?.title || "웹소챗"}
+                        </div>
+                        {sessionProductSummary?.title ? (
+                          <div className="mt-2pxr truncate text-11pxr text-dark-gray-300">
+                            웹소챗
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
                   )}
                   <button
                     type="button"
@@ -5259,7 +5339,7 @@ export default function WebsochatPage() {
                       || isCharacterOpeningBusy
                     }
                     onClick={handleCreateSession}
-                    className="p-4pxr -mr-4pxr rounded-full text-dark-gray-500 hover:text-primary-100 disabled:opacity-40"
+                    className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full text-dark-gray-500 hover:bg-light-gray-100 hover:text-primary-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100 disabled:opacity-40"
                     aria-label="새 대화"
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>

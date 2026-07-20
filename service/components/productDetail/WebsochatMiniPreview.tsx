@@ -22,6 +22,7 @@ import {
   getOrCreateWebsochatGuestKey,
   readWebsochatMiniPreviewState,
   saveActiveWebsochatSessionId,
+  saveWebsochatReturnPath,
   saveWebsochatMiniPreviewState,
   saveWebsochatSessionPendingDraft,
 } from "@/utils/websochatLaunch";
@@ -212,6 +213,7 @@ export default function WebsochatMiniPreview({
       if (normalizedDraft) {
         saveWebsochatSessionPendingDraft(nextSessionId, normalizedDraft);
       }
+      saveWebsochatReturnPath();
       router.push("/websochat");
     } catch (error) {
       setErrorMessage(

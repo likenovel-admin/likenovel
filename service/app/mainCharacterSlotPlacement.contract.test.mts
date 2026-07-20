@@ -78,8 +78,13 @@ assert.doesNotMatch(
 );
 assert.match(
   characterSlotSource,
-  /order_dir: "desc"[\s\S]*response\.data\.episodes\[0\]\?\.episodeNo/,
-  "CharacterSlot should use the latest public episode row instead of the account read-progress field"
+  /response\.data\.latestEpisodeNo \|\| 1/,
+  "CharacterSlot should use account read progress and fall back to episode 1"
+);
+assert.doesNotMatch(
+  characterSlotSource,
+  /response\.data\.episodes\[0\]\?\.episodeNo/,
+  "CharacterSlot should not use the latest public episode as read progress"
 );
 assert.match(
   characterSlotSource,
@@ -90,4 +95,35 @@ assert.match(
   characterSlotSource,
   /item\.syncedLatestEpisodeNo > 0/,
   "CharacterSlot should not render an empty episode-scope badge"
+);
+
+const characterSlotSubtitles = [
+  "읽은 회차에서 주인공과 마음대로 전개를 이어가보세요",
+  "당신이 멈춘 회차에서 주인공과 바로 이어가보세요",
+  "스포일러 걱정 없이, 읽은 데까지의 주인공과 대화해요",
+  "원작에 없던 장면을 주인공과 함께 만들어보세요",
+  "지금 읽은 만큼만 아는 주인공과 이야기해보세요",
+  "내가 읽은 그 순간의 주인공과 새로운 이야기를 이어가보세요",
+];
+
+assert.match(
+  characterSlotSource,
+  /const CHARACTER_SLOT_SECTION_TITLE =\s*"다음 회차를 기다리는 동안, 주인공챗";/,
+  "CharacterSlot should explain the wait-time use case in its title"
+);
+for (const subtitle of characterSlotSubtitles) {
+  assert.ok(
+    characterSlotSource.includes(`"${subtitle}"`),
+    `CharacterSlot should include the subtitle: ${subtitle}`
+  );
+}
+assert.match(
+  characterSlotSource,
+  /Math\.floor\(Math\.random\(\) \* CHARACTER_SLOT_SECTION_SUBTITLES\.length\)/,
+  "CharacterSlot should select one subtitle per client visit"
+);
+assert.match(
+  characterSlotSource,
+  /\{CHARACTER_SLOT_SECTION_SUBTITLES\[subtitleIndex\]\}/,
+  "CharacterSlot should render the selected subtitle"
 );

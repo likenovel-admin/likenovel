@@ -2,6 +2,7 @@ import { WEBSOCHAT_NAV_LABEL, WEBSOCHAT_PREPARE_NAV_EVENT } from "@/constants/co
 import useConfirmStore from "@/store/confirmStore";
 import useSearchModalStore from "@/store/searchModalStore";
 import { getUser } from "@/utils/getUser";
+import { saveWebsochatReturnPath } from "@/utils/websochatLaunch";
 import { usePathname, useRouter } from "next/navigation";
 import SquareBadge from "../common/SquareBadge";
 import AlarmMenu from "./AlarmMenu";
@@ -22,6 +23,9 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
 
   const navigate = (href: string) => {
     if (href === pathname) return;
+    if (href === "/websochat") {
+      saveWebsochatReturnPath();
+    }
     if (pathname === "/websochat") {
       window.dispatchEvent(new Event(WEBSOCHAT_PREPARE_NAV_EVENT));
       window.requestAnimationFrame(() => router.push(href));

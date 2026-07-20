@@ -255,3 +255,17 @@ export const buildCharacterChatChoiceMessage = ({
     .filter(Boolean)
     .join("\n");
 };
+
+export const resolveCharacterChatComposerPlaceholder = ({
+  freeRemainingMessages,
+  firstChoiceDialogue,
+}: {
+  freeRemainingMessages: number;
+  firstChoiceDialogue?: string | null;
+}) => {
+  const remaining = Math.max(Number(freeRemainingMessages || 0), 0);
+  if (remaining > 0) return `무료 ${remaining}회 채팅 가능`;
+  return (
+    String(firstChoiceDialogue || "").trim() || "하고 싶은 말을 입력해 주세요"
+  );
+};
