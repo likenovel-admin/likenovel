@@ -125,6 +125,11 @@ assert.match(
 );
 assert.match(
   pageSource,
+  /fetch\(characterImagePreview,\s*\{[\s\S]*credentials:\s*"omit",[\s\S]*cache:\s*"no-store",[\s\S]*\}\)/,
+  "The crop fetch should bypass the no-CORS browser image cache"
+);
+assert.match(
+  pageSource,
   /권장 \{CHARACTER_IMAGE_WIDTH\} × \{CHARACTER_IMAGE_HEIGHT\}px 이상/,
   "CMS should show the recommended character image resolution"
 );
