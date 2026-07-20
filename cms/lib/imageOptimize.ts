@@ -262,7 +262,10 @@ export async function prepareCharacterImageFromCover(
   }
 
   try {
-    const response = await fetch(coverImageUrl, { credentials: "omit" });
+    const response = await fetch(coverImageUrl, {
+      credentials: "omit",
+      cache: "no-store",
+    });
     if (!response.ok) {
       throw new Error(`표지 이미지 응답 오류: ${response.status}`);
     }
