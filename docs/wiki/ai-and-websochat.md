@@ -97,7 +97,7 @@ implementation SSOT.
 
 ### Read Scope And Paid Access
 
-> Last verified: 2026-07-03
+> Last verified: 2026-07-21
 > Source of truth: backend `websochat_service.py`, viewer episode service, and
 > `service/utils/websochatLaunch.ts`.
 
@@ -123,6 +123,9 @@ Websochat retrieval uses an integer `read_episode_to` range.
 
 Important examples:
 
+- A new character-chat session uses the signed-in account's latest read episode
+  from server-side reading history. If no reading history exists, it starts from
+  episode 1; the authorized and synced ceilings remain safety caps, not defaults.
 - If a user purchased through episode 50 but the viewer launch says the last
   read episode is 27, Websochat starts from episode 27.
 - If a client sends 50 but server authorization or context sync only reaches

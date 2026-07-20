@@ -78,8 +78,13 @@ assert.doesNotMatch(
 );
 assert.match(
   characterSlotSource,
-  /order_dir: "desc"[\s\S]*response\.data\.episodes\[0\]\?\.episodeNo/,
-  "CharacterSlot should use the latest public episode row instead of the account read-progress field"
+  /response\.data\.latestEpisodeNo \|\| 1/,
+  "CharacterSlot should use account read progress and fall back to episode 1"
+);
+assert.doesNotMatch(
+  characterSlotSource,
+  /response\.data\.episodes\[0\]\?\.episodeNo/,
+  "CharacterSlot should not use the latest public episode as read progress"
 );
 assert.match(
   characterSlotSource,

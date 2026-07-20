@@ -106,8 +106,7 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
             true
           )
         );
-        const accountReadEpisodeTo =
-          response.data.episodes[0]?.episodeNo || response.data.latestEpisodeNo || null;
+        const accountReadEpisodeTo = response.data.latestEpisodeNo || 1;
 
         const request = buildHomeCharacterChatSessionRequest({
           productId: item.productId,
