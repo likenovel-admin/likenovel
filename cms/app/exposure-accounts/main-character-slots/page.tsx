@@ -15,6 +15,7 @@ import {
   IMainCharacterSlotRequest,
 } from "@/api/mainCharacterSlot/dto";
 import { useCreateUpload, useUpdateUpload } from "@/api/upload";
+import CharacterImageCropDialog from "./CharacterImageCropDialog";
 import { FileUpload } from "@/components/common/FileUpload";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import PaginationControls from "@/components/common/PaginationControls";
@@ -44,11 +45,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { prepareCharacterImageFromCover } from "@/lib/imageOptimize";
+import {
+  CHARACTER_IMAGE_HEIGHT,
+  CHARACTER_IMAGE_WIDTH,
+  isSupportedCharacterImageFile,
+  prepareCharacterImageFromCover,
+} from "@/lib/imageOptimize";
 import { catchErrorMessage, confirm, showAlert } from "@/lib/utils";
 import { format } from "date-fns";
-import { Check, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Check, Crop, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const PAGE_SIZE = 20;
 const PRODUCT_PAGE_SIZE = 20;
@@ -103,6 +109,9 @@ export default function Page() {
     useState<IMainCharacterSlotProduct | null>(null);
   const [characterScopeKey, setCharacterScopeKey] = useState("");
   const [characterImage, setCharacterImage] = useState<File | null>(null);
+  const [characterImagePreviewUrl, setCharacterImagePreviewUrl] = useState("");
+  const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
+  const [isCropOpen, setIsCropOpen] = useState(false);
   const [cardOrder, setCardOrder] = useState("1");
   const [publishStartAt, setPublishStartAt] = useState("");
   const [publishEndAt, setPublishEndAt] = useState("");
@@ -144,10 +153,29 @@ export default function Page() {
     updateSlot.isPending ||
     createUpload.isPending ||
     updateUpload.isPending;
+  const currentCharacterImageUrl = getCdnUrl(editingSlot?.characterImagePath);
+  const fallbackCharacterImageUrl = getCdnUrl(selectedProduct?.coverImagePath);
+  const characterImagePreview =
+    characterImagePreviewUrl ||
+    currentCharacterImageUrl ||
+    fallbackCharacterImageUrl;
+
+  useEffect(() => {
+    if (!characterImage) {
+      setCharacterImagePreviewUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(characterImage);
+    setCharacterImagePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [characterImage]);
+
   const resetForm = () => {
     setSelectedProduct(null);
     setCharacterScopeKey("");
     setCharacterImage(null);
+    setCropSourceFile(null);
+    setIsCropOpen(false);
     setCardOrder("1");
     setPublishStartAt("");
     setPublishEndAt("");
@@ -162,6 +190,43 @@ export default function Page() {
   const searchProducts = () => {
     setProductSearchWord(productSearchInput.trim());
     setProductPage(1);
+  };
+
+  const handleCharacterImageChange = (file: File | null) => {
+    if (file && !isSupportedCharacterImageFile(file)) {
+      showAlert("오류", "JPG, PNG, WebP 이미지만 사용할 수 있습니다.", "확인");
+      return;
+    }
+    setCharacterImage(file);
+  };
+
+  const openCropDialog = async () => {
+    if (characterImage) {
+      setCropSourceFile(characterImage);
+      setIsCropOpen(true);
+      return;
+    }
+    if (!characterImagePreview) return;
+
+    try {
+      const response = await fetch(characterImagePreview, { credentials: "omit" });
+      if (!response.ok) {
+        throw new Error(`이미지 응답 오류: ${response.status}`);
+      }
+      const blob = await response.blob();
+      const file = new File(
+        [blob],
+        `character-${editingSlot?.productId ?? selectedProduct?.productId ?? "image"}`,
+        { type: blob.type },
+      );
+      if (!isSupportedCharacterImageFile(file)) {
+        throw new Error("JPG, PNG, WebP 이미지만 사용할 수 있습니다.");
+      }
+      setCropSourceFile(file);
+      setIsCropOpen(true);
+    } catch (error) {
+      showAlert("오류", catchErrorMessage(error), "확인");
+    }
   };
 
   const handleEdit = (row: IMainCharacterSlot) => {
@@ -483,13 +548,41 @@ export default function Page() {
               <div className="space-y-2">
                 <Label>캐릭터 이미지</Label>
                 <FileUpload
-                  fileName={characterImage?.name || ""}
-                  onFileChange={setCharacterImage}
+                  fileName={
+                    characterImage?.name ||
+                    currentCharacterImageUrl ||
+                    fallbackCharacterImageUrl
+                  }
+                  onFileChange={handleCharacterImageChange}
                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                   disabled={isSaving}
+                  buttonText="이미지 찾기"
                 />
+                {characterImagePreview ? (
+                  <div className="relative aspect-[364/414] w-[182px] overflow-hidden rounded-md border bg-muted">
+                    <img
+                      src={characterImagePreview}
+                      alt="캐릭터 이미지 미리보기"
+                      className="h-full w-full object-cover object-top"
+                    />
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="secondary"
+                      aria-label="캐릭터 이미지 크롭"
+                      title="이미지 크롭"
+                      onClick={() => void openCropDialog()}
+                      disabled={isSaving}
+                      className="absolute bottom-2 right-2 h-9 w-9 border bg-background/90 shadow-sm"
+                    >
+                      <Crop className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : null}
                 <p className="text-xs text-muted-foreground">
-                  미등록 시 작품 표지를 상단 기준으로 자동 크롭합니다.
+                  권장 {CHARACTER_IMAGE_WIDTH} × {CHARACTER_IMAGE_HEIGHT}px 이상 ·
+                  364:414 비율 · JPG, PNG, WebP
+                  <br />미등록 시 작품 표지를 상단 기준으로 자동 크롭합니다.
                 </p>
               </div>
               <div className="space-y-2">
@@ -540,6 +633,13 @@ export default function Page() {
             </div>
           </CardContent>
         </Card>
+
+        <CharacterImageCropDialog
+          file={cropSourceFile}
+          open={isCropOpen}
+          onOpenChange={setIsCropOpen}
+          onConfirm={setCharacterImage}
+        />
 
         <Card>
           <CardHeader>

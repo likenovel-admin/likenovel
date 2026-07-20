@@ -191,6 +191,11 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
                       isLaunching ? "scale-[1.01] opacity-60" : ""
                     }`}
                   />
+                  {item.syncedLatestEpisodeNo > 0 && (
+                    <span className="absolute right-8pxr top-8pxr z-[1] rounded-full bg-black/70 px-8pxr py-4pxr text-11pxr font-medium leading-[14px] text-white shadow-sm md:text-12pxr">
+                      ~{item.syncedLatestEpisodeNo}화까지
+                    </span>
+                  )}
                   {isLaunching && (
                     <span className="absolute inset-0 flex items-center justify-center bg-black/10">
                       <span className="h-7 w-7 animate-spin rounded-full border-2 border-white/50 border-t-white" />

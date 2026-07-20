@@ -6,6 +6,10 @@ const apiSource = readFileSync(
   new URL("../../../api/mainCharacterSlot/index.ts", import.meta.url),
   "utf8"
 );
+const cropDialogSource = readFileSync(
+  new URL("./CharacterImageCropDialog.tsx", import.meta.url),
+  "utf8"
+);
 
 assert.match(
   apiSource,
@@ -103,6 +107,36 @@ assert.match(
   pageSource,
   /미등록 시 작품 표지를 상단 기준으로 자동 크롭합니다\./,
   "CMS should explain the automatic cover crop behavior"
+);
+assert.match(
+  pageSource,
+  /characterImage\?\.name \|\|[\s\S]*currentCharacterImageUrl \|\|[\s\S]*fallbackCharacterImageUrl/,
+  "CMS should show the current image URL beside the picker"
+);
+assert.match(
+  pageSource,
+  /alt="캐릭터 이미지 미리보기"/,
+  "CMS should preview the selected or current character image"
+);
+assert.match(
+  pageSource,
+  /aria-label="캐릭터 이미지 크롭"/,
+  "CMS should expose the crop action on the image preview"
+);
+assert.match(
+  pageSource,
+  /권장 \{CHARACTER_IMAGE_WIDTH\} × \{CHARACTER_IMAGE_HEIGHT\}px 이상/,
+  "CMS should show the recommended character image resolution"
+);
+assert.match(
+  cropDialogSource,
+  /calculateTopCropSourceRect[\s\S]*cropCharacterImageForUpload/,
+  "The crop modal should initialize and export a real fixed-ratio crop"
+);
+assert.match(
+  cropDialogSource,
+  /onPointerDown[\s\S]*onPointerMove[\s\S]*type="range"/,
+  "The crop rectangle should support positioning and zoom"
 );
 assert.match(
   pageSource,
