@@ -1,5 +1,6 @@
 const PENDING_WEBSOCHAT_LAUNCH_KEY = "pending_websochat_launch";
 const PENDING_WEBSOCHAT_LAUNCH_TTL_MS = 60 * 1000;
+const WEBSOCHAT_RETURN_PATH_STORAGE_KEY = "websochat_return_path";
 export const WEBSOCHAT_ACTIVE_SESSION_STORAGE_KEY = "websochat_active_session_id";
 export const WEBSOCHAT_SESSION_SHORTCUT_PROMPTS_STORAGE_KEY =
   "websochat_session_shortcut_prompts";
@@ -8,6 +9,54 @@ const WEBSOCHAT_SESSION_PENDING_DRAFTS_STORAGE_KEY =
 const WEBSOCHAT_GUEST_KEY_STORAGE_KEY = "story_agent_guest_key";
 const WEBSOCHAT_MINI_PREVIEW_STATE_STORAGE_KEY =
   "websochat_mini_preview_state";
+
+type WebsochatReturnPathStorage = Pick<
+  Storage,
+  "getItem" | "setItem" | "removeItem"
+>;
+
+const getWebsochatReturnPathStorage = () =>
+  typeof window === "undefined" ? undefined : window.sessionStorage;
+
+const normalizeWebsochatReturnPath = (path: string | null | undefined) => {
+  const normalized = String(path || "").trim();
+  if (
+    !normalized.startsWith("/")
+    || normalized.startsWith("//")
+    || normalized.includes("\\")
+  ) {
+    return null;
+  }
+
+  const pathname = normalized.split(/[?#]/, 1)[0].replace(/\/+$/, "") || "/";
+  return pathname === "/websochat" ? null : normalized;
+};
+
+export const saveWebsochatReturnPath = ({
+  path = typeof window === "undefined"
+    ? ""
+    : `${window.location.pathname}${window.location.search}${window.location.hash}`,
+  storage = getWebsochatReturnPathStorage(),
+}: {
+  path?: string;
+  storage?: WebsochatReturnPathStorage;
+} = {}) => {
+  if (!storage) return;
+  const normalized = normalizeWebsochatReturnPath(path);
+  if (!normalized) return;
+  storage.setItem(WEBSOCHAT_RETURN_PATH_STORAGE_KEY, normalized);
+};
+
+export const consumeWebsochatReturnPath = ({
+  storage = getWebsochatReturnPathStorage(),
+}: {
+  storage?: WebsochatReturnPathStorage;
+} = {}) => {
+  if (!storage) return null;
+  const storedPath = storage.getItem(WEBSOCHAT_RETURN_PATH_STORAGE_KEY);
+  storage.removeItem(WEBSOCHAT_RETURN_PATH_STORAGE_KEY);
+  return normalizeWebsochatReturnPath(storedPath);
+};
 
 export type WebsochatLaunchModeKey = "qa" | "rp" | "ideal_worldcup";
 export type WebsochatLaunchQaActionKey = "predict" | "next_episode_write" | null;
@@ -372,6 +421,7 @@ export const savePendingWebsochatLaunch = (
 ) => {
   if (typeof window === "undefined") return;
 
+  saveWebsochatReturnPath();
   sessionStorage.setItem(
     PENDING_WEBSOCHAT_LAUNCH_KEY,
     JSON.stringify({

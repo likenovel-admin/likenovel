@@ -75,6 +75,7 @@ import { getStableWebsochatProductSnapshot } from "@/utils/websochatProductSnaps
 import {
   buildWebsochatIdleGuideMessage,
   buildWebsochatStarterGuideMessage,
+  consumeWebsochatReturnPath,
   consumePendingWebsochatLaunch,
   consumeWebsochatSessionPendingDraft,
   filterWebsochatActionsByAllowedModes,
@@ -94,6 +95,7 @@ import dayjs from "dayjs";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import ArrowLeft from "/public/images/arrow-left.svg";
 import List from "/public/images/list.svg";
 
 const useBrowserLayoutEffect =
@@ -3282,7 +3284,7 @@ export default function WebsochatPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handlePrepareNav = () => {
-      writeStoredActiveSessionId(null);
+      consumeWebsochatReturnPath();
       setIsPreparingNewSession(true);
       setActiveSessionId(null);
       setSelectedProductId(null);
@@ -3292,7 +3294,7 @@ export default function WebsochatPage() {
     return () => {
       window.removeEventListener(WEBSOCHAT_PREPARE_NAV_EVENT, handlePrepareNav);
     };
-  }, [writeStoredActiveSessionId]);
+  }, []);
 
   useEffect(() => {
     const pendingLaunch = consumePendingWebsochatLaunch();
@@ -3701,6 +3703,15 @@ export default function WebsochatPage() {
     queueScrollMessageListToBottom("auto");
     setIsSessionDrawerOpen(false);
     enterDraftSession(false);
+  };
+
+  const handleGoBack = () => {
+    const returnPath = consumeWebsochatReturnPath();
+    const fallbackPath = effectiveProductId
+      ? buildProductDetailPath(effectiveProductId)
+      : "/";
+    window.dispatchEvent(new Event(WEBSOCHAT_PREPARE_NAV_EVENT));
+    window.requestAnimationFrame(() => router.replace(returnPath || fallbackPath));
   };
 
   const handleSelectSession = (sessionId: number, productId: number | null) => {
@@ -5244,13 +5255,22 @@ export default function WebsochatPage() {
               <div className="relative bg-white flex flex-col gap-12pxr h-full min-h-0 overflow-hidden">
                 <div
                   data-character-chat-header={isCharacterChatExperience ? "true" : undefined}
-                  className={`${isCharacterChatExperience ? "flex" : "flex md:hidden"} min-h-[52px] shrink-0 items-center justify-between gap-12pxr border-b border-light-gray-200 px-16pxr py-8pxr`}
+                  className="flex h-[52px] shrink-0 items-center justify-between gap-4pxr border-b border-light-gray-200 px-4pxr py-4pxr md:gap-12pxr md:px-12pxr"
                   aria-busy={isCharacterOpeningBusy}
                 >
                   <button
                     type="button"
+                    onClick={handleGoBack}
+                    className="flex h-[44px] shrink-0 items-center justify-center gap-8pxr rounded-full px-12pxr text-dark-gray-500 hover:bg-light-gray-100 hover:text-primary-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100 md:min-w-[96px] md:rounded-[8px]"
+                    aria-label="이전 화면으로 돌아가기"
+                  >
+                    <ArrowLeft className="h-[20px] w-[11px]" />
+                    <span className="hidden text-14pxr font-medium md:inline">돌아가기</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setIsSessionDrawerOpen(true)}
-                    className="-ml-4pxr rounded-full p-4pxr text-dark-gray-500 hover:text-primary-100 md:hidden"
+                    className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full text-dark-gray-500 hover:bg-light-gray-100 hover:text-primary-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100 md:hidden"
                     aria-label="세션 목록"
                   >
                     <List className="w-[22px] h-[22px]" />
@@ -5282,7 +5302,18 @@ export default function WebsochatPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex-1" />
+                    <div className="flex min-w-0 flex-1 items-center px-4pxr">
+                      <div className="min-w-0">
+                        <div className="truncate text-14pxr font-semibold text-black-100">
+                          {sessionProductSummary?.title || "웹소챗"}
+                        </div>
+                        {sessionProductSummary?.title ? (
+                          <div className="mt-2pxr truncate text-11pxr text-dark-gray-300">
+                            웹소챗
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
                   )}
                   <button
                     type="button"
@@ -5293,7 +5324,7 @@ export default function WebsochatPage() {
                       || isCharacterOpeningBusy
                     }
                     onClick={handleCreateSession}
-                    className="p-4pxr -mr-4pxr rounded-full text-dark-gray-500 hover:text-primary-100 disabled:opacity-40"
+                    className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full text-dark-gray-500 hover:bg-light-gray-100 hover:text-primary-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100 disabled:opacity-40"
                     aria-label="새 대화"
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>

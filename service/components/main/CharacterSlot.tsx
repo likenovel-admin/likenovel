@@ -18,6 +18,7 @@ import { getWebsochatSafeUserMessage } from "@/utils/websochatError";
 import {
   getOrCreateWebsochatGuestKey,
   saveActiveWebsochatSessionId,
+  saveWebsochatReturnPath,
 } from "@/utils/websochatLaunch";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
@@ -142,7 +143,10 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
           clearActiveSession: () => saveActiveWebsochatSessionId(null),
           clearSessionListCache: () =>
             queryClient.removeQueries({ queryKey: ["websochatSessions"] }),
-          navigate: () => router.push("/websochat"),
+          navigate: () => {
+            saveWebsochatReturnPath();
+            router.push("/websochat");
+          },
         });
       } catch (error) {
         setToast({

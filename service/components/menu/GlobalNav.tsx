@@ -4,6 +4,7 @@ import useAuthStore from "@/store/authStore";
 import useConfirmStore from "@/store/confirmStore";
 import useGiftBoxStore from "@/store/giftboxStore";
 import useSearchModalStore from "@/store/searchModalStore";
+import { saveWebsochatReturnPath } from "@/utils/websochatLaunch";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import SquareBadge from "../common/SquareBadge";
@@ -31,6 +32,9 @@ const GlobalNav = () => {
 
   const navigate = (href: string) => {
     if (href === pathname) return;
+    if (href === "/websochat") {
+      saveWebsochatReturnPath();
+    }
     if (pathname === "/websochat") {
       window.dispatchEvent(new Event(WEBSOCHAT_PREPARE_NAV_EVENT));
       window.requestAnimationFrame(() => router.push(href));
