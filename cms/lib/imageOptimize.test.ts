@@ -89,7 +89,10 @@ assert.match(
 assert.doesNotMatch(coverUploadSource, /원본으로 업로드합니다/);
 assert.doesNotMatch(coverUploadSource, /fileName: file\.name/);
 assert.match(source, /export async function prepareCharacterImageFromCover/);
-assert.match(source, /fetch\(coverImageUrl,\s*\{\s*credentials: "omit"\s*\}\)/);
+assert.match(
+  source,
+  /fetch\(coverImageUrl,\s*\{[\s\S]*credentials:\s*"omit",[\s\S]*cache:\s*"no-store",[\s\S]*\}\)/,
+);
 assert.match(source, /const CHARACTER_IMAGE_WIDTH = 728/);
 assert.match(source, /const CHARACTER_IMAGE_HEIGHT = 828/);
 assert.match(source, /canvas\.width = CHARACTER_IMAGE_WIDTH/);
