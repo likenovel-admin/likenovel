@@ -236,14 +236,23 @@ export const postWebsochatCharacterChatChoices = async ({
 export const getWebsochatBillingStatusQueryOptions = (
   actorKey: string,
   guestKey?: string | null,
-  qaActionKey?: "predict" | "next_episode_write" | null
+  qaActionKey?: "predict" | "next_episode_write" | null,
+  sessionId?: number | null
 ) =>
   queryOptions<IGetWebsochatBillingStatusResponse>({
-    queryKey: ["websochatBillingStatus", actorKey, qaActionKey || "default"],
+    queryKey: [
+      "websochatBillingStatus",
+      actorKey,
+      qaActionKey || "default",
+      sessionId || "no-session",
+    ],
     queryFn: async () => {
       const query = new URLSearchParams();
       if (qaActionKey) {
         query.set("qa_action_key", qaActionKey);
+      }
+      if (sessionId) {
+        query.set("session_id", String(sessionId));
       }
       const response = await instance.get(`/v1/query/websochat/billing-status${query.toString() ? `?${query.toString()}` : ""}`, {
         headers: guestKey ? { "X-Websochat-Guest-Key": guestKey } : undefined,
@@ -260,9 +269,17 @@ export const getWebsochatBillingStatusQueryOptions = (
 export const useGetWebsochatBillingStatus = (
   actorKey: string,
   guestKey?: string | null,
-  qaActionKey?: "predict" | "next_episode_write" | null
+  qaActionKey?: "predict" | "next_episode_write" | null,
+  sessionId?: number | null
 ) => {
-  return useQuery(getWebsochatBillingStatusQueryOptions(actorKey, guestKey, qaActionKey));
+  return useQuery(
+    getWebsochatBillingStatusQueryOptions(
+      actorKey,
+      guestKey,
+      qaActionKey,
+      sessionId
+    )
+  );
 };
 
 export const useGetWebsochatProducts = (keyword: string, adultYn: "Y" | "N") => {

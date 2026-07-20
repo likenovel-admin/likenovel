@@ -203,10 +203,10 @@ test("선택지 대사나 지문이 비면 남은 내용만 사용하고 label�
 test("캐릭터챗 입력 힌트는 무료 횟수 뒤에 첫 선택지 대사를 사용한다", () => {
   assert.equal(
     resolveCharacterChatComposerPlaceholder({
-      freeRemainingMessages: 3,
+      freeRemainingMessages: 10,
       firstChoiceDialogue: "제가 먼저 문을 열어볼게요.",
     }),
-    "무료 3회 채팅 가능"
+    "무료 10회 채팅 가능"
   );
   assert.equal(
     resolveCharacterChatComposerPlaceholder({

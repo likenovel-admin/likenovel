@@ -137,6 +137,11 @@ Important examples:
   before character resolution, summary lookup, RP context, game setup, or QA
   retrieval can run.
 
+Daily free message quotas are separate by session type: dedicated character-chat
+sessions receive 10 free user messages per actor per day, while regular
+Websochat sessions retain 3. Messages in one pool do not consume the other pool;
+the existing login and cash rules apply after that pool is exhausted.
+
 ### Character Chat Pipeline
 
 > Last verified: 2026-06-28

@@ -1375,7 +1375,8 @@ export default function WebsochatPage() {
   const { data: billingStatusData } = useGetWebsochatBillingStatus(
     websochatActorKey,
     websochatGuestKey,
-    null
+    null,
+    activeSessionId
   );
   const freeRemainingMessages = Math.max(
     Number(billingStatusData?.data?.freeRemainingMessages ?? 0),
@@ -3389,10 +3390,13 @@ export default function WebsochatPage() {
     };
   }, [accessToken, guestKey, isAuthenticated, user?.userId]);
 
-  const openLoginConfirm = () => {
+  const openLoginConfirm = (dailyFreeMessageLimit?: number | null) => {
     const currentUrl = encodeURIComponent(pathname || "/websochat");
+    const resolvedFreeLimit = Math.max(Number(dailyFreeMessageLimit || 0), 0);
     setConfirm({
-      content: "오늘 무료 3회를 모두 썼어요. 로그인해 주세요.",
+      content: resolvedFreeLimit > 0
+        ? `오늘 무료 ${resolvedFreeLimit}회를 모두 썼어요. 로그인해 주세요.`
+        : "오늘 무료 이용 횟수를 모두 썼어요. 로그인해 주세요.",
       confirmText: "로그인하기",
       onConfirm: () => {
         window.location.href = `/login?redirect=${currentUrl}`;
@@ -3836,12 +3840,13 @@ export default function WebsochatPage() {
         getWebsochatBillingStatusQueryOptions(
           requestActorKey,
           requestGuestKey,
-          resolvedQaActionKey
+          resolvedQaActionKey,
+          activeSessionId
         )
       );
       const billingStatus = latestBillingStatusResponse.data;
       if (billingStatus.requiresLoginForNextMessage && !requestCanUseAccountScope) {
-        openLoginConfirm();
+        openLoginConfirm(billingStatus.dailyFreeMessageLimit);
         return null;
       }
       if (
@@ -4438,7 +4443,7 @@ export default function WebsochatPage() {
       }
 
       if (errorInfo.status === 401 && !requestCanUseAccountScope) {
-        openLoginConfirm();
+        openLoginConfirm(billingStatusData?.data?.dailyFreeMessageLimit);
         return null;
       }
 
