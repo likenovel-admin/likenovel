@@ -38,8 +38,28 @@ assert.match(
 );
 assert.match(
   characterSlotSource,
-  /grid-cols-2/,
-  "CharacterSlot should keep two columns on mobile"
+  /grid-cols-2[^"]*md:grid-cols-4[^"]*lg:grid-cols-6/,
+  "CharacterSlot should fill each viewport with 2, 4, and 6 columns"
+);
+assert.match(
+  characterSlotSource,
+  /useState\(12\)/,
+  "CharacterSlot should render all 12 cards without desktop pagination"
+);
+assert.match(
+  characterSlotSource,
+  /desktop\.matches \? 12 : tablet\.matches \? 8 : 4/,
+  "CharacterSlot should page by 12 on desktop, 8 on tablet, and 4 on mobile"
+);
+assert.match(
+  characterSlotSource,
+  /const hasPager = list\.length > pageSize/,
+  "CharacterSlot should hide desktop pagination when all 12 cards fit"
+);
+assert.match(
+  characterSlotSource,
+  /\(current - 1 \+ pageCount\) % pageCount[\s\S]*\(current \+ 1\) % pageCount/,
+  "CharacterSlot arrows should loop in both directions"
 );
 assert.match(
   characterSlotSource,
