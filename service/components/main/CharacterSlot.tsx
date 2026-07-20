@@ -35,13 +35,13 @@ interface Props {
 const CHARACTER_SLOT_SECTION_TITLE = "작품속 주인공과 채팅해봐요";
 
 const useResponsivePageSize = () => {
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(12);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
     const desktop = window.matchMedia("(min-width: 1024px)");
     const tablet = window.matchMedia("(min-width: 768px)");
-    const update = () => setPageSize(desktop.matches ? 10 : tablet.matches ? 8 : 4);
+    const update = () => setPageSize(desktop.matches ? 12 : tablet.matches ? 8 : 4);
     update();
     desktop.addEventListener("change", update);
     tablet.addEventListener("change", update);
@@ -173,7 +173,7 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
         }
       />
 
-      <ul className="mt-10pxr grid grid-cols-2 gap-x-10pxr gap-y-20pxr px-16pxr md:mt-20pxr md:grid-cols-4 md:gap-x-20pxr md:px-0 lg:grid-cols-5">
+      <ul className="mt-10pxr grid grid-cols-2 gap-x-10pxr gap-y-20pxr px-16pxr md:mt-20pxr md:grid-cols-4 md:gap-x-20pxr md:px-0 lg:grid-cols-6">
         {visibleItems.map((item) => {
           const characterImage = resolveProductCoverImage(item.characterImagePath);
           const isDefaultImage = characterImage === DEFAULT_PRODUCT_IMAGE;
