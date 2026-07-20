@@ -52,6 +52,7 @@ import {
   consumePendingHomeCharacterChatLaunch,
   findRecoverableHomeCharacterChatSession,
   PendingHomeCharacterChatLaunch,
+  resolveCharacterChatComposerPlaceholder,
 } from "@/utils/characterChatLaunch";
 import { STORAGE_KEYS } from "@/utils/localStorage";
 import { buildProductDetailPath } from "@/utils/productPath";
@@ -2087,7 +2088,10 @@ export default function WebsochatPage() {
   const composerPlaceholder = isRpAwaitingCharacter
     ? "대화하고 싶은 인물 이름을 적어줘. 예: 레이너"
     : isRpChatting
-      ? `${addKoreanPostposition(activeCharacterLabel || "인물", "에게", "에게")} 말 걸어봐. 예: 왜 그래?`
+      ? resolveCharacterChatComposerPlaceholder({
+        freeRemainingMessages,
+        firstChoiceDialogue: characterChatChoices[0]?.dialogue,
+      })
       : `${composerGhostQuestion}${freeRemainingMessageSuffix}`;
   const composerPlaceholderWithShortcutHint = `${composerPlaceholder}\nShift+Enter로 줄바꿈`;
   const composerModeDetail = isRpAwaitingCharacter
