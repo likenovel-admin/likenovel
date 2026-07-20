@@ -13,6 +13,7 @@ import {
   createSingleFlightRunner,
   queueHomeCharacterChatLaunch,
 } from "@/utils/characterChatLaunch";
+import { buildProductDetailPath } from "@/utils/productPath";
 import { getWebsochatSafeUserMessage } from "@/utils/websochatError";
 import {
   getOrCreateWebsochatGuestKey,
@@ -23,6 +24,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import CircleArrow from "../common/CircleArrow";
+import CharacterChatPreviewModal from "./CharacterChatPreviewModal";
 import MainHeader from "../common/MainHeader";
 
 interface Props {
@@ -65,6 +67,8 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
   const launchOnceRef = useRef(createSingleFlightRunner());
   const [page, setPage] = useState(0);
   const [launchingScopeKey, setLaunchingScopeKey] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] =
+    useState<IMainCharacterSlotItem | null>(null);
   const list = useMemo(() => items ?? [], [items]);
   const pageCount = Math.max(1, Math.ceil(list.length / pageSize));
   const hasPager = list.length > pageSize;
@@ -141,6 +145,11 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
     });
   };
 
+  const handleProductClick = (item: IMainCharacterSlotItem) => {
+    setSelectedItem(null);
+    router.push(buildProductDetailPath(item.productId));
+  };
+
   return (
     <section
       data-home-section="character-slot"
@@ -175,9 +184,10 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
               <button
                 type="button"
                 aria-label={`${item.characterName} · ${item.productTitle}`}
+                aria-haspopup="dialog"
                 aria-busy={isLaunching}
                 disabled={launchingScopeKey !== null}
-                onClick={() => void handleCharacterClick(item)}
+                onClick={() => setSelectedItem(item)}
                 className="group flex w-full flex-col text-left disabled:cursor-wait"
               >
                 <div className="relative isolate aspect-[364/414] w-full overflow-hidden rounded-[10px] bg-light-gray-100">
@@ -191,6 +201,11 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
                       isLaunching ? "scale-[1.01] opacity-60" : ""
                     }`}
                   />
+                  {item.syncedLatestEpisodeNo > 0 && (
+                    <span className="absolute right-8pxr top-8pxr z-[1] rounded-full bg-black/70 px-8pxr py-4pxr text-11pxr font-medium leading-[14px] text-white shadow-sm md:text-12pxr">
+                      ~{item.syncedLatestEpisodeNo}화까지
+                    </span>
+                  )}
                   {isLaunching && (
                     <span className="absolute inset-0 flex items-center justify-center bg-black/10">
                       <span className="h-7 w-7 animate-spin rounded-full border-2 border-white/50 border-t-white" />
@@ -208,6 +223,16 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
           );
         })}
       </ul>
+
+      <CharacterChatPreviewModal
+        item={selectedItem}
+        isLaunching={launchingScopeKey !== null}
+        onLaunch={(item) => void handleCharacterClick(item)}
+        onGoToProduct={handleProductClick}
+        onClose={() => {
+          if (!launchingScopeKey) setSelectedItem(null);
+        }}
+      />
     </section>
   );
 };

@@ -61,3 +61,13 @@ assert.match(
   /order_dir: "desc"[\s\S]*response\.data\.episodes\[0\]\?\.episodeNo/,
   "CharacterSlot should use the latest public episode row instead of the account read-progress field"
 );
+assert.match(
+  characterSlotSource,
+  /~\{item\.syncedLatestEpisodeNo\}화까지/,
+  "CharacterSlot should show the backend-synced chat scope on each portrait"
+);
+assert.match(
+  characterSlotSource,
+  /item\.syncedLatestEpisodeNo > 0/,
+  "CharacterSlot should not render an empty episode-scope badge"
+);

@@ -195,6 +195,7 @@ export interface IMainCharacterSlotItem {
   cardOrder: number;
   productTitle: string;
   authorNickname: string;
+  syncedLatestEpisodeNo: number;
 }
 
 export interface IGetMainCharacterSlotsResponse {

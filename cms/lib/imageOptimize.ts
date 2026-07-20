@@ -2,8 +2,15 @@ const BANNER_WEBP_QUALITY = 0.95;
 const COVER_WEBP_QUALITY = 0.92;
 const WEBP_MIME_TYPE = "image/webp";
 export const PRODUCT_COVER_MAX_IMAGE_DIMENSION = 1024;
-const CHARACTER_IMAGE_WIDTH = 728;
-const CHARACTER_IMAGE_HEIGHT = 828;
+export const CHARACTER_IMAGE_WIDTH = 728;
+export const CHARACTER_IMAGE_HEIGHT = 828;
+
+export type CharacterImageCropRect = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
 type UploadableImageFile = {
   file: File;
@@ -16,6 +23,9 @@ const WEBP_CONVERTIBLE_TYPES = new Set([
   "image/jpg",
   "image/png",
 ]);
+
+export const isSupportedCharacterImageFile = (file: File) =>
+  WEBP_CONVERTIBLE_TYPES.has(file.type) || file.type === WEBP_MIME_TYPE;
 
 const replaceExtensionWithWebp = (fileName: string) => {
   const dotIndex = fileName.lastIndexOf(".");
@@ -307,4 +317,54 @@ export async function prepareCharacterImageFromCover(
       "표지 이미지로 캐릭터 이미지를 만들지 못했습니다. 캐릭터 이미지를 직접 등록해 주세요.",
     );
   }
+}
+
+export async function cropCharacterImageForUpload(
+  file: File,
+  crop: CharacterImageCropRect,
+): Promise<File> {
+  if (!isSupportedCharacterImageFile(file)) {
+    throw new Error("JPG, PNG, WebP 이미지만 사용할 수 있습니다.");
+  }
+
+  const image = await loadImageBitmap(file);
+  const sourceWidth = image.naturalWidth || image.width;
+  const sourceHeight = image.naturalHeight || image.height;
+  const x = Math.max(0, Math.min(Math.round(crop.x), sourceWidth - 1));
+  const y = Math.max(0, Math.min(Math.round(crop.y), sourceHeight - 1));
+  const width = Math.max(
+    1,
+    Math.min(Math.round(crop.width), sourceWidth - x),
+  );
+  const height = Math.max(
+    1,
+    Math.min(Math.round(crop.height), sourceHeight - y),
+  );
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CHARACTER_IMAGE_WIDTH;
+  canvas.height = CHARACTER_IMAGE_HEIGHT;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("이미지 변환 컨텍스트를 만들 수 없습니다.");
+  }
+
+  context.drawImage(
+    image,
+    x,
+    y,
+    width,
+    height,
+    0,
+    0,
+    CHARACTER_IMAGE_WIDTH,
+    CHARACTER_IMAGE_HEIGHT,
+  );
+
+  const blob = await canvasToWebpBlob(canvas, COVER_WEBP_QUALITY);
+  return new File([blob], replaceExtensionWithWebp(file.name), {
+    type: WEBP_MIME_TYPE,
+    lastModified: file.lastModified,
+  });
 }
