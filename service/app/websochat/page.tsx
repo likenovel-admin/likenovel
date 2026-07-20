@@ -197,16 +197,16 @@ const buildWebsochatDraftReadScopeNotice = ({
 
   if (hasDetectedReadRecord && conversationScopeText) {
     if (isSyncPending) {
-      return `최신 공개 회차 컨텍스트는 아직 준비 중입니다. 현재 웹소챗 세션에서 대화 가능한 기준은 ${conversationScopeText}입니다.`;
+      return `최신 회차는 아직 반영 중이에요. 우선 ${conversationScopeText} 무렵의 맥락에서 주인공과 새로운 이야기를 이어가볼게요.`;
     }
-    return `현재 웹소챗 세션에서 대화 가능한 기준은 ${conversationScopeText}입니다.`;
+    return `${conversationScopeText}까지 읽으셨네요. 그 무렵의 맥락에서 주인공과 새로운 이야기를 이어가볼게요.`;
   }
 
   if (conversationScopeText) {
-    return `해당 작품의 읽은 기록이 없어 현재 웹소챗 세션에서 대화 가능한 기준은 ${conversationScopeText}입니다.`;
+    return `${conversationScopeText}까지의 이야기에서 주인공과 새로운 이야기를 시작할게요.`;
   }
 
-  return "해당 작품의 읽은 범위를 자동으로 확인하지 못했습니다. 읽은 화수를 직접 입력하면 그 기준으로 대화를 맞출 수 있습니다.";
+  return "어디까지 읽으셨나요? 알려주시면 그 무렵의 이야기에서 시작할게요.";
 };
 
 const buildWebsochatReadScopeAppliedNotice = ({
@@ -221,9 +221,9 @@ const buildWebsochatReadScopeAppliedNotice = ({
   const scopeText = formatWebsochatReadScope(episodeNo, episodeTitle);
   if (!scopeText) return "";
   if (isSyncPending) {
-    return `읽은 범위가 반영되었습니다. 최신 공개 회차 컨텍스트는 아직 준비 중입니다. 현재 웹소챗 세션에서 대화 가능한 기준은 ${scopeText}입니다.`;
+    return `최신 회차는 아직 반영 중이에요. 우선 ${scopeText} 무렵의 맥락에서 주인공과 새로운 이야기를 이어가볼게요.`;
   }
-  return `읽은 범위가 반영되었습니다. 현재 웹소챗 세션에서 대화 가능한 기준은 ${scopeText}입니다.`;
+  return `${scopeText}까지 읽은 것으로 반영했어요. 그 무렵의 맥락에서 주인공과 새로운 이야기를 이어가볼게요.`;
 };
 
 const extractWebsochatReadScopeEpisodeNo = (content: string) => {
@@ -472,6 +472,7 @@ const formatWebsochatRelativeUpdatedAt = (value?: string | null) => {
 const WEBSOCHAT_MODE_NOTICES_STORAGE_KEY = "websochat_mode_notices";
 const WEBSOCHAT_STICKY_GUIDES_STORAGE_KEY = "websochat_sticky_guides";
 const WEBSOCHAT_DEBUG_LOG_STORAGE_KEY = "websochat_debug_log";
+const WEBSOCHAT_SCOPE_NOTICE_TTL_MS = 5_000;
 
 const buildWebsochatSessionEpisodeLabel = (
   readEpisodeNo?: number | null,
@@ -564,18 +565,13 @@ const buildWebsochatNextEpisodeBlockedNotice = (
 };
 
 const buildWebsochatSyncPendingNotice = (
-  publishedLatestEpisodeNo?: number | null,
   syncedLatestEpisodeNo?: number | null
 ) => {
-  const resolvedPublishedLatestEpisodeNo = Math.max(Number(publishedLatestEpisodeNo || 0), 0);
   const resolvedSyncedLatestEpisodeNo = Math.max(Number(syncedLatestEpisodeNo || 0), 0);
-  if (resolvedPublishedLatestEpisodeNo > 0 && resolvedSyncedLatestEpisodeNo > 0) {
-    return `최신 공개 회차 컨텍스트는 아직 준비 중입니다. 현재 웹소챗 세션에서 대화 가능한 기준은 ${resolvedSyncedLatestEpisodeNo}화입니다.`;
-  }
   if (resolvedSyncedLatestEpisodeNo > 0) {
-    return `최신 공개 회차 컨텍스트는 아직 준비 중입니다. 현재 웹소챗 세션에서 대화 가능한 기준은 ${resolvedSyncedLatestEpisodeNo}화입니다.`;
+    return `최신 회차는 아직 반영 중이에요. 우선 ${resolvedSyncedLatestEpisodeNo}화 무렵의 맥락에서 주인공과 새로운 이야기를 이어가볼게요.`;
   }
-  return "최신 공개 회차 컨텍스트는 아직 준비 중입니다. 준비된 범위 안에서만 대화할 수 있습니다.";
+  return "최신 회차는 아직 반영 중이에요. 준비된 이야기에서 주인공과 새로운 이야기를 이어가볼게요.";
 };
 
 const buildWebsochatProductSnapshot = ({
@@ -633,8 +629,12 @@ type WebsochatModeNoticeItem = {
   content: string;
   createdAt: number;
   anchorClientMessageId?: string | null;
-  kind: "mode" | "action" | "sync_pending";
+  kind: "mode" | "action" | "read_scope" | "sync_pending";
 };
+
+const isTransientWebsochatScopeNoticeKind = (
+  kind?: WebsochatModeNoticeItem["kind"] | null
+) => kind === "read_scope" || kind === "sync_pending";
 
 type WebsochatStickyGuideItem = {
   guideId: string;
@@ -946,6 +946,14 @@ export default function WebsochatPage() {
   const [activeCharacterLabel, setActiveCharacterLabel] = useState<string | null>(null);
   const [activeShortcutPrompt, setActiveShortcutPrompt] = useState("");
   const [modeNotices, setModeNotices] = useState<WebsochatModeNoticeItem[]>([]);
+  const clearTransientWebsochatScopeNotices = useCallback(() => {
+    setModeNotices((current) => {
+      const next = current.filter(
+        (notice) => !isTransientWebsochatScopeNoticeKind(notice.kind)
+      );
+      return next.length === current.length ? current : next;
+    });
+  }, []);
   const [stickyGuides, setStickyGuides] = useState<WebsochatStickyGuideItem[]>([]);
   const [localStarters, setLocalStarters] = useState<WebsochatLocalStarterItem[]>([]);
   const [transientMessages, setTransientMessages] = useState<WebsochatTransientMessageItem[]>([]);
@@ -1102,6 +1110,7 @@ export default function WebsochatPage() {
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [] as WebsochatModeNoticeItem[];
       return parsed
+        .filter((item) => !isTransientWebsochatScopeNoticeKind(item?.kind))
         .map((item): WebsochatModeNoticeItem => ({
           noticeId: String(item?.noticeId || ""),
           sessionId:
@@ -1134,13 +1143,16 @@ export default function WebsochatPage() {
 
   const writeStoredModeNotices = useCallback((items: WebsochatModeNoticeItem[]) => {
     if (typeof window === "undefined") return;
-    if (!items.length) {
+    const persistentItems = items.filter(
+      (item) => !isTransientWebsochatScopeNoticeKind(item.kind)
+    );
+    if (!persistentItems.length) {
       window.sessionStorage.removeItem(WEBSOCHAT_MODE_NOTICES_STORAGE_KEY);
       return;
     }
     window.sessionStorage.setItem(
       WEBSOCHAT_MODE_NOTICES_STORAGE_KEY,
-      JSON.stringify(items.slice(-200))
+      JSON.stringify(persistentItems.slice(-200))
     );
   }, []);
 
@@ -1262,6 +1274,36 @@ export default function WebsochatPage() {
   useEffect(() => {
     writeStoredModeNotices(modeNotices);
   }, [modeNotices, writeStoredModeNotices]);
+
+  useEffect(() => {
+    const transientNotices = modeNotices.filter((notice) =>
+      isTransientWebsochatScopeNoticeKind(notice.kind)
+    );
+    if (!transientNotices.length) return;
+
+    const nextExpiresAt = Math.min(
+      ...transientNotices.map(
+        (notice) => notice.createdAt + WEBSOCHAT_SCOPE_NOTICE_TTL_MS
+      )
+    );
+    const timer = window.setTimeout(() => {
+      const now = Date.now();
+      setModeNotices((current) =>
+        current.filter(
+          (notice) =>
+            !isTransientWebsochatScopeNoticeKind(notice.kind)
+            || notice.createdAt + WEBSOCHAT_SCOPE_NOTICE_TTL_MS > now
+        )
+      );
+    }, Math.max(nextExpiresAt - Date.now(), 0));
+
+    return () => window.clearTimeout(timer);
+  }, [modeNotices]);
+
+  useEffect(() => {
+    if (characterChatChoices.length === 0) return;
+    clearTransientWebsochatScopeNotices();
+  }, [characterChatChoices.length, clearTransientWebsochatScopeNotices]);
 
   useEffect(() => {
     writeStoredStickyGuides(stickyGuides);
@@ -2898,10 +2940,7 @@ export default function WebsochatPage() {
     }
 
     appendModeNotice(
-      buildWebsochatSyncPendingNotice(
-        publishedLatestEpisodeNo,
-        syncedLatestEpisodeNo
-      ),
+      buildWebsochatSyncPendingNotice(syncedLatestEpisodeNo),
       "sync_pending"
     );
     syncPendingNoticeKeyRef.current = noticeKey;
@@ -3723,6 +3762,7 @@ export default function WebsochatPage() {
     if (!isWebsochatModeAllowed(requestedModeKey, enforcedActiveSessionAllowedModes)) {
       return null;
     }
+    clearTransientWebsochatScopeNotices();
       appendWebsochatDebugLog("handle_send:start", {
         activeSessionId,
         effectiveProductId,
@@ -4041,7 +4081,7 @@ export default function WebsochatPage() {
         }
         appendScopedModeNotice({
           content: requestedReadScopeNotice,
-          kind: "mode",
+          kind: "read_scope",
             sessionId: activeSessionId ?? null,
             productId: effectiveProductId,
             createdAt: tempSeed + 1,
@@ -4607,7 +4647,7 @@ export default function WebsochatPage() {
     ) => {
       appendScopedModeNotice({
         content,
-        kind: "mode",
+        kind: "read_scope",
         sessionId: null,
         productId: product.productId,
         createdAt,
