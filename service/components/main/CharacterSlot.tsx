@@ -32,7 +32,15 @@ interface Props {
   adultYn: "Y" | "N";
 }
 
-const CHARACTER_SLOT_SECTION_TITLE = "작품속 주인공과 채팅해봐요";
+const CHARACTER_SLOT_SECTION_TITLE = "다음 회차를 기다리는 동안, 주인공챗";
+const CHARACTER_SLOT_SECTION_SUBTITLES = [
+  "읽은 회차에서 주인공과 마음대로 전개를 이어가보세요",
+  "당신이 멈춘 회차에서 주인공과 바로 이어가보세요",
+  "스포일러 걱정 없이, 읽은 데까지의 주인공과 대화해요",
+  "원작에 없던 장면을 주인공과 함께 만들어보세요",
+  "지금 읽은 만큼만 아는 주인공과 이야기해보세요",
+  "내가 읽은 그 순간의 주인공과 새로운 이야기를 이어가보세요",
+];
 
 const useResponsivePageSize = () => {
   const [pageSize, setPageSize] = useState(12);
@@ -69,11 +77,17 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
   const [launchingScopeKey, setLaunchingScopeKey] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] =
     useState<IMainCharacterSlotItem | null>(null);
+  const [subtitleIndex, setSubtitleIndex] = useState(0);
   const list = useMemo(() => items ?? [], [items]);
   const pageCount = Math.max(1, Math.ceil(list.length / pageSize));
   const hasPager = list.length > pageSize;
 
   useEffect(() => setPage(0), [pageSize]);
+  useEffect(() => {
+    setSubtitleIndex(
+      Math.floor(Math.random() * CHARACTER_SLOT_SECTION_SUBTITLES.length)
+    );
+  }, []);
   useEffect(() => {
     if (page >= pageCount) setPage(0);
   }, [page, pageCount]);
@@ -171,6 +185,10 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
           ) : null
         }
       />
+
+      <p className="mt-4pxr pl-16pxr text-12pxr text-dark-gray-500 md:pl-0 md:text-14pxr">
+        {CHARACTER_SLOT_SECTION_SUBTITLES[subtitleIndex]}
+      </p>
 
       <ul className="mt-10pxr grid grid-cols-2 gap-x-10pxr gap-y-20pxr px-16pxr md:mt-20pxr md:grid-cols-4 md:gap-x-20pxr md:px-0 lg:grid-cols-6">
         {visibleItems.map((item) => {
