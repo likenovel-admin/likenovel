@@ -209,7 +209,10 @@ export default function Page() {
     if (!characterImagePreview) return;
 
     try {
-      const response = await fetch(characterImagePreview, { credentials: "omit" });
+      const response = await fetch(characterImagePreview, {
+        credentials: "omit",
+        cache: "no-store",
+      });
       if (!response.ok) {
         throw new Error(`이미지 응답 오류: ${response.status}`);
       }
