@@ -58,6 +58,22 @@ export const consumeWebsochatReturnPath = ({
   return normalizeWebsochatReturnPath(storedPath);
 };
 
+export const resolveWebsochatSessionListTitle = ({
+  sessionKind,
+  title,
+  characterDisplayName,
+}: {
+  sessionKind?: "websochat" | "character_chat";
+  title: string;
+  characterDisplayName?: string | null;
+}) => {
+  if (sessionKind !== "character_chat") return title;
+
+  return String(characterDisplayName || "").trim()
+    || title.replace(/\s*(?:과|와)의\s*대화\s*$/, "").trim()
+    || "주인공";
+};
+
 export type WebsochatLaunchModeKey = "qa" | "rp" | "ideal_worldcup";
 export type WebsochatLaunchQaActionKey = "predict" | "next_episode_write" | null;
 

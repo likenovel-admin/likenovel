@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   buildCharacterChatChoiceMessage,
@@ -13,6 +14,7 @@ import {
 import {
   resolveWebsochatActiveSession,
   resolveWebsochatActorKey,
+  resolveWebsochatSessionListTitle,
   shouldShowWebsochatStickyGuide,
 } from "./websochatLaunch.ts";
 
@@ -364,6 +366,46 @@ test("확정된 sessions 목록에서만 active session을 clear 또는 fallback
       pendingSessionId: 2184,
     }),
     { action: "keep" }
+  );
+});
+
+test("세션 목록은 캐릭터챗만 캐릭터 이름으로 표시한다", () => {
+  assert.equal(
+    resolveWebsochatSessionListTitle({
+      sessionKind: "character_chat",
+      title: "루벤과의 대화",
+      characterDisplayName: "루벤",
+    }),
+    "루벤"
+  );
+  assert.equal(
+    resolveWebsochatSessionListTitle({
+      sessionKind: "character_chat",
+      title: "라파엘과의 대화",
+      characterDisplayName: null,
+    }),
+    "라파엘"
+  );
+  assert.equal(
+    resolveWebsochatSessionListTitle({
+      sessionKind: "websochat",
+      title: "25화 이후 전개 질문",
+      characterDisplayName: "루벤",
+    }),
+    "25화 이후 전개 질문"
+  );
+});
+
+test("캐릭터챗 세션 행은 유형 배지와 아이콘 삭제 버튼을 사용한다", () => {
+  const pageSource = readFileSync(
+    new URL("../app/websochat/page.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(pageSource, />\s*주인공챗\s*<\/span>/);
+  assert.match(
+    pageSource,
+    /aria-label=\{`\$\{sessionListTitle\} 세션 삭제`\}[\s\S]*?title="삭제"[\s\S]*?<Trash/
   );
 });
 

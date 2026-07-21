@@ -98,6 +98,7 @@ import {
   isWebsochatModeAllowed,
   resolveWebsochatActiveSession,
   resolveWebsochatActorKey,
+  resolveWebsochatSessionListTitle,
   shouldShowWebsochatStickyGuide,
   WEBSOCHAT_ACTIVE_SESSION_STORAGE_KEY,
   WEBSOCHAT_SESSION_SHORTCUT_PROMPTS_STORAGE_KEY,
@@ -110,6 +111,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ArrowLeft from "/public/images/arrow-left.svg";
 import List from "/public/images/list.svg";
+import Trash from "/public/images/trash.svg";
 
 const useBrowserLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -5337,51 +5339,67 @@ export default function WebsochatPage() {
             </button>
           </div>
         ) : null}
-        {visibleSessionItems.map((session) => (
-          <div
-            key={session.sessionId}
-            className={`rounded-[12px] border px-12pxr py-10pxr ${
-              activeSessionId === session.sessionId
-                ? "border-primary-100 bg-light-gray-100"
-                : "border-light-gray-300"
-            }`}
-          >
-            <div className="flex min-w-0 items-start justify-between gap-8pxr">
-              <button
-                type="button"
-                onClick={() => handleSelectSession(session.sessionId, session.productId)}
-                disabled={isCreatingHomeCharacterSession}
-                className="min-w-0 flex-1 overflow-hidden text-left"
-              >
-                <div className="text-14pxr font-medium line-clamp-1">{session.title}</div>
-                {session.productTitle ? (
-                  <div className="mt-4pxr flex min-w-0 items-center gap-4pxr overflow-hidden text-12pxr text-dark-gray-300">
-                    <span className="min-w-0 max-w-full truncate">{session.productTitle}</span>
-                    <span className="shrink-0">·</span>
-                    <span className="shrink-0">
-                      {buildWebsochatSessionReadScopeText(
-                        session.readScopeState,
-                        session.readEpisodeNo,
-                        session.readEpisodeTitle
-                      ) || "\u00A0"}
+        {visibleSessionItems.map((session) => {
+          const isCharacterChatSession = session.sessionKind === "character_chat";
+          const sessionListTitle = resolveWebsochatSessionListTitle(session);
+
+          return (
+            <div
+              key={session.sessionId}
+              className={`rounded-[12px] border px-12pxr py-10pxr ${
+                activeSessionId === session.sessionId
+                  ? "border-primary-100 bg-light-gray-100"
+                  : "border-light-gray-300"
+              }`}
+            >
+              <div className="flex min-w-0 items-start justify-between gap-8pxr">
+                <button
+                  type="button"
+                  onClick={() => handleSelectSession(session.sessionId, session.productId)}
+                  disabled={isCreatingHomeCharacterSession}
+                  className="min-w-0 flex-1 overflow-hidden text-left"
+                >
+                  <div className="flex min-w-0 items-center gap-6pxr">
+                    <span className="min-w-0 flex-1 truncate text-14pxr font-medium">
+                      {sessionListTitle}
                     </span>
+                    {isCharacterChatSession ? (
+                      <span className="shrink-0 rounded-full bg-primary-100 px-6pxr py-2pxr text-11pxr font-semibold leading-[14px] text-white">
+                        주인공챗
+                      </span>
+                    ) : null}
                   </div>
-                ) : null}
-                <div className="mt-4pxr text-12pxr text-dark-gray-300">
-                  {formatWebsochatRelativeUpdatedAt(session.updatedDate)}
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDeleteSession(session.sessionId)}
-                disabled={isDeletingSession || isCreatingHomeCharacterSession}
-                className="shrink-0 text-12pxr text-dark-gray-300 hover:text-dark-gray-500 disabled:opacity-40"
-              >
-                삭제
-              </button>
+                  {session.productTitle ? (
+                    <div className="mt-4pxr flex min-w-0 items-center gap-4pxr overflow-hidden text-12pxr text-dark-gray-300">
+                      <span className="min-w-0 max-w-full truncate">{session.productTitle}</span>
+                      <span className="shrink-0">·</span>
+                      <span className="shrink-0">
+                        {buildWebsochatSessionReadScopeText(
+                          session.readScopeState,
+                          session.readEpisodeNo,
+                          session.readEpisodeTitle
+                        ) || "\u00A0"}
+                      </span>
+                    </div>
+                  ) : null}
+                  <div className="mt-4pxr text-12pxr text-dark-gray-300">
+                    {formatWebsochatRelativeUpdatedAt(session.updatedDate)}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  aria-label={`${sessionListTitle} 세션 삭제`}
+                  title="삭제"
+                  onClick={() => handleDeleteSession(session.sessionId)}
+                  disabled={isDeletingSession || isCreatingHomeCharacterSession}
+                  className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-[6px] text-dark-gray-300 hover:bg-light-gray-200 hover:text-dark-gray-500 disabled:opacity-40"
+                >
+                  <Trash aria-hidden="true" className="h-[16px] w-[14px]" />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </>
     );
   };
