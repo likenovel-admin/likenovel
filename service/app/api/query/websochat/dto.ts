@@ -15,6 +15,16 @@ export interface IGetWebsochatProductsResponse {
   data: IWebsochatProductItem[];
 }
 
+export type WebsochatModelKey = "speed" | "balance" | "deep";
+
+export interface IWebsochatModelOption {
+  modelKey: WebsochatModelKey;
+  displayName: string;
+  cashCostPerMessage: number;
+  freeRemainingMessages: number;
+  dailyFreeMessageLimit: number;
+}
+
 export interface IGetWebsochatBillingStatusResponse {
   data: {
     freeRemainingMessages: number;
@@ -23,6 +33,8 @@ export interface IGetWebsochatBillingStatusResponse {
     requiresCashForNextMessage: boolean;
     requiresLoginForNextMessage: boolean;
     cashBalance: number | null;
+    selectedModelKey?: WebsochatModelKey;
+    modelOptions?: IWebsochatModelOption[];
   };
 }
 
@@ -54,6 +66,7 @@ export interface IWebsochatSessionItem {
   pendingQaActionKey?: "predict" | "next_episode_write" | null;
   rpStage?: "idle" | "awaiting_character" | "chatting";
   rpActiveCharacterLabel?: string | null;
+  selectedModelKey?: WebsochatModelKey;
 }
 
 export interface IGetWebsochatSessionsResponse {
@@ -71,7 +84,15 @@ export interface ICreateWebsochatSessionResponse {
     allowedModes?: Array<"qa" | "rp" | "ideal_worldcup">;
     characterDisplayName?: string | null;
     characterImagePath?: string | null;
+    selectedModelKey?: WebsochatModelKey;
     product: IWebsochatProductItem;
+  };
+}
+
+export interface IPatchWebsochatSessionModelResponse {
+  data: {
+    sessionId: number;
+    selectedModelKey: WebsochatModelKey;
   };
 }
 

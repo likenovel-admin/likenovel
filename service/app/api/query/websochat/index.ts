@@ -7,9 +7,11 @@ import {
   IGetWebsochatProductsResponse,
   IGetWebsochatSessionsResponse,
   IPatchWebsochatSessionModeResponse,
+  IPatchWebsochatSessionModelResponse,
   IPatchWebsochatSessionReadScopeResponse,
   IPostWebsochatCharacterChatChoicesResponse,
   IPostWebsochatMessageResponse,
+  WebsochatModelKey,
 } from "./dto";
 
 export type WebsochatStreamRequestBody = {
@@ -25,6 +27,7 @@ export type WebsochatStreamRequestBody = {
   game_mode?: "ideal_worldcup" | "vs_game" | null;
   game_read_episode_to?: number | null;
   account_read_episode_to?: number | null;
+  model_key?: WebsochatModelKey;
 };
 
 type WebsochatRequestOptions = {
@@ -237,7 +240,8 @@ export const getWebsochatBillingStatusQueryOptions = (
   actorKey: string,
   guestKey?: string | null,
   qaActionKey?: "predict" | "next_episode_write" | null,
-  sessionId?: number | null
+  sessionId?: number | null,
+  modelKey?: WebsochatModelKey | null
 ) =>
   queryOptions<IGetWebsochatBillingStatusResponse>({
     queryKey: [
@@ -245,6 +249,7 @@ export const getWebsochatBillingStatusQueryOptions = (
       actorKey,
       qaActionKey || "default",
       sessionId || "no-session",
+      modelKey || "speed",
     ],
     queryFn: async () => {
       const query = new URLSearchParams();
@@ -253,6 +258,9 @@ export const getWebsochatBillingStatusQueryOptions = (
       }
       if (sessionId) {
         query.set("session_id", String(sessionId));
+      }
+      if (modelKey) {
+        query.set("model_key", modelKey);
       }
       const response = await instance.get(`/v1/query/websochat/billing-status${query.toString() ? `?${query.toString()}` : ""}`, {
         headers: guestKey ? { "X-Websochat-Guest-Key": guestKey } : undefined,
@@ -270,14 +278,16 @@ export const useGetWebsochatBillingStatus = (
   actorKey: string,
   guestKey?: string | null,
   qaActionKey?: "predict" | "next_episode_write" | null,
-  sessionId?: number | null
+  sessionId?: number | null,
+  modelKey?: WebsochatModelKey | null
 ) => {
   return useQuery(
     getWebsochatBillingStatusQueryOptions(
       actorKey,
       guestKey,
       qaActionKey,
-      sessionId
+      sessionId,
+      modelKey
     )
   );
 };
@@ -370,6 +380,7 @@ export const useCreateWebsochatSession = () => {
       adult_yn?: "Y" | "N";
       game_read_episode_to?: number | null;
       account_read_episode_to?: number | null;
+      model_key?: WebsochatModelKey;
     }
   >({
     mutationFn: async (body) => {
@@ -436,6 +447,27 @@ export const usePatchWebsochatSessionMode = () => {
       const response = await instance.patch(
         `/v1/command/websochat/sessions/${sessionId}/mode`,
         body
+      );
+      return response.data;
+    },
+  });
+};
+
+export const usePatchWebsochatSessionModel = () => {
+  return useMutation<
+    IPatchWebsochatSessionModelResponse,
+    unknown,
+    {
+      sessionId: number;
+      guest_key?: string | null;
+      model_key: WebsochatModelKey;
+    }
+  >({
+    mutationFn: async ({ sessionId, ...body }) => {
+      const response = await instance.patch(
+        `/v1/command/websochat/sessions/${sessionId}/model`,
+        body,
+        { skipAuthRedirectOn401: true } as AxiosRequestConfigWithAuthBypass
       );
       return response.data;
     },

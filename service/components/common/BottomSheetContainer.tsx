@@ -67,7 +67,12 @@ const BottomSheetContainer = ({
         >
           <div className="text-18pxr font-semibold">{title}</div>
           {hasCloseButton && (
-            <button onClick={onClose} className="absolute right-4 top-4">
+            <button
+              type="button"
+              aria-label="닫기"
+              onClick={onClose}
+              className="absolute right-4 top-4"
+            >
               <Close className="w-[15px] h-[15px]" />
             </button>
           )}
