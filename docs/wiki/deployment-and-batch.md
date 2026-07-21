@@ -106,6 +106,10 @@ selects env by runtime directory:
   is enabled in container `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/cron_job.sh`
   but commented out in dev server
   `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/cron_job.dev.sh`.
+- AI DNA uses `/home/ln-admin/likenovel/api/.venv/bin/python` in prod and
+  `/home/ln-admin/likenovel/api-dev/.venv/bin/python` in dev so deployed `app`
+  modules are importable. The system Python fallback is only for the container
+  layout where that API virtualenv path does not exist.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/episode_state_transition_minute_batch.sh`
   needs `EPISODE_STATE_TRANSITION_BATCH_ENABLE=1` in cron.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/free_episode_campaign_expire_batch.sh`
