@@ -68,12 +68,12 @@ export default function LoginPage() {
 
   return (
     <div
-      className={`fixed z-50 flex inset-0 bg-black/50 justify-center `}
+      className="fixed z-50 flex inset-0 bg-black/50 justify-center items-center p-4"
       onClick={handleOverlayClick}
     >
       <div
         ref={modalRef}
-        className={`w-[640px] max-h-[700px]  bg-white rounded-[20px] border border-light-gray-400 m-[15px] shadow-xl overflow-y-auto
+        className={`w-full max-w-[440px] max-h-[calc(100vh-2rem)] bg-white rounded-[20px] border border-light-gray-400 shadow-xl overflow-y-auto
           scrollbar-thin scrollbar-thumb-dark-gray-100 scrollbar-track-white`}
         onClick={handleContentClick}
       >

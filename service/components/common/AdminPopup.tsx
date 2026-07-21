@@ -3,6 +3,7 @@ import { IPopup, ISelectPopupsResponse } from "@/app/api/query/popup/dto";
 import {
   ADMIN_POPUP_QUERY_API_PATH,
   ADMIN_POPUP_PRELOAD_WINDOW_KEY,
+  isAdminPopupDismissedInCurrentView,
   shouldFetchAdminPopup,
 } from "@/constants/adminPopup";
 import {
@@ -16,7 +17,7 @@ import {
 } from "@/constants/onboarding";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type AdminPopupPreloadState = {
   status: "pending" | "resolved" | "rejected";
@@ -50,6 +51,7 @@ const AdminPopup = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [currentPopup, setCurrentPopup] = useState<IPopup | null>(null);
   const [onboardingStatusVersion, setOnboardingStatusVersion] = useState(0);
+  const dismissedPopupIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -94,6 +96,16 @@ const AdminPopup = () => {
 
       if (!popup?.id || !popup.imagePath) {
         setCurrentPopup(null);
+        setIsVisible(false);
+        return;
+      }
+
+      if (
+        isAdminPopupDismissedInCurrentView(
+          popup.id,
+          dismissedPopupIdRef.current
+        )
+      ) {
         setIsVisible(false);
         return;
       }
@@ -181,6 +193,7 @@ const AdminPopup = () => {
   }, [pathname, onboardingStatusVersion]);
 
   const handleClose = () => {
+    dismissedPopupIdRef.current = currentPopup?.id ?? null;
     setIsVisible(false);
   };
 
