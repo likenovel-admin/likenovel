@@ -20,6 +20,7 @@ import {
   IWebsochatSessionItem,
   IWebsochatStarterItem,
   IWebsochatStarterActionItem,
+  WebsochatModelKey,
 } from "@/app/api/query/websochat/dto";
 import {
   getWebsochatBillingStatusQueryOptions,
@@ -34,6 +35,7 @@ import {
   useGetWebsochatMessages,
   useGetWebsochatProducts,
   useGetWebsochatSessions,
+  usePatchWebsochatSessionModel,
   usePatchWebsochatSessionMode,
   usePatchWebsochatSessionReadScope,
 } from "@/app/api/query/websochat";
@@ -42,6 +44,7 @@ import ModalContainer from "@/components/common/ModalContainer";
 import Spinner from "@/components/common/Spinner";
 import GlobalNav from "@/components/menu/GlobalNav";
 import CharacterChatMessageContent from "@/components/websochat/CharacterChatMessageContent";
+import WebsochatModelSelector from "@/components/websochat/WebsochatModelSelector";
 import WebsochatGuideBubble from "@/components/websochat/WebsochatGuideBubble";
 import WebsochatTypingDots from "@/components/websochat/WebsochatTypingDots";
 import useAuthStore from "@/store/authStore";
@@ -72,6 +75,12 @@ import {
   resolveCharacterChatStreamingKind,
 } from "@/utils/characterChatStreamReveal";
 import { getStableWebsochatProductSnapshot } from "@/utils/websochatProductSnapshot";
+import {
+  buildWebsochatModelUsageHint,
+  DEFAULT_WEBSOCHAT_MODEL_KEY,
+  resolveWebsochatModelOption,
+  resolveWebsochatModelOptions,
+} from "@/utils/websochatModelSelection";
 import {
   buildWebsochatIdleGuideMessage,
   buildWebsochatStarterGuideMessage,
@@ -976,6 +985,10 @@ export default function WebsochatPage() {
     useState(false);
   const [guestKey, setGuestKey] = useState("");
   const [draft, setDraft] = useState("");
+  const [modelSelection, setModelSelection] = useState<{
+    sessionId: number | null;
+    modelKey: WebsochatModelKey;
+  }>({ sessionId: null, modelKey: DEFAULT_WEBSOCHAT_MODEL_KEY });
   const [composerGhostIndex, setComposerGhostIndex] = useState(0);
   const [hasStoredAuthToken, setHasStoredAuthToken] = useState(false);
   const [pendingLaunchPayload, setPendingLaunchPayload] =
@@ -1013,6 +1026,7 @@ export default function WebsochatPage() {
   const productSelectionNoticeSeqRef = useRef(0);
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const messageListContentRef = useRef<HTMLDivElement | null>(null);
+  const composerTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const shouldStickMessageListToBottomRef = useRef(true);
   const forceScrollToBottomRef = useRef(false);
   const isProgrammaticMessageListScrollRef = useRef(false);
@@ -1374,20 +1388,6 @@ export default function WebsochatPage() {
     submittedKeyword,
     adultYn
   );
-  const { data: billingStatusData } = useGetWebsochatBillingStatus(
-    websochatActorKey,
-    websochatGuestKey,
-    null,
-    activeSessionId
-  );
-  const freeRemainingMessages = Math.max(
-    Number(billingStatusData?.data?.freeRemainingMessages ?? 0),
-    0
-  );
-  const freeRemainingMessageSuffix =
-    freeRemainingMessages > 0
-      ? ` · 무료 ${freeRemainingMessages}회 남음`
-      : "";
   const { data: selectedProductEpisodesData } = useGetEpisodeList(
     selectedProductEpisodeListParams,
     isAuthInitialized && !!selectedProductId && canUseAccountScope
@@ -1418,6 +1418,8 @@ export default function WebsochatPage() {
   );
   const { mutateAsync: createSession, isPending: isCreatingSession } = useCreateWebsochatSession();
   const { mutateAsync: deleteSession, isPending: isDeletingSession } = useDeleteWebsochatSession();
+  const { mutateAsync: patchSessionModel, isPending: isPatchingSessionModel } =
+    usePatchWebsochatSessionModel();
   const { mutateAsync: patchSessionMode } = usePatchWebsochatSessionMode();
   const { mutateAsync: patchSessionReadScope } = usePatchWebsochatSessionReadScope();
 
@@ -1606,6 +1608,77 @@ export default function WebsochatPage() {
     [sessionsData, activeSessionId]
   );
   const activeSessionMeta = messagesData?.data?.session ?? null;
+  const activeSessionKind = activeSessionMeta?.sessionKind
+    ?? activeSession?.sessionKind
+    ?? (pendingSessionPreview?.sessionId === activeSessionId
+      ? pendingSessionPreview.sessionKind
+      : null)
+    ?? null;
+  const matchingCharacterChatUiMeta = characterChatLaunchUiMeta
+    && (
+      pendingHomeCharacterLaunch
+      || characterChatLaunchUiMeta.sessionId === activeSessionId
+    )
+    ? characterChatLaunchUiMeta
+    : null;
+  const isCharacterChatExperience = Boolean(
+    pendingHomeCharacterLaunch
+    || isCreatingHomeCharacterSession
+    || openingRevealSessionId
+    || activeSessionKind === "character_chat"
+    || matchingCharacterChatUiMeta
+  );
+  const persistedModelKey =
+    activeSessionMeta?.selectedModelKey
+    ?? activeSession?.selectedModelKey
+    ?? (pendingSessionPreview?.sessionId === activeSessionId
+      ? pendingSessionPreview.selectedModelKey
+      : null)
+    ?? DEFAULT_WEBSOCHAT_MODEL_KEY;
+  const locallySelectedModelKey = modelSelection.sessionId === activeSessionId
+    ? modelSelection.modelKey
+    : null;
+  const requestedModelKey = isCharacterChatExperience
+    ? locallySelectedModelKey ?? persistedModelKey
+    : DEFAULT_WEBSOCHAT_MODEL_KEY;
+  const { data: billingStatusData } = useGetWebsochatBillingStatus(
+    websochatActorKey,
+    websochatGuestKey,
+    null,
+    activeSessionId,
+    isCharacterChatExperience ? requestedModelKey : null
+  );
+  const selectedModelKey =
+    locallySelectedModelKey
+    ?? billingStatusData?.data?.selectedModelKey
+    ?? persistedModelKey;
+  const modelOptions = useMemo(
+    () => resolveWebsochatModelOptions({
+      modelOptions: billingStatusData?.data?.modelOptions,
+      cashCostPerMessage: billingStatusData?.data?.cashCostPerMessage,
+      freeRemainingMessages: billingStatusData?.data?.freeRemainingMessages,
+      dailyFreeMessageLimit: billingStatusData?.data?.dailyFreeMessageLimit,
+    }),
+    [billingStatusData]
+  );
+  const selectedModelOption = resolveWebsochatModelOption(
+    modelOptions,
+    selectedModelKey
+  );
+  const characterChatFreeRemainingMessages = Math.max(
+    Number(selectedModelOption?.freeRemainingMessages ?? 0),
+    0
+  );
+  const generalFreeRemainingMessages = Math.max(
+    Number(billingStatusData?.data?.freeRemainingMessages ?? 0),
+    0
+  );
+  const generalFreeRemainingMessageSuffix = generalFreeRemainingMessages > 0
+    ? ` · 무료 ${generalFreeRemainingMessages}회 남음`
+    : "";
+  const modelUsageHint = billingStatusData?.data
+    ? buildWebsochatModelUsageHint(selectedModelOption)
+    : "";
   const canSendMessage =
     activeSession?.canSendMessage ?? activeSessionMeta?.canSendMessage ?? true;
   const visibleSessionItems = useMemo(() => {
@@ -1705,12 +1778,6 @@ export default function WebsochatPage() {
     ?? activeSessionMeta?.productPriceType
     ?? null;
   const shouldHideWebsochatGameActions = websochatProductPriceType === "paid";
-  const activeSessionKind = activeSessionMeta?.sessionKind
-    ?? activeSession?.sessionKind
-    ?? (pendingSessionPreview?.sessionId === activeSessionId
-      ? pendingSessionPreview.sessionKind
-      : null)
-    ?? null;
   const activeSessionAllowedModes = useMemo<Array<"qa" | "rp" | "ideal_worldcup"> | null>(() => {
     if (activeSessionKind === "character_chat") return ["rp"];
     return activeSessionMeta?.allowedModes
@@ -1727,20 +1794,9 @@ export default function WebsochatPage() {
     pendingSessionPreview?.allowedModes,
     pendingSessionPreview?.sessionId,
   ]);
-  const matchingCharacterChatUiMeta = characterChatLaunchUiMeta
-    && (
-      pendingHomeCharacterLaunch
-      || characterChatLaunchUiMeta.sessionId === activeSessionId
-    )
-    ? characterChatLaunchUiMeta
-    : null;
-  const isCharacterChatExperience = Boolean(
-    pendingHomeCharacterLaunch
-    || isCreatingHomeCharacterSession
-    || openingRevealSessionId
-    || activeSessionKind === "character_chat"
-    || matchingCharacterChatUiMeta
-  );
+  const characterChatModelKey = isCharacterChatExperience
+    ? selectedModelKey
+    : undefined;
   const characterChatSessionTitle = String(
     activeSessionMeta?.title
     || activeSession?.title
@@ -2088,14 +2144,24 @@ export default function WebsochatPage() {
       && guide.message.content.trim() === serverGuideMessage.content.trim()
     ));
   }, [activeSessionId, latestScopedModeNotice?.noticeId, serverGuideMessage, visibleStickyGuides]);
+  const shouldShowModelUsageHint =
+    isCharacterChatExperience
+    && effectiveShortcutState !== "qa_next_episode_write";
+  const characterChatPlaceholder = resolveCharacterChatComposerPlaceholder({
+    freeRemainingMessages: isCharacterChatExperience
+      ? characterChatFreeRemainingMessages
+      : generalFreeRemainingMessages,
+    firstChoiceDialogue: characterChatChoices[0]?.dialogue,
+  });
   const composerPlaceholder = isRpAwaitingCharacter
     ? "대화하고 싶은 인물 이름을 적어줘. 예: 레이너"
     : isRpChatting
-      ? resolveCharacterChatComposerPlaceholder({
-        freeRemainingMessages,
-        firstChoiceDialogue: characterChatChoices[0]?.dialogue,
-      })
-      : `${composerGhostQuestion}${freeRemainingMessageSuffix}`;
+      ? (
+        characterChatFreeRemainingMessages > 0 || !shouldShowModelUsageHint || !modelUsageHint
+          ? characterChatPlaceholder
+          : `${characterChatPlaceholder} · ${modelUsageHint}`
+      )
+      : `${composerGhostQuestion}${generalFreeRemainingMessageSuffix}`;
   const composerPlaceholderWithShortcutHint = `${composerPlaceholder}\nShift+Enter로 줄바꿈`;
   const composerModeDetail = isRpAwaitingCharacter
     ? "인물 선택 중"
@@ -3202,7 +3268,7 @@ export default function WebsochatPage() {
     && !messageFeedItems.length
     && !effectiveStarter
     && !shouldShowCharacterOpeningWaitingBubble;
-  const areShortcutActionsDisabled =
+  const isComposerInteractionBlocked =
     !effectiveProductId
     || !canSendMessage
     || isStreamingMessage
@@ -3213,6 +3279,12 @@ export default function WebsochatPage() {
     || isReadScopeGuardPending
     || !!pendingModeSyncKey
     || isWaitingForInitialStarter;
+  const areShortcutActionsDisabled =
+    isComposerInteractionBlocked || isPatchingSessionModel;
+  const isModelSelectorDisabled =
+    isComposerInteractionBlocked
+    || isCharacterStreamRevealDraining
+    || !billingStatusData?.data;
   const isCharacterChoiceButtonDisabled =
     !activeSessionId
     || !latestCharacterChatAssistantMessage
@@ -3224,6 +3296,7 @@ export default function WebsochatPage() {
     || isCharacterStreamRevealDraining
     || isCreatingSession
     || isDeletingSession
+    || isPatchingSessionModel
     || isReadScopeGuardPending;
   const isSelectedProductReady = selectedProduct
     ? selectedProduct.contextStatus === "ready"
@@ -3243,6 +3316,7 @@ export default function WebsochatPage() {
       || isCharacterOpeningBusy
       || isCharacterStreamRevealDraining
       || isDeletingSession
+      || isPatchingSessionModel
       || isReadScopeGuardPending
     );
   const unavailableMessage =
@@ -3448,6 +3522,7 @@ export default function WebsochatPage() {
       guest_key: runtimeActorScope.guestKey || undefined,
       adult_yn: adultYn,
       account_read_episode_to: requestedReadEpisodeNo,
+      model_key: characterChatModelKey,
     });
     const sessionId = created.data.sessionId;
     const resolvedReadEpisodeNo = resolveWebsochatConversationCeilingEpisodeNo(
@@ -3461,6 +3536,9 @@ export default function WebsochatPage() {
 
     setIsPreparingNewSession(false);
     setActiveSessionId(sessionId);
+    if (characterChatModelKey) {
+      setModelSelection({ sessionId, modelKey: characterChatModelKey });
+    }
     writeStoredActiveSessionId(sessionId);
     bindDraftPreludeToSession(sessionId, effectiveProductId);
     setSelectedProductSnapshot(normalizeWebsochatProductCover(created.data.product));
@@ -3498,6 +3576,7 @@ export default function WebsochatPage() {
       contextStatus: created.data.product.contextStatus || "ready",
       canSendMessage: true,
       unavailableMessage: null,
+      selectedModelKey: characterChatModelKey,
     });
     await queryClient.invalidateQueries({ queryKey: ["websochatSessions"] });
     return sessionId;
@@ -3513,6 +3592,7 @@ export default function WebsochatPage() {
     isReadScopeGuardPending,
     queryClient,
     resolveRuntimeWebsochatActorScope,
+    characterChatModelKey,
     selectedProduct,
     selectedProductSnapshot,
     writeStoredActiveSessionId,
@@ -3778,6 +3858,7 @@ export default function WebsochatPage() {
       || !canSendMessage
       || isReadScopeGuardPending
       || isAssistantTurnPending
+      || isPatchingSessionModel
     ) return null;
     const requestedModeKey = options?.starterModeKey
       || (options?.rpMode || options?.activeCharacter
@@ -3859,7 +3940,8 @@ export default function WebsochatPage() {
           requestActorKey,
           requestGuestKey,
           resolvedQaActionKey,
-          activeSessionId
+          activeSessionId,
+          characterChatModelKey
         )
       );
       const billingStatus = latestBillingStatusResponse.data;
@@ -3999,6 +4081,7 @@ export default function WebsochatPage() {
                 activeSessionMeta?.rpActiveCharacterLabel
                 ?? activeSession?.rpActiveCharacterLabel
                 ?? null,
+              selectedModelKey: characterChatModelKey,
             },
             messages: resolvedMessages,
             starter: resolvedStarter,
@@ -4052,6 +4135,8 @@ export default function WebsochatPage() {
                         rpStage: resolvedSession.rpStage ?? item.rpStage ?? "idle",
                         rpActiveCharacterLabel:
                           resolvedSession.rpActiveCharacterLabel ?? item.rpActiveCharacterLabel ?? null,
+                        selectedModelKey:
+                          resolvedSession.selectedModelKey ?? item.selectedModelKey ?? characterChatModelKey,
                         updatedDate: resolvedSession.updatedDate || item.updatedDate,
                       }
                     : item
@@ -4137,11 +4222,15 @@ export default function WebsochatPage() {
           guest_key: requestGuestKey || undefined,
           adult_yn: adultYn,
           account_read_episode_to: requestReadEpisodeNo,
+          model_key: characterChatModelKey,
         });
         if (!isCurrentAssistantTurnOwner()) return null;
         sessionId = created.data.sessionId;
         setIsPreparingNewSession(false);
         setActiveSessionId(sessionId);
+        if (characterChatModelKey) {
+          setModelSelection({ sessionId, modelKey: characterChatModelKey });
+        }
         bindDraftPreludeToSession(sessionId, effectiveProductId);
         setSelectedProductSnapshot(normalizeWebsochatProductCover(created.data.product));
         setPendingSessionPreview({
@@ -4193,6 +4282,7 @@ export default function WebsochatPage() {
           contextStatus: created.data.product.contextStatus || "ready",
           canSendMessage: true,
           unavailableMessage: null,
+          selectedModelKey: characterChatModelKey,
         });
       }
       if (requestedReadScopeEpisodeNo) {
@@ -4218,6 +4308,7 @@ export default function WebsochatPage() {
                 game_mode: options?.gameMode,
                 game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? requestReadEpisodeNo : null,
                 account_read_episode_to: requestReadEpisodeNo,
+                model_key: characterChatModelKey,
               }, { signal: turnAbortController.signal })
             : await postWebsochatMessageOnce({
                 sessionId,
@@ -4231,6 +4322,7 @@ export default function WebsochatPage() {
                 game_mode: options?.gameMode,
                 game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? requestReadEpisodeNo : null,
                 account_read_episode_to: requestReadEpisodeNo,
+                model_key: characterChatModelKey,
               }, { signal: turnAbortController.signal });
           if (isNextEpisodeAction && isCurrentAssistantTurnOwner()) {
             setIsNextEpisodeCompletionHolding(true);
@@ -4286,6 +4378,7 @@ export default function WebsochatPage() {
                 game_mode: options?.gameMode,
                 game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? requestReadEpisodeNo : null,
                 account_read_episode_to: requestReadEpisodeNo,
+                model_key: characterChatModelKey,
               },
               (event) => {
                 if (!isCurrentAssistantTurnOwner()) return;
@@ -4378,6 +4471,7 @@ export default function WebsochatPage() {
               game_mode: options?.gameMode,
               game_read_episode_to: resolvedStreamingKind === "ideal_worldcup" ? requestReadEpisodeNo : null,
               account_read_episode_to: requestReadEpisodeNo,
+              model_key: characterChatModelKey,
             }, { signal: turnAbortController.signal });
             await applyCompletedResponse(response.data);
           } finally {
@@ -5106,6 +5200,39 @@ export default function WebsochatPage() {
     requestCharacterChatChoices,
   ]);
 
+  const handleSelectModel = useCallback(async (modelKey: WebsochatModelKey) => {
+    if (!isCharacterChatExperience) return;
+    const targetSessionId = activeSessionId;
+    if (!targetSessionId) {
+      setModelSelection({ sessionId: null, modelKey });
+      return;
+    }
+
+    const runtimeActorScope = resolveRuntimeWebsochatActorScope();
+    const response = await patchSessionModel({
+      sessionId: targetSessionId,
+      guest_key: runtimeActorScope.guestKey || undefined,
+      model_key: modelKey,
+    });
+    const savedModelKey = response.data.selectedModelKey;
+    setModelSelection({ sessionId: targetSessionId, modelKey: savedModelKey });
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["websochatBillingStatus", runtimeActorScope.actorKey],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["websochatMessages", targetSessionId, runtimeActorScope.actorKey],
+      }),
+      queryClient.invalidateQueries({ queryKey: ["websochatSessions"] }),
+    ]);
+  }, [
+    activeSessionId,
+    isCharacterChatExperience,
+    patchSessionModel,
+    queryClient,
+    resolveRuntimeWebsochatActorScope,
+  ]);
+
   const composerShortcutActions = useMemo(
     () => filterWebsochatActionsByAllowedModes(
       (effectiveStarter?.actions || DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS).filter((action) => (
@@ -5809,8 +5936,18 @@ export default function WebsochatPage() {
                   </div>
                 </div>
                 <div className="sticky bottom-0 z-30 mx-16pxr md:mx-0 mb-[max(env(safe-area-inset-bottom,0px),20px)]">
-                  <div className="flex gap-8pxr items-center rounded-[20px] bg-white/90 backdrop-blur-sm ring-1 ring-inset ring-light-gray-300 focus-within:ring-primary-100 shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.035),0_0_0_0.5px_rgba(0,0,0,0.06)] focus-within:shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.075),0_0_0_0.5px_rgba(0,0,0,0.1)] transition-shadow pl-16pxr pr-8pxr py-4pxr">
+                  <div className="flex min-w-0 gap-8pxr items-center rounded-[20px] bg-white/90 backdrop-blur-sm ring-1 ring-inset ring-light-gray-300 focus-within:ring-primary-100 shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.035),0_0_0_0.5px_rgba(0,0,0,0.06)] focus-within:shadow-[0_0.25rem_1.25rem_rgba(0,0,0,0.075),0_0_0_0.5px_rgba(0,0,0,0.1)] transition-shadow pl-16pxr pr-8pxr py-4pxr">
+                    {isCharacterChatExperience ? (
+                      <WebsochatModelSelector
+                        modelOptions={modelOptions}
+                        selectedModelKey={selectedModelKey}
+                        disabled={isModelSelectorDisabled}
+                        onBeforeMobileOpen={() => composerTextareaRef.current?.blur()}
+                        onSelect={handleSelectModel}
+                      />
+                    ) : null}
                     <textarea
+                      ref={composerTextareaRef}
                       value={draft}
                       onChange={(event) => {
                         setDraft(event.target.value);
@@ -5829,6 +5966,7 @@ export default function WebsochatPage() {
                           || isAssistantTurnPending
                           || isCreatingSession
                           || isDeletingSession
+                          || isPatchingSessionModel
                           || isReadScopeGuardPending
                         ) {
                           return;
@@ -5844,7 +5982,7 @@ export default function WebsochatPage() {
                         || isCharacterOpeningBusy
                       }
                       rows={1}
-                      className="flex-1 bg-transparent px-4pxr py-8pxr text-16pxr md:text-14pxr leading-[1.5] outline-none resize-none overflow-y-auto placeholder:text-13pxr md:placeholder:text-14pxr disabled:bg-light-gray-100 disabled:text-dark-gray-300"
+                      className="min-w-0 flex-1 bg-transparent px-4pxr py-8pxr text-16pxr md:text-14pxr leading-[1.5] outline-none resize-none overflow-y-auto placeholder:text-13pxr md:placeholder:text-14pxr disabled:bg-light-gray-100 disabled:text-dark-gray-300"
                       style={{ minHeight: '36px', maxHeight: '200px' }}
                     />
                     {isCharacterChatExperience ? (
