@@ -20,6 +20,11 @@ assert.match(
 );
 assert.match(
   source,
+  /isCharacterChatExperience[\s\S]*\? buildWebsochatReadScopeAppliedNotice\(\{[\s\S]*episodeNo: userReadEpisodeNo \|\| 1,[\s\S]*episodeTitle: userReadEpisodeTitle \|\| null,[\s\S]*isSyncPending: true,[\s\S]*\}\)[\s\S]*: buildWebsochatSyncPendingNotice\(syncedLatestEpisodeNo\)/,
+  "character-chat sync notice should use the reader scope while regular websochat keeps the synced scope"
+);
+assert.match(
+  source,
   /\$\{conversationScopeText\}까지 읽으셨네요\. 그 무렵의 맥락에서 주인공과 새로운 이야기를 이어가볼게요\./,
   "ready copy should acknowledge the reader's last episode"
 );

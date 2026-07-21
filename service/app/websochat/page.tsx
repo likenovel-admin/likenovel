@@ -2947,7 +2947,13 @@ export default function WebsochatPage() {
     }
 
     appendModeNotice(
-      buildWebsochatSyncPendingNotice(syncedLatestEpisodeNo),
+      isCharacterChatExperience
+        ? buildWebsochatReadScopeAppliedNotice({
+            episodeNo: userReadEpisodeNo || 1,
+            episodeTitle: userReadEpisodeTitle || null,
+            isSyncPending: true,
+          })
+        : buildWebsochatSyncPendingNotice(syncedLatestEpisodeNo),
       "sync_pending"
     );
     syncPendingNoticeKeyRef.current = noticeKey;
@@ -2956,6 +2962,7 @@ export default function WebsochatPage() {
     appendModeNotice,
     canSendMessage,
     effectiveProductId,
+    isCharacterChatExperience,
     publishedLatestEpisodeNo,
     scopedModeNotices,
     syncedLatestEpisodeNo,
