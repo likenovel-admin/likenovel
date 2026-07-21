@@ -10,6 +10,11 @@ export const shouldFetchAdminPopup = (pathname?: string | null) => {
   return pathname === ADMIN_POPUP_HOME_PATHNAME;
 };
 
+export const isAdminPopupDismissedInCurrentView = (
+  popupId: number,
+  dismissedPopupId: number | null
+) => popupId === dismissedPopupId;
+
 export const buildAdminPopupPreloadScript = (
   apiPath = ADMIN_POPUP_QUERY_API_PATH
 ) => {

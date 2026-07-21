@@ -7,6 +7,7 @@ import {
   ADMIN_POPUP_PRELOAD_WINDOW_KEY,
   ADMIN_POPUP_SUPPRESS_RELOAD_WITHOUT_DAILY_HIDE,
   buildAdminPopupPreloadScript,
+  isAdminPopupDismissedInCurrentView,
   shouldFetchAdminPopup,
 } from "./adminPopup.ts";
 
@@ -19,6 +20,9 @@ assert.equal(ADMIN_POPUP_SUPPRESS_RELOAD_WITHOUT_DAILY_HIDE, false);
 assert.equal(ADMIN_POPUP_PRELOAD_WINDOW_KEY, "__likenovelAdminPopupPreload");
 assert.equal(ADMIN_POPUP_PRELOAD_SCRIPT_ID, "admin-popup-preload");
 assert.equal(ADMIN_POPUP_PRELOAD_TIMEOUT_MS, 2500);
+assert.equal(isAdminPopupDismissedInCurrentView(17, null), false);
+assert.equal(isAdminPopupDismissedInCurrentView(17, 17), true);
+assert.equal(isAdminPopupDismissedInCurrentView(17, 18), false);
 
 const preloadScript = buildAdminPopupPreloadScript();
 assert.ok(preloadScript.includes('location.pathname !== "/"'));
