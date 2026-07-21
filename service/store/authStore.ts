@@ -1,5 +1,8 @@
 import { STORAGE_KEYS } from "@/utils/localStorage";
-import { SIGN_UP_FORM_DATA_SESSION_KEY } from "@/utils/authSession";
+import {
+  clearExpiredAuthSessionMarker,
+  SIGN_UP_FORM_DATA_SESSION_KEY,
+} from "@/utils/authSession";
 import { ISocialLoginProvider, ITokens, IUser } from "@/types";
 import { create } from "zustand";
 
@@ -77,6 +80,7 @@ const useAuthStore = create<IAuthState>((set) => ({
     if (user) {
       sessionStorage.setItem("user", JSON.stringify(user));
     }
+    clearExpiredAuthSessionMarker(sessionStorage);
     sessionStorage.removeItem(SIGN_UP_FORM_DATA_SESSION_KEY);
   },
 
@@ -99,6 +103,7 @@ const useAuthStore = create<IAuthState>((set) => ({
     sessionStorage.removeItem("recent_sign_in_type");
     sessionStorage.removeItem("keep_signin_yn");
     sessionStorage.removeItem("user");
+    clearExpiredAuthSessionMarker(sessionStorage);
     sessionStorage.removeItem(SIGN_UP_FORM_DATA_SESSION_KEY);
   },
 

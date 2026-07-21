@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import {
+  AUTH_SESSION_EXPIRED_SESSION_KEY,
+  clearExpiredAuthSessionMarker,
   clearStaleAuthSession,
+  hasExpiredAuthSession,
   hasStoredAuthToken,
+  shouldRequireReauthentication,
 } from "./authSession.ts";
 
 const createMemoryStorage = () => {
@@ -67,6 +71,11 @@ const createMemoryStorage = () => {
   assert.equal(session.getItem("refresh_token"), null);
   assert.equal(session.getItem("user"), null);
   assert.equal(session.getItem("formData"), null);
+  assert.equal(
+    session.getItem(AUTH_SESSION_EXPIRED_SESSION_KEY),
+    "Y"
+  );
+  assert.equal(hasExpiredAuthSession(session), true);
   assert.equal(headers.Authorization, undefined);
   assert.equal(headers.authorization, undefined);
   assert.equal(headers["Content-Type"], "application/json");
@@ -82,6 +91,9 @@ const createMemoryStorage = () => {
   assert.equal(local.clearCount, 0);
   assert.equal(session.clearCount, 0);
   assert.equal(hasStoredAuthToken(local, session), false);
+
+  clearExpiredAuthSessionMarker(session);
+  assert.equal(hasExpiredAuthSession(session), false);
 }
 
 {
@@ -92,3 +104,49 @@ const createMemoryStorage = () => {
   session.setItem("refresh_token", "session-refresh");
   assert.equal(hasStoredAuthToken(local, session), true);
 }
+
+assert.equal(
+  shouldRequireReauthentication({
+    isAuthInitialized: true,
+    canUseAccountScope: false,
+    hasExpiredSession: true,
+  }),
+  true
+);
+assert.equal(
+  shouldRequireReauthentication({
+    isAuthInitialized: true,
+    canUseAccountScope: false,
+    hasExpiredSession: false,
+  }),
+  false
+);
+
+{
+  const local = createMemoryStorage();
+  const session = createMemoryStorage();
+  local.setItem("access_token", "expired-access");
+  session.setItem("refresh_token", "expired-refresh");
+  session.setItem = () => {
+    throw new Error("storage unavailable");
+  };
+
+  const originalConsoleError = console.error;
+  console.error = () => {};
+  try {
+    clearStaleAuthSession({ localStorage: local, sessionStorage: session });
+  } finally {
+    console.error = originalConsoleError;
+  }
+
+  assert.equal(local.getItem("access_token"), null);
+  assert.equal(session.getItem("refresh_token"), null);
+}
+assert.equal(
+  shouldRequireReauthentication({
+    isAuthInitialized: true,
+    canUseAccountScope: true,
+    hasExpiredSession: true,
+  }),
+  false
+);
