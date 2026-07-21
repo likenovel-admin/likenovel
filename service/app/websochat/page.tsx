@@ -8,7 +8,12 @@ import {
   WEBSOCHAT_MESSAGE_MAX_LENGTH,
   WEBSOCHAT_PREPARE_NAV_EVENT,
 } from "@/constants/common";
-import { getEpisodeListQueryOptions, useGetEpisodeList } from "@/app/api/query/product";
+import {
+  getEpisodeListQueryOptions,
+  useGetEpisodeList,
+  useGetMainCharacterSlots,
+} from "@/app/api/query/product";
+import type { IMainCharacterSlotItem } from "@/app/api/query/product/dto";
 import {
   IWebsochatCtaCardItem,
   IWebsochatCharacterChatChoiceItem,
@@ -45,6 +50,7 @@ import Spinner from "@/components/common/Spinner";
 import GlobalNav from "@/components/menu/GlobalNav";
 import CharacterChatMessageContent from "@/components/websochat/CharacterChatMessageContent";
 import WebsochatModelSelector from "@/components/websochat/WebsochatModelSelector";
+import WebsochatStartChooser from "@/components/websochat/WebsochatStartChooser";
 import WebsochatGuideBubble from "@/components/websochat/WebsochatGuideBubble";
 import WebsochatTypingDots from "@/components/websochat/WebsochatTypingDots";
 import useAuthStore from "@/store/authStore";
@@ -60,6 +66,7 @@ import {
 } from "@/utils/authSession";
 import {
   buildCharacterChatChoiceMessage,
+  buildHomeCharacterChatSessionRequest,
   buildHomeCharacterWarmupMessages,
   consumePendingHomeCharacterChatLaunch,
   findRecoverableHomeCharacterChatSession,
@@ -100,13 +107,16 @@ import {
   formatWebsochatReadScope,
   IWebsochatLaunchPayload,
   isVisibleWebsochatComposerShortcutAction,
+  isVisibleWebsochatPublicShortcutAction,
   isWebsochatModeAllowed,
   resolveWebsochatActiveSession,
   resolveWebsochatActorKey,
+  resolveWebsochatSessionListTitle,
   shouldShowWebsochatStickyGuide,
   WEBSOCHAT_ACTIVE_SESSION_STORAGE_KEY,
   WEBSOCHAT_SESSION_SHORTCUT_PROMPTS_STORAGE_KEY,
 } from "@/utils/websochatLaunch";
+import { resolveWebsochatStartSurface } from "@/utils/websochatStart";
 import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -115,6 +125,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ArrowLeft from "/public/images/arrow-left.svg";
 import List from "/public/images/list.svg";
+import Trash from "/public/images/trash.svg";
 
 const useBrowserLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -742,6 +753,7 @@ type CharacterChatOpeningReveal = {
 type WebsochatStreamingKind = "qa" | "rp" | "ideal_worldcup";
 type WebsochatComposerMode = "qa" | "rp" | "ideal_worldcup";
 type WebsochatRpStage = "idle" | "awaiting_character" | "chatting";
+type WebsochatStartView = "chooser" | "character_picker";
 
 const isWebsochatAbortError = (error: unknown) => {
   if (axios.isCancel(error)) return true;
@@ -833,12 +845,17 @@ const isVisibleWebsochatShortcutAction = (
 const withoutHiddenWebsochatGameActions = (
   starter: IWebsochatStarterItem,
   hideGameActions: boolean
-): IWebsochatStarterItem => ({
-  ...starter,
-  actions: hideGameActions
-    ? (starter.actions || []).filter(isVisibleWebsochatShortcutAction)
-    : (starter.actions || []),
-});
+): IWebsochatStarterItem => {
+  const publicActions = (starter.actions || []).filter(
+    isVisibleWebsochatPublicShortcutAction
+  );
+  return {
+    ...starter,
+    actions: hideGameActions
+      ? publicActions.filter(isVisibleWebsochatShortcutAction)
+      : publicActions,
+  };
+};
 
 const parseWebsochatCreatedAt = (value?: string | null) => {
   if (!value) return 0;
@@ -883,9 +900,10 @@ const renderWebsochatActionCards = ({
   allowedModes?: Array<"qa" | "rp" | "ideal_worldcup"> | null;
 }) => {
   const visibleActionCards = filterWebsochatActionsByAllowedModes(
-    hideGameActions
-      ? (actionCards || []).filter(isVisibleWebsochatShortcutAction)
-      : (actionCards || []),
+    (actionCards || []).filter((action) => (
+      isVisibleWebsochatPublicShortcutAction(action)
+      && (!hideGameActions || isVisibleWebsochatShortcutAction(action))
+    )),
     allowedModes
   );
   if (!visibleActionCards.length) return null;
@@ -958,6 +976,8 @@ export default function WebsochatPage() {
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [isPreparingNewSession, setIsPreparingNewSession] = useState(false);
+  const [websochatStartView, setWebsochatStartView] =
+    useState<WebsochatStartView>("chooser");
   const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
   const [isSessionDrawerOpen, setIsSessionDrawerOpen] = useState(false);
   const [selectedProductSnapshot, setSelectedProductSnapshot] =
@@ -1430,6 +1450,7 @@ export default function WebsochatPage() {
     isFetchedAfterMount: isSessionsFetchedAfterMount,
     isPlaceholderData: isSessionsPlaceholderData,
     isSuccess: isSessionsSuccess,
+    isError: isSessionsError,
     refetch: refetchSessions,
   } = useGetWebsochatSessions(
     null,
@@ -1875,7 +1896,8 @@ export default function WebsochatPage() {
     ?? null;
   const availableShortcutActions = filterWebsochatActionsByAllowedModes(
     (effectiveStarter?.actions || DEFAULT_WEBSOCHAT_SHORTCUT_ACTIONS).filter((action) => (
-      !shouldHideWebsochatGameActions || isVisibleWebsochatShortcutAction(action)
+      isVisibleWebsochatPublicShortcutAction(action)
+      && (!shouldHideWebsochatGameActions || isVisibleWebsochatShortcutAction(action))
     )),
     enforcedActiveSessionAllowedModes
   );
@@ -2362,6 +2384,46 @@ export default function WebsochatPage() {
     && !serverGuideMessage
     && visibleStickyGuides.length === 0
     && transientMessages.length === 0;
+  const sessionsReadyForStartSurface = Boolean(
+    isSessionsSuccess
+    && isSessionsFetchedAfterMount
+    && !isSessionsPlaceholderData
+    && !isSessionsFetching
+  );
+  const websochatStartSurface = resolveWebsochatStartSurface({
+    isPreparingNewSession,
+    actorReady: Boolean(websochatActorKey),
+    sessionsReady: sessionsReadyForStartSurface,
+    sessionsFailed: isSessionsError && !isSessionsFetching,
+    sessionCount: sessionsData?.data?.length ?? 0,
+    activeSessionId,
+    selectedProductId,
+    hasSelectedProductSnapshot: Boolean(selectedProductSnapshot),
+    hasPendingWebsochatLaunch: Boolean(pendingLaunchPayload),
+    hasPendingCharacterLaunch: Boolean(pendingHomeCharacterLaunch),
+    isCreatingCharacterSession: isCreatingHomeCharacterSession,
+    hasPendingSessionPreview: Boolean(pendingSessionPreview),
+  });
+  const shouldShowNewChatStartSurface = websochatStartSurface === "chooser";
+  const shouldHoldNewChatStartSurface = websochatStartSurface !== "content";
+  const {
+    data: startCharacterSlotsData,
+    isLoading: isStartCharacterSlotsLoading,
+    isFetching: isStartCharacterSlotsFetching,
+    isError: isStartCharacterSlotsError,
+    refetch: refetchStartCharacterSlots,
+  } = useGetMainCharacterSlots(
+    adultYn,
+    shouldShowNewChatStartSurface
+      && websochatStartView === "character_picker"
+      && Boolean(websochatActorKey),
+    websochatActorKey || "guest"
+  );
+  const startCharacterSlotItems = startCharacterSlotsData?.data ?? [];
+  const isStartCharacterPickerLoading =
+    !websochatActorKey
+    || isStartCharacterSlotsLoading
+    || (isStartCharacterSlotsFetching && !startCharacterSlotsData);
   useEffect(() => {
     if (!activeSessionId || !canSendMessage || !serverGuideMessage?.content || hasCurrentServerGuideInHistory) return;
     const nextCreatedAt = Date.now();
@@ -3375,6 +3437,7 @@ export default function WebsochatPage() {
     setSelectedProductSnapshot(null);
     setPendingSessionPreview(null);
     setPendingHomeCharacterLaunch(null);
+    setWebsochatStartView("chooser");
     setCharacterChatLaunchUiMeta(null);
     setHomeCharacterLaunchError("");
     setCharacterOpeningLoadError("");
@@ -3506,6 +3569,58 @@ export default function WebsochatPage() {
       actorKey: runtimeActorKey,
     };
   }, [accessToken, guestKey, isAuthenticated, user?.userId]);
+
+  const handleLaunchStartCharacter = useCallback((item: IMainCharacterSlotItem) => {
+    if (isCreatingHomeCharacterSession) return;
+
+    const runtimeActorScope = resolveRuntimeWebsochatActorScope();
+    const launch: PendingHomeCharacterChatLaunch = {
+      request: buildHomeCharacterChatSessionRequest({
+        productId: item.productId,
+        characterScopeKey: item.characterScopeKey,
+        characterName: item.characterName,
+        adultYn,
+        guestKey: runtimeActorScope.guestKey,
+        entrySource: "websochat_rp_mode",
+      }),
+      characterName: item.characterName,
+      characterImagePath: item.characterImagePath,
+      productTitle: item.productTitle,
+      authorNickname: item.authorNickname || null,
+      createdAt: Date.now(),
+    };
+
+    writeStoredActiveSessionId(null);
+    setIsPreparingNewSession(true);
+    setActiveSessionId(null);
+    setSelectedProductId(item.productId);
+    setSelectedProductSnapshot({
+      productId: item.productId,
+      title: item.productTitle,
+      authorNickname: item.authorNickname || null,
+      coverImagePath: null,
+      priceType: null,
+      latestEpisodeNo: item.syncedLatestEpisodeNo,
+      publishedLatestEpisodeNo: item.syncedLatestEpisodeNo,
+      syncedLatestEpisodeNo: item.syncedLatestEpisodeNo,
+      contextStatus: "ready",
+    });
+    setPendingSessionPreview(null);
+    setPendingHomeCharacterLaunch(launch);
+    setCharacterChatLaunchUiMeta({ ...launch, sessionId: null });
+    setHomeCharacterLaunchError("");
+    setCharacterOpeningLoadError("");
+    setOpeningRevealSessionId(null);
+    setCharacterChatOpeningReveal(null);
+    setWebsochatStartView("chooser");
+    void startPendingHomeCharacterLaunch(launch);
+  }, [
+    adultYn,
+    isCreatingHomeCharacterSession,
+    resolveRuntimeWebsochatActorScope,
+    startPendingHomeCharacterLaunch,
+    writeStoredActiveSessionId,
+  ]);
 
   const openLoginConfirm = (dailyFreeMessageLimit?: number | null) => {
     const currentUrl = encodeURIComponent(pathname || "/websochat");
@@ -5352,51 +5467,67 @@ export default function WebsochatPage() {
             </button>
           </div>
         ) : null}
-        {visibleSessionItems.map((session) => (
-          <div
-            key={session.sessionId}
-            className={`rounded-[12px] border px-12pxr py-10pxr ${
-              activeSessionId === session.sessionId
-                ? "border-primary-100 bg-light-gray-100"
-                : "border-light-gray-300"
-            }`}
-          >
-            <div className="flex min-w-0 items-start justify-between gap-8pxr">
-              <button
-                type="button"
-                onClick={() => handleSelectSession(session.sessionId, session.productId)}
-                disabled={isCreatingHomeCharacterSession}
-                className="min-w-0 flex-1 overflow-hidden text-left"
-              >
-                <div className="text-14pxr font-medium line-clamp-1">{session.title}</div>
-                {session.productTitle ? (
-                  <div className="mt-4pxr flex min-w-0 items-center gap-4pxr overflow-hidden text-12pxr text-dark-gray-300">
-                    <span className="min-w-0 max-w-full truncate">{session.productTitle}</span>
-                    <span className="shrink-0">·</span>
-                    <span className="shrink-0">
-                      {buildWebsochatSessionReadScopeText(
-                        session.readScopeState,
-                        session.readEpisodeNo,
-                        session.readEpisodeTitle
-                      ) || "\u00A0"}
+        {visibleSessionItems.map((session) => {
+          const isCharacterChatSession = session.sessionKind === "character_chat";
+          const sessionListTitle = resolveWebsochatSessionListTitle(session);
+
+          return (
+            <div
+              key={session.sessionId}
+              className={`rounded-[12px] border px-12pxr py-10pxr ${
+                activeSessionId === session.sessionId
+                  ? "border-primary-100 bg-light-gray-100"
+                  : "border-light-gray-300"
+              }`}
+            >
+              <div className="flex min-w-0 items-start justify-between gap-8pxr">
+                <button
+                  type="button"
+                  onClick={() => handleSelectSession(session.sessionId, session.productId)}
+                  disabled={isCreatingHomeCharacterSession}
+                  className="min-w-0 flex-1 overflow-hidden text-left"
+                >
+                  <div className="flex min-w-0 items-center gap-6pxr">
+                    <span className="min-w-0 flex-1 truncate text-14pxr font-medium">
+                      {sessionListTitle}
                     </span>
+                    {isCharacterChatSession ? (
+                      <span className="shrink-0 rounded-full bg-primary-100 px-6pxr py-2pxr text-11pxr font-semibold leading-[14px] text-white">
+                        주인공챗
+                      </span>
+                    ) : null}
                   </div>
-                ) : null}
-                <div className="mt-4pxr text-12pxr text-dark-gray-300">
-                  {formatWebsochatRelativeUpdatedAt(session.updatedDate)}
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDeleteSession(session.sessionId)}
-                disabled={isDeletingSession || isCreatingHomeCharacterSession}
-                className="shrink-0 text-12pxr text-dark-gray-300 hover:text-dark-gray-500 disabled:opacity-40"
-              >
-                삭제
-              </button>
+                  {session.productTitle ? (
+                    <div className="mt-4pxr flex min-w-0 items-center gap-4pxr overflow-hidden text-12pxr text-dark-gray-300">
+                      <span className="min-w-0 max-w-full truncate">{session.productTitle}</span>
+                      <span className="shrink-0">·</span>
+                      <span className="shrink-0">
+                        {buildWebsochatSessionReadScopeText(
+                          session.readScopeState,
+                          session.readEpisodeNo,
+                          session.readEpisodeTitle
+                        ) || "\u00A0"}
+                      </span>
+                    </div>
+                  ) : null}
+                  <div className="mt-4pxr text-12pxr text-dark-gray-300">
+                    {formatWebsochatRelativeUpdatedAt(session.updatedDate)}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  aria-label={`${sessionListTitle} 세션 삭제`}
+                  title="삭제"
+                  onClick={() => handleDeleteSession(session.sessionId)}
+                  disabled={isDeletingSession || isCreatingHomeCharacterSession}
+                  className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-[6px] text-dark-gray-300 hover:bg-light-gray-200 hover:text-dark-gray-500 disabled:opacity-40"
+                >
+                  <Trash aria-hidden="true" className="h-[16px] w-[14px]" />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </>
     );
   };
@@ -5548,7 +5679,40 @@ export default function WebsochatPage() {
               className="flex-1 min-h-0 overflow-y-auto px-16pxr md:px-0"
             >
               <div ref={messageListContentRef} className="flex min-h-full flex-col gap-16pxr">
-              {shouldShowMessagesLoadingSpinner ? (
+              {shouldShowNewChatStartSurface ? (
+                <WebsochatStartChooser
+                  view={websochatStartView}
+                  items={startCharacterSlotItems}
+                  loading={isStartCharacterPickerLoading}
+                  error={
+                    isStartCharacterSlotsError && startCharacterSlotItems.length === 0
+                      ? "주인공 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
+                      : null
+                  }
+                  launching={isCreatingHomeCharacterSession}
+                  onChooseWebsochat={() => setIsProductPickerOpen(true)}
+                  onChooseCharacterChat={() => setWebsochatStartView("character_picker")}
+                  onBack={() => setWebsochatStartView("chooser")}
+                  onRetry={() => void refetchStartCharacterSlots()}
+                  onLaunchCharacter={handleLaunchStartCharacter}
+                  onGoToProduct={(item) => router.push(buildProductDetailPath(item.productId))}
+                />
+              ) : websochatStartSurface === "error" ? (
+                <div className="flex min-h-full flex-col items-center justify-center px-16pxr text-center">
+                  <p className="text-14pxr leading-[21px] text-dark-gray-500">
+                    대화 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void refetchSessions()}
+                    className="mt-16pxr min-h-48pxr rounded-[10px] border border-light-gray-300 bg-white px-20pxr text-14pxr font-medium text-black-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100 focus-visible:ring-offset-2"
+                  >
+                    다시 시도
+                  </button>
+                </div>
+              ) : websochatStartSurface === "loading" ? (
+                <Spinner size={24} />
+              ) : shouldShowMessagesLoadingSpinner ? (
                 <Spinner size={24} />
               ) : (
                 <>
@@ -5920,7 +6084,7 @@ export default function WebsochatPage() {
               </div>
             </div>
 
-            {activeSessionId && !canSendMessage ? (
+            {shouldHoldNewChatStartSurface ? null : activeSessionId && !canSendMessage ? (
               <div className="rounded-[12px] border border-light-gray-300 bg-light-gray-100 px-14pxr py-16pxr text-14pxr text-dark-gray-400">
                 {unavailableMessage}
               </div>

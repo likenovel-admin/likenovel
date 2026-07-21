@@ -1,9 +1,13 @@
+export type CharacterChatEntrySource =
+  | "home_character_slot"
+  | "websochat_rp_mode";
+
 export interface HomeCharacterChatSessionRequest {
   product_id: number;
   guest_key?: string;
   title: string;
   session_kind: "character_chat";
-  entry_source: "home_character_slot";
+  entry_source: CharacterChatEntrySource;
   locked_character_scope_key: string;
   rp_mode: "free";
   adult_yn: "Y" | "N";
@@ -80,6 +84,7 @@ interface BuildHomeCharacterChatRequestParams {
   adultYn: "Y" | "N";
   guestKey?: string | null;
   accountReadEpisodeTo?: number | null;
+  entrySource?: CharacterChatEntrySource;
 }
 
 export const buildHomeCharacterChatSessionRequest = ({
@@ -89,12 +94,13 @@ export const buildHomeCharacterChatSessionRequest = ({
   adultYn,
   guestKey,
   accountReadEpisodeTo,
+  entrySource = "home_character_slot",
 }: BuildHomeCharacterChatRequestParams): HomeCharacterChatSessionRequest => ({
   product_id: productId,
   ...(guestKey ? { guest_key: guestKey } : {}),
   title: `${characterName}과의 대화`,
   session_kind: "character_chat",
-  entry_source: "home_character_slot",
+  entry_source: entrySource,
   locked_character_scope_key: characterScopeKey,
   rp_mode: "free",
   adult_yn: adultYn,
@@ -154,7 +160,9 @@ export const consumePendingHomeCharacterChatLaunch = ({
       || now - createdAt > PENDING_HOME_CHARACTER_CHAT_LAUNCH_TTL_MS;
     const isValidRequest =
       request?.session_kind === "character_chat"
-      && request.entry_source === "home_character_slot"
+      && ["home_character_slot", "websochat_rp_mode"].includes(
+        String(request.entry_source || "")
+      )
       && Number.isInteger(Number(request.product_id))
       && Number(request.product_id) > 0
       && Boolean(String(request.locked_character_scope_key || "").trim());
@@ -197,7 +205,7 @@ export const findRecoverableHomeCharacterChatSession = <
       session.createdDate
     );
     return session.sessionKind === "character_chat"
-      && session.entrySource === "home_character_slot"
+      && session.entrySource === launch.request.entry_source
       && session.productId === launch.request.product_id
       && session.lockedCharacterScopeKey
         === launch.request.locked_character_scope_key

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   buildCharacterChatChoiceMessage,
@@ -13,6 +14,7 @@ import {
 import {
   resolveWebsochatActiveSession,
   resolveWebsochatActorKey,
+  resolveWebsochatSessionListTitle,
   shouldShowWebsochatStickyGuide,
 } from "./websochatLaunch.ts";
 
@@ -59,6 +61,27 @@ test("홈 캐릭터 카드 요청은 선택 인물과 캐릭터챗 계약을 고
       rp_mode: "free",
       adult_yn: "N",
       account_read_episode_to: 14,
+    }
+  );
+});
+
+test("웹소챗 주인공 선택기는 진입 출처만 바꾸고 캐릭터챗 계약을 유지한다", () => {
+  assert.deepEqual(
+    buildHomeCharacterChatSessionRequest({
+      productId: 1103,
+      characterScopeKey: "character:레이븐",
+      characterName: "레이븐",
+      adultYn: "N",
+      entrySource: "websochat_rp_mode",
+    }),
+    {
+      product_id: 1103,
+      title: "레이븐과의 대화",
+      session_kind: "character_chat",
+      entry_source: "websochat_rp_mode",
+      locked_character_scope_key: "character:레이븐",
+      rp_mode: "free",
+      adult_yn: "N",
     }
   );
 });
@@ -260,6 +283,42 @@ test("응답이 유실된 직후 생성된 동일 캐릭터 세션만 복구한�
   );
 });
 
+test("웹소챗 주인공 선택기에서 만든 동일 캐릭터 세션도 응답 유실 후 복구한다", () => {
+  const now = Date.parse("2026-07-21T07:30:00.000Z");
+  const launch = {
+    request: buildHomeCharacterChatSessionRequest({
+      productId: 1103,
+      characterScopeKey: "character:레이븐",
+      characterName: "레이븐",
+      adultYn: "N",
+      entrySource: "websochat_rp_mode",
+    }),
+    characterName: "레이븐",
+    characterImagePath: "/characters/raven.webp",
+    productTitle: "오염세계의 까마귀",
+    authorNickname: "작가",
+    createdAt: now - 10_000,
+  };
+
+  assert.equal(
+    findRecoverableHomeCharacterChatSession({
+      sessions: [
+        {
+          sessionId: 3103,
+          productId: 1103,
+          sessionKind: "character_chat",
+          entrySource: "websochat_rp_mode",
+          lockedCharacterScopeKey: "character:레이븐",
+          createdDate: new Date(now - 9_000).toISOString(),
+        },
+      ],
+      launch,
+      now,
+    })?.sessionId,
+    3103
+  );
+});
+
 test("인증 identity가 확정되기 전에는 sessions query actor를 만들지 않는다", () => {
   assert.equal(
     resolveWebsochatActorKey({
@@ -364,6 +423,46 @@ test("확정된 sessions 목록에서만 active session을 clear 또는 fallback
       pendingSessionId: 2184,
     }),
     { action: "keep" }
+  );
+});
+
+test("세션 목록은 캐릭터챗만 캐릭터 이름으로 표시한다", () => {
+  assert.equal(
+    resolveWebsochatSessionListTitle({
+      sessionKind: "character_chat",
+      title: "루벤과의 대화",
+      characterDisplayName: "루벤",
+    }),
+    "루벤"
+  );
+  assert.equal(
+    resolveWebsochatSessionListTitle({
+      sessionKind: "character_chat",
+      title: "라파엘과의 대화",
+      characterDisplayName: null,
+    }),
+    "라파엘"
+  );
+  assert.equal(
+    resolveWebsochatSessionListTitle({
+      sessionKind: "websochat",
+      title: "25화 이후 전개 질문",
+      characterDisplayName: "루벤",
+    }),
+    "25화 이후 전개 질문"
+  );
+});
+
+test("캐릭터챗 세션 행은 유형 배지와 아이콘 삭제 버튼을 사용한다", () => {
+  const pageSource = readFileSync(
+    new URL("../app/websochat/page.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(pageSource, />\s*주인공챗\s*<\/span>/);
+  assert.match(
+    pageSource,
+    /aria-label=\{`\$\{sessionListTitle\} 세션 삭제`\}[\s\S]*?title="삭제"[\s\S]*?<Trash/
   );
 });
 
