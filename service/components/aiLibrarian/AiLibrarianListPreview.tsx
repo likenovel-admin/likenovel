@@ -88,9 +88,9 @@ export default function AiLibrarianListPreview({
                 event.stopPropagation();
                 onAskMore();
               }}
-              className="inline-flex min-h-[36px] self-end items-center justify-center rounded-[6px] border border-light-gray-600 bg-white px-10pxr text-12pxr font-medium leading-[16px] tracking-[-2%] text-primary-100 hover:bg-light-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100 focus-visible:ring-offset-2"
+              className="inline-flex min-h-[36px] self-end items-center justify-center rounded-[6px] border border-primary-100 bg-white px-10pxr text-12pxr font-medium leading-[16px] tracking-[-2%] text-primary-100 hover:bg-light-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100 focus-visible:ring-offset-2"
             >
-              AI사서에게 더 물어보기
+              AI 사서에게 묻기
             </button>
           )}
         </div>
