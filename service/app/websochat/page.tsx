@@ -50,6 +50,10 @@ import WebsochatTypingDots from "@/components/websochat/WebsochatTypingDots";
 import useAuthStore from "@/store/authStore";
 import useConfirmStore from "@/store/confirmStore";
 import {
+  hasExpiredAuthSession,
+  shouldRequireReauthentication,
+} from "@/utils/authSession";
+import {
   buildCharacterChatChoiceMessage,
   buildHomeCharacterWarmupMessages,
   consumePendingHomeCharacterChatLaunch,
@@ -1362,13 +1366,34 @@ export default function WebsochatPage() {
 
   const canUseAccountScope =
     !!accessToken || isAuthenticated || !!user?.userId || hasStoredAuthToken;
-  const websochatGuestKey = canUseAccountScope ? null : guestKey;
-  const websochatActorKey = resolveWebsochatActorKey({
-    isAuthInitialized,
-    canUseAccountScope,
-    userId: user?.userId,
-    guestKey,
-  });
+  const shouldRedirectExpiredWebsochatAuth =
+    typeof window !== "undefined"
+    && shouldRequireReauthentication({
+      isAuthInitialized,
+      canUseAccountScope,
+      hasExpiredSession: hasExpiredAuthSession(window.sessionStorage),
+    });
+  const websochatGuestKey = shouldRedirectExpiredWebsochatAuth
+    ? null
+    : canUseAccountScope
+      ? null
+      : guestKey;
+  const websochatActorKey = shouldRedirectExpiredWebsochatAuth
+    ? ""
+    : resolveWebsochatActorKey({
+        isAuthInitialized,
+        canUseAccountScope,
+        userId: user?.userId,
+        guestKey,
+      });
+
+  useEffect(() => {
+    if (!shouldRedirectExpiredWebsochatAuth) return;
+    activeAssistantAbortControllerRef.current?.abort();
+    const returnPath = `${window.location.pathname}${window.location.search}`;
+    localStorage.setItem(STORAGE_KEYS.PREVIOUS_PAGE, returnPath);
+    window.location.replace(`/login?redirect=${encodeURIComponent(returnPath)}`);
+  }, [shouldRedirectExpiredWebsochatAuth]);
   const selectedProductEpisodeListParams = useMemo(
     () => ({
       product_id: String(selectedProductId || ""),
@@ -3269,7 +3294,8 @@ export default function WebsochatPage() {
     && !effectiveStarter
     && !shouldShowCharacterOpeningWaitingBubble;
   const isComposerInteractionBlocked =
-    !effectiveProductId
+    shouldRedirectExpiredWebsochatAuth
+    || !effectiveProductId
     || !canSendMessage
     || isStreamingMessage
     || isAssistantTurnPending
@@ -3286,7 +3312,8 @@ export default function WebsochatPage() {
     || isCharacterStreamRevealDraining
     || !billingStatusData?.data;
   const isCharacterChoiceButtonDisabled =
-    !activeSessionId
+    shouldRedirectExpiredWebsochatAuth
+    || !activeSessionId
     || !latestCharacterChatAssistantMessage
     || !canSendMessage
     || isStreamingMessage
@@ -3310,7 +3337,8 @@ export default function WebsochatPage() {
   const isSendButtonDisabled = isPauseButtonVisible
     ? false
     : (
-      !selectedProductId
+      shouldRedirectExpiredWebsochatAuth
+      || !selectedProductId
       || !draft.trim()
       || isCreatingSession
       || isCharacterOpeningBusy
@@ -3856,6 +3884,7 @@ export default function WebsochatPage() {
       !content
       || !effectiveProductId
       || !canSendMessage
+      || shouldRedirectExpiredWebsochatAuth
       || isReadScopeGuardPending
       || isAssistantTurnPending
       || isPatchingSessionModel
@@ -5356,6 +5385,14 @@ export default function WebsochatPage() {
       </>
     );
   };
+
+  if (shouldRedirectExpiredWebsochatAuth) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white text-14pxr text-dark-gray-400">
+        로그인 화면으로 이동 중입니다.
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white md:bg-white">

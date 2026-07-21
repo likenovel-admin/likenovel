@@ -8,6 +8,7 @@ import { getStateAndReDirectUri } from "@/utils/getStateAndRedirectUri";
 import {
   getLocalStorage,
   removeLocalStorage,
+  setLocalStorage,
   STORAGE_KEYS,
 } from "@/utils/localStorage";
 import { useQueryClient } from "@tanstack/react-query";
@@ -168,6 +169,18 @@ const Login = ({ pageType, setIsOpen }: Props) => {
     const updatedState = getUpdatedState(state, "1900-01-01", "M");
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${updatedState}&scope=email%20profile&prompt=select_account`;
+  };
+
+  const prepareSocialLoginRedirect = () => {
+    sessionStorage.removeItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY);
+    const redirectUrl = searchParams.get("redirect");
+    if (
+      redirectUrl?.startsWith("/")
+      && !redirectUrl.startsWith("//")
+      && !redirectUrl.includes("\\")
+    ) {
+      setLocalStorage(STORAGE_KEYS.PREVIOUS_PAGE, redirectUrl);
+    }
   };
 
   // const onAppleLogin = async () => {
@@ -354,33 +367,21 @@ const Login = ({ pageType, setIsOpen }: Props) => {
             provider={"naver"}
             isRecentSingIn={recentLoginType === "naver"}
             isKeepSignIn={watch("isKeepSignIn")}
-            onBeforeRedirect={() => {
-              if (typeof window !== "undefined") {
-                sessionStorage.removeItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY);
-              }
-            }}
+            onBeforeRedirect={prepareSocialLoginRedirect}
           />
 
           <SocialLoginButton
             provider={"kakao"}
             isRecentSingIn={recentLoginType === "kakao"}
             isKeepSignIn={watch("isKeepSignIn")}
-            onBeforeRedirect={() => {
-              if (typeof window !== "undefined") {
-                sessionStorage.removeItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY);
-              }
-            }}
+            onBeforeRedirect={prepareSocialLoginRedirect}
           />
 
           <SocialLoginButton
             provider={"google"}
             isRecentSingIn={recentLoginType === "google"}
             isKeepSignIn={watch("isKeepSignIn")}
-            onBeforeRedirect={() => {
-              if (typeof window !== "undefined") {
-                sessionStorage.removeItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY);
-              }
-            }}
+            onBeforeRedirect={prepareSocialLoginRedirect}
             onGoogleClick={() => {
               onGoogleLogin();
             }}
