@@ -1,7 +1,7 @@
 "use client";
 
 const AI_LIBRARIAN_LIST_TAG_CHIP_CLASS =
-  "inline-flex max-w-[88px] items-center rounded-full border border-primary-100 bg-white px-6pxr py-2pxr text-9pxr leading-[12px] font-medium tracking-[-2%] text-primary-100";
+  "inline-flex min-h-[24px] max-w-[104px] items-center rounded-full border border-light-gray-600 bg-white px-8pxr py-2pxr text-12pxr leading-[16px] font-medium tracking-[-2%] text-dark-gray-400";
 
 interface Props {
   preview?: string;
@@ -34,7 +34,7 @@ export default function AiLibrarianListPreview({
   return (
     <div
       className={`overflow-hidden transition-[max-height,padding-top] duration-200 ease-out motion-reduce:transition-none ${
-        isVisible ? "max-h-[152px] pt-6pxr" : "max-h-0 pt-0"
+        isVisible ? "max-h-[184px] pt-6pxr" : "max-h-0 pt-0"
       } ${className}`}
     >
       <div
@@ -45,7 +45,7 @@ export default function AiLibrarianListPreview({
             : "pointer-events-none translate-y-2 opacity-0"
         }`}
       >
-        <div className="flex flex-col gap-4pxr border border-light-gray-500 bg-light-gray-100 px-10pxr py-6pxr rounded-[10px]">
+        <div className="flex flex-col gap-6pxr rounded-[10px] border border-light-gray-500 bg-light-gray-100 px-12pxr py-10pxr">
           <button
             type="button"
             tabIndex={isVisible ? 0 : -1}
@@ -53,24 +53,26 @@ export default function AiLibrarianListPreview({
               event.stopPropagation();
               onClick();
             }}
-            className="w-full text-left"
+            className="w-full rounded-[6px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100 focus-visible:ring-offset-2"
           >
-            <span className="text-10pxr leading-[13px] font-bold text-primary-100">
-              AI 사서
-            </span>
-            {visibleChips.length > 0 && (
-              <span className="flex flex-wrap gap-4pxr mt-4pxr">
-                {visibleChips.map((chip) => (
-                  <span
-                    key={chip}
-                    className={AI_LIBRARIAN_LIST_TAG_CHIP_CLASS}
-                  >
-                    <span className="truncate">{chip}</span>
-                  </span>
-                ))}
+            <span className="flex flex-wrap items-center gap-x-6pxr gap-y-4pxr">
+              <span className="shrink-0 text-12pxr font-bold leading-[16px] tracking-[-2%] text-primary-100">
+                AI 사서
               </span>
-            )}
-            <span className="flex flex-col text-11pxr leading-[15px] text-dark-gray-500 mt-4pxr">
+              {visibleChips.length > 0 && (
+                <span className="flex flex-wrap gap-4pxr">
+                  {visibleChips.map((chip) => (
+                    <span
+                      key={chip}
+                      className={AI_LIBRARIAN_LIST_TAG_CHIP_CLASS}
+                    >
+                      <span className="truncate">{chip}</span>
+                    </span>
+                  ))}
+                </span>
+              )}
+            </span>
+            <span className="mt-6pxr flex flex-col text-12pxr leading-[18px] tracking-[-2%] text-dark-gray-500">
               {lines.map((line, index) => (
                 <span key={`${index}-${line}`} className="line-clamp-1">
                   {line}
@@ -86,9 +88,9 @@ export default function AiLibrarianListPreview({
                 event.stopPropagation();
                 onAskMore();
               }}
-              className="self-center rounded-full bg-primary-100 px-10pxr py-4pxr text-11pxr font-semibold leading-[15px] text-white"
+              className="inline-flex min-h-[36px] self-end items-center justify-center rounded-[6px] border border-primary-100 bg-white px-10pxr text-12pxr font-medium leading-[16px] tracking-[-2%] text-primary-100 hover:bg-light-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100 focus-visible:ring-offset-2"
             >
-              AI사서에게 더 물어보기
+              AI 사서에게 묻기
             </button>
           )}
         </div>
