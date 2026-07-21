@@ -30,26 +30,6 @@ export const WEBSOCHAT_ENTRY_CTA_POOL: WebsochatEntryCtaSpec[] = [
     },
   },
   {
-    key: "chat-main-character",
-    actionCopy: "주인공이랑 대화하기",
-    action: {
-      label: "인물과 대화",
-      prompt: "인물과 대화하고 싶어",
-      modeKey: "rp",
-      qaActionKey: null,
-    },
-  },
-  {
-    key: "chat-side-character",
-    actionCopy: "캐릭터랑 대화하기",
-    action: {
-      label: "인물과 대화",
-      prompt: "다른 인물과도 대화해보고 싶어",
-      modeKey: "rp",
-      qaActionKey: null,
-    },
-  },
-  {
     key: "predict-next",
     actionCopy: "다음 전개 예상하기",
     action: {

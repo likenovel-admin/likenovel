@@ -180,6 +180,10 @@ export const isVisibleWebsochatComposerShortcutAction = (
   action: { modeKey?: WebsochatLaunchModeKey | null }
 ) => (action.modeKey || "qa") !== "rp";
 
+export const isVisibleWebsochatPublicShortcutAction = (
+  action: { modeKey?: WebsochatLaunchModeKey | null }
+) => (action.modeKey || "qa") !== "rp";
+
 export interface IWebsochatLaunchPayload {
   productId: number;
   title: string;

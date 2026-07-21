@@ -65,6 +65,27 @@ test("홈 캐릭터 카드 요청은 선택 인물과 캐릭터챗 계약을 고
   );
 });
 
+test("웹소챗 주인공 선택기는 진입 출처만 바꾸고 캐릭터챗 계약을 유지한다", () => {
+  assert.deepEqual(
+    buildHomeCharacterChatSessionRequest({
+      productId: 1103,
+      characterScopeKey: "character:레이븐",
+      characterName: "레이븐",
+      adultYn: "N",
+      entrySource: "websochat_rp_mode",
+    }),
+    {
+      product_id: 1103,
+      title: "레이븐과의 대화",
+      session_kind: "character_chat",
+      entry_source: "websochat_rp_mode",
+      locked_character_scope_key: "character:레이븐",
+      rp_mode: "free",
+      adult_yn: "N",
+    }
+  );
+});
+
 test("읽은 범위가 없으면 임의 회차를 요청하지 않는다", () => {
   const request = buildHomeCharacterChatSessionRequest({
     productId: 1,
@@ -259,6 +280,42 @@ test("응답이 유실된 직후 생성된 동일 캐릭터 세션만 복구한�
       now,
     }),
     null
+  );
+});
+
+test("웹소챗 주인공 선택기에서 만든 동일 캐릭터 세션도 응답 유실 후 복구한다", () => {
+  const now = Date.parse("2026-07-21T07:30:00.000Z");
+  const launch = {
+    request: buildHomeCharacterChatSessionRequest({
+      productId: 1103,
+      characterScopeKey: "character:레이븐",
+      characterName: "레이븐",
+      adultYn: "N",
+      entrySource: "websochat_rp_mode",
+    }),
+    characterName: "레이븐",
+    characterImagePath: "/characters/raven.webp",
+    productTitle: "오염세계의 까마귀",
+    authorNickname: "작가",
+    createdAt: now - 10_000,
+  };
+
+  assert.equal(
+    findRecoverableHomeCharacterChatSession({
+      sessions: [
+        {
+          sessionId: 3103,
+          productId: 1103,
+          sessionKind: "character_chat",
+          entrySource: "websochat_rp_mode",
+          lockedCharacterScopeKey: "character:레이븐",
+          createdDate: new Date(now - 9_000).toISOString(),
+        },
+      ],
+      launch,
+      now,
+    })?.sessionId,
+    3103
   );
 });
 

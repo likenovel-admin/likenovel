@@ -4,6 +4,7 @@ import {
   filterWebsochatActionsByAllowedModes,
   getWebsochatLaunchEligibility,
   isVisibleWebsochatComposerShortcutAction,
+  isVisibleWebsochatPublicShortcutAction,
   isWebsochatModeAllowed,
 } from "./websochatLaunch.ts";
 
@@ -58,6 +59,14 @@ assert.equal(isWebsochatModeAllowed("qa", null), true);
 
 assert.deepEqual(
   shortcutActions.filter(isVisibleWebsochatComposerShortcutAction),
+  [
+    { label: "작품 대화", modeKey: "qa" },
+    { label: "다음 전개 예상", modeKey: "qa" },
+  ]
+);
+
+assert.deepEqual(
+  shortcutActions.filter(isVisibleWebsochatPublicShortcutAction),
   [
     { label: "작품 대화", modeKey: "qa" },
     { label: "다음 전개 예상", modeKey: "qa" },
