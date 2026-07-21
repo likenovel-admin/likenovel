@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { shuffleCharacterSlotItems } from "../utils/characterSlotOrder.ts";
 
 const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 const characterSlotSource = readFileSync(
@@ -12,6 +13,19 @@ const mainRuleSlotIndex = source.indexOf(
   "{mainRuleSlotSections.length > 0",
   characterSlotIndex
 );
+const slotOrderSource = [1, 2, 3, 4];
+
+assert.deepEqual(
+  shuffleCharacterSlotItems(slotOrderSource, () => 0),
+  [2, 3, 4, 1]
+);
+assert.deepEqual(slotOrderSource, [1, 2, 3, 4]);
+assert.deepEqual(
+  shuffleCharacterSlotItems(slotOrderSource, () => 0.999),
+  slotOrderSource
+);
+assert.deepEqual(shuffleCharacterSlotItems([], () => 0), []);
+assert.deepEqual(shuffleCharacterSlotItems([1], () => 0), [1]);
 
 assert.notEqual(recentlyViewIndex, -1, "Home page should render RecentlyView");
 assert.notEqual(characterSlotIndex, -1, "Home page should render CharacterSlot");
@@ -126,4 +140,9 @@ assert.match(
   characterSlotSource,
   /\{CHARACTER_SLOT_SECTION_SUBTITLES\[subtitleIndex\]\}/,
   "CharacterSlot should render the selected subtitle"
+);
+assert.match(
+  characterSlotSource,
+  /setOrderedItemIds\([\s\S]*shuffleCharacterSlotItems\(/,
+  "CharacterSlot should shuffle cards once when the available slot set changes"
 );
