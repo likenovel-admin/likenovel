@@ -224,9 +224,11 @@ const Login = ({ pageType, setIsOpen }: Props) => {
 
   return (
     <div
-      className={`relative w-full ${
-        pageType === "modal" ? "max-h[700px]" : "h-screen"
-      } flex flex-col justify-center items-center md:justify-start min-w-[300px] max-w-[700px] px-16pxr md:px-90pxr`}
+      className={`relative w-full flex flex-col items-center ${
+        pageType === "modal"
+          ? "px-32pxr py-20pxr"
+          : "h-screen justify-center md:justify-start min-w-[300px] max-w-[700px] px-16pxr md:px-90pxr"
+      }`}
     >
       {pageType === "mobile" && (
         <button
@@ -239,7 +241,9 @@ const Login = ({ pageType, setIsOpen }: Props) => {
         </button>
       )}
       <button
-        className="flex justify-center items-end gap-12pxr mb-50pxr mt-20pxr"
+        className={`flex justify-center items-end gap-12pxr ${
+          pageType === "modal" ? "mb-32pxr mt-8pxr" : "mb-50pxr mt-20pxr"
+        }`}
         onClick={() => {
           setIsOpen?.(false);
           router.push("/");
@@ -315,7 +319,11 @@ const Login = ({ pageType, setIsOpen }: Props) => {
           </div>
         )}
 
-        <div className="w-full mt-37pxr">
+        <div
+          className={`w-full ${
+            pageType === "modal" ? "mt-24pxr" : "mt-37pxr"
+          }`}
+        >
           <Button
             size="xl"
             type="submit"
@@ -328,7 +336,11 @@ const Login = ({ pageType, setIsOpen }: Props) => {
         </div>
       </form>
 
-      <div className="flex w-full flex-col items-center mt-50pxr">
+      <div
+        className={`flex w-full flex-col items-center ${
+          pageType === "modal" ? "mt-32pxr" : "mt-50pxr"
+        }`}
+      >
         <div className="flex w-full justify-center items-center gap-20pxr">
           <div className="hidden md:block w-full border border-t-light-gray-500 border-b-0 border-l-0 border-r-0" />
           <span className="min-w-[148px] text-14pxr text-center">
@@ -398,9 +410,9 @@ const Login = ({ pageType, setIsOpen }: Props) => {
       </div>
 
       <div
-        className={`mt-30pxr ${
-          pageType === "modal" ? "" : ""
-        } flex items-center`}
+        className={`flex items-center ${
+          pageType === "modal" ? "mt-24pxr" : "mt-30pxr"
+        }`}
       >
         <span className="text-14pxr">아직도 라이크노벨 회원이 아니세요?</span>
         <button
