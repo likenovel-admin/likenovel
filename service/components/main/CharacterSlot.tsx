@@ -14,6 +14,7 @@ import {
   queueHomeCharacterChatLaunch,
 } from "@/utils/characterChatLaunch";
 import { buildProductDetailPath } from "@/utils/productPath";
+import { shuffleCharacterSlotItems } from "@/utils/characterSlotOrder";
 import { getWebsochatSafeUserMessage } from "@/utils/websochatError";
 import {
   getOrCreateWebsochatGuestKey,
@@ -74,16 +75,44 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
   }));
   const pageSize = useResponsivePageSize();
   const launchOnceRef = useRef(createSingleFlightRunner());
+  const shuffledItemsSignatureRef = useRef<string | null>(null);
   const [page, setPage] = useState(0);
+  const [orderedItemIds, setOrderedItemIds] = useState(() =>
+    items.map((item) => String(item.characterSlotId))
+  );
   const [launchingScopeKey, setLaunchingScopeKey] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] =
     useState<IMainCharacterSlotItem | null>(null);
   const [subtitleIndex, setSubtitleIndex] = useState(0);
-  const list = useMemo(() => items ?? [], [items]);
+  const list = useMemo(() => {
+    const itemById = new Map(
+      items.map((item) => [String(item.characterSlotId), item])
+    );
+    const orderedItems = orderedItemIds
+      .map((itemId) => itemById.get(itemId))
+      .filter((item): item is IMainCharacterSlotItem => Boolean(item));
+
+    return orderedItems.length === items.length ? orderedItems : items;
+  }, [items, orderedItemIds]);
   const pageCount = Math.max(1, Math.ceil(list.length / pageSize));
   const hasPager = list.length > pageSize;
 
   useEffect(() => setPage(0), [pageSize]);
+  useEffect(() => {
+    const signature = items
+      .map((item) => String(item.characterSlotId))
+      .sort()
+      .join("|");
+    if (shuffledItemsSignatureRef.current === signature) return;
+
+    shuffledItemsSignatureRef.current = signature;
+    setOrderedItemIds(
+      shuffleCharacterSlotItems(
+        items.map((item) => String(item.characterSlotId))
+      )
+    );
+    setPage(0);
+  }, [items]);
   useEffect(() => {
     setSubtitleIndex(
       Math.floor(Math.random() * CHARACTER_SLOT_SECTION_SUBTITLES.length)
