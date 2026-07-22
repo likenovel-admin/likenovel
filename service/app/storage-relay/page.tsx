@@ -5,6 +5,11 @@ import {
   SOCIAL_SIGNUP_PENDING_SESSION_KEY,
 } from "@/constants/onboarding";
 import useAuthStore from "@/store/authStore";
+import {
+  getLocalStorage,
+  removeLocalStorage,
+  STORAGE_KEYS,
+} from "@/utils/localStorage";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect } from "react";
 
@@ -65,8 +70,15 @@ const StorageRelayPage = () => {
               sessionStorage.removeItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY);
             }
           }
-          // 저장된 세션 정보를 가져와서 세션 스토리지 및 로컬 스토리지에 세팅한 후, 메인페이지로 이동
-          router.push("/");
+          const previousPage = getLocalStorage<string>(
+            STORAGE_KEYS.PREVIOUS_PAGE
+          );
+          if (previousPage) {
+            removeLocalStorage(STORAGE_KEYS.PREVIOUS_PAGE);
+            router.push(previousPage);
+          } else {
+            router.push("/");
+          }
         } catch {
           redirectToLogin();
         }

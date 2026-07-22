@@ -13,6 +13,7 @@ interface Props {
   onGoogleClick?: () => void;
   onAppleClick?: () => void;
   onBeforeRedirect?: () => void;
+  onRedirectRequest?: (continueRedirect: () => void) => void;
   disabled?: boolean;
 }
 
@@ -26,6 +27,7 @@ const SocialLoginButton = ({
   onGoogleClick,
   onAppleClick,
   onBeforeRedirect,
+  onRedirectRequest,
   disabled = false,
 }: Props) => {
   const naverLogin = (isKeepSignIn: boolean) => {
@@ -110,20 +112,28 @@ const SocialLoginButton = ({
       type={type}
       disabled={disabled}
       onClick={() => {
-        onBeforeRedirect?.();
-        if (provider === "naver") {
-          naverLogin(isKeepSignIn);
+        const continueRedirect = () => {
+          onBeforeRedirect?.();
+          if (provider === "naver") {
+            naverLogin(isKeepSignIn);
+            return;
+          }
+          if (provider === "kakao") {
+            kakaoLogin(isKeepSignIn);
+            return;
+          }
+          if (provider === "google") {
+            onGoogleClick && onGoogleClick();
+            return;
+          }
+          onAppleClick && onAppleClick();
+        };
+
+        if (onRedirectRequest) {
+          onRedirectRequest(continueRedirect);
           return;
         }
-        if (provider === "kakao") {
-          kakaoLogin(isKeepSignIn);
-          return;
-        }
-        if (provider === "google") {
-          onGoogleClick && onGoogleClick();
-          return;
-        }
-        onAppleClick && onAppleClick();
+        continueRedirect();
       }}
       className={`${baseButtonStyle} ${buttonStyle(provider, isSignIn)} ${
         disabled ? "opacity-50 cursor-not-allowed" : ""

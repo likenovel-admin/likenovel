@@ -3,6 +3,7 @@ export enum ErrorCodes {
   E4010 = "E4010", // access 토큰 만료
   E4011 = "E4011", // refresh 토큰 만료
   E4012 = "E4012", // 본인인증이 안 된 경우
+  E4013 = "E4013", // 게스트 5화 초과 열람 제한
   E4220 = "E4220", // email 값 validation 에러
   E4221 = "E4221", // password 값 validation 에러
   E4222 = "E4222", // state 값 validation 에러

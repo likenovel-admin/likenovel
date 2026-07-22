@@ -72,6 +72,50 @@ assert.match(
   "Unavailable viewer login action should preserve the current viewer path before opening login"
 );
 
+assert.match(
+  source,
+  /viewerErrorCode === ErrorCodes\.E4013/,
+  "Viewer page should identify the dedicated guest episode-limit response"
+);
+
+assert.match(
+  source,
+  /여기서부터는 로그인하고 볼 수 있어요[\s\S]*3초 만에 시작하기[\s\S]*이미 회원이라면 로그인/,
+  "Guest episode-limit state should render its dedicated signup and login actions"
+);
+
+assert.match(
+  source,
+  /setLocalStorage\(STORAGE_KEYS\.PREVIOUS_PAGE, currentPath\)[\s\S]*router\.push\("\/sign-up"\)/,
+  "Guest episode-limit signup action should preserve the viewer path"
+);
+
+assert.match(
+  source,
+  /data\?\.data\?\.episodeNo !== 5[\s\S]*sessionStorage\.getItem\(GUEST_LIMIT_NOTICE_DISMISSED_KEY\)/,
+  "Guest limit notice should only appear on episode five and honor session dismissal"
+);
+
+assert.match(
+  source,
+  /다음 화부터는 로그인이 필요해요 · 무료 회차는 로그인하면 계속 무료[\s\S]*aria-label="안내 배너 닫기"/,
+  "Episode five should show the dismissible pre-notice copy"
+);
+
+// ViewerBottomNav은 fixed bottom-0 z-50 h-[60px]로 깔린다. 배너가 그보다 낮은
+// z-index나 낮은 위치에 있으면 하단바가 포인터 이벤트를 가로채 닫기 버튼을 누를 수 없다.
+assert.match(
+  source,
+  /aria-live="polite"[\s\S]{0,400}z-\[60\]/,
+  "Guest limit notice must stack above ViewerBottomNav (z-50) so the close button stays clickable"
+);
+
+assert.match(
+  source,
+  /showNav && !noticeState[\s\S]{0,120}bottom-\[calc\(76px\+env\(safe-area-inset-bottom\)\)\][\s\S]{0,80}bottom-16pxr/,
+  "Guest limit notice must clear the bottom nav height while it is visible"
+);
+
 const episodeQuerySource = readFileSync(
   existsSync("service/app/api/query/episode/index.ts")
     ? "service/app/api/query/episode/index.ts"

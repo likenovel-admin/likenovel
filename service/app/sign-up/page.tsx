@@ -1,5 +1,7 @@
 "use client";
+import { useCompleteSocialSignup } from "@/app/api/auth";
 import Button from "@/components/common/Button";
+import BottomSheetContainer from "@/components/common/BottomSheetContainer";
 import ModalContainer from "@/components/common/ModalContainer";
 import SocialLoginButton from "@/components/login/SocialLoginButton";
 import LogoButton from "@/components/signUp/LogoButton";
@@ -7,9 +9,11 @@ import { SOCIAL_SIGNUP_PENDING_SESSION_KEY } from "@/constants/onboarding";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useConfirmStore from "@/store/confirmStore";
 import useToastStore from "@/store/toastStore";
+import { getStateAndReDirectUri } from "@/utils/getStateAndRedirectUri";
+import axios from "axios";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, useWatch } from "react-hook-form";
 import Checkbox from "../../components/common/CheckBox";
 import AdPage from "../product/agree/ad/page";
@@ -38,10 +42,23 @@ const SignUp = () => {
   const searchParams = useSearchParams();
   const { setConfirm } = useConfirmStore();
   const { setToast } = useToastStore();
+  const { mutateAsync: completeSocialSignup, isPending: isCompletingSocial } =
+    useCompleteSocialSignup();
+  const socialPendingToken = searchParams.get("social_pending");
+  const socialProvider = searchParams.get("provider") || "";
+  const socialProviderLabel =
+    {
+      naver: "네이버",
+      kakao: "카카오",
+      google: "구글",
+      apple: "Apple",
+    }[socialProvider] || "소셜";
 
   const [openTermsModal, setOpenTermsModal] = useState(false);
   const [openPrivacyModal, setOpenPrivacyModal] = useState(false);
   const [openAdModal, setOpenAdModal] = useState(false);
+  const [openSocialTerms, setOpenSocialTerms] = useState(false);
+  const pendingSocialRedirectRef = useRef<(() => void) | null>(null);
 
   const methods = useForm<IForm>({
     defaultValues: {
@@ -81,6 +98,81 @@ const SignUp = () => {
     }
   };
 
+  const handleSocialRedirectRequest = useCallback(
+    (continueRedirect: () => void) => {
+      if (!isSubmitDisabled) {
+        continueRedirect();
+        return;
+      }
+      pendingSocialRedirectRef.current = continueRedirect;
+      setOpenSocialTerms(true);
+    },
+    [isSubmitDisabled]
+  );
+
+  const handleContinueSocialSignup = useCallback(() => {
+    if (isSubmitDisabled) return;
+
+    const continueRedirect = pendingSocialRedirectRef.current;
+    pendingSocialRedirectRef.current = null;
+    setOpenSocialTerms(false);
+    continueRedirect?.();
+  }, [isSubmitDisabled]);
+
+  const handleCompleteSocialSignup = useCallback(async () => {
+    if (!socialPendingToken || isSubmitDisabled || isCompletingSocial) return;
+
+    try {
+      const response = await completeSocialSignup({
+        token: socialPendingToken,
+        ad_info_agree_yn: agree.agreeToAD ? "Y" : "N",
+      });
+      const auth = response.data.data?.auth;
+      if (!auth?.snsId || !auth?.tempIssuedKey) {
+        throw new Error("missing social relay data");
+      }
+
+      sessionStorage.setItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY, "Y");
+      const params = new URLSearchParams({
+        sns_id: String(auth.snsId),
+        temp_issued_key: auth.tempIssuedKey,
+        keep_signin_yn: response.data.keep_signin_yn || "Y",
+      });
+      window.location.href = `/storage-relay?${params.toString()}`;
+    } catch (error) {
+      if (
+        axios.isAxiosError<{ message?: string }>(error) &&
+        error.response?.status === 409
+      ) {
+        const serverMessage = error.response.data?.message;
+        if (serverMessage) {
+          setToast({ message: serverMessage, type: "error" });
+        }
+        if (device !== "desktop" && device !== "tablet") {
+          window.location.href = "/login";
+        } else {
+          router.replace("/login?modal=open", { scroll: false });
+        }
+        return;
+      }
+
+      setToast({
+        message: "인증 세션이 만료되었습니다. 다시 시도해 주세요.",
+        type: "error",
+      });
+      router.replace("/sign-up");
+    }
+  }, [
+    agree.agreeToAD,
+    completeSocialSignup,
+    device,
+    isCompletingSocial,
+    isSubmitDisabled,
+    router,
+    setToast,
+    socialPendingToken,
+  ]);
+
   useEffect(() => {
     syncAgreeToAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -100,6 +192,230 @@ const SignUp = () => {
       });
     }
   }, [searchParams, setToast]);
+
+  useEffect(() => {
+    if (!openSocialTerms) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        pendingSocialRedirectRef.current = null;
+        setOpenSocialTerms(false);
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [openSocialTerms]);
+
+  const closeSocialTerms = () => {
+    pendingSocialRedirectRef.current = null;
+    setOpenSocialTerms(false);
+  };
+
+  const socialTermsContent = (
+    <div className="w-full max-w-[480px] bg-white p-24pxr">
+      <h2 className="text-18pxr font-bold tracking-[-2%] text-black-100 mb-20pxr">
+        서비스 이용을 위해 약관에 동의해 주세요
+      </h2>
+      <div className="bg-light-gray-100 border border-light-gray-400 rounded-[8px] p-14pxr mb-16pxr">
+        <Controller
+          name="agree.agreeToAll"
+          control={control}
+          render={({ field }) => (
+            <Checkbox
+              label="전체 동의"
+              labelStyle="text-15pxr font-bold text-black-100"
+              autoFocus
+              {...field}
+              checked={field.value}
+              onChange={(event) => {
+                const checked = event.target.checked;
+                setValue("agree.agreeToAll", checked);
+                setValue("agree.agreeToTerms", checked);
+                setValue("agree.agreeToAge", checked);
+                setValue("agree.agreeToPrivacy", checked);
+                setValue("agree.agreeToAD", checked);
+              }}
+            />
+          )}
+        />
+      </div>
+      <div className="space-y-14pxr mb-20pxr px-4pxr">
+        <div className="flex items-center justify-between">
+          <Controller
+            name="agree.agreeToTerms"
+            control={control}
+            render={({ field }) => (
+              <Checkbox
+                label="이용약관 동의(필수)"
+                labelStyle="text-12pxr md:text-14pxr"
+                {...field}
+                checked={field.value}
+              />
+            )}
+          />
+          <button type="button" onClick={() => setOpenTermsModal(true)} className="text-12pxr font-medium tracking-[-2%] text-dark-gray-400 underline">
+            내용확인
+          </button>
+        </div>
+        <Controller
+          name="agree.agreeToAge"
+          control={control}
+          render={({ field }) => (
+            <Checkbox label="만 14세이상(필수)" labelStyle="text-12pxr md:text-14pxr" {...field} checked={field.value} />
+          )}
+        />
+        <div className="flex items-center justify-between">
+          <Controller
+            name="agree.agreeToPrivacy"
+            control={control}
+            render={({ field }) => (
+              <Checkbox label="개인정보 수집 및 이용동의(필수)" labelStyle="text-12pxr md:text-14pxr" {...field} checked={field.value} />
+            )}
+          />
+          <button type="button" onClick={() => setOpenPrivacyModal(true)} className="text-12pxr font-medium tracking-[-2%] text-dark-gray-400 underline">
+            내용확인
+          </button>
+        </div>
+        <div className="flex items-center justify-between">
+          <Controller
+            name="agree.agreeToAD"
+            control={control}
+            render={({ field }) => (
+              <Checkbox label="광고성정보 수신동의(선택)" labelStyle="text-12pxr md:text-14pxr" {...field} checked={field.value} />
+            )}
+          />
+          <button type="button" onClick={() => setOpenAdModal(true)} className="text-12pxr font-medium tracking-[-2%] text-dark-gray-400 underline">
+            내용확인
+          </button>
+        </div>
+      </div>
+      {isSubmitDisabled && (
+        <p id="social-terms-error" className="text-12pxr font-medium tracking-[-2%] text-red-100 mb-8pxr px-4pxr">
+          필수 약관에 동의해주세요
+        </p>
+      )}
+      <Button
+        type="button"
+        variant="primary"
+        size="lg"
+        disabled={isSubmitDisabled}
+        aria-describedby="social-terms-error"
+        onClick={handleContinueSocialSignup}
+        className="w-full h-48pxr rounded-[8px] text-15pxr font-bold tracking-[-2%] disabled:bg-deactivate-color"
+      >
+        동의하고 계속하기
+      </Button>
+    </div>
+  );
+
+  if (socialPendingToken) {
+    return (
+      <div className="flex justify-center items-center min-h-screen md:bg-[#F9FAFB] overflow-y-auto overflow-x-hidden">
+        <FormProvider {...methods}>
+          <main className="flex flex-col items-center w-full min-w-[300px] md:w-[640px] min-h-screen md:min-h-0 bg-white md:rounded-[40px] px-16pxr md:px-120pxr py-24pxr md:py-40pxr">
+            <LogoButton />
+            <h1 className="mt-24pxr text-18pxr md:text-20pxr font-bold tracking-[-2%] text-black-100 text-center">
+              거의 다 왔어요
+            </h1>
+            <p className="mt-8pxr text-14pxr font-normal tracking-[-2%] text-dark-gray-400 text-center leading-snug break-keep">
+              {socialProviderLabel} 계정 확인이 끝났어요. 약관 동의만 하면 바로
+              시작할 수 있어요.
+            </p>
+            <div className="w-full mt-24pxr bg-light-gray-100 border border-light-gray-400 rounded-[8px] p-14pxr flex items-center justify-center gap-8pxr text-14pxr font-medium text-black-100">
+              ✓ {socialProviderLabel} 계정 인증 완료
+            </div>
+            <div className="w-full mt-24pxr border border-light-gray-400 rounded-[10px] p-16pxr space-y-12pxr">
+              <Controller
+                name="agree.agreeToAll"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    label="전체 동의"
+                    labelStyle="text-14pxr font-semibold"
+                    {...field}
+                    checked={field.value}
+                    onChange={(event) => {
+                      const checked = event.target.checked;
+                      setValue("agree.agreeToAll", checked);
+                      setValue("agree.agreeToTerms", checked);
+                      setValue("agree.agreeToAge", checked);
+                      setValue("agree.agreeToPrivacy", checked);
+                      setValue("agree.agreeToAD", checked);
+                    }}
+                  />
+                )}
+              />
+              <div className="border-t border-light-gray-400" />
+              <div className="flex items-center justify-between">
+                <Controller
+                  name="agree.agreeToTerms"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox label="이용약관 동의(필수)" labelStyle="text-12pxr md:text-14pxr" {...field} checked={field.value} />
+                  )}
+                />
+                <button type="button" onClick={() => setOpenTermsModal(true)} className="text-12pxr font-medium text-dark-gray-400 underline">
+                  내용확인
+                </button>
+              </div>
+              <Controller
+                name="agree.agreeToAge"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox label="만 14세이상(필수)" labelStyle="text-12pxr md:text-14pxr" {...field} checked={field.value} />
+                )}
+              />
+              <div className="flex items-center justify-between">
+                <Controller
+                  name="agree.agreeToPrivacy"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox label="개인정보 수집 및 이용동의(필수)" labelStyle="text-12pxr md:text-14pxr" {...field} checked={field.value} />
+                  )}
+                />
+                <button type="button" onClick={() => setOpenPrivacyModal(true)} className="text-12pxr font-medium text-dark-gray-400 underline">
+                  내용확인
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <Controller
+                  name="agree.agreeToAD"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox label="광고성정보 수신동의(선택)" labelStyle="text-12pxr md:text-14pxr" {...field} checked={field.value} />
+                  )}
+                />
+                <button type="button" onClick={() => setOpenAdModal(true)} className="text-12pxr font-medium text-dark-gray-400 underline">
+                  내용확인
+                </button>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="primary"
+              size="xl"
+              disabled={isSubmitDisabled || isCompletingSocial}
+              isLoading={isCompletingSocial}
+              aria-disabled={isSubmitDisabled || isCompletingSocial}
+              onClick={handleCompleteSocialSignup}
+              className="w-full mt-32pxr h-52pxr rounded-[8px] text-16pxr font-bold tracking-[-2%] disabled:bg-deactivate-color"
+            >
+              동의하고 시작하기
+            </Button>
+          </main>
+        </FormProvider>
+        <ModalContainer size="full" isOpen={openTermsModal} onClose={() => setOpenTermsModal(false)}>
+          <div className="m-[20px]"><TermsPage /></div>
+        </ModalContainer>
+        <ModalContainer size="full" isOpen={openPrivacyModal} onClose={() => setOpenPrivacyModal(false)}>
+          <div className="m-[20px]"><PrivacyPage /></div>
+        </ModalContainer>
+        <ModalContainer size="full" isOpen={openAdModal} onClose={() => setOpenAdModal(false)}>
+          <div className="m-[20px]"><AdPage /></div>
+        </ModalContainer>
+      </div>
+    );
+  }
 
   return (
     <div className="flex justify-center items-center h-screen md:bg-[#F9FAFB] overflow-y-auto overflow-x-hidden">
@@ -245,7 +561,7 @@ const SignUp = () => {
                   sessionStorage.setItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY, "Y");
                 }
               }}
-              disabled={isSubmitDisabled}
+              onRedirectRequest={handleSocialRedirectRequest}
             />
           </div>
           <div className="flex justify-center items-center mt-20pxr">
@@ -258,19 +574,27 @@ const SignUp = () => {
                   sessionStorage.setItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY, "Y");
                 }
               }}
-              disabled={isSubmitDisabled}
+              onRedirectRequest={handleSocialRedirectRequest}
             />
             <div className="h-[12px] border border-l-light-gray-500 border-t-0 border-b-0 border-r-0" />
             <SocialLoginButton
               provider={"google"}
               isSignIn={false}
-              disabled={isSubmitDisabled}
+              isAgreeToAD={watch("agree.agreeToAD")}
+              onRedirectRequest={handleSocialRedirectRequest}
+              onBeforeRedirect={() => {
+                sessionStorage.setItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY, "Y");
+              }}
               onGoogleClick={() => {
-                router.push(
-                  `/sign-up/social?provider=google&agreeToAD=${watch(
-                    "agree.agreeToAD"
-                  )}`
+                const { state, redirectUri } = getStateAndReDirectUri(
+                  "google",
+                  false,
+                  false,
+                  watch("agree.agreeToAD")
                 );
+                const sentinelState = `${state.charAt(0)}-9999-12-31-U-likenovel`;
+                const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+                window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${sentinelState}&scope=email%20profile&prompt=select_account`;
               }}
             />
             {/* <div className="h-[12px] border border-l-light-gray-500 border-t-0 border-b-0 border-r-0" /> */}
@@ -327,6 +651,15 @@ const SignUp = () => {
           </div>
         </form>
       </FormProvider>
+      {device === "desktop" || device === "tablet" ? (
+        <ModalContainer size="sm" isOpen={openSocialTerms} onClose={closeSocialTerms}>
+          {socialTermsContent}
+        </ModalContainer>
+      ) : (
+        <BottomSheetContainer isOpen={openSocialTerms} onClose={closeSocialTerms}>
+          {socialTermsContent}
+        </BottomSheetContainer>
+      )}
       <ModalContainer
         size={"full"}
         isOpen={openTermsModal}

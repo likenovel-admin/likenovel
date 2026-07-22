@@ -36,6 +36,23 @@ export interface IEmailSignUpRequest {
   ad_info_agree_yn: string;
 }
 
+export interface ISocialSignupCompleteRequest {
+  token: string;
+  ad_info_agree_yn: "Y" | "N";
+}
+
+export interface ISocialSignupCompleteResponse {
+  data: {
+    data: {
+      auth: {
+        snsId: number;
+        tempIssuedKey: string;
+      };
+    };
+    keep_signin_yn: "Y" | "N";
+  };
+}
+
 export interface IPasswordResetRequest {
   email?: string;
   password?: string;

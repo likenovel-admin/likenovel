@@ -11,6 +11,7 @@ import EpubViewer from "@/components/viewer/EpubViewer";
 import Rating from "@/components/viewer/Rating";
 import SettingModal from "@/components/viewer/SettingModal";
 import { TYPE_MODAL } from "@/constants/common";
+import { ErrorCodes } from "@/enums/errorCodes";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
@@ -40,6 +41,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import Close from "/public/images/close.svg";
+
+const GUEST_LIMIT_NOTICE_DISMISSED_KEY = "guestEpisodeLimitNoticeDismissed";
+
 const Viewer = () => {
   const params = useParams<{ id: string }>();
   const episodeId = Number(params.id || 0);
@@ -76,6 +81,7 @@ const Viewer = () => {
   const [epubUrl, setEpubUrl] = useState<string | null>(null);
   const [goFirstRequest, setGoFirstRequest] = useState(0);
   const [suppressViewerClickTick, setSuppressViewerClickTick] = useState(0);
+  const [showGuestLimitNotice, setShowGuestLimitNotice] = useState(false);
 
   const {
     data,
@@ -92,6 +98,11 @@ const Viewer = () => {
   const viewerErrorStatus = axios.isAxiosError(viewerError)
     ? viewerError.response?.status
     : undefined;
+  const viewerErrorCode = axios.isAxiosError<{ code?: string }>(viewerError)
+    ? viewerError.response?.data?.code
+    : undefined;
+  const isGuestEpisodeLimitError =
+    !isAuthenticated && viewerErrorCode === ErrorCodes.E4013;
   const isViewerAuthError =
     viewerErrorStatus === 401 || viewerErrorStatus === 403;
   const isViewerNotFoundError = viewerErrorStatus === 404;
@@ -209,6 +220,20 @@ const Viewer = () => {
     isAuthenticated,
     isNoticeViewer,
   ]);
+
+  useEffect(() => {
+    if (
+      isAuthenticated ||
+      isNoticeViewer ||
+      data?.data?.episodeNo !== 5 ||
+      sessionStorage.getItem(GUEST_LIMIT_NOTICE_DISMISSED_KEY) === "Y"
+    ) {
+      setShowGuestLimitNotice(false);
+      return;
+    }
+
+    setShowGuestLimitNotice(true);
+  }, [data?.data?.episodeNo, isAuthenticated, isNoticeViewer]);
 
   const handleToggleNav = () => {
     setShowNav(!showNav);
@@ -360,6 +385,7 @@ const Viewer = () => {
       productId: episode.product_id,
       title: episode.title,
       coverImagePath: episode.coverImagePath || null,
+      priceType: episode.priceType || null,
       latestEpisodeNo: publishedLatestEpisodeNo,
       publishedLatestEpisodeNo,
       syncedLatestEpisodeNo: episode.websochatSyncedLatestEpisodeNo || null,
@@ -383,6 +409,17 @@ const Viewer = () => {
     router.push("/login?modal=open", { scroll: false });
   }, [router]);
 
+  const handleSignupFromGuestLimit = useCallback(() => {
+    const currentPath = window.location.pathname + window.location.search;
+    setLocalStorage(STORAGE_KEYS.PREVIOUS_PAGE, currentPath);
+    router.push("/sign-up");
+  }, [router]);
+
+  const handleDismissGuestLimitNotice = useCallback(() => {
+    sessionStorage.setItem(GUEST_LIMIT_NOTICE_DISMISSED_KEY, "Y");
+    setShowGuestLimitNotice(false);
+  }, []);
+
   const handleGoToProductDetail = useCallback(() => {
     if (hintedProductId) {
       router.push(
@@ -404,6 +441,35 @@ const Viewer = () => {
   }
 
   if (!isNoticeViewer && (isViewerError || !episodeData)) {
+    if (isGuestEpisodeLimitError) {
+      return (
+        <div className="min-h-screen bg-white flex flex-col items-center justify-center px-24pxr text-center">
+          <p className="text-18pxr font-semibold text-black-300">
+            여기서부터는 로그인하고 볼 수 있어요
+          </p>
+          <p className="mt-10pxr text-14pxr text-dark-gray-400 break-keep">
+            무료 회차는 로그인만 하면 끝까지 무료예요. 읽던 곳으로 바로
+            돌아올 수 있어요.
+          </p>
+          <button
+            type="button"
+            autoFocus
+            onClick={handleSignupFromGuestLimit}
+            className="mt-24pxr h-44pxr px-18pxr rounded-[8px] bg-primary-100 text-white text-14pxr font-semibold"
+          >
+            3초 만에 시작하기
+          </button>
+          <button
+            type="button"
+            onClick={handleLoginFromUnavailableViewer}
+            className="mt-16pxr text-14pxr text-dark-gray-400 underline"
+          >
+            이미 회원이라면 로그인
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center px-24pxr text-center">
         <p className="text-18pxr font-semibold text-black-300">
@@ -475,6 +541,30 @@ const Viewer = () => {
             noticeState ? handleNoticeState : handleCommentState
           }
         />
+      )}
+
+      {showGuestLimitNotice && (
+        <aside
+          role="status"
+          aria-live="polite"
+          className={`fixed left-16pxr right-16pxr md:left-1/2 md:right-auto md:w-[600px] md:-translate-x-1/2 z-[60] bg-black-200/95 border border-dark-gray-700 rounded-[10px] p-14pxr shadow-xl flex items-center justify-between animate-fadeUp ${
+            showNav && !noticeState
+              ? "bottom-[calc(76px+env(safe-area-inset-bottom))] md:bottom-76pxr"
+              : "bottom-16pxr"
+          }`}
+        >
+          <p className="flex-1 pr-12pxr text-13pxr font-medium tracking-[-2%] text-white leading-tight">
+            다음 화부터는 로그인이 필요해요 · 무료 회차는 로그인하면 계속 무료
+          </p>
+          <button
+            type="button"
+            aria-label="안내 배너 닫기"
+            onClick={handleDismissGuestLimitNotice}
+            className="p-4pxr rounded-[6px] text-dark-gray-400 flex-shrink-0"
+          >
+            <Close className="w-16pxr h-16pxr" aria-hidden="true" />
+          </button>
+        </aside>
       )}
 
       {noticeState && noticeDetailData?.data ? (

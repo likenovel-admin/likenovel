@@ -9,6 +9,8 @@ import {
   ISelectUserResponse,
   ISignInRequest,
   ISignInResponse,
+  ISocialSignupCompleteRequest,
+  ISocialSignupCompleteResponse,
 } from "./dto";
 
 export const useEmailSignIn = () => {
@@ -33,6 +35,18 @@ export const useEmailSignUp = () => {
   return useMutation({
     mutationFn: async (data: IEmailSignUpRequest) => {
       return await instance.post("/v1/command/auth/signup", data);
+    },
+  });
+};
+
+export const useCompleteSocialSignup = () => {
+  return useMutation<
+    ISocialSignupCompleteResponse,
+    Error,
+    ISocialSignupCompleteRequest
+  >({
+    mutationFn: async (data) => {
+      return await instance.post("/v1/command/auth/signup/social/complete", data);
     },
   });
 };

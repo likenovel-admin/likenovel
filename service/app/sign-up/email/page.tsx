@@ -10,7 +10,7 @@ import { ONBOARDING_FIRST_LOGIN_SESSION_KEY } from "@/constants/onboarding";
 import useAuthStore from "@/store/authStore";
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import Input from "../../../components/form/input";
 import { IForm } from "../page";
@@ -29,7 +29,7 @@ const Email = () => {
   const methods = useForm<IForm>({
     defaultValues: {
       ...defaultValues,
-      birthDate: "1980-01-01",
+      birthDate: "",
       gender: "M",
     },
   });
@@ -41,10 +41,12 @@ const Email = () => {
     setError,
     clearErrors,
     setValue,
+    getValues,
     formState: { errors },
   } = methods;
 
   const [isCheckedEmail, setIsCheckedEmail] = useState(false);
+  const emailCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onSubmit = async (data: IForm) => {
     const updatedData = { ...defaultValues, ...data };
@@ -101,16 +103,16 @@ const Email = () => {
   const onCheckEmail = async (email: string) => {
     try {
       await checkEmailMutate(email);
+      if (getValues("email") !== email) return false;
       setIsCheckedEmail(true);
       clearErrors("email");
       return true;
     } catch (error: any) {
-      console.log("error", error);
+      if (getValues("email") !== email) return false;
       setIsCheckedEmail(false);
       setError("email", {
         type: "manual",
-        message:
-          error?.response?.data?.message || "이미 사용중인 이메일입니다.",
+        message: "이미 가입된 이메일입니다.",
       });
       return false;
     }
@@ -120,7 +122,7 @@ const Email = () => {
     if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
       setError("email", {
         type: "manual",
-        message: "유효한 이메일 주소를 입력해주세요.",
+        message: "올바른 이메일 주소를 입력해 주세요.",
       });
       return false;
     }
@@ -130,19 +132,35 @@ const Email = () => {
   const validatePassword = (password: string) => {
     if (
       password.length < 8 ||
+      password.length > 20 ||
       !/[a-zA-Z]/.test(password) ||
       !/\d/.test(password) ||
-      !/[!@#$%^&*]/.test(password)
+      !/[\W_]/.test(password)
     ) {
-      return "패스워드는 최소 8자 이상, 영문, 특문, 숫자를 모두 포함해야합니다.";
+      return "8~20자, 영문+숫자+특수문자 포함";
     }
     return true;
   };
 
-  useEffect(() => {
+  const scheduleEmailCheck = (email: string) => {
+    if (emailCheckTimerRef.current) {
+      clearTimeout(emailCheckTimerRef.current);
+    }
     setIsCheckedEmail(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch("email")]);
+    if (!email) return;
+
+    emailCheckTimerRef.current = setTimeout(() => {
+      void validateEmail(email);
+    }, 300);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (emailCheckTimerRef.current) {
+        clearTimeout(emailCheckTimerRef.current);
+      }
+    };
+  }, []);
 
   const transformFormDataToRequestData = (
     formData: IForm
@@ -176,7 +194,7 @@ const Email = () => {
             </span>
           </div>
           <div className="flex flex-col gap-15pxr w-full mt-50pxr md:mt-0">
-            <div className="flex items-end w-full">
+            <div className="w-full">
               <Input
                 full
                 label="이메일 주소"
@@ -187,6 +205,14 @@ const Email = () => {
                 placeholder="이메일 주소를 입력하세요"
                 {...register("email", {
                   required: "이메일을 입력해주세요.",
+                  onChange: () => {
+                    if (emailCheckTimerRef.current) {
+                      clearTimeout(emailCheckTimerRef.current);
+                    }
+                    setIsCheckedEmail(false);
+                    clearErrors("email");
+                  },
+                  onBlur: (event) => scheduleEmailCheck(event.target.value),
                   validate: async () => {
                     if (!isCheckedEmail) {
                       return "중복확인을 해주세요.";
@@ -194,20 +220,33 @@ const Email = () => {
                     return true;
                   },
                 })}
+                aria-describedby="email-status"
                 isError={!!errors.email}
-                errorText={errors.email?.message}
-                successText={isCheckedEmail && "사용 가능한 이메일입니다."}
+                errorText={
+                  <span id="email-status" aria-live="polite">
+                    {errors.email?.message}
+                  </span>
+                }
+                successText={
+                  isPending ? (
+                    <span id="email-status" aria-live="polite">
+                      이메일 중복 확인 중...
+                    </span>
+                  ) : isCheckedEmail ? (
+                    <span id="email-status" aria-live="polite">
+                      사용 가능한 이메일입니다.
+                    </span>
+                  ) : null
+                }
+                additionalText={
+                  isPending ? (
+                    <span className="pr-14pxr">
+                      <Spinner color="#176BF2" size={20} />
+                    </span>
+                  ) : null
+                }
+                hasSuccessIcon={!isPending}
               />
-              <button
-                type="button"
-                className={`w-[75px] h-[44px] bg-black-100 text-white rounded-[6px] text-13pxr font-medium ml-8pxr ${
-                  !!errors.email || isCheckedEmail ? "mb-26pxr" : ""
-                }`}
-                onClick={() => validateEmail(watch("email"))}
-                disabled={isPending}
-              >
-                {isPending ? <Spinner color="#B3B7C3" size={20} /> : "중복확인"}
-              </button>
             </div>
             <div className="flex flex-col gap-5pxr">
               <Input
@@ -225,6 +264,11 @@ const Email = () => {
                 errorText={errors.password?.message}
                 isError={!!errors.password}
               />
+              {!errors.password && (
+                <p className="text-12pxr font-normal tracking-[-2%] text-dark-gray-400">
+                  8~20자, 영문+숫자+특수문자 포함
+                </p>
+              )}
               <Input
                 type="password"
                 maxLength={20}
