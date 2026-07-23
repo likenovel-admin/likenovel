@@ -209,6 +209,8 @@ export interface IGetMainCharacterSlotsResponse {
 }
 
 export interface ICharacterChatCatalogItem extends IMainCharacterSlotItem {
+  fullReady: boolean;
+  readinessCoverageRatio: number;
   lastViewedEpisodeNo: number | null;
   lastViewedAt: string | null;
 }

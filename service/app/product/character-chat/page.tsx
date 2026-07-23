@@ -13,6 +13,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import Return from "/public/images/return.svg";
 import {
   filterCharacterChatCatalog,
+  isPersonalizedCharacterChatCatalogFilter,
   parseCharacterChatCatalogFilter,
   resolveCharacterChatCatalogFilter,
   type CharacterChatCatalogFilter,
@@ -22,6 +23,7 @@ const CATALOG_FILTERS: Array<{
   label: string;
   value: CharacterChatCatalogFilter;
 }> = [
+  { label: "추천순", value: "recommended" },
   { label: "전체", value: "all" },
   { label: "읽고 있는 작품", value: "reading" },
   { label: "처음 보는 작품", value: "unread" },
@@ -77,6 +79,8 @@ const LOCAL_MOCK_ITEMS: ICharacterChatCatalogItem[] =
       productTitle,
       authorNickname: `목업작가${index + 1}`,
       syncedLatestEpisodeNo: index === 0 ? 5 : 12 + index * 3,
+      fullReady: index % 4 !== 3,
+      readinessCoverageRatio: Math.max(0.25, 1 - index * 0.04),
       personalityCore:
         LOCAL_MOCK_PERSONALITIES[index % LOCAL_MOCK_PERSONALITIES.length],
       speechStyle:
@@ -185,7 +189,7 @@ function CharacterChatCatalogPageContent() {
       const targetPath = `${window.location.pathname}?${nextSearchParams.toString()}`;
 
       if (
-        filter !== "all" &&
+        isPersonalizedCharacterChatCatalogFilter(filter) &&
         !canUsePersonalizedFilters
       ) {
         router.push(
@@ -204,10 +208,10 @@ function CharacterChatCatalogPageContent() {
     if (
       isAuthInitialized &&
       localMockEnabled === false &&
-      requestedFilter !== "all" &&
+      isPersonalizedCharacterChatCatalogFilter(requestedFilter) &&
       queryState.productCacheIdentity === "guest"
     ) {
-      handleFilterChange("all");
+      handleFilterChange("recommended");
     }
   }, [
     handleFilterChange,
@@ -268,7 +272,7 @@ function CharacterChatCatalogPageContent() {
                 aria-pressed={activeFilter === filter.value}
                 onClick={() => handleFilterChange(filter.value)}
                 disabled={
-                  filter.value !== "all" &&
+                  isPersonalizedCharacterChatCatalogFilter(filter.value) &&
                   !isAuthInitialized &&
                   localMockEnabled !== true
                 }

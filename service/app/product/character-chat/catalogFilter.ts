@@ -1,21 +1,34 @@
-export type CharacterChatCatalogFilter = "all" | "reading" | "unread";
+export type CharacterChatCatalogFilter =
+  | "recommended"
+  | "all"
+  | "reading"
+  | "unread";
 
 export const parseCharacterChatCatalogFilter = (
   value: string | null
 ): CharacterChatCatalogFilter =>
-  value === "reading" || value === "unread" ? value : "all";
+  value === "all" || value === "reading" || value === "unread"
+    ? value
+    : "recommended";
+
+export const isPersonalizedCharacterChatCatalogFilter = (
+  filter: CharacterChatCatalogFilter
+) => filter === "reading" || filter === "unread";
 
 export const resolveCharacterChatCatalogFilter = (
   requestedFilter: CharacterChatCatalogFilter,
   canUsePersonalizedFilters: boolean
 ): CharacterChatCatalogFilter =>
-  requestedFilter === "all" || canUsePersonalizedFilters
+  !isPersonalizedCharacterChatCatalogFilter(requestedFilter) ||
+  canUsePersonalizedFilters
     ? requestedFilter
-    : "all";
+    : "recommended";
 
 interface CharacterChatCatalogFilterItem {
   characterSlotId: number;
   cardOrder: number;
+  fullReady: boolean;
+  readinessCoverageRatio: number;
   lastViewedEpisodeNo: number | null;
   lastViewedAt: string | null;
 }
@@ -37,6 +50,23 @@ export const filterCharacterChatCatalog = <
   filter: CharacterChatCatalogFilter
 ): T[] => {
   if (filter === "all") return [...items];
+
+  if (filter === "recommended") {
+    return [...items].sort((left, right) => {
+      if (left.fullReady !== right.fullReady) {
+        return left.fullReady ? -1 : 1;
+      }
+
+      const coverageDifference =
+        right.readinessCoverageRatio - left.readinessCoverageRatio;
+      if (coverageDifference !== 0) return coverageDifference;
+
+      const cardOrderDifference = left.cardOrder - right.cardOrder;
+      if (cardOrderDifference !== 0) return cardOrderDifference;
+
+      return left.characterSlotId - right.characterSlotId;
+    });
+  }
 
   const filteredItems = items.filter((item) =>
     filter === "reading"
