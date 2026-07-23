@@ -48,7 +48,16 @@ assert.match(
 assert.match(loginSource, /pageType === "modal" \? "mb-32pxr mt-8pxr"/);
 assert.match(loginSource, /pageType === "modal" \? "mt-24pxr" : "mt-37pxr"/);
 assert.match(loginSource, /pageType === "modal" \? "mt-32pxr" : "mt-50pxr"/);
-assert.match(loginSource, /pageType === "modal" \? "mt-24pxr" : "mt-30pxr"/);
+assert.match(
+  loginSource,
+  /pageType === "modal"\s*\? "mt-24pxr flex-col gap-4pxr min-\[360px\]:flex-row min-\[360px\]:gap-0"\s*: "mt-30pxr"/,
+  "Very narrow modal signup copy should stack without changing full-page login"
+);
+assert.match(
+  loginSource,
+  /pageType === "modal"\s*\? "ml-0 min-\[360px\]:ml-5pxr"\s*: "ml-5pxr"/,
+  "Modal signup link spacing should follow the responsive footer layout"
+);
 assert.doesNotMatch(loginSource, /max-h\[700px\]/);
 
 assert.match(loginSource, /inputStyle="w-full h-\[52px\]"/);
