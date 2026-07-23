@@ -52,18 +52,25 @@ test("존재하지 않는 preview API를 호출하지 않는다", () => {
   assert.doesNotMatch(modalSource, /getMainCharacterSlotPreview/);
 });
 
-test("preview 404는 준비 중으로 안내하고 재시도와 대화 시작을 막는다", () => {
+test("preview 404는 미리보기 준비 중으로 안내하되 대화 시작은 허용한다", () => {
   assert.match(modalSource, /error: previewError/);
   assert.match(modalSource, /getWebsochatErrorStatus\(previewError\)/);
   assert.match(modalSource, /previewErrorStatus === 404/);
-  assert.match(modalSource, /이 회차에는 준비된 장면이 없어요\./);
+  assert.match(
+    modalSource,
+    /장면 미리보기는 준비 중이지만 대화는 시작할 수 있어요\./,
+  );
   assert.match(
     modalSource,
     /isPreviewUnavailable && !isPreviewNotFound && \(/,
   );
   assert.match(
     modalSource,
-    /disabled=\{isLaunching \|\| isReadScopeLoading \|\| isPreviewNotFound\}/,
+    /disabled=\{isLaunching \|\| isReadScopeLoading\}/,
   );
-  assert.match(modalSource, /"주인공챗 준비 중"/);
+  assert.doesNotMatch(modalSource, /"주인공챗 준비 중"/);
+  assert.match(
+    modalSource,
+    /`\$\{selectedEpisodeNo\}화의 \$\{item\.characterName\}에게 말 걸기`/,
+  );
 });

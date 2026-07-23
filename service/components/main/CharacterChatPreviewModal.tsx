@@ -148,7 +148,7 @@ const CharacterChatPreviewContent = ({
     <>
       <p role="status">
         {isPreviewNotFound
-          ? "이 회차에는 준비된 장면이 없어요."
+          ? "장면 미리보기는 준비 중이지만 대화는 시작할 수 있어요."
           : isPreviewUnavailable
           ? `${selectedEpisodeNo}화 장면을 불러오지 못했어요.`
           : `${selectedEpisodeNo}화 장면을 불러오는 중이에요.`}
@@ -397,15 +397,13 @@ const CharacterChatPreviewContent = ({
           </button>
           <button
             type="button"
-            disabled={isLaunching || isReadScopeLoading || isPreviewNotFound}
+            disabled={isLaunching || isReadScopeLoading}
             aria-busy={isLaunching || isReadScopeLoading}
             onClick={() => onLaunch(item, selectedEpisodeNo)}
             className="h-48pxr w-full rounded-[10px] bg-primary-100 text-14pxr font-medium text-white disabled:cursor-wait disabled:opacity-60 md:text-16pxr"
           >
             {isReadScopeLoading
               ? "읽은 회차 확인 중…"
-              : isPreviewNotFound
-                ? "주인공챗 준비 중"
               : `${selectedEpisodeNo}화의 ${item.characterName}에게 말 걸기`}
           </button>
         </div>
