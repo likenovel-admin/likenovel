@@ -95,8 +95,8 @@ assert.match(
 );
 assert.match(
   characterModalSource,
-  /accountReadEpisodeNo > 0\s*\? Math\.min\(accountReadEpisodeNo, preparedEpisodeNo\)\s*: 1/,
-  "The character-chat modal should clamp progress to prepared episodes and fall back to episode 1"
+  /resolveCharacterChatEpisodeScope\(\{[\s\S]*entryEpisodeNo: item\.entryEpisodeNo,[\s\S]*preparedEpisodeNo: item\.syncedLatestEpisodeNo,[\s\S]*accountReadEpisodeNo/,
+  "The character-chat modal should clamp progress to prepared episodes without going below the character entry episode"
 );
 assert.doesNotMatch(
   characterModalSource,

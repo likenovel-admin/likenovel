@@ -123,9 +123,11 @@ Websochat retrieval uses an integer `read_episode_to` range.
 
 Important examples:
 
-- A new character-chat session uses the signed-in account's latest read episode
-  from server-side reading history. If no reading history exists, it starts from
-  episode 1; the authorized and synced ceilings remain safety caps, not defaults.
+- A new character-chat session uses the episode selected within the signed-in
+  account's server-side reading scope. Automatic character catalog entries use
+  the character's earliest usable appearance episode as the lower bound; legacy
+  entries without that field retain episode 1. The authorized and synced
+  ceilings remain server-side safety caps.
 - If a user purchased through episode 50 but the viewer launch says the last
   read episode is 27, Websochat starts from episode 27.
 - If a client sends 50 but server authorization or context sync only reaches

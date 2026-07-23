@@ -89,6 +89,7 @@ const LOCAL_MOCK_ITEMS: ICharacterChatCatalogItem[] =
       productTitle,
       authorNickname: `목업작가${index + 1}`,
       syncedLatestEpisodeNo: index === 0 ? 5 : 12 + index * 3,
+      entryEpisodeNo: 1,
       chatQuality: index % 4 === 3 ? "normal" : "good",
       fullReady: index % 4 !== 3,
       readinessCoverageRatio: Math.max(0.25, 1 - index * 0.04),
