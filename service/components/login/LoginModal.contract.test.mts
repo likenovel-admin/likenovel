@@ -24,6 +24,16 @@ assert.match(
   "Desktop login modal should use the compact responsive shell"
 );
 assert.doesNotMatch(modalSource, /w-\[640px\]|max-h-\[700px\]|m-\[15px\]/);
+assert.match(
+  modalSource,
+  /modal\.scrollTop \+ modal\.clientHeight >= modal\.scrollHeight - 1/,
+  "Short mobile overflow must remain scrollable until the actual bottom"
+);
+assert.doesNotMatch(
+  modalSource,
+  /modal\.scrollHeight - \(modal\.scrollTop \+ 100\) <= modal\.clientHeight/,
+  "A fixed bottom tolerance must not block short mobile overflow"
+);
 
 assert.match(
   loginSource,

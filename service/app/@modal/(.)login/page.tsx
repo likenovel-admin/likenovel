@@ -26,7 +26,7 @@ export default function LoginPage() {
     if (modal) {
       const isScrollAtTop = modal.scrollTop === 0;
       const isScrollAtBottom =
-        modal.scrollHeight - (modal.scrollTop + 100) <= modal.clientHeight;
+        modal.scrollTop + modal.clientHeight >= modal.scrollHeight - 1;
       if (
         (isScrollAtTop && e.deltaY < 0) ||
         (isScrollAtBottom && e.deltaY > 0)
