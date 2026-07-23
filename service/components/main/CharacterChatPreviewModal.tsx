@@ -15,6 +15,7 @@ import {
   resolveProductCoverImage,
 } from "@/constants/common";
 import useMediaDevice from "@/hooks/useMediaDevice";
+import { resolveCharacterChatEpisodeScope } from "@/utils/characterChatEpisodeScope";
 import { getWebsochatErrorStatus } from "@/utils/websochatError";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
@@ -47,8 +48,10 @@ const CharacterChatPreviewContent = ({
   isLaunching,
   readScopeStatus,
   accountReadEpisodeNo,
+  entryEpisodeNo,
   initialReadEpisodeNo,
   maxSelectableEpisodeNo,
+  selectableEpisodeNos,
   previewDetail,
   onLaunch,
   onGoToProduct,
@@ -56,15 +59,16 @@ const CharacterChatPreviewContent = ({
   item: IMainCharacterSlotItem;
   readScopeStatus: CharacterChatReadScopeStatus;
   accountReadEpisodeNo: number | null;
+  entryEpisodeNo: number;
   initialReadEpisodeNo: number;
   maxSelectableEpisodeNo: number;
+  selectableEpisodeNos: number[];
 }) => {
   const characterImage = resolveProductCoverImage(item.characterImagePath);
   const isDefaultImage = characterImage === DEFAULT_PRODUCT_IMAGE;
   const authorName = String(item.authorNickname || "").trim();
-  const safeMaxEpisodeNo = Math.max(maxSelectableEpisodeNo, 1);
   const [selectedEpisodeNo, setSelectedEpisodeNo] = useState(
-    Math.max(initialReadEpisodeNo, 1)
+    Math.max(initialReadEpisodeNo, entryEpisodeNo)
   );
   const isReadScopeLoading = readScopeStatus === "loading";
   const {
@@ -166,19 +170,22 @@ const CharacterChatPreviewContent = ({
   ) : null;
 
   useEffect(() => {
-    setSelectedEpisodeNo(Math.max(initialReadEpisodeNo, 1));
-  }, [initialReadEpisodeNo, item.characterSlotId]);
+    setSelectedEpisodeNo(Math.max(initialReadEpisodeNo, entryEpisodeNo));
+  }, [entryEpisodeNo, initialReadEpisodeNo, item.characterSlotId]);
 
   const readScopeDescription = (() => {
     if (isReadScopeLoading) return "최근 읽은 회차를 확인하고 있어요.";
     if (readScopeStatus === "error") {
-      return "읽은 기록을 불러오지 못해 1화 시점으로 설정했어요.";
+      return `읽은 기록을 불러오지 못해 ${entryEpisodeNo}화 시점으로 설정했어요.`;
     }
     if (!accountReadEpisodeNo) {
-      return "읽은 기록이 없어 1화 시점으로 시작해요.";
+      return `읽은 기록이 없어 ${entryEpisodeNo}화 시점으로 시작해요.`;
     }
-    if (accountReadEpisodeNo > safeMaxEpisodeNo) {
-      return `최근 읽은 기록은 ${accountReadEpisodeNo}화지만 주인공챗은 ${safeMaxEpisodeNo}화까지 준비됐어요.`;
+    if (accountReadEpisodeNo < entryEpisodeNo) {
+      return `최근 읽은 기록은 ${accountReadEpisodeNo}화지만 주인공챗은 ${entryEpisodeNo}화부터 시작해요.`;
+    }
+    if (accountReadEpisodeNo > maxSelectableEpisodeNo) {
+      return `최근 읽은 기록은 ${accountReadEpisodeNo}화지만 주인공챗은 ${maxSelectableEpisodeNo}화까지 준비됐어요.`;
     }
     return `최근 읽은 기록 ${accountReadEpisodeNo}화를 기본으로 설정했어요.`;
   })();
@@ -368,12 +375,14 @@ const CharacterChatPreviewContent = ({
           <select
             id="character-chat-read-episode"
             value={selectedEpisodeNo}
-            disabled={isReadScopeLoading || safeMaxEpisodeNo <= 1}
+            disabled={
+              isReadScopeLoading ||
+              maxSelectableEpisodeNo === entryEpisodeNo
+            }
             onChange={(event) => setSelectedEpisodeNo(Number(event.target.value))}
             className="mt-8pxr h-40pxr w-full rounded-[8px] border border-light-gray-500 bg-white px-12pxr text-14pxr font-medium text-black-100 outline-none focus:border-primary-100 disabled:bg-light-gray-100 disabled:text-deactivate-color"
           >
-            {Array.from({ length: safeMaxEpisodeNo }, (_, index) => {
-              const episodeNo = safeMaxEpisodeNo - index;
+            {selectableEpisodeNos.map((episodeNo) => {
               const isRecentRead = episodeNo === accountReadEpisodeNo;
               return (
                 <option key={episodeNo} value={episodeNo}>
@@ -430,8 +439,10 @@ const CharacterChatPreviewModal = ({
     characterSlotId: null as number | null,
     status: "idle" as CharacterChatReadScopeStatus,
     accountReadEpisodeNo: null as number | null,
+    entryEpisodeNo: 1,
     initialReadEpisodeNo: 1,
     maxSelectableEpisodeNo: 1,
+    selectableEpisodeNos: [1],
   });
 
   useEffect(() => {
@@ -513,26 +524,33 @@ const CharacterChatPreviewModal = ({
         characterSlotId: null,
         status: "idle",
         accountReadEpisodeNo: null,
+        entryEpisodeNo: 1,
         initialReadEpisodeNo: 1,
         maxSelectableEpisodeNo: 1,
+        selectableEpisodeNos: [1],
       });
       return;
     }
     let cancelled = false;
+    const fallbackEpisodeScope = resolveCharacterChatEpisodeScope({
+      entryEpisodeNo: item.entryEpisodeNo,
+      preparedEpisodeNo: item.syncedLatestEpisodeNo,
+      accountReadEpisodeNo: null,
+    });
 
     const applyReadScope = (rawReadEpisodeNo: number) => {
       if (cancelled) return;
       const accountReadEpisodeNo = Math.max(Number(rawReadEpisodeNo || 0), 0);
-      const preparedEpisodeNo = Math.max(item.syncedLatestEpisodeNo, 1);
-      const maxSelectableEpisodeNo = accountReadEpisodeNo > 0
-        ? Math.min(accountReadEpisodeNo, preparedEpisodeNo)
-        : 1;
+      const episodeScope = resolveCharacterChatEpisodeScope({
+        entryEpisodeNo: item.entryEpisodeNo,
+        preparedEpisodeNo: item.syncedLatestEpisodeNo,
+        accountReadEpisodeNo,
+      });
       setReadScope({
         characterSlotId: item.characterSlotId,
         status: "ready",
         accountReadEpisodeNo: accountReadEpisodeNo || null,
-        initialReadEpisodeNo: maxSelectableEpisodeNo,
-        maxSelectableEpisodeNo,
+        ...episodeScope,
       });
     };
 
@@ -540,8 +558,7 @@ const CharacterChatPreviewModal = ({
       characterSlotId: item.characterSlotId,
       status: "loading",
       accountReadEpisodeNo: null,
-      initialReadEpisodeNo: 1,
-      maxSelectableEpisodeNo: 1,
+      ...fallbackEpisodeScope,
     });
 
     if (mockReadEpisodeNo !== undefined) {
@@ -570,8 +587,7 @@ const CharacterChatPreviewModal = ({
           characterSlotId: item.characterSlotId,
           status: "error",
           accountReadEpisodeNo: null,
-          initialReadEpisodeNo: 1,
-          maxSelectableEpisodeNo: 1,
+          ...fallbackEpisodeScope,
         });
       }
     );
@@ -582,6 +598,11 @@ const CharacterChatPreviewModal = ({
   }, [item, mockReadEpisodeNo, queryClient]);
 
   if (!item || device === null) return null;
+  const fallbackEpisodeScope = resolveCharacterChatEpisodeScope({
+    entryEpisodeNo: item.entryEpisodeNo,
+    preparedEpisodeNo: item.syncedLatestEpisodeNo,
+    accountReadEpisodeNo: null,
+  });
 
   const currentReadScope =
     readScope.characterSlotId === item.characterSlotId
@@ -590,8 +611,7 @@ const CharacterChatPreviewModal = ({
           characterSlotId: item.characterSlotId,
           status: "loading" as CharacterChatReadScopeStatus,
           accountReadEpisodeNo: null,
-          initialReadEpisodeNo: 1,
-          maxSelectableEpisodeNo: 1,
+          ...fallbackEpisodeScope,
         };
   const content = (
     <CharacterChatPreviewContent
@@ -600,8 +620,10 @@ const CharacterChatPreviewModal = ({
       isLaunching={isLaunching}
       readScopeStatus={currentReadScope.status}
       accountReadEpisodeNo={currentReadScope.accountReadEpisodeNo}
+      entryEpisodeNo={currentReadScope.entryEpisodeNo}
       initialReadEpisodeNo={currentReadScope.initialReadEpisodeNo}
       maxSelectableEpisodeNo={currentReadScope.maxSelectableEpisodeNo}
+      selectableEpisodeNos={currentReadScope.selectableEpisodeNos}
       previewDetail={previewDetail}
       onLaunch={onLaunch}
       onGoToProduct={onGoToProduct}

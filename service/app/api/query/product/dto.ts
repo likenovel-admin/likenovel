@@ -196,6 +196,7 @@ export interface IMainCharacterSlotItem {
   productTitle: string;
   authorNickname: string;
   syncedLatestEpisodeNo: number;
+  entryEpisodeNo?: number;
   personalityCore?: string[];
   speechStyle?: {
     tone?: string[];
@@ -209,6 +210,7 @@ export interface IGetMainCharacterSlotsResponse {
 }
 
 export interface ICharacterChatCatalogItem extends IMainCharacterSlotItem {
+  entryEpisodeNo: number;
   createdDate: string;
   chatQuality: "good" | "normal";
   fullReady: boolean;
