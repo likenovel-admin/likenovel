@@ -83,7 +83,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
           isVisible ? "" : "items-center h-[50px] justify-between"
         } `}
       >
-        <div className={`flex gap-20pxr`}>
+        <div className="flex gap-12pxr min-[360px]:gap-20pxr">
           <button
             onClick={() => {
               navigate("/product/top50/free-top");
@@ -91,7 +91,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
           >
             <MenuIcon
               menu={
-                <span className="text-16pxr font-bold  hover:text-dark-gray-400 min-w-[55px]">
+                <span className="inline-flex shrink-0 whitespace-nowrap text-14pxr min-[360px]:text-16pxr font-bold hover:text-dark-gray-400 min-w-[55px]">
                   TOP50
                 </span>
               }
@@ -102,7 +102,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
           <button onClick={() => navigate("/product/free/normal")}>
             <MenuIcon
               menu={
-                <span className="text-16pxr font-bold hover:text-dark-gray-400 min-w-[30px]">
+                <span className="inline-flex shrink-0 whitespace-nowrap text-14pxr min-[360px]:text-16pxr font-bold hover:text-dark-gray-400 min-w-[30px]">
                   무료
                 </span>
               }
@@ -112,7 +112,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
           <button onClick={() => navigate("/product/paid")}>
             <MenuIcon
               menu={
-                <span className="text-16pxr font-bold hover:text-dark-gray-400 min-w-[30px]">
+                <span className="inline-flex shrink-0 whitespace-nowrap text-14pxr min-[360px]:text-16pxr font-bold hover:text-dark-gray-400 min-w-[30px]">
                   유료
                 </span>
               }
@@ -130,7 +130,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
           >
             <MenuIcon
               menu={
-                <span className="text-16pxr font-bold hover:text-dark-gray-400 min-w-[45px]">
+                <span className="inline-flex shrink-0 whitespace-nowrap text-14pxr min-[360px]:text-16pxr font-bold hover:text-dark-gray-400 min-w-[45px]">
                   선호작
                 </span>
               }
@@ -140,7 +140,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
           <button onClick={() => navigate("/websochat")}>
             <MenuIcon
               menu={
-                <span className="inline-flex items-center gap-4pxr text-16pxr font-bold hover:text-dark-gray-400">
+                <span className="inline-flex shrink-0 items-center gap-4pxr whitespace-nowrap text-14pxr min-[360px]:text-16pxr font-bold hover:text-dark-gray-400">
                   {WEBSOCHAT_NAV_LABEL}
                   <SquareBadge type="up" />
                 </span>
