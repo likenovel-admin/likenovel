@@ -21,7 +21,10 @@ interface Props {
   onChooseCharacterChat: () => void;
   onBack: () => void;
   onRetry: () => void;
-  onLaunchCharacter: (item: IMainCharacterSlotItem) => void;
+  onLaunchCharacter: (
+    item: IMainCharacterSlotItem,
+    readEpisodeNo: number
+  ) => void;
   onGoToProduct: (item: IMainCharacterSlotItem) => void;
 }
 

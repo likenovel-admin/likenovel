@@ -102,6 +102,8 @@ const PaidTop = ({ data }: Props) => {
         timeSpeechBubbleShowActionIndicator={isRankHistoryTriggerVisible}
         hasRankingGuide
         hasMoreButton
+        mobileTwoRow
+        compactMobileMore
         moreButtonOnClick={() => {
           router.push("/product/top50/paid-top");
         }}

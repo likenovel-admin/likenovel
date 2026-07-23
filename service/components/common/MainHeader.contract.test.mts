@@ -13,6 +13,18 @@ const paidTopSource = readFileSync(
   new URL("../main/PaidTop.tsx", import.meta.url),
   "utf8"
 );
+const bottomProductsSource = readFileSync(
+  new URL("../main/BottomProducts.tsx", import.meta.url),
+  "utf8"
+);
+const characterSlotSource = readFileSync(
+  new URL("../main/CharacterSlot.tsx", import.meta.url),
+  "utf8"
+);
+const cpPromotionSource = readFileSync(
+  new URL("../main/CPPromotion.tsx", import.meta.url),
+  "utf8"
+);
 const top50ProductAreaSource = readFileSync(
   new URL("../top50/ProductArea.tsx", import.meta.url),
   "utf8"
@@ -47,6 +59,51 @@ assert.doesNotMatch(
   "ranking guide icon should not need manual vertical nudging"
 );
 assert.doesNotMatch(mainHeaderSource, /TODO: 가이드 추가/);
+assert.match(
+  mainHeaderSource,
+  /mobileTwoRow\?: boolean;/,
+  "MainHeader should expose an opt-in mobile two-row layout",
+);
+assert.match(
+  mainHeaderSource,
+  /mobileTwoRow = false/,
+  "existing MainHeader consumers should keep the one-row layout by default",
+);
+assert.match(
+  mainHeaderSource,
+  /grid-cols-\[minmax\(0,1fr\)_auto\][\s\S]*md:flex md:justify-between/,
+  "the opt-in mobile header should reserve separate title and action columns",
+);
+assert.match(
+  mainHeaderSource,
+  /col-span-2 row-start-2[\s\S]*md:contents/,
+  "ranking time metadata should move to a second mobile row and rejoin the desktop row",
+);
+assert.match(
+  mainHeaderSource,
+  /col-start-2 row-start-1[\s\S]*whitespace-nowrap/,
+  "the mobile more action should stay on the first row without wrapping",
+);
+assert.match(
+  mainHeaderSource,
+  /flex shrink-0 items-center gap-8pxr p-2/,
+  "the shared more button should never shrink inside narrow slot headers",
+);
+assert.match(
+  mainHeaderSource,
+  /compactMobileMore\?: boolean;/,
+  "MainHeader should expose an opt-in compact mobile more label",
+);
+assert.match(
+  mainHeaderSource,
+  /compactMobileMore = false/,
+  "non-home MainHeader consumers should keep the existing more-label size",
+);
+assert.match(
+  mainHeaderSource,
+  /compactMobileMore[\s\S]*"text-13pxr md:text-14pxr"[\s\S]*"text-14pxr"/,
+  "only opted-in home slots should use the compact mobile more-label size",
+);
 
 const timeSpeechBubbleSource = readFileSync(
   new URL("./TimeSpeechBubble.tsx", import.meta.url),
@@ -99,7 +156,30 @@ assert.doesNotMatch(
 );
 
 assert.match(freeTopSource, /hasRankingGuide/);
+assert.match(
+  freeTopSource,
+  /mobileTwoRow/,
+  "FreeTop should opt into the stable mobile two-row header",
+);
 assert.match(paidTopSource, /hasRankingGuide/);
+assert.match(
+  paidTopSource,
+  /mobileTwoRow/,
+  "PaidTop should use the same stable mobile ranking-header layout",
+);
+for (const [name, source] of [
+  ["FreeTop", freeTopSource],
+  ["PaidTop", paidTopSource],
+  ["BottomProducts", bottomProductsSource],
+  ["CharacterSlot", characterSlotSource],
+  ["CPPromotion", cpPromotionSource],
+] as const) {
+  assert.match(
+    source,
+    /compactMobileMore/,
+    `${name} should opt into the compact mobile more label`,
+  );
+}
 assert.match(
   paidTopSource,
   /timeSpeechBubbleOnClick/,

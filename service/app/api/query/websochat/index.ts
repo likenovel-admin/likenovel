@@ -369,6 +369,7 @@ export const useCreateWebsochatSession = () => {
       session_kind?: "websochat" | "character_chat" | null;
       entry_source?:
         | "home_character_slot"
+        | "character_catalog"
         | "websochat_rp_mode"
         | "product_detail_websochat"
         | "viewer_websochat"

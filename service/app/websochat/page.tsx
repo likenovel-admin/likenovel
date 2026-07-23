@@ -3570,7 +3570,10 @@ export default function WebsochatPage() {
     };
   }, [accessToken, guestKey, isAuthenticated, user?.userId]);
 
-  const handleLaunchStartCharacter = useCallback((item: IMainCharacterSlotItem) => {
+  const handleLaunchStartCharacter = useCallback((
+    item: IMainCharacterSlotItem,
+    selectedEpisodeNo: number
+  ) => {
     if (isCreatingHomeCharacterSession) return;
 
     const runtimeActorScope = resolveRuntimeWebsochatActorScope();
@@ -3581,6 +3584,7 @@ export default function WebsochatPage() {
         characterName: item.characterName,
         adultYn,
         guestKey: runtimeActorScope.guestKey,
+        accountReadEpisodeTo: selectedEpisodeNo,
         entrySource: "websochat_rp_mode",
       }),
       characterName: item.characterName,

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   WEBSOCHAT_CONNECTION_ERROR_NOTICE,
+  getWebsochatErrorStatus,
   getWebsochatSafeUserMessage,
   isRetryableWebsochatStreamError,
 } from "./websochatError.ts";
@@ -50,3 +51,10 @@ assert.equal(
   getWebsochatSafeUserMessage(withResponse(400, { message: "캐시 잔액이 부족합니다." })),
   "캐시 잔액이 부족합니다.",
 );
+
+assert.equal(getWebsochatErrorStatus(withResponse(404)), 404);
+assert.equal(
+  getWebsochatErrorStatus({ response: { status: "404" } }),
+  null,
+);
+assert.equal(getWebsochatErrorStatus(new TypeError("fetch failed")), null);

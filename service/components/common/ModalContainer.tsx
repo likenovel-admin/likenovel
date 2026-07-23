@@ -1,5 +1,11 @@
 "use client";
-import { ReactNode, useEffect, useRef } from "react";
+import {
+  HTMLAttributes,
+  ReactNode,
+  Ref,
+  useEffect,
+  useRef,
+} from "react";
 import { createPortal } from "react-dom";
 import Close from "/public/images/close.svg";
 
@@ -12,6 +18,8 @@ interface Props extends CommonModalProps {
   children: ReactNode;
   usePortal?: boolean;
   title?: ReactNode;
+  panelRef?: Ref<HTMLDivElement>;
+  panelProps?: HTMLAttributes<HTMLDivElement>;
 }
 
 const ModalContainer = ({
@@ -25,6 +33,8 @@ const ModalContainer = ({
   onClose,
   usePortal = true,
   title,
+  panelRef,
+  panelProps,
 }: Props) => {
   const modalRef = useRef<HTMLDivElement | null>(null);
   const preventScrollOutside = (e: WheelEvent) => {
@@ -107,6 +117,8 @@ const ModalContainer = ({
       onClick={handleOverlayClick}
     >
       <div
+        ref={panelRef}
+        {...panelProps}
         className={`${getSizeStyles()} bg-white ${
           size === "md" ? "overflow-y-auto overflow-x-hidden" : ""
         } flex flex-col h-fit`}
@@ -119,7 +131,12 @@ const ModalContainer = ({
         >
           <div className="text-18pxr font-semibold">{title}</div>
           {hasCloseButton && (
-            <button onClick={onClose} className="absolute right-4 top-4">
+            <button
+              type="button"
+              aria-label="닫기"
+              onClick={onClose}
+              className="absolute right-4 top-4"
+            >
               <Close className="w-[15px] h-[15px]" />
             </button>
           )}

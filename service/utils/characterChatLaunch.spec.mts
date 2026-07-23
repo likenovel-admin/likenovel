@@ -86,6 +86,19 @@ test("웹소챗 주인공 선택기는 진입 출처만 바꾸고 캐릭터챗 �
   );
 });
 
+test("캐릭터 전체 목록은 전용 진입 출처를 보존한다", () => {
+  assert.equal(
+    buildHomeCharacterChatSessionRequest({
+      productId: 1192,
+      characterScopeKey: "character:아델리트",
+      characterName: "아델리트",
+      adultYn: "N",
+      entrySource: "character_catalog",
+    }).entry_source,
+    "character_catalog"
+  );
+});
+
 test("읽은 범위가 없으면 임의 회차를 요청하지 않는다", () => {
   const request = buildHomeCharacterChatSessionRequest({
     productId: 1,

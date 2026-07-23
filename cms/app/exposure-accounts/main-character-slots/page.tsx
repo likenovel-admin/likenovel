@@ -18,7 +18,6 @@ import { useCreateUpload, useUpdateUpload } from "@/api/upload";
 import CharacterImageCropDialog from "./CharacterImageCropDialog";
 import { FileUpload } from "@/components/common/FileUpload";
 import FullPageLoader from "@/components/common/FullPageLoader";
-import PaginationControls from "@/components/common/PaginationControls";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -56,7 +55,7 @@ import { format } from "date-fns";
 import { Check, Crop, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 200;
 const PRODUCT_PAGE_SIZE = 20;
 const CHAT_QUALITY = {
   good: {
@@ -101,7 +100,8 @@ const getSlotStatus = (row: IMainCharacterSlot) => {
 };
 
 export default function Page() {
-  const [page, setPage] = useState(1);
+  const [activeTab, setActiveTab] =
+    useState<"main" | "catalog" | "candidates">("main");
   const [productPage, setProductPage] = useState(1);
   const [productSearchInput, setProductSearchInput] = useState("");
   const [productSearchWord, setProductSearchWord] = useState("");
@@ -118,7 +118,7 @@ export default function Page() {
   const [editingSlot, setEditingSlot] = useState<IMainCharacterSlot | null>(null);
 
   const { data, isLoading, refetch } = useGetMainCharacterSlots({
-    page,
+    page: 1,
     count_per_page: PAGE_SIZE,
   });
   const { data: productListData, isFetching: isLoadingProducts } =
@@ -137,7 +137,19 @@ export default function Page() {
   const updateUpload = useUpdateUpload();
 
   const rows = data?.results ?? [];
-  const totalPages = Math.max(1, Math.ceil((data?.total_count ?? 0) / PAGE_SIZE));
+  const publiclyEligibleRows = rows.filter(
+    (row) => row.publicEligible && getSlotStatus(row) === "노출중"
+  );
+  const mainRows = publiclyEligibleRows.slice(0, 12);
+  const reviewRows = rows.filter(
+    (row) => !row.publicEligible || getSlotStatus(row) !== "노출중"
+  );
+  const visibleRows =
+    activeTab === "main"
+      ? mainRows
+      : activeTab === "catalog"
+        ? publiclyEligibleRows
+        : reviewRows;
   const roster = rosterData?.data ?? [];
   const selectedCharacter = roster.find(
     (item) => item.scopeKey === characterScopeKey
@@ -233,6 +245,7 @@ export default function Page() {
   };
 
   const handleEdit = (row: IMainCharacterSlot) => {
+    setActiveTab("candidates");
     setEditingSlot(row);
     setSelectedProduct({
       productId: row.productId,
@@ -280,6 +293,22 @@ export default function Page() {
   const buildRequest = async (requireStart: boolean) => {
     if (!selectedProduct || !characterScopeKey) {
       showAlert("오류", "작품과 주인공을 선택해 주세요.", "확인");
+      return null;
+    }
+    if (selectedCharacter?.chatQuality === "insufficient") {
+      showAlert(
+        "공개 불가",
+        selectedCharacter.qualityReason || "공개에 필요한 캐릭터 데이터가 부족합니다.",
+        "확인"
+      );
+      return null;
+    }
+    if (!selectedCharacter) {
+      showAlert(
+        "확인 필요",
+        "캐릭터 품질 정보를 불러온 뒤 다시 시도해 주세요.",
+        "확인"
+      );
       return null;
     }
     const order = Number(cardOrder);
@@ -382,7 +411,7 @@ export default function Page() {
       <PageHeader title="" />
       <div className="flex flex-1 flex-col gap-4 p-5 pt-0">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">메인 캐릭터챗 구좌 관리</h1>
+          <h1 className="text-2xl font-semibold">캐릭터챗 노출 관리</h1>
           {editingSlot && (
             <Button variant="outline" onClick={resetForm}>
               등록 모드로 전환
@@ -390,11 +419,65 @@ export default function Page() {
           )}
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{editingSlot ? "캐릭터 카드 수정" : "캐릭터 카드 등록"}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
+        <div className="border-b">
+          <div
+            className="flex gap-6"
+            role="tablist"
+            aria-label="캐릭터챗 노출 구역"
+          >
+            {[
+              { value: "main", label: "메인 12명 편성" },
+              { value: "catalog", label: "전체 공개" },
+              { value: "candidates", label: "후보 검수" },
+            ].map((tab) => (
+              <button
+                key={tab.value}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.value}
+                onClick={() =>
+                  setActiveTab(tab.value as "main" | "catalog" | "candidates")
+                }
+                className={`border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
+                  activeTab === tab.value
+                    ? "border-foreground text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-md border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          {activeTab === "main" && (
+            <>
+              전체 공개 목록 중 서버 공개 조건을 통과한 순서 상위 12명이 홈에
+              노출됩니다. 현재 {mainRows.length}명입니다.
+            </>
+          )}
+          {activeTab === "catalog" && (
+            <>
+              더보기 페이지에 노출되는 전체 목록입니다. 현재{" "}
+              {publiclyEligibleRows.length}명입니다.
+            </>
+          )}
+          {activeTab === "candidates" && (
+            <>
+              캐릭터별 회차·RP 예시·장면 증거를 확인하고 공개 순서를 지정합니다.
+            </>
+          )}
+        </div>
+
+        {activeTab === "candidates" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {editingSlot ? "캐릭터 카드 수정" : "캐릭터 카드 등록"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -532,18 +615,39 @@ export default function Page() {
                         (alias) => alias !== item.displayName
                       );
                       return (
-                        <SelectItem key={item.scopeKey} value={item.scopeKey}>
+                        <SelectItem
+                          key={item.scopeKey}
+                          value={item.scopeKey}
+                          disabled={item.chatQuality === "insufficient"}
+                        >
                           <span>{item.displayName}</span>
                           {aliases.length > 0 ? (
                             <span className="ml-2 text-xs text-muted-foreground">
                               ({aliases.join(", ")})
                             </span>
                           ) : null}
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            회차 {item.distinctEpisodeCount} · 예시{" "}
+                            {item.exampleCount} · 장면 {item.sceneCount}
+                          </span>
                         </SelectItem>
                       );
                     })}
                   </SelectContent>
                 </Select>
+                {selectedCharacter && (
+                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs">
+                    <div className="font-medium">
+                      {CHAT_QUALITY[selectedCharacter.chatQuality].label} ·{" "}
+                      {selectedCharacter.qualityReason}
+                    </div>
+                    <div className="mt-1 text-muted-foreground">
+                      회차 {selectedCharacter.distinctEpisodeCount} · RP 예시{" "}
+                      {selectedCharacter.exampleCount} · 장면{" "}
+                      {selectedCharacter.sceneCount}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -620,22 +724,45 @@ export default function Page() {
 
             <div className="flex gap-2">
               {editingSlot ? (
-                <Button onClick={handleUpdate} disabled={isSaving}>
+                <Button
+                  onClick={handleUpdate}
+                  disabled={
+                    isSaving ||
+                    !selectedCharacter ||
+                    selectedCharacter.chatQuality === "insufficient"
+                  }
+                >
                   수정 저장
                 </Button>
               ) : (
                 <>
-                  <Button onClick={handlePublishNow} disabled={isSaving}>
+                  <Button
+                    onClick={handlePublishNow}
+                    disabled={
+                      isSaving ||
+                      !selectedCharacter ||
+                      selectedCharacter.chatQuality === "insufficient"
+                    }
+                  >
                     지금 노출
                   </Button>
-                  <Button variant="outline" onClick={handleCreateSchedule} disabled={isSaving}>
+                  <Button
+                    variant="outline"
+                    onClick={handleCreateSchedule}
+                    disabled={
+                      isSaving ||
+                      !selectedCharacter ||
+                      selectedCharacter.chatQuality === "insufficient"
+                    }
+                  >
                     예약 등록
                   </Button>
                 </>
               )}
             </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         <CharacterImageCropDialog
           file={cropSourceFile}
@@ -646,7 +773,13 @@ export default function Page() {
 
         <Card>
           <CardHeader>
-            <CardTitle>캐릭터 카드 목록</CardTitle>
+            <CardTitle>
+              {activeTab === "main"
+                ? `홈 노출 ${mainRows.length}/12명`
+                : activeTab === "catalog"
+                  ? `전체 공개 ${publiclyEligibleRows.length}명`
+                  : `검수 필요·예약·종료 ${reviewRows.length}명`}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto rounded-md border">
@@ -663,7 +796,7 @@ export default function Page() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((row) => (
+                  {visibleRows.map((row) => (
                     <TableRow key={row.characterSlotId}>
                       <TableCell>
                         {row.characterImagePath ? (
@@ -686,7 +819,9 @@ export default function Page() {
                         {formatDateTime(row.publishStartAt)}
                         <br />~ {formatDateTime(row.publishEndAt)}
                       </TableCell>
-                      <TableCell>{getSlotStatus(row)}</TableCell>
+                      <TableCell>
+                        {row.publicEligible ? getSlotStatus(row) : "공개조건 미달"}
+                      </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-2">
                           <Button size="sm" variant="outline" onClick={() => handleEdit(row)}>
@@ -704,18 +839,15 @@ export default function Page() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {rows.length === 0 && (
+                  {visibleRows.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                        등록된 캐릭터 카드가 없습니다.
+                        이 구역에 표시할 캐릭터 카드가 없습니다.
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
-            </div>
-            <div className="mt-4">
-              <PaginationControls page={page} setPage={setPage} totalPages={totalPages} />
             </div>
           </CardContent>
         </Card>

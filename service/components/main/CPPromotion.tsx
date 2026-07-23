@@ -44,6 +44,7 @@ const CPPromotion = ({
       <MainHeader
         headerText={title}
         hasMoreButton
+        compactMobileMore
         moreButtonOnClick={() => {
           router.push("/product/promotion");
         }}
