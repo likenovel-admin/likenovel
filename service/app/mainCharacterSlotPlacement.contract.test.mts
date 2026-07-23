@@ -1,10 +1,17 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { shuffleCharacterSlotItems } from "../utils/characterSlotOrder.ts";
 
 const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 const characterSlotSource = readFileSync(
   new URL("../components/main/CharacterSlot.tsx", import.meta.url),
+  "utf8"
+);
+const characterGridSource = readFileSync(
+  new URL("../components/main/CharacterChatCardGrid.tsx", import.meta.url),
+  "utf8"
+);
+const characterModalSource = readFileSync(
+  new URL("../components/main/CharacterChatPreviewModal.tsx", import.meta.url),
   "utf8"
 );
 const recentlyViewIndex = source.indexOf("<RecentlyView");
@@ -13,20 +20,6 @@ const mainRuleSlotIndex = source.indexOf(
   "{mainRuleSlotSections.length > 0",
   characterSlotIndex
 );
-const slotOrderSource = [1, 2, 3, 4];
-
-assert.deepEqual(
-  shuffleCharacterSlotItems(slotOrderSource, () => 0),
-  [2, 3, 4, 1]
-);
-assert.deepEqual(slotOrderSource, [1, 2, 3, 4]);
-assert.deepEqual(
-  shuffleCharacterSlotItems(slotOrderSource, () => 0.999),
-  slotOrderSource
-);
-assert.deepEqual(shuffleCharacterSlotItems([], () => 0), []);
-assert.deepEqual(shuffleCharacterSlotItems([1], () => 0), [1]);
-
 assert.notEqual(recentlyViewIndex, -1, "Home page should render RecentlyView");
 assert.notEqual(characterSlotIndex, -1, "Home page should render CharacterSlot");
 assert.notEqual(mainRuleSlotIndex, -1, "Home page should render main rule slots");
@@ -46,7 +39,7 @@ assert.match(
   "CharacterSlot should receive both cards and the current adult scope"
 );
 assert.match(
-  characterSlotSource,
+  characterGridSource,
   /aspect-\[364\/414\]/,
   "CharacterSlot images should preserve the main banner 364:414 ratio"
 );
@@ -72,41 +65,51 @@ assert.match(
 );
 assert.match(
   characterSlotSource,
+  /hasMoreButton[\s\S]*router\.push\("\/product\/character-chat"\)/,
+  "CharacterSlot should expose the catalog only through the existing header more action"
+);
+assert.match(
+  characterSlotSource,
   /\(current - 1 \+ pageCount\) % pageCount[\s\S]*\(current \+ 1\) % pageCount/,
   "CharacterSlot arrows should loop in both directions"
 );
 assert.match(
-  characterSlotSource,
+  characterGridSource,
   /text-dark-gray-400[^>]*>\s*\{item\.productTitle\}\s*<\/span>\s*<span[^>]*text-black-100[^>]*>\s*\{item\.characterName\}/,
   "CharacterSlot should show the work title as context before the emphasized character name"
 );
 assert.match(
-  characterSlotSource,
+  characterGridSource,
   /buildHomeCharacterChatSessionRequest\([\s\S]*queueHomeCharacterChatLaunch\([\s\S]*router\.push\("\/websochat"\)/,
   "CharacterSlot should hand off a dedicated character-chat request and navigate immediately"
 );
 assert.doesNotMatch(
-  characterSlotSource,
+  characterGridSource,
   /if \(hasAccountScope\) \{[\s\S]*getEpisodeListQueryOptions/,
   "CharacterSlot should resolve a backend-clamped read scope for guests as well as signed-in readers"
 );
 assert.match(
-  characterSlotSource,
-  /response\.data\.latestEpisodeNo \|\| 1/,
-  "CharacterSlot should use account read progress and fall back to episode 1"
-);
-assert.doesNotMatch(
-  characterSlotSource,
-  /response\.data\.episodes\[0\]\?\.episodeNo/,
-  "CharacterSlot should not use the latest public episode as read progress"
+  characterModalSource,
+  /applyReadScope\(response\.data\.latestEpisodeNo\)/,
+  "The character-chat modal should use account read progress"
 );
 assert.match(
-  characterSlotSource,
+  characterModalSource,
+  /accountReadEpisodeNo > 0\s*\? Math\.min\(accountReadEpisodeNo, preparedEpisodeNo\)\s*: 1/,
+  "The character-chat modal should clamp progress to prepared episodes and fall back to episode 1"
+);
+assert.doesNotMatch(
+  characterModalSource,
+  /response\.data\.episodes\[0\]\?\.episodeNo/,
+  "The character-chat modal should not use the latest public episode as read progress"
+);
+assert.match(
+  characterGridSource,
   /~\{item\.syncedLatestEpisodeNo\}화까지/,
   "CharacterSlot should show the backend-synced chat scope on each portrait"
 );
 assert.match(
-  characterSlotSource,
+  characterGridSource,
   /item\.syncedLatestEpisodeNo > 0/,
   "CharacterSlot should not render an empty episode-scope badge"
 );
@@ -141,8 +144,8 @@ assert.match(
   /\{CHARACTER_SLOT_SECTION_SUBTITLES\[subtitleIndex\]\}/,
   "CharacterSlot should render the selected subtitle"
 );
-assert.match(
+assert.doesNotMatch(
   characterSlotSource,
-  /setOrderedItemIds\([\s\S]*shuffleCharacterSlotItems\(/,
-  "CharacterSlot should shuffle cards once when the available slot set changes"
+  /shuffleCharacterSlotItems|setOrderedItemIds/,
+  "CharacterSlot should preserve the CMS card order"
 );

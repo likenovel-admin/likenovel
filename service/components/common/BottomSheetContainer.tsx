@@ -1,5 +1,10 @@
 "use client";
-import { ReactNode, useEffect } from "react";
+import {
+  HTMLAttributes,
+  ReactNode,
+  Ref,
+  useEffect,
+} from "react";
 import { createPortal } from "react-dom";
 import Close from "/public/images/close.svg";
 
@@ -9,6 +14,8 @@ interface Props extends CommonModalProps {
   usePortal?: boolean;
   title?: ReactNode;
   hasCloseButton?: boolean;
+  panelRef?: Ref<HTMLDivElement>;
+  panelProps?: HTMLAttributes<HTMLDivElement>;
 }
 
 const BottomSheetContainer = ({
@@ -19,6 +26,8 @@ const BottomSheetContainer = ({
   usePortal = true,
   title,
   hasCloseButton = true,
+  panelRef,
+  panelProps,
 }: Props) => {
   const preventScroll = (e: { preventDefault: () => void }) => {
     e.preventDefault();
@@ -57,6 +66,8 @@ const BottomSheetContainer = ({
       onClick={handleOverlayClick}
     >
       <div
+        ref={panelRef}
+        {...panelProps}
         className={`w-full bg-white rounded-t-[20px] transform transition-transform duration-300`}
         onClick={handleContentClick}
       >

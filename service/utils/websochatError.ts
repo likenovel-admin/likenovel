@@ -54,6 +54,12 @@ export const isWebsochatAbortError = (error: unknown) => {
   return errorLike?.name === "AbortError";
 };
 
+export const getWebsochatErrorStatus = (error: unknown) => {
+  const errorLike = error as WebsochatErrorLike | null;
+  const status = errorLike?.response?.status;
+  return typeof status === "number" && Number.isInteger(status) ? status : null;
+};
+
 export const isWebsochatTechnicalStreamErrorMessage = (message: string) => {
   const normalized = message.trim();
   if (!normalized) return false;
@@ -74,9 +80,8 @@ export const getWebsochatSafeUserMessage = (
 export const isRetryableWebsochatStreamError = (error: unknown) => {
   if (isWebsochatAbortError(error)) return false;
 
-  const errorLike = error as WebsochatErrorLike | null;
-  const status = errorLike?.response?.status;
-  if (typeof status === "number") {
+  const status = getWebsochatErrorStatus(error);
+  if (status !== null) {
     return status >= 500 && status <= 599;
   }
 

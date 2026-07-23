@@ -196,8 +196,43 @@ export interface IMainCharacterSlotItem {
   productTitle: string;
   authorNickname: string;
   syncedLatestEpisodeNo: number;
+  personalityCore?: string[];
+  speechStyle?: {
+    tone?: string[];
+    formality?: string;
+    sentenceLength?: string;
+  };
 }
 
 export interface IGetMainCharacterSlotsResponse {
   data: IMainCharacterSlotItem[];
+}
+
+export interface ICharacterChatCatalogItem extends IMainCharacterSlotItem {
+  lastViewedEpisodeNo: number | null;
+  lastViewedAt: string | null;
+}
+
+export interface IGetCharacterChatCatalogResponse {
+  data: ICharacterChatCatalogItem[];
+}
+
+export interface ICharacterChatPreview {
+  episodeNo: number;
+  episodeTitle: string;
+  episodeSummary: string;
+  roleLabel: string;
+  aliases: string[];
+  personalityCore: string[];
+  speechStyle: {
+    tone: string[];
+    formality: string;
+    sentenceLength: string;
+  };
+  sceneSummary: string;
+  sceneExcerpt: string;
+}
+
+export interface IGetCharacterChatPreviewResponse {
+  data: ICharacterChatPreview;
 }

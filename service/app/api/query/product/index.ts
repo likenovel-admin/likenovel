@@ -3,6 +3,8 @@ import { instance } from "../../axios";
 import { IUseSelectPanelsResponse } from "../banner/dto";
 import {
   IEpisodeListResponse,
+  IGetCharacterChatCatalogResponse,
+  IGetCharacterChatPreviewResponse,
   IGetAvailableTicketsResponse,
   IGetDirectRecommendResponse,
   IGetEpisodeProductParams,
@@ -805,5 +807,68 @@ export const useGetMainCharacterSlots = (
     staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
     gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
     enabled,
+  });
+};
+
+export const useGetCharacterChatCatalog = (
+  adult_yn?: string,
+  enabled: boolean = true,
+  cacheIdentity: string = "guest"
+) => {
+  const adultYnParam = adult_yn || "N";
+  return useQuery<IGetCharacterChatCatalogResponse>({
+    queryKey: ["getCharacterChatCatalog", adultYnParam, cacheIdentity],
+    queryFn: async () => {
+      const response = await instance.get(
+        `/v1/query/products/character-chat-catalog?adult_yn=${adultYnParam}`
+      );
+      return response.data;
+    },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
+    retry: false,
+    throwOnError: false,
+    enabled,
+  });
+};
+
+export const useGetCharacterChatPreview = (
+  productId: number,
+  characterScopeKey: string,
+  episodeNo: number,
+  enabled: boolean = true
+) => {
+  return useQuery<IGetCharacterChatPreviewResponse>({
+    queryKey: [
+      "getCharacterChatPreview",
+      productId,
+      characterScopeKey,
+      episodeNo,
+    ],
+    queryFn: async () => {
+      const response = await instance.get(
+        `/v1/query/products/${productId}/character-chat-preview`,
+        {
+          params: {
+            character_scope_key: characterScopeKey,
+            episode_no: episodeNo,
+          },
+        }
+      );
+      return response.data;
+    },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
+    placeholderData: (previousData, previousQuery) => {
+      const previousKey = previousQuery?.queryKey;
+      return previousKey?.[1] === productId &&
+        previousKey?.[2] === characterScopeKey
+        ? previousData
+        : undefined;
+    },
+    retry: false,
+    throwOnError: false,
+    enabled:
+      enabled && productId > 0 && !!characterScopeKey && episodeNo > 0,
   });
 };

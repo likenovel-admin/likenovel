@@ -72,6 +72,7 @@ const BottomProducts = ({ suggestionData, productType = "suggest" }: Props) => {
             : "관심 끊기기 임박"
         }
         hasMoreButton={productType === "interest"}
+        compactMobileMore
         moreButtonOnClick={() => {
           router.push("/product/preference/interest-drop");
         }}
