@@ -418,7 +418,9 @@ const Login = ({ pageType, setIsOpen }: Props) => {
 
       <div
         className={`flex items-center ${
-          pageType === "modal" ? "mt-24pxr" : "mt-30pxr"
+          pageType === "modal"
+            ? "mt-24pxr flex-col gap-4pxr min-[360px]:flex-row min-[360px]:gap-0"
+            : "mt-30pxr"
         }`}
       >
         <span className="text-14pxr">아직도 라이크노벨 회원이 아니세요?</span>
@@ -428,7 +430,15 @@ const Login = ({ pageType, setIsOpen }: Props) => {
             router.push("/sign-up");
           }}
         >
-          <span className="underline text-14pxr ml-5pxr">회원가입</span>
+          <span
+            className={`underline text-14pxr ${
+              pageType === "modal"
+                ? "ml-0 min-[360px]:ml-5pxr"
+                : "ml-5pxr"
+            }`}
+          >
+            회원가입
+          </span>
         </button>
       </div>
     </div>
