@@ -37,8 +37,13 @@ assert.doesNotMatch(
 
 assert.match(
   loginSource,
-  /pageType === "modal"[\s\S]*\? "px-32pxr py-20pxr"[\s\S]*: "h-screen justify-center md:justify-start min-w-\[300px\] max-w-\[700px\] px-16pxr md:px-90pxr"/,
-  "Only the modal login should receive compact padding while full-page layouts remain unchanged"
+  /pageType === "modal"[\s\S]*\? "px-24pxr md:px-32pxr py-20pxr"[\s\S]*: "h-screen justify-center md:justify-start min-w-\[300px\] max-w-\[700px\] px-16pxr md:px-90pxr"/,
+  "Only the modal login should receive responsive compact padding while full-page layouts remain unchanged"
+);
+assert.match(
+  loginSource,
+  /pageType === "modal"\s*\? "flex flex-col items-start gap-8pxr min-\[360px\]:flex-row min-\[360px\]:items-center min-\[360px\]:justify-between"\s*: "flex items-center justify-between"/,
+  "Only very narrow modal controls should stack while full-page login stays unchanged"
 );
 assert.match(loginSource, /pageType === "modal" \? "mb-32pxr mt-8pxr"/);
 assert.match(loginSource, /pageType === "modal" \? "mt-24pxr" : "mt-37pxr"/);

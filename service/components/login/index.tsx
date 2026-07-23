@@ -239,7 +239,7 @@ const Login = ({ pageType, setIsOpen }: Props) => {
     <div
       className={`relative w-full flex flex-col items-center ${
         pageType === "modal"
-          ? "px-32pxr py-20pxr"
+          ? "px-24pxr md:px-32pxr py-20pxr"
           : "h-screen justify-center md:justify-start min-w-[300px] max-w-[700px] px-16pxr md:px-90pxr"
       }`}
     >
@@ -297,7 +297,13 @@ const Login = ({ pageType, setIsOpen }: Props) => {
             placeholder="비밀번호를 입력하세요"
             {...register("password", { required: true })}
           />
-          <div className="flex items-center justify-between">
+          <div
+            className={
+              pageType === "modal"
+                ? "flex flex-col items-start gap-8pxr min-[360px]:flex-row min-[360px]:items-center min-[360px]:justify-between"
+                : "flex items-center justify-between"
+            }
+          >
             <Controller
               name="isKeepSignIn"
               control={control}
