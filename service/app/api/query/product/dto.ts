@@ -209,8 +209,13 @@ export interface IGetMainCharacterSlotsResponse {
 }
 
 export interface ICharacterChatCatalogItem extends IMainCharacterSlotItem {
+  createdDate: string;
+  chatQuality: "good" | "normal";
   fullReady: boolean;
   readinessCoverageRatio: number;
+  distinctEpisodeCount: number;
+  exampleCount: number;
+  sceneCount: number;
   lastViewedEpisodeNo: number | null;
   lastViewedAt: string | null;
 }

@@ -7,6 +7,7 @@ interface SelectBoxProps {
   value: string;
   onChange: (event: ChangeEvent<HTMLSelectElement>) => void;
   disabled?: boolean;
+  ariaLabel?: string;
   className?: string;
   full?: boolean;
 }
@@ -19,6 +20,7 @@ const SelectBox = forwardRef<HTMLSelectElement, SelectBoxProps>(
       value,
       onChange,
       disabled,
+      ariaLabel,
       labelClassName,
       className,
       full,
@@ -29,6 +31,7 @@ const SelectBox = forwardRef<HTMLSelectElement, SelectBoxProps>(
       <div className={`flex flex-col ${full ? "w-full" : ""}`}>
         <label className={labelClassName}>{label}</label>
         <select
+          aria-label={ariaLabel}
           value={value}
           disabled={disabled}
           ref={ref}
