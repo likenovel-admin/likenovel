@@ -192,9 +192,14 @@ assert.doesNotMatch(
   "Home character slot DTOs should not contain catalog personalization"
 );
 assert.match(
+  dtoSource.slice(homeDtoStart, catalogDtoStart),
+  /entryEpisodeNo\?: number;/,
+  "Home character slots should remain compatible when the entry episode is absent"
+);
+assert.match(
   dtoSource.slice(catalogDtoStart),
-  /createdDate: string;[\s\S]*chatQuality: "good" \| "normal";[\s\S]*fullReady: boolean;[\s\S]*readinessCoverageRatio: number;[\s\S]*distinctEpisodeCount: number;[\s\S]*exampleCount: number;[\s\S]*sceneCount: number;[\s\S]*lastViewedEpisodeNo: number \| null;[\s\S]*lastViewedAt: string \| null;/,
-  "Catalog DTOs should expose registration, asset completeness, and nullable reading progress"
+  /entryEpisodeNo: number;[\s\S]*createdDate: string;[\s\S]*chatQuality: "good" \| "normal";[\s\S]*fullReady: boolean;[\s\S]*readinessCoverageRatio: number;[\s\S]*distinctEpisodeCount: number;[\s\S]*exampleCount: number;[\s\S]*sceneCount: number;[\s\S]*lastViewedEpisodeNo: number \| null;[\s\S]*lastViewedAt: string \| null;/,
+  "Catalog DTOs should expose a required entry episode, registration, asset completeness, and nullable reading progress"
 );
 assert.doesNotMatch(
   dtoSource.slice(homeDtoStart, catalogDtoStart),

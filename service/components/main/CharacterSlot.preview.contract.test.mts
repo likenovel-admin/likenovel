@@ -15,6 +15,33 @@ const gridSource = fs.readFileSync(
   "utf8"
 );
 
+test("모달은 캐릭터 최초 등장 회차를 선택 하한과 기본 시점으로 사용한다", () => {
+  assert.match(
+    modalSource,
+    /import \{ resolveCharacterChatEpisodeScope \} from "@\/utils\/characterChatEpisodeScope"/,
+  );
+  assert.match(
+    modalSource,
+    /resolveCharacterChatEpisodeScope\(\{[\s\S]*entryEpisodeNo: item\.entryEpisodeNo,[\s\S]*preparedEpisodeNo: item\.syncedLatestEpisodeNo,[\s\S]*accountReadEpisodeNo/,
+  );
+  assert.match(
+    modalSource,
+    /selectableEpisodeNos\.map\(\(episodeNo\) =>/,
+  );
+  assert.match(
+    modalSource,
+    /disabled=\{[\s\S]*isReadScopeLoading \|\|[\s\S]*maxSelectableEpisodeNo === entryEpisodeNo[\s\S]*\}/,
+  );
+  assert.match(
+    modalSource,
+    /읽은 기록을 불러오지 못해 \$\{entryEpisodeNo\}화 시점으로 설정했어요/,
+  );
+  assert.match(
+    modalSource,
+    /읽은 기록이 없어 \$\{entryEpisodeNo\}화 시점으로 시작해요/,
+  );
+});
+
 test("캐릭터 카드는 세션을 만들지 않고 미리보기 모달을 연다", () => {
   assert.match(slotSource, /<CharacterChatCardGrid/);
   assert.match(gridSource, /onClick=\{\(\) => setSelectedItem\(item\)\}/);
