@@ -1,5 +1,6 @@
 export type CharacterChatEntrySource =
   | "home_character_slot"
+  | "character_catalog"
   | "websochat_rp_mode";
 
 export interface HomeCharacterChatSessionRequest {
@@ -160,9 +161,11 @@ export const consumePendingHomeCharacterChatLaunch = ({
       || now - createdAt > PENDING_HOME_CHARACTER_CHAT_LAUNCH_TTL_MS;
     const isValidRequest =
       request?.session_kind === "character_chat"
-      && ["home_character_slot", "websochat_rp_mode"].includes(
-        String(request.entry_source || "")
-      )
+      && [
+        "home_character_slot",
+        "character_catalog",
+        "websochat_rp_mode",
+      ].includes(String(request.entry_source || ""))
       && Number.isInteger(Number(request.product_id))
       && Number(request.product_id) > 0
       && Boolean(String(request.locked_character_scope_key || "").trim());

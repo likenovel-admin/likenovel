@@ -11,6 +11,7 @@ export interface IMainCharacterSlot {
   publishEndAt: string | null;
   createdDate: string;
   updatedDate: string;
+  publicEligible: 0 | 1;
 }
 
 export interface IMainCharacterSlotProduct {
@@ -26,6 +27,11 @@ export interface IMainCharacterSlotRosterItem {
   scopeKey: string;
   displayName: string;
   aliases: string[];
+  distinctEpisodeCount: number;
+  exampleCount: number;
+  sceneCount: number;
+  chatQuality: "good" | "normal" | "insufficient";
+  qualityReason: string;
 }
 
 export interface IGetMainCharacterSlotParams {

@@ -58,6 +58,19 @@ assert.match(
   /product\.chatQuality/,
   "CMS should render quality from the product API instead of a local guess"
 );
+for (const tab of ["메인 12명 편성", "전체 공개", "후보 검수"]) {
+  assert.match(pageSource, new RegExp(tab), `CMS should expose the ${tab} area`);
+}
+assert.match(
+  pageSource,
+  /selectedCharacter\?\.chatQuality === "insufficient"/,
+  "CMS should block publishing an insufficient character"
+);
+assert.match(
+  pageSource,
+  /distinctEpisodeCount[\s\S]*exampleCount[\s\S]*sceneCount/,
+  "CMS should show per-character quality evidence to operators"
+);
 assert.match(
   pageSource,
   /onValueChange=\{setCharacterScopeKey\}/,

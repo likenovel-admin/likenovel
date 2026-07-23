@@ -25,6 +25,8 @@ interface Props {
   hasRankingGuide?: boolean;
   rankingGuideAction?: ReactNode;
   rightAction?: ReactNode;
+  mobileTwoRow?: boolean;
+  compactMobileMore?: boolean;
 }
 const MainHeader = ({
   headerText,
@@ -39,6 +41,8 @@ const MainHeader = ({
   hasRankingGuide = false,
   rankingGuideAction,
   rightAction,
+  mobileTwoRow = false,
+  compactMobileMore = false,
 }: Props) => {
   const tooltipId = useId();
   const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -61,71 +65,117 @@ const MainHeader = ({
       });
   }, [hasRankingGuide]);
 
-  return (
-    <div className="flex justify-between">
-      <div className="flex items-center gap-8pxr pl-16pxr md:pl-0">
-        <span className={textStyle}>{headerText}</span>
-        {hasTimeSpeechBubble && (
-          <TimeSpeechBubble
-            mode={timeSpeechBubbleMode}
-            onClick={timeSpeechBubbleOnClick}
-            ariaLabel={timeSpeechBubbleAriaLabel}
-            showActionIndicator={timeSpeechBubbleShowActionIndicator}
-          />
-        )}
-        {hasRankingGuide && (
-          <div ref={guideRef} className="relative flex items-center">
-            <button
-              type="button"
-              aria-label="랭킹 산정 기준 보기"
-              aria-describedby={isGuideOpen ? tooltipId : undefined}
-              aria-expanded={isGuideOpen}
-              className="flex h-[28px] w-[28px] items-center justify-center"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                setIsGuideOpen((prev) => !prev);
-              }}
+  const rankingMeta = (
+    <>
+      {hasTimeSpeechBubble && (
+        <TimeSpeechBubble
+          mode={timeSpeechBubbleMode}
+          onClick={timeSpeechBubbleOnClick}
+          ariaLabel={timeSpeechBubbleAriaLabel}
+          showActionIndicator={timeSpeechBubbleShowActionIndicator}
+        />
+      )}
+      {hasRankingGuide && (
+        <div ref={guideRef} className="relative flex items-center">
+          <button
+            type="button"
+            aria-label="랭킹 산정 기준 보기"
+            aria-describedby={isGuideOpen ? tooltipId : undefined}
+            aria-expanded={isGuideOpen}
+            className="flex h-[28px] w-[28px] items-center justify-center"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setIsGuideOpen((prev) => !prev);
+            }}
+          >
+            <span
+              className={`flex h-[16px] w-[16px] items-center justify-center rounded-full border border-light-gray-600 ${
+                isGuideOpen
+                  ? "bg-black-100 hover:bg-dark-gray-600"
+                  : "bg-white hover:bg-light-gray-100"
+              }`}
             >
-              <span
-                className={`flex h-[16px] w-[16px] items-center justify-center rounded-full border border-light-gray-600 ${
-                  isGuideOpen
-                    ? "bg-black-100 hover:bg-dark-gray-600"
-                    : "bg-white hover:bg-light-gray-100"
-                }`}
-              >
-                <ExclamationMark
-                  className={isGuideOpen ? "text-white" : "text-dark-gray-300"}
-                />
-              </span>
-            </button>
-            {isGuideOpen && (
-              <div
-                id={tooltipId}
-                role="tooltip"
-                className="absolute z-20 top-full right-[-8px] mt-8pxr w-[260px] rounded-[10px] bg-black-100 p-10pxr text-left text-12pxr font-medium leading-[17px] text-white shadow-sm"
-              >
-                {rankingGuideMessage.map((message) => (
-                  <span key={message} className="block">
-                    {message}
-                  </span>
-                ))}
-                <div className="absolute -top-[4px] right-[13px] h-8pxr w-8pxr rotate-45 bg-black-100" />
-              </div>
-            )}
+              <ExclamationMark
+                className={isGuideOpen ? "text-white" : "text-dark-gray-300"}
+              />
+            </span>
+          </button>
+          {isGuideOpen && (
+            <div
+              id={tooltipId}
+              role="tooltip"
+              className={`absolute z-20 top-full right-[-8px] mt-8pxr rounded-[10px] bg-black-100 p-10pxr text-left text-12pxr font-medium leading-[17px] text-white shadow-sm ${
+                mobileTwoRow ? "w-[200px] md:w-[260px]" : "w-[260px]"
+              }`}
+            >
+              {rankingGuideMessage.map((message) => (
+                <span key={message} className="block">
+                  {message}
+                </span>
+              ))}
+              <div className="absolute -top-[4px] right-[13px] h-8pxr w-8pxr rotate-45 bg-black-100" />
+            </div>
+          )}
+        </div>
+      )}
+      {rankingGuideAction}
+    </>
+  );
+
+  return (
+    <div
+      className={
+        mobileTwoRow
+          ? "grid grid-cols-[minmax(0,1fr)_auto] gap-y-4pxr md:flex md:justify-between"
+          : "flex justify-between"
+      }
+    >
+      <div
+        className={
+          mobileTwoRow
+            ? "contents md:flex md:items-center md:gap-8pxr md:pl-0"
+            : "flex items-center gap-8pxr pl-16pxr md:pl-0"
+        }
+      >
+        <span
+          className={`${textStyle} ${
+            mobileTwoRow
+              ? "col-start-1 row-start-1 self-center whitespace-nowrap pl-16pxr md:pl-0"
+              : ""
+          }`}
+        >
+          {headerText}
+        </span>
+        {mobileTwoRow ? (
+          <div className="col-span-2 row-start-2 flex items-center gap-8pxr px-16pxr md:contents">
+            {rankingMeta}
           </div>
+        ) : (
+          rankingMeta
         )}
-        {rankingGuideAction}
       </div>
       {(rightAction || hasMoreButton) && (
-        <div className="flex items-center gap-12pxr pr-16pxr md:pr-0">
+        <div
+          className={
+            mobileTwoRow
+              ? "col-start-2 row-start-1 flex shrink-0 items-center gap-12pxr whitespace-nowrap pr-16pxr md:pr-0"
+              : "flex shrink-0 items-center gap-12pxr pr-16pxr md:pr-0"
+          }
+        >
           {rightAction}
           {hasMoreButton && (
             <button
-              className="flex items-center gap-8pxr p-2"
+              className="flex shrink-0 items-center gap-8pxr p-2"
               onClick={moreButtonOnClick}
             >
-              <span className="text-dark-gray-300 text-14pxr font-medium">
+              <span
+                className={`whitespace-nowrap text-dark-gray-300 ${
+                  compactMobileMore
+                    ? "text-13pxr md:text-14pxr"
+                    : "text-14pxr"
+                } font-medium`}
+              >
                 더보기
               </span>
               <ArrowRightSmall className="text-dark-gray-300 hidden md:block" />
