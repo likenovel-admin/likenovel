@@ -1,90 +1,95 @@
-export type CharacterChatCatalogFilter =
-  | "recommended"
-  | "all"
-  | "reading"
-  | "unread";
+export type CharacterChatCatalogScope = "all" | "reading";
+export type CharacterChatCatalogSort = "recommended" | "latest";
 
-export const parseCharacterChatCatalogFilter = (
+export const parseCharacterChatCatalogScope = (
   value: string | null
-): CharacterChatCatalogFilter =>
-  value === "all" || value === "reading" || value === "unread"
-    ? value
-    : "recommended";
+): CharacterChatCatalogScope => (value === "reading" ? "reading" : "all");
 
-export const isPersonalizedCharacterChatCatalogFilter = (
-  filter: CharacterChatCatalogFilter
-) => filter === "reading" || filter === "unread";
+export const parseCharacterChatCatalogSort = (
+  value: string | null
+): CharacterChatCatalogSort => (value === "latest" ? "latest" : "recommended");
 
-export const resolveCharacterChatCatalogFilter = (
-  requestedFilter: CharacterChatCatalogFilter,
-  canUsePersonalizedFilters: boolean
-): CharacterChatCatalogFilter =>
-  !isPersonalizedCharacterChatCatalogFilter(requestedFilter) ||
-  canUsePersonalizedFilters
-    ? requestedFilter
-    : "recommended";
+export const isPersonalizedCharacterChatCatalogScope = (
+  scope: CharacterChatCatalogScope
+) => scope === "reading";
+
+export const resolveCharacterChatCatalogScope = (
+  requestedScope: CharacterChatCatalogScope,
+  canUsePersonalizedScope: boolean
+): CharacterChatCatalogScope =>
+  !isPersonalizedCharacterChatCatalogScope(requestedScope) ||
+  canUsePersonalizedScope
+    ? requestedScope
+    : "all";
 
 interface CharacterChatCatalogFilterItem {
   characterSlotId: number;
-  cardOrder: number;
+  createdDate: string;
+  chatQuality: "good" | "normal";
   fullReady: boolean;
   readinessCoverageRatio: number;
+  distinctEpisodeCount: number;
+  exampleCount: number;
+  sceneCount: number;
   lastViewedEpisodeNo: number | null;
-  lastViewedAt: string | null;
 }
 
-const hasReadingProgress = (item: CharacterChatCatalogFilterItem) =>
-  item.lastViewedEpisodeNo !== null;
-
-const parseLastViewedAt = (value: string | null) => {
-  if (!value) return Number.NEGATIVE_INFINITY;
-
+const parseCreatedDate = (value: string) => {
   const timestamp = Date.parse(value);
   return Number.isNaN(timestamp) ? Number.NEGATIVE_INFINITY : timestamp;
 };
+
+const sortRecommended = <T extends CharacterChatCatalogFilterItem>(
+  items: T[]
+) =>
+  items.sort((left, right) => {
+    if (left.fullReady !== right.fullReady) {
+      return left.fullReady ? -1 : 1;
+    }
+
+    if (left.chatQuality !== right.chatQuality) {
+      return left.chatQuality === "good" ? -1 : 1;
+    }
+
+    const coverageDifference =
+      right.readinessCoverageRatio - left.readinessCoverageRatio;
+    if (coverageDifference !== 0) return coverageDifference;
+
+    const distinctEpisodeDifference =
+      right.distinctEpisodeCount - left.distinctEpisodeCount;
+    if (distinctEpisodeDifference !== 0) return distinctEpisodeDifference;
+
+    const exampleDifference = right.exampleCount - left.exampleCount;
+    if (exampleDifference !== 0) return exampleDifference;
+
+    const sceneDifference = right.sceneCount - left.sceneCount;
+    if (sceneDifference !== 0) return sceneDifference;
+
+    return left.characterSlotId - right.characterSlotId;
+  });
+
+const sortLatest = <T extends CharacterChatCatalogFilterItem>(items: T[]) =>
+  items.sort((left, right) => {
+    const createdDateDifference =
+      parseCreatedDate(right.createdDate) - parseCreatedDate(left.createdDate);
+    if (createdDateDifference !== 0) return createdDateDifference;
+
+    return right.characterSlotId - left.characterSlotId;
+  });
 
 export const filterCharacterChatCatalog = <
   T extends CharacterChatCatalogFilterItem,
 >(
   items: readonly T[],
-  filter: CharacterChatCatalogFilter
+  scope: CharacterChatCatalogScope,
+  sort: CharacterChatCatalogSort
 ): T[] => {
-  if (filter === "all") return [...items];
+  const scopedItems =
+    scope === "reading"
+      ? items.filter((item) => item.lastViewedEpisodeNo !== null)
+      : [...items];
 
-  if (filter === "recommended") {
-    return [...items].sort((left, right) => {
-      if (left.fullReady !== right.fullReady) {
-        return left.fullReady ? -1 : 1;
-      }
-
-      const coverageDifference =
-        right.readinessCoverageRatio - left.readinessCoverageRatio;
-      if (coverageDifference !== 0) return coverageDifference;
-
-      const cardOrderDifference = left.cardOrder - right.cardOrder;
-      if (cardOrderDifference !== 0) return cardOrderDifference;
-
-      return left.characterSlotId - right.characterSlotId;
-    });
-  }
-
-  const filteredItems = items.filter((item) =>
-    filter === "reading"
-      ? hasReadingProgress(item)
-      : !hasReadingProgress(item)
-  );
-
-  if (filter === "unread") return filteredItems;
-
-  return filteredItems.sort((left, right) => {
-    const viewedAtDifference =
-      parseLastViewedAt(right.lastViewedAt) -
-      parseLastViewedAt(left.lastViewedAt);
-    if (viewedAtDifference !== 0) return viewedAtDifference;
-
-    const cardOrderDifference = left.cardOrder - right.cardOrder;
-    if (cardOrderDifference !== 0) return cardOrderDifference;
-
-    return left.characterSlotId - right.characterSlotId;
-  });
+  return sort === "latest"
+    ? sortLatest(scopedItems)
+    : sortRecommended(scopedItems);
 };

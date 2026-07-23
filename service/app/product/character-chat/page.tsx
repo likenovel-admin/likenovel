@@ -3,6 +3,7 @@
 import { useGetCharacterChatCatalog } from "@/app/api/query/product";
 import type { ICharacterChatCatalogItem } from "@/app/api/query/product/dto";
 import Spinner from "@/components/common/Spinner";
+import SelectBox from "@/components/form/selectbox";
 import CharacterChatCardGrid from "@/components/main/CharacterChatCardGrid";
 import type { CharacterChatPreviewDetail } from "@/components/main/CharacterChatPreviewModal";
 import useAuthStore from "@/store/authStore";
@@ -13,20 +14,28 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import Return from "/public/images/return.svg";
 import {
   filterCharacterChatCatalog,
-  isPersonalizedCharacterChatCatalogFilter,
-  parseCharacterChatCatalogFilter,
-  resolveCharacterChatCatalogFilter,
-  type CharacterChatCatalogFilter,
+  isPersonalizedCharacterChatCatalogScope,
+  parseCharacterChatCatalogScope,
+  parseCharacterChatCatalogSort,
+  resolveCharacterChatCatalogScope,
+  type CharacterChatCatalogScope,
+  type CharacterChatCatalogSort,
 } from "./catalogFilter";
 
-const CATALOG_FILTERS: Array<{
+const CATALOG_SCOPE_OPTIONS: Array<{
   label: string;
-  value: CharacterChatCatalogFilter;
+  value: CharacterChatCatalogScope;
 }> = [
-  { label: "추천순", value: "recommended" },
   { label: "전체", value: "all" },
   { label: "읽고 있는 작품", value: "reading" },
-  { label: "처음 보는 작품", value: "unread" },
+];
+
+const CATALOG_SORT_OPTIONS: Array<{
+  label: string;
+  value: CharacterChatCatalogSort;
+}> = [
+  { label: "추천순", value: "recommended" },
+  { label: "등록순", value: "latest" },
 ];
 
 const LOCAL_MOCK_CHARACTERS: Array<[string, string]> = [
@@ -76,11 +85,16 @@ const LOCAL_MOCK_ITEMS: ICharacterChatCatalogItem[] =
       characterName,
       characterImagePath: `/images/covers/cover_${String(index + 1).padStart(2, "0")}.jpg`,
       cardOrder: index + 1,
+      createdDate: `2026-07-${String(22 - index).padStart(2, "0")}T09:00:00+09:00`,
       productTitle,
       authorNickname: `목업작가${index + 1}`,
       syncedLatestEpisodeNo: index === 0 ? 5 : 12 + index * 3,
+      chatQuality: index % 4 === 3 ? "normal" : "good",
       fullReady: index % 4 !== 3,
       readinessCoverageRatio: Math.max(0.25, 1 - index * 0.04),
+      distinctEpisodeCount: index % 4 === 3 ? 1 : 3,
+      exampleCount: index % 4 === 3 ? 2 : 6,
+      sceneCount: index % 4 === 3 ? 1 : 3,
       personalityCore:
         LOCAL_MOCK_PERSONALITIES[index % LOCAL_MOCK_PERSONALITIES.length],
       speechStyle:
@@ -150,15 +164,16 @@ function CharacterChatCatalogPageContent() {
     accessToken,
     userId: user?.userId,
   });
-  const requestedFilter = parseCharacterChatCatalogFilter(
-    searchParams.get("filter")
+  const requestedScope = parseCharacterChatCatalogScope(
+    searchParams.get("scope")
   );
-  const canUsePersonalizedFilters =
+  const activeSort = parseCharacterChatCatalogSort(searchParams.get("sort"));
+  const canUsePersonalizedScope =
     localMockEnabled === true ||
     (isAuthInitialized && queryState.productCacheIdentity !== "guest");
-  const activeFilter = resolveCharacterChatCatalogFilter(
-    requestedFilter,
-    canUsePersonalizedFilters
+  const activeScope = resolveCharacterChatCatalogScope(
+    requestedScope,
+    canUsePersonalizedScope
   );
 
   const handleGoBack = () => {
@@ -182,15 +197,23 @@ function CharacterChatCatalogPageContent() {
     setLocalMockEnabled(isLocalMock);
   }, [searchParams]);
 
-  const handleFilterChange = useCallback(
-    (filter: CharacterChatCatalogFilter) => {
+  const handleScopeChange = useCallback(
+    (scope: CharacterChatCatalogScope) => {
       const nextSearchParams = new URLSearchParams(searchParams.toString());
-      nextSearchParams.set("filter", filter);
-      const targetPath = `${window.location.pathname}?${nextSearchParams.toString()}`;
+      nextSearchParams.delete("filter");
+      if (scope === "all") {
+        nextSearchParams.delete("scope");
+      } else {
+        nextSearchParams.set("scope", scope);
+      }
+      const queryString = nextSearchParams.toString();
+      const targetPath = `${window.location.pathname}${
+        queryString ? `?${queryString}` : ""
+      }`;
 
       if (
-        isPersonalizedCharacterChatCatalogFilter(filter) &&
-        !canUsePersonalizedFilters
+        isPersonalizedCharacterChatCatalogScope(scope) &&
+        !canUsePersonalizedScope
       ) {
         router.push(
           `/login?modal=open&redirect=${encodeURIComponent(targetPath)}`,
@@ -201,24 +224,43 @@ function CharacterChatCatalogPageContent() {
 
       router.replace(targetPath, { scroll: false });
     },
-    [canUsePersonalizedFilters, router, searchParams]
+    [canUsePersonalizedScope, router, searchParams]
+  );
+
+  const handleSortChange = useCallback(
+    (sort: CharacterChatCatalogSort) => {
+      const nextSearchParams = new URLSearchParams(searchParams.toString());
+      nextSearchParams.delete("filter");
+      if (sort === "recommended") {
+        nextSearchParams.delete("sort");
+      } else {
+        nextSearchParams.set("sort", sort);
+      }
+      const queryString = nextSearchParams.toString();
+      const targetPath = `${window.location.pathname}${
+        queryString ? `?${queryString}` : ""
+      }`;
+
+      router.replace(targetPath, { scroll: false });
+    },
+    [router, searchParams]
   );
 
   useEffect(() => {
     if (
       isAuthInitialized &&
       localMockEnabled === false &&
-      isPersonalizedCharacterChatCatalogFilter(requestedFilter) &&
+      isPersonalizedCharacterChatCatalogScope(requestedScope) &&
       queryState.productCacheIdentity === "guest"
     ) {
-      handleFilterChange("recommended");
+      handleScopeChange("all");
     }
   }, [
-    handleFilterChange,
+    handleScopeChange,
     isAuthInitialized,
     localMockEnabled,
     queryState.productCacheIdentity,
-    requestedFilter,
+    requestedScope,
   ]);
 
   const {
@@ -235,7 +277,11 @@ function CharacterChatCatalogPageContent() {
   const items = localMockEnabled
     ? LOCAL_MOCK_ITEMS
     : data?.data ?? [];
-  const filteredItems = filterCharacterChatCatalog(items, activeFilter);
+  const filteredItems = filterCharacterChatCatalog(
+    items,
+    activeScope,
+    activeSort
+  );
   const showLoading = localMockEnabled === null || isLoading;
   const showError = localMockEnabled === false && isError;
 
@@ -261,31 +307,65 @@ function CharacterChatCatalogPageContent() {
           <p className="mt-6pxr text-14pxr leading-[20px] text-dark-gray-500">
             매일 무료로 즐길 수 있어요.
           </p>
-          <nav
-            aria-label="작품 필터"
-            className="scrollbar-none mt-16pxr flex flex-nowrap gap-8pxr overflow-x-auto"
-          >
-            {CATALOG_FILTERS.map((filter) => (
-              <button
-                key={filter.value}
-                type="button"
-                aria-pressed={activeFilter === filter.value}
-                onClick={() => handleFilterChange(filter.value)}
-                disabled={
-                  isPersonalizedCharacterChatCatalogFilter(filter.value) &&
-                  !isAuthInitialized &&
-                  localMockEnabled !== true
+          <div className="mt-16pxr flex items-center justify-between gap-8pxr">
+            <nav
+              aria-label="작품 범위"
+              className="hidden items-center gap-8pxr md:flex"
+            >
+              {CATALOG_SCOPE_OPTIONS.map((scope) => (
+                <button
+                  key={scope.value}
+                  type="button"
+                  aria-pressed={activeScope === scope.value}
+                  onClick={() => handleScopeChange(scope.value)}
+                  disabled={
+                    isPersonalizedCharacterChatCatalogScope(scope.value) &&
+                    !isAuthInitialized &&
+                    localMockEnabled !== true
+                  }
+                  className={`min-h-[36px] shrink-0 rounded-[8px] border px-12pxr py-7pxr text-13pxr font-medium transition-colors disabled:cursor-wait disabled:opacity-50 ${
+                    activeScope === scope.value
+                      ? "border-black-100 bg-black-100 text-white"
+                      : "border-light-gray-400 bg-white text-dark-gray-500 hover:border-dark-gray-300 hover:text-black-100"
+                  }`}
+                >
+                  {scope.label}
+                </button>
+              ))}
+            </nav>
+            <div className="md:hidden">
+              <SelectBox
+                ariaLabel="작품 범위 선택"
+                options={CATALOG_SCOPE_OPTIONS.map((scope) => ({
+                  ...scope,
+                  disabled:
+                    isPersonalizedCharacterChatCatalogScope(scope.value) &&
+                    !isAuthInitialized &&
+                    localMockEnabled !== true,
+                }))}
+                value={activeScope}
+                onChange={(event) =>
+                  handleScopeChange(
+                    event.target.value as CharacterChatCatalogScope
+                  )
                 }
-                className={`min-h-[36px] shrink-0 rounded-[8px] border px-12pxr py-7pxr text-13pxr font-medium transition-colors disabled:cursor-wait disabled:opacity-50 ${
-                  activeFilter === filter.value
-                    ? "border-black-100 bg-black-100 text-white"
-                    : "border-light-gray-400 bg-white text-dark-gray-500 hover:border-dark-gray-300 hover:text-black-100"
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </nav>
+                className="h-[36px] w-[152px] text-13pxr text-black-100"
+              />
+            </div>
+            <div className="ml-auto">
+              <SelectBox
+                ariaLabel="정렬 방식 선택"
+                options={CATALOG_SORT_OPTIONS}
+                value={activeSort}
+                onChange={(event) =>
+                  handleSortChange(
+                    event.target.value as CharacterChatCatalogSort
+                  )
+                }
+                className="h-[36px] w-[104px] text-13pxr text-black-100 md:w-[112px]"
+              />
+            </div>
+          </div>
         </header>
 
         {showLoading && (
@@ -322,7 +402,7 @@ function CharacterChatCatalogPageContent() {
               <p>이 조건에 맞는 작품이 없어요.</p>
               <button
                 type="button"
-                onClick={() => handleFilterChange("all")}
+                onClick={() => handleScopeChange("all")}
                 className="rounded-[8px] border border-light-gray-400 bg-white px-12pxr py-7pxr font-medium text-black-100 hover:border-dark-gray-300"
               >
                 전체 보기
