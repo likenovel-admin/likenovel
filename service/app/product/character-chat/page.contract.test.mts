@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   filterCharacterChatCatalog,
+  isPersonalizedCharacterChatCatalogFilter,
+  parseCharacterChatCatalogFilter,
   resolveCharacterChatCatalogFilter,
 } from "./catalogFilter.ts";
 
@@ -106,6 +108,12 @@ assert.match(
 assert.doesNotMatch(pageSource, /gap-y-24pxr|gap-y-28pxr|gap-x-16pxr/);
 assert.match(pageSource, /<CharacterChatCardGrid/);
 assert.match(pageSource, /entrySource="character_catalog"/);
+assert.match(pageSource, /\{ label: "추천순", value: "recommended" \}/);
+assert.ok(
+  pageSource.indexOf('{ label: "추천순", value: "recommended" }') <
+    pageSource.indexOf('{ label: "전체", value: "all" }'),
+  "Recommended should be the first catalog filter"
+);
 assert.match(pageSource, /\{ label: "전체", value: "all" \}/);
 assert.match(pageSource, /\{ label: "읽고 있는 작품", value: "reading" \}/);
 assert.match(
@@ -125,8 +133,23 @@ assert.match(
 );
 assert.match(
   pageSource,
-  /requestedFilter !== "all"[\s\S]*queryState\.productCacheIdentity === "guest"[\s\S]*handleFilterChange\("all"\)/,
-  "A guest-only personalized query should normalize back to all"
+  /isPersonalizedCharacterChatCatalogFilter\(requestedFilter\)[\s\S]*queryState\.productCacheIdentity === "guest"[\s\S]*handleFilterChange\("recommended"\)/,
+  "A guest-only personalized query should normalize back to recommended"
+);
+assert.match(
+  pageSource,
+  /isPersonalizedCharacterChatCatalogFilter\(filter\)[\s\S]*!canUsePersonalizedFilters/,
+  "The login gate should use the shared personalized-filter helper"
+);
+assert.match(
+  pageSource,
+  /disabled=\{[\s\S]*isPersonalizedCharacterChatCatalogFilter\(filter\.value\)[\s\S]*!isAuthInitialized/,
+  "The initialization gate should use the shared personalized-filter helper"
+);
+assert.equal(
+  pageSource.match(/isPersonalizedCharacterChatCatalogFilter\(/g)?.length,
+  3,
+  "Login, initialization, and normalization gates should share the personalized-filter helper"
 );
 assert.match(
   pageSource,
@@ -154,6 +177,11 @@ assert.match(
   /LOCAL_MOCK_ITEMS\.map\(\(item\) => \[\s*item\.productId,\s*item\.lastViewedEpisodeNo \?\? 0,/,
   "Unread mock cards should open at the first-episode scope"
 );
+assert.match(
+  pageSource,
+  /fullReady:[\s\S]*readinessCoverageRatio:/,
+  "Local catalog mocks should expose recommendation readiness"
+);
 const homeDtoStart = dtoSource.indexOf(
   "export interface IMainCharacterSlotItem"
 );
@@ -168,8 +196,13 @@ assert.doesNotMatch(
 );
 assert.match(
   dtoSource.slice(catalogDtoStart),
-  /lastViewedEpisodeNo: number \| null;[\s\S]*lastViewedAt: string \| null;/,
-  "Catalog DTOs should expose nullable reading progress"
+  /fullReady: boolean;[\s\S]*readinessCoverageRatio: number;[\s\S]*lastViewedEpisodeNo: number \| null;[\s\S]*lastViewedAt: string \| null;/,
+  "Catalog DTOs should expose recommendation readiness and nullable reading progress"
+);
+assert.doesNotMatch(
+  dtoSource.slice(homeDtoStart, catalogDtoStart),
+  /fullReady|readinessCoverageRatio/,
+  "Home character slot DTOs should not contain catalog-only recommendation readiness"
 );
 assert.match(gridSource, /<CharacterChatPreviewModal/);
 assert.match(gridSource, /aspect-\[364\/414\]/);
@@ -287,35 +320,75 @@ const catalogItems = [
   {
     characterSlotId: 30,
     cardOrder: 30,
+    fullReady: false,
+    readinessCoverageRatio: 1,
+    syncedLatestEpisodeNo: 999,
     lastViewedEpisodeNo: null,
     lastViewedAt: null,
   },
   {
     characterSlotId: 12,
     cardOrder: 2,
+    fullReady: true,
+    readinessCoverageRatio: 0.8,
+    syncedLatestEpisodeNo: 1,
     lastViewedEpisodeNo: 4,
     lastViewedAt: "2026-07-22T10:00:00+09:00",
   },
   {
     characterSlotId: 11,
     cardOrder: 2,
+    fullReady: true,
+    readinessCoverageRatio: 0.8,
+    syncedLatestEpisodeNo: 500,
     lastViewedEpisodeNo: 8,
     lastViewedAt: "2026-07-22T10:00:00+09:00",
   },
   {
     characterSlotId: 20,
     cardOrder: 1,
+    fullReady: true,
+    readinessCoverageRatio: 0.8,
+    syncedLatestEpisodeNo: 2,
     lastViewedEpisodeNo: 3,
     lastViewedAt: "2026-07-23T09:00:00+09:00",
   },
   {
     characterSlotId: 31,
     cardOrder: 31,
+    fullReady: true,
+    readinessCoverageRatio: 0.4,
+    syncedLatestEpisodeNo: 1000,
     lastViewedEpisodeNo: null,
     lastViewedAt: null,
   },
 ] as const;
 const catalogSnapshot = structuredClone(catalogItems);
+
+assert.equal(parseCharacterChatCatalogFilter(null), "recommended");
+assert.equal(parseCharacterChatCatalogFilter("unknown"), "recommended");
+assert.equal(parseCharacterChatCatalogFilter("all"), "all");
+
+const recommendedItems = filterCharacterChatCatalog(
+  catalogItems,
+  "recommended"
+);
+assert.deepEqual(
+  recommendedItems.map((item) => item.characterSlotId),
+  [20, 11, 12, 31, 30],
+  "Recommended should sort by full readiness, coverage, card order, and id without using episode count"
+);
+const episodeCountChangedItems = catalogItems.map((item, index) => ({
+  ...item,
+  syncedLatestEpisodeNo: index % 2 === 0 ? 0 : 10_000,
+}));
+assert.deepEqual(
+  filterCharacterChatCatalog(episodeCountChangedItems, "recommended").map(
+    (item) => item.characterSlotId
+  ),
+  recommendedItems.map((item) => item.characterSlotId),
+  "Recommended order should be independent of synced episode counts"
+);
 
 const allItems = filterCharacterChatCatalog(catalogItems, "all");
 assert.deepEqual(
@@ -345,16 +418,30 @@ assert.deepEqual(
 );
 assert.equal(
   resolveCharacterChatCatalogFilter("reading", false),
-  "all",
-  "Guest reading queries should render the all view"
+  "recommended",
+  "Guest reading queries should render the recommended view"
 );
 assert.equal(
   resolveCharacterChatCatalogFilter("unread", false),
+  "recommended",
+  "Guest unread queries should render the recommended view"
+);
+assert.equal(
+  resolveCharacterChatCatalogFilter("recommended", false),
+  "recommended",
+  "Guest recommended queries should remain available"
+);
+assert.equal(
+  resolveCharacterChatCatalogFilter("all", false),
   "all",
-  "Guest unread queries should render the all view"
+  "Guest all queries should remain available"
 );
 assert.equal(
   resolveCharacterChatCatalogFilter("reading", true),
   "reading",
   "Authenticated reading queries should remain personalized"
 );
+assert.equal(isPersonalizedCharacterChatCatalogFilter("recommended"), false);
+assert.equal(isPersonalizedCharacterChatCatalogFilter("all"), false);
+assert.equal(isPersonalizedCharacterChatCatalogFilter("reading"), true);
+assert.equal(isPersonalizedCharacterChatCatalogFilter("unread"), true);
