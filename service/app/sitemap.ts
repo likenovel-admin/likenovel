@@ -10,6 +10,7 @@ const CANONICAL_ROUTES = [
   { path: "/product/top50/paid-top", changeFrequency: "daily", priority: 0.85 },
   { path: "/product/free/normal", changeFrequency: "daily", priority: 0.9 },
   { path: "/product/paid", changeFrequency: "daily", priority: 0.9 },
+  { path: "/product/character-chat", changeFrequency: "daily", priority: 0.8 },
   { path: "/websochat", changeFrequency: "weekly", priority: 0.7 },
 ] satisfies Array<{
   path: string;

@@ -45,6 +45,28 @@ export const buildRootMetadata = (): Metadata => {
       siteName: SITE_NAME,
       type: "website",
       locale: "ko_KR",
+    },
+    twitter: {
+      card: "summary",
+      title: SITE_NAME,
+      description: DEFAULT_SITE_DESCRIPTION,
+    },
+  };
+};
+
+export const buildHomeMetadata = (): Metadata => {
+  const siteOrigin = getSiteOrigin();
+
+  return {
+    alternates: {
+      canonical: siteOrigin,
+    },
+    openGraph: {
+      title: SITE_NAME,
+      description: DEFAULT_SITE_DESCRIPTION,
+      siteName: SITE_NAME,
+      type: "website",
+      locale: "ko_KR",
       url: siteOrigin,
     },
     twitter: {

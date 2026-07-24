@@ -6,7 +6,7 @@ const componentSource = readFileSync(
   "utf8",
 );
 const pageSource = readFileSync(
-  new URL("../../app/page.tsx", import.meta.url),
+  new URL("../../app/HomePageClient.tsx", import.meta.url),
   "utf8",
 );
 const bannerQuerySource = readFileSync(

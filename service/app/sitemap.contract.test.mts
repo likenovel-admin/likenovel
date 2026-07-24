@@ -6,6 +6,7 @@ const expectedUrls = [
   "https://www.likenovel.net/product/top50/paid-top",
   "https://www.likenovel.net/product/free/normal",
   "https://www.likenovel.net/product/paid",
+  "https://www.likenovel.net/product/character-chat",
   "https://www.likenovel.net/websochat",
 ];
 

@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const source = readFileSync(
+  new URL("./HomePageClient.tsx", import.meta.url),
+  "utf8",
+);
 const characterSlotSource = readFileSync(
   new URL("../components/main/CharacterSlot.tsx", import.meta.url),
   "utf8"
