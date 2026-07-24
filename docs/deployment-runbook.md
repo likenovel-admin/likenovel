@@ -689,6 +689,7 @@ docker compose up -d --force-recreate api
 |---|---|
 | `NEXT_PUBLIC_*` | Next.js 빌드 시 번들에 반영될 수 있는 공개 변수 |
 | `API_SERVER_URI`, `IRON_SESSION_PASSWORD`, `NICE_*` 등 | 서버 런타임 변수 (유저웹 기준) |
+| `NAVER_SITE_VERIFICATION` | 유저웹의 네이버 사이트 소유확인 metadata. `docker-prod.yml`이 별도 GitHub Secret에서 prod 빌드에만 추가하며 dev에는 주입하지 않음 |
 | Dockerfile 동작 | `ARG ENV_FILE`로 전달된 파일을 `.env`와 `.env.production`으로 복사 후 build |
 
 근거 Dockerfile:
