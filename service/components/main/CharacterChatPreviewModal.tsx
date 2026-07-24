@@ -619,35 +619,38 @@ const CharacterChatPreviewModal = ({
         });
         const episodeTitleByNo: Record<number, string> = {};
         const rememberEpisodeTitles = (
-          episodes: typeof response.data.episodes
+          episodes: typeof response.data.episodes,
+          target: Record<number, string>
         ) => {
           episodes.forEach((episode) => {
             const episodeTitle = String(episode.episodeTitle || "").trim();
             if (episodeTitle) {
-              episodeTitleByNo[episode.episodeNo] = episodeTitle;
+              target[episode.episodeNo] = episodeTitle;
             }
           });
         };
-        rememberEpisodeTitles(response.data.episodes);
+        rememberEpisodeTitles(response.data.episodes, episodeTitleByNo);
+        availableEpisodeTitleByNo = episodeTitleByNo;
+        applyReadScope(response.data.latestEpisodeNo);
 
-        const firstAdditionalPage = Math.max(
-          2,
-          Math.floor((episodeScope.entryEpisodeNo - 1) / 100) + 1
+        const totalEpisodePages = Math.ceil(
+          response.data.pagination.totalCount / 100
         );
-        const lastAdditionalPage = Math.min(
-          Math.ceil(episodeScope.maxSelectableEpisodeNo / 100),
-          Math.ceil(response.data.pagination.totalCount / 100)
+        let fetchedMaxEpisodeNo = response.data.episodes.reduce(
+          (maxEpisodeNo, episode) =>
+            Math.max(maxEpisodeNo, Number(episode.episodeNo || 0)),
+          0
         );
-        const additionalPages =
-          lastAdditionalPage >= firstAdditionalPage
-            ? Array.from(
-                { length: lastAdditionalPage - firstAdditionalPage + 1 },
-                (_, index) => firstAdditionalPage + index
-              )
-            : [];
-        const additionalPageResults = await Promise.allSettled(
-          additionalPages.map((page) =>
-            queryClient.fetchQuery(
+        for (let page = 2; page <= totalEpisodePages; page += 1) {
+          if (cancelled) return;
+          if (
+            fetchedMaxEpisodeNo >= episodeScope.maxSelectableEpisodeNo
+          ) {
+            break;
+          }
+
+          try {
+            const pageResponse = await queryClient.fetchQuery(
               getEpisodeListQueryOptions(
                 {
                   product_id: String(item.productId),
@@ -658,16 +661,49 @@ const CharacterChatPreviewModal = ({
                 },
                 true
               )
-            )
-          )
-        );
-        additionalPageResults.forEach((result) => {
-          if (result.status === "fulfilled") {
-            rememberEpisodeTitles(result.value.data.episodes);
+            );
+            if (cancelled) return;
+
+            const pageEpisodeTitleByNo: Record<number, string> = {};
+            rememberEpisodeTitles(
+              pageResponse.data.episodes,
+              pageEpisodeTitleByNo
+            );
+            setReadScope((currentReadScope) => {
+              if (
+                cancelled ||
+                currentReadScope.characterSlotId !== item.characterSlotId
+              ) {
+                return currentReadScope;
+              }
+              return {
+                ...currentReadScope,
+                episodeTitleByNo: {
+                  ...currentReadScope.episodeTitleByNo,
+                  ...pageEpisodeTitleByNo,
+                },
+              };
+            });
+
+            const pageMaxEpisodeNo = pageResponse.data.episodes.reduce(
+              (maxEpisodeNo, episode) =>
+                Math.max(maxEpisodeNo, Number(episode.episodeNo || 0)),
+              0
+            );
+            fetchedMaxEpisodeNo = Math.max(
+              fetchedMaxEpisodeNo,
+              pageMaxEpisodeNo
+            );
+            if (
+              pageMaxEpisodeNo >= episodeScope.maxSelectableEpisodeNo
+            ) {
+              break;
+            }
+          } catch {
+            if (cancelled) return;
+            continue;
           }
-        });
-        availableEpisodeTitleByNo = episodeTitleByNo;
-        applyReadScope(response.data.latestEpisodeNo);
+        }
       } catch {
         if (cancelled) return;
         setReadScope({
