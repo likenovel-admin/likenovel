@@ -101,3 +101,8 @@ test("preview 404는 미리보기 준비 중으로 안내하되 대화 시작은
     /`\$\{selectedEpisodeNo\}화의 \$\{item\.characterName\}에게 말 걸기`/,
   );
 });
+
+test("모달은 원문 회차 요약을 렌더링하지 않는다", () => {
+  assert.doesNotMatch(modalSource, /이 회차 이야기/);
+  assert.doesNotMatch(modalSource, /\{episodeSummary\}/);
+});
