@@ -97,7 +97,8 @@ const CharacterSlot = ({ items, adultYn, cacheIdentity }: Props) => {
     };
     const observer = new IntersectionObserver(
       ([entry]) => {
-        isSectionVisible = entry?.isIntersecting === true;
+        isSectionVisible =
+          entry?.isIntersecting === true && entry.intersectionRatio >= 0.2;
         maybePrefetchCatalog();
       },
       { threshold: 0.2 }
