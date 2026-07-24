@@ -51,6 +51,16 @@ jobs:
           set -e
           printf '%s' "${{ secrets.SERVICE_ENV_PROD }}" | tr -d '\r' > .env.production
 
+      - name: Add Naver site verification (PROD)
+        working-directory: service
+        env:
+          NAVER_SITE_VERIFICATION: ${{ secrets.NAVER_SITE_VERIFICATION }}
+        run: |
+          set -e
+          if [ -n "$NAVER_SITE_VERIFICATION" ]; then
+            printf '\nNAVER_SITE_VERIFICATION=%s\n' "$NAVER_SITE_VERIFICATION" >> .env.production
+          fi
+
       - name: Write .env.production (PROD) - partner
         working-directory: partner
         run: |
