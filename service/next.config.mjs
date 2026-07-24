@@ -1,3 +1,5 @@
+import { isIndexableProductionSite } from "./utils/siteSeo.mjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
@@ -32,7 +34,7 @@ const nextConfig = {
     ];
   },
   async headers() {
-    return [
+    const headers = [
       {
         source: "/.well-known/:file(assetlinks\\.json|apple-app-site-association)",
         headers: [
@@ -41,6 +43,20 @@ const nextConfig = {
         ],
       },
     ];
+
+    if (!isIndexableProductionSite()) {
+      headers.push({
+        source: "/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow, noarchive",
+          },
+        ],
+      });
+    }
+
+    return headers;
   },
   async rewrites() {
     return [

@@ -29,8 +29,9 @@ import {
 } from "@/utils/productPath";
 import { openAiLibrarianPanel } from "@/utils/aiLibrarianPanel";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { type MouseEvent, useEffect, useMemo, useState } from "react";
 import AiLibrarianListPreview from "../aiLibrarian/AiLibrarianListPreview";
 import GeneralPromotionModal from "../modal/GeneralPromotionModal";
 import AdultAgeBadge from "./AdultAgeBadge";
@@ -140,11 +141,21 @@ const ProductListCard = ({
     data.state.canApplyForPaid === true;
   const episodeCount = data.trendindex?.hasEpisodeCount ?? 0;
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
-  const navigateToProductDetail = () => {
+  const productDetailPath = buildProductDetailPath(data.productId);
+  const recordProductDetailEntrySource = () => {
     if (entrySource) {
       setPendingProductDetailEntrySource(data.productId, entrySource);
     }
-    router.push(buildProductDetailPath(data.productId));
+  };
+  const navigateToProductDetail = () => {
+    recordProductDetailEntrySource();
+    router.push(productDetailPath);
+  };
+  const handleProductLinkClick = (
+    event: MouseEvent<HTMLAnchorElement>
+  ) => {
+    event.stopPropagation();
+    recordProductDetailEntrySource();
   };
   const navigateToAiLibrarianDetail = () => {
     if (entrySource) {
@@ -427,7 +438,17 @@ const ProductListCard = ({
           </div>
           <div className=" flex flex-col w-full gap-3pxr">
             <div className="hidden md:flex items-center gap-7pxr">
-              <span className="text-17pxr font-semibold">{data.title}</span>
+              {isAuthorPage ? (
+                <span className="text-17pxr font-semibold">{data.title}</span>
+              ) : (
+                <Link
+                  className="text-17pxr font-semibold"
+                  href={productDetailPath}
+                  onClick={handleProductLinkClick}
+                >
+                  {data.title}
+                </Link>
+              )}
               <ProductStateBadge product={data} hasFreeOrPaidBadge />
             </div>
             <div className="md:hidden flex flex-col gap-3pxr">
@@ -444,12 +465,13 @@ const ProductListCard = ({
                   />
                 )}
               </div>
-              <span
+              <Link
                 className="text-14pxr font-semibold"
-                onClick={() => navigateToProductDetail()}
+                href={productDetailPath}
+                onClick={handleProductLinkClick}
               >
                 {data.title}
-              </span>
+              </Link>
             </div>
             <div className="flex flex-wrap gap-5pxr md:gap-12pxr items-center">
               <UserNickname

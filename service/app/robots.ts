@@ -1,11 +1,19 @@
 import type { MetadataRoute } from "next";
-
-const SITE_URL =
-  process.env.NEXT_PUBLIC_WWW_SERVER_URI || "https://www.likenovel.net";
-
-const getSiteOrigin = () => SITE_URL.replace(/\/+$/, "");
+import {
+  getSiteOrigin,
+  isIndexableProductionSite,
+} from "../utils/siteSeo.mjs";
 
 export default function robots(): MetadataRoute.Robots {
+  if (!isIndexableProductionSite()) {
+    return {
+      rules: {
+        userAgent: "*",
+        allow: "/",
+      },
+    };
+  }
+
   const siteOrigin = getSiteOrigin();
 
   return {
