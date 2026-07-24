@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   filterCharacterChatCatalog,
+  getCharacterChatCatalogPaging,
   isPersonalizedCharacterChatCatalogScope,
+  parseCharacterChatCatalogRole,
   parseCharacterChatCatalogScope,
   parseCharacterChatCatalogSort,
   resolveCharacterChatCatalogScope,
 } from "./catalogFilter.ts";
+import { getCharacterChatRoleMeta } from "../../../utils/characterChatRole.ts";
 
 const pageSource = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 const querySource = readFileSync(
@@ -23,6 +26,10 @@ const gridSource = readFileSync(
 );
 const modalSource = readFileSync(
   new URL("../../../components/main/CharacterChatPreviewModal.tsx", import.meta.url),
+  "utf8"
+);
+const roleSource = readFileSync(
+  new URL("../../../utils/characterChatRole.ts", import.meta.url),
   "utf8"
 );
 const modalContainerSource = readFileSync(
@@ -103,6 +110,37 @@ assert.match(
 );
 assert.match(
   pageSource,
+  /useMemo\(\s*\(\) =>\s*filterCharacterChatCatalog\(/,
+  "Catalog filtering and sorting should be memoized"
+);
+assert.match(
+  pageSource,
+  /const visibleItemCount = catalogPaging\.batchSize \* visibleBatchCount;/,
+  "The visible count should grow in breakpoint-sized two-row batches"
+);
+assert.match(
+  pageSource,
+  /filteredItems\.slice\(0, visibleItemCount\)/,
+  "The catalog should slice filtered results to the current visible count"
+);
+assert.match(
+  pageSource,
+  /<CharacterChatCardGrid[\s\S]*items=\{visibleItems\}/,
+  "The grid should render only the current two-row window"
+);
+assert.match(
+  pageSource,
+  /useEffect\(\(\) => \{\s*setVisibleBatchCount\(1\);\s*\}, \[activeRole, activeScope, activeSort\]\)/,
+  "Scope, role, and sort changes should reset the catalog to its first two rows"
+);
+assert.match(pageSource, /캐릭터 더 보기/);
+assert.match(
+  pageSource,
+  /setVisibleBatchCount\(\s*\(currentCount\) => currentCount \+ 1\s*\)/,
+  "Each more-button click should reveal one additional two-row batch"
+);
+assert.match(
+  pageSource,
   /gap-x-10pxr gap-y-20pxr[^\"]*md:gap-x-20pxr/,
   "The catalog should use the established mobile and desktop grid gaps"
 );
@@ -114,9 +152,18 @@ assert.match(pageSource, /\{ label: "읽고 있는 작품", value: "reading" \}/
 assert.doesNotMatch(pageSource, /처음 보는 작품/);
 assert.match(pageSource, /\{ label: "추천순", value: "recommended" \}/);
 assert.match(pageSource, /\{ label: "등록순", value: "latest" \}/);
+assert.match(pageSource, /\{ label: "모든 캐릭터", value: "all" \}/);
+assert.match(pageSource, /\{ label: "주인공", value: "main_protagonist" \}/);
+assert.match(pageSource, /\{ label: "주요인물", value: "major_character" \}/);
 assert.match(pageSource, /aria-pressed=\{activeScope === scope\.value\}/);
 assert.match(pageSource, /ariaLabel="작품 범위 선택"/);
+assert.match(pageSource, /ariaLabel="캐릭터 역할 선택"/);
 assert.match(pageSource, /ariaLabel="정렬 방식 선택"/);
+assert.ok(
+  pageSource.indexOf('ariaLabel="캐릭터 역할 선택"') <
+    pageSource.indexOf('ariaLabel="정렬 방식 선택"'),
+  "The character-role filter should sit immediately before sorting"
+);
 assert.match(pageSource, /className="md:hidden"/);
 assert.match(
   pageSource,
@@ -132,6 +179,11 @@ assert.match(
   pageSource,
   /searchParams\.get\("sort"\)/,
   "The URL query should keep sorting independent from scope"
+);
+assert.match(
+  pageSource,
+  /searchParams\.get\("role"\)/,
+  "The URL query should keep character role independent from scope and sort"
 );
 assert.match(
   pageSource,
@@ -153,7 +205,7 @@ assert.match(
   /localMockEnabled/,
   "The localhost mock should remain available for personalized-filter QA"
 );
-assert.match(pageSource, /전체 보기/);
+assert.match(pageSource, /필터 초기화/);
 assert.match(
   pageSource,
   /window\.location\.hostname === "localhost"/,
@@ -193,8 +245,12 @@ assert.doesNotMatch(
 );
 assert.match(
   dtoSource.slice(homeDtoStart, catalogDtoStart),
-  /entryEpisodeNo\?: number;/,
-  "Home character slots should remain compatible when the entry episode is absent"
+  /characterRole: CharacterChatRole;[\s\S]*entryEpisodeNo\?: number;/,
+  "Home and catalog cards should share one non-null normalized role contract"
+);
+assert.match(
+  roleSource,
+  /export type CharacterChatRole = "main_protagonist" \| "major_character";/
 );
 assert.match(
   dtoSource.slice(catalogDtoStart),
@@ -209,12 +265,21 @@ assert.doesNotMatch(
 assert.match(gridSource, /<CharacterChatPreviewModal/);
 assert.match(gridSource, /aspect-\[364\/414\]/);
 assert.match(gridSource, /aria-haspopup="dialog"/);
+assert.match(gridSource, /bottom-6pxr[\s\S]*left-6pxr/);
+assert.match(gridSource, /bg-primary-100 text-white/);
+assert.match(
+  gridSource,
+  /border-primary-100 bg-white\/90 text-primary-100/
+);
+assert.match(gridSource, /roleMeta\.gridLabel/);
 assert.match(
   gridSource,
   /text-14pxr font-bold[^\"]*text-black-100/,
   "Character names should use an allowed emphasized font weight"
 );
 assert.doesNotMatch(gridSource, /font-semibold/);
+assert.match(modalSource, /roleMeta\.modalLabel/);
+assert.doesNotMatch(modalSource, /normalizedRoleLabel/);
 assert.match(modalSource, /몇 화에서 주인공과 만날까요\?/);
 assert.match(modalSource, /선택한 회차 이후의 내용은 대화에 반영하지 않아요/);
 assert.doesNotMatch(
@@ -321,6 +386,8 @@ assert.match(
 const catalogItems = [
   {
     characterSlotId: 30,
+    productId: 130,
+    characterRole: "major_character",
     cardOrder: 30,
     createdDate: "2026-07-20T10:00:00+09:00",
     chatQuality: "normal",
@@ -335,6 +402,8 @@ const catalogItems = [
   },
   {
     characterSlotId: 12,
+    productId: 112,
+    characterRole: "major_character",
     cardOrder: 2,
     createdDate: "2026-07-22T10:00:00+09:00",
     chatQuality: "normal",
@@ -349,6 +418,8 @@ const catalogItems = [
   },
   {
     characterSlotId: 11,
+    productId: 111,
+    characterRole: "main_protagonist",
     cardOrder: 2,
     createdDate: "2026-07-22T10:00:00+09:00",
     chatQuality: "normal",
@@ -363,6 +434,8 @@ const catalogItems = [
   },
   {
     characterSlotId: 20,
+    productId: 120,
+    characterRole: "major_character",
     cardOrder: 1,
     createdDate: "2026-07-23T09:00:00+09:00",
     chatQuality: "normal",
@@ -377,6 +450,8 @@ const catalogItems = [
   },
   {
     characterSlotId: 31,
+    productId: 131,
+    characterRole: "main_protagonist",
     cardOrder: 31,
     createdDate: "2026-07-21T10:00:00+09:00",
     chatQuality: "normal",
@@ -395,12 +470,53 @@ const catalogSnapshot = structuredClone(catalogItems);
 assert.equal(parseCharacterChatCatalogScope(null), "all");
 assert.equal(parseCharacterChatCatalogScope("unknown"), "all");
 assert.equal(parseCharacterChatCatalogScope("reading"), "reading");
+assert.equal(parseCharacterChatCatalogRole(null), "all");
+assert.equal(parseCharacterChatCatalogRole("unknown"), "all");
+assert.equal(parseCharacterChatCatalogRole("main_protagonist"), "main_protagonist");
+assert.equal(parseCharacterChatCatalogRole("major_character"), "major_character");
 assert.equal(parseCharacterChatCatalogSort(null), "recommended");
 assert.equal(parseCharacterChatCatalogSort("unknown"), "recommended");
 assert.equal(parseCharacterChatCatalogSort("latest"), "latest");
+assert.deepEqual(getCharacterChatCatalogPaging(767), {
+  columnCount: 2,
+  batchSize: 4,
+});
+assert.deepEqual(getCharacterChatCatalogPaging(768), {
+  columnCount: 4,
+  batchSize: 8,
+});
+assert.deepEqual(getCharacterChatCatalogPaging(1023), {
+  columnCount: 4,
+  batchSize: 8,
+});
+assert.deepEqual(getCharacterChatCatalogPaging(1024), {
+  columnCount: 5,
+  batchSize: 10,
+});
+assert.deepEqual(getCharacterChatCatalogPaging(1279), {
+  columnCount: 5,
+  batchSize: 10,
+});
+assert.deepEqual(getCharacterChatCatalogPaging(1280), {
+  columnCount: 6,
+  batchSize: 12,
+});
+for (const viewportWidth of [375, 768, 1024, 1280]) {
+  const { batchSize, columnCount } =
+    getCharacterChatCatalogPaging(viewportWidth);
+  const firstVisibleItemCount = batchSize;
+  const secondVisibleItemCount = batchSize * 2;
+
+  assert.equal(
+    secondVisibleItemCount - firstVisibleItemCount,
+    columnCount * 2,
+    "Each batch should reveal exactly two more rows at the active breakpoint"
+  );
+}
 
 const recommendedItems = filterCharacterChatCatalog(
   catalogItems,
+  "all",
   "all",
   "recommended"
 );
@@ -432,6 +548,9 @@ const completenessOrderedItems = (
     sceneCount,
   ]) => ({
     characterSlotId,
+    productId: characterSlotId,
+    characterRole:
+      characterSlotId === 1 ? "main_protagonist" : "major_character",
     cardOrder,
     createdDate: "2026-07-23T09:00:00+09:00",
     chatQuality,
@@ -447,6 +566,7 @@ assert.deepEqual(
   filterCharacterChatCatalog(
     completenessOrderedItems,
     "all",
+    "all",
     "recommended"
   ).map((item) => item.characterSlotId),
   [1, 2, 3, 4, 5, 6, 8, 7],
@@ -460,13 +580,19 @@ assert.deepEqual(
   filterCharacterChatCatalog(
     episodeCountChangedItems,
     "all",
+    "all",
     "recommended"
   ).map((item) => item.characterSlotId),
   recommendedItems.map((item) => item.characterSlotId),
   "Recommended order should be independent of synced episode counts"
 );
 
-const latestItems = filterCharacterChatCatalog(catalogItems, "all", "latest");
+const latestItems = filterCharacterChatCatalog(
+  catalogItems,
+  "all",
+  "all",
+  "latest"
+);
 assert.deepEqual(
   latestItems.map((item) => item.characterSlotId),
   [20, 12, 11, 31, 30],
@@ -481,6 +607,7 @@ assert.notEqual(
 const readingItems = filterCharacterChatCatalog(
   catalogItems,
   "reading",
+  "all",
   "recommended"
 );
 assert.deepEqual(
@@ -492,6 +619,7 @@ assert.deepEqual(
 const latestReadingItems = filterCharacterChatCatalog(
   catalogItems,
   "reading",
+  "all",
   "latest"
 );
 assert.deepEqual(
@@ -521,3 +649,92 @@ assert.equal(
 );
 assert.equal(isPersonalizedCharacterChatCatalogScope("all"), false);
 assert.equal(isPersonalizedCharacterChatCatalogScope("reading"), true);
+
+assert.deepEqual(
+  filterCharacterChatCatalog(
+    catalogItems,
+    "all",
+    "main_protagonist",
+    "recommended"
+  ).map((item) => item.characterSlotId),
+  [11, 31],
+  "The role filter should independently retain protagonists"
+);
+assert.deepEqual(
+  filterCharacterChatCatalog(
+    catalogItems,
+    "all",
+    "major_character",
+    "recommended"
+  ).map((item) => item.characterSlotId),
+  [12, 20, 30],
+  "The role filter should independently retain major characters"
+);
+
+const sameQualityDifferentRoles = [
+  {
+    ...catalogItems[0],
+    characterSlotId: 202,
+    productId: 202,
+    characterRole: "major_character" as const,
+    fullReady: true,
+    chatQuality: "good" as const,
+  },
+  {
+    ...catalogItems[0],
+    characterSlotId: 201,
+    productId: 201,
+    characterRole: "main_protagonist" as const,
+    fullReady: true,
+    chatQuality: "good" as const,
+  },
+];
+assert.deepEqual(
+  filterCharacterChatCatalog(
+    sameQualityDifferentRoles,
+    "all",
+    "all",
+    "recommended"
+  ).map((item) => item.characterSlotId),
+  [201, 202],
+  "Role should break only otherwise-complete recommendation ties"
+);
+
+const adjacentProductItems = [
+  {
+    ...sameQualityDifferentRoles[0],
+    characterSlotId: 301,
+    productId: 300,
+  },
+  {
+    ...sameQualityDifferentRoles[0],
+    characterSlotId: 302,
+    productId: 300,
+  },
+  {
+    ...sameQualityDifferentRoles[0],
+    characterSlotId: 303,
+    productId: 301,
+  },
+];
+assert.deepEqual(
+  filterCharacterChatCatalog(
+    adjacentProductItems,
+    "all",
+    "all",
+    "recommended"
+  ).map((item) => item.productId),
+  [300, 301, 300],
+  "Recommended cards should spread adjacent characters from the same work inside one quality band"
+);
+
+assert.deepEqual(getCharacterChatRoleMeta("main_protagonist"), {
+  gridLabel: "주인공",
+  modalLabel: "메인 주인공",
+  isProtagonist: true,
+});
+assert.deepEqual(getCharacterChatRoleMeta("major_character"), {
+  gridLabel: "주요인물",
+  modalLabel: "주요 인물",
+  isProtagonist: false,
+});

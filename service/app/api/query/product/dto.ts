@@ -6,6 +6,7 @@ import {
   IProduct,
   IRentalTicket,
 } from "@/types";
+import type { CharacterChatRole } from "@/utils/characterChatRole";
 
 export interface IUseSelectProductsResponse {
   data: IProduct[];
@@ -191,6 +192,7 @@ export interface IMainCharacterSlotItem {
   productId: number;
   characterScopeKey: string;
   characterName: string;
+  characterRole: CharacterChatRole;
   characterImagePath: string | null;
   cardOrder: number;
   productTitle: string;

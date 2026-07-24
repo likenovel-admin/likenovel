@@ -16,6 +16,7 @@ import {
 } from "@/constants/common";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import { resolveCharacterChatEpisodeScope } from "@/utils/characterChatEpisodeScope";
+import { getCharacterChatRoleMeta } from "@/utils/characterChatRole";
 import { getWebsochatErrorStatus } from "@/utils/websochatError";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
@@ -115,17 +116,7 @@ const CharacterChatPreviewContent = ({
       ? lastSuccessfulPreviewRef.current.data
       : undefined;
   const apiPreview = currentApiPreview || retainedApiPreview;
-  const rawRoleLabel = String(
-    apiPreview?.roleLabel || previewDetail?.roleLabel || ""
-  ).trim();
-  const normalizedRoleLabel = rawRoleLabel
-    .replace(/\s+/g, " ")
-    .toLowerCase();
-  const roleLabel =
-    normalizedRoleLabel === "main_protagonist" ||
-    normalizedRoleLabel === "main protagonist"
-      ? "메인 주인공"
-      : rawRoleLabel;
+  const roleMeta = getCharacterChatRoleMeta(item.characterRole);
   const aliases = (apiPreview?.aliases || previewDetail?.aliases || [])
     .filter(Boolean)
     .slice(0, 2);
@@ -248,20 +239,16 @@ const CharacterChatPreviewContent = ({
                 {authorName}
               </p>
             )}
-            {(roleLabel || aliases.length > 0) && (
-              <div className="mt-12pxr flex flex-wrap items-center gap-x-8pxr gap-y-5pxr">
-                {roleLabel && (
-                  <span className="rounded-[4px] bg-light-gray-100 px-7pxr py-4pxr text-11pxr font-medium leading-[14px] text-dark-gray-500">
-                    {roleLabel}
-                  </span>
-                )}
-                {aliases.length > 0 && (
-                  <span className="text-12pxr leading-[17px] text-dark-gray-500">
-                    {aliases.join(" · ")}
-                  </span>
-                )}
-              </div>
-            )}
+            <div className="mt-12pxr flex flex-wrap items-center gap-x-8pxr gap-y-5pxr">
+              <span className="rounded-[4px] bg-light-gray-100 px-7pxr py-4pxr text-11pxr font-medium leading-[14px] text-dark-gray-500">
+                {roleMeta.modalLabel}
+              </span>
+              {aliases.length > 0 && (
+                <span className="text-12pxr leading-[17px] text-dark-gray-500">
+                  {aliases.join(" · ")}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

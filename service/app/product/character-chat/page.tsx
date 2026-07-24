@@ -10,14 +10,17 @@ import useAuthStore from "@/store/authStore";
 import { getHomeQueryState } from "@/utils/homeQueryState";
 import { findPreviousNonMatchingPath } from "@/utils/navigationHistory";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Return from "/public/images/return.svg";
 import {
   filterCharacterChatCatalog,
+  getCharacterChatCatalogPaging,
   isPersonalizedCharacterChatCatalogScope,
+  parseCharacterChatCatalogRole,
   parseCharacterChatCatalogScope,
   parseCharacterChatCatalogSort,
   resolveCharacterChatCatalogScope,
+  type CharacterChatCatalogRole,
   type CharacterChatCatalogScope,
   type CharacterChatCatalogSort,
 } from "./catalogFilter";
@@ -36,6 +39,15 @@ const CATALOG_SORT_OPTIONS: Array<{
 }> = [
   { label: "추천순", value: "recommended" },
   { label: "등록순", value: "latest" },
+];
+
+const CATALOG_ROLE_OPTIONS: Array<{
+  label: string;
+  value: CharacterChatCatalogRole;
+}> = [
+  { label: "모든 캐릭터", value: "all" },
+  { label: "주인공", value: "main_protagonist" },
+  { label: "주요인물", value: "major_character" },
 ];
 
 const LOCAL_MOCK_CHARACTERS: Array<[string, string]> = [
@@ -83,6 +95,8 @@ const LOCAL_MOCK_ITEMS: ICharacterChatCatalogItem[] =
       characterScopeKey:
         index === 0 ? "character:윤서하" : `local_mock_character_${index + 1}`,
       characterName,
+      characterRole:
+        index % 3 === 2 ? "major_character" : "main_protagonist",
       characterImagePath: `/images/covers/cover_${String(index + 1).padStart(2, "0")}.jpg`,
       cardOrder: index + 1,
       createdDate: `2026-07-${String(22 - index).padStart(2, "0")}T09:00:00+09:00`,
@@ -110,6 +124,8 @@ const LOCAL_MOCK_ITEMS: ICharacterChatCatalogItem[] =
         : null,
     };
   });
+
+const EMPTY_CATALOG_ITEMS: ICharacterChatCatalogItem[] = [];
 
 const LOCAL_MOCK_READ_EPISODE_BY_PRODUCT = Object.fromEntries(
   LOCAL_MOCK_ITEMS.map((item) => [
@@ -158,6 +174,12 @@ function CharacterChatCatalogPageContent() {
   const searchParams = useSearchParams();
   const { user, isAuthenticated, accessToken, isAuthInitialized } = useAuthStore();
   const [localMockEnabled, setLocalMockEnabled] = useState<boolean | null>(null);
+  const [visibleBatchCount, setVisibleBatchCount] = useState(1);
+  const [catalogPaging, setCatalogPaging] = useState(() =>
+    getCharacterChatCatalogPaging(
+      typeof window === "undefined" ? 0 : window.innerWidth
+    )
+  );
   const adultYn = user?.isOnAdult ? "Y" : "N";
   const queryState = getHomeQueryState({
     isAuthInitialized,
@@ -168,6 +190,7 @@ function CharacterChatCatalogPageContent() {
   const requestedScope = parseCharacterChatCatalogScope(
     searchParams.get("scope")
   );
+  const activeRole = parseCharacterChatCatalogRole(searchParams.get("role"));
   const activeSort = parseCharacterChatCatalogSort(searchParams.get("sort"));
   const canUsePersonalizedScope =
     localMockEnabled === true ||
@@ -197,6 +220,27 @@ function CharacterChatCatalogPageContent() {
 
     setLocalMockEnabled(isLocalMock);
   }, [searchParams]);
+
+  useEffect(() => {
+    const syncCatalogPaging = () => {
+      const nextPaging = getCharacterChatCatalogPaging(window.innerWidth);
+
+      setCatalogPaging((currentPaging) =>
+        currentPaging.columnCount === nextPaging.columnCount
+          ? currentPaging
+          : nextPaging
+      );
+    };
+
+    syncCatalogPaging();
+    window.addEventListener("resize", syncCatalogPaging);
+
+    return () => window.removeEventListener("resize", syncCatalogPaging);
+  }, []);
+
+  useEffect(() => {
+    setVisibleBatchCount(1);
+  }, [activeRole, activeScope, activeSort]);
 
   const handleScopeChange = useCallback(
     (scope: CharacterChatCatalogScope) => {
@@ -247,6 +291,38 @@ function CharacterChatCatalogPageContent() {
     [router, searchParams]
   );
 
+  const handleRoleChange = useCallback(
+    (role: CharacterChatCatalogRole) => {
+      const nextSearchParams = new URLSearchParams(searchParams.toString());
+      nextSearchParams.delete("filter");
+      if (role === "all") {
+        nextSearchParams.delete("role");
+      } else {
+        nextSearchParams.set("role", role);
+      }
+      const queryString = nextSearchParams.toString();
+      const targetPath = `${window.location.pathname}${
+        queryString ? `?${queryString}` : ""
+      }`;
+
+      router.replace(targetPath, { scroll: false });
+    },
+    [router, searchParams]
+  );
+
+  const handleFilterReset = useCallback(() => {
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+    nextSearchParams.delete("filter");
+    nextSearchParams.delete("scope");
+    nextSearchParams.delete("role");
+    const queryString = nextSearchParams.toString();
+    const targetPath = `${window.location.pathname}${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    router.replace(targetPath, { scroll: false });
+  }, [router, searchParams]);
+
   useEffect(() => {
     if (
       isAuthInitialized &&
@@ -277,11 +353,16 @@ function CharacterChatCatalogPageContent() {
   );
   const items = localMockEnabled
     ? LOCAL_MOCK_ITEMS
-    : data?.data ?? [];
-  const filteredItems = filterCharacterChatCatalog(
-    items,
-    activeScope,
-    activeSort
+    : data?.data ?? EMPTY_CATALOG_ITEMS;
+  const filteredItems = useMemo(
+    () =>
+      filterCharacterChatCatalog(items, activeScope, activeRole, activeSort),
+    [activeRole, activeScope, activeSort, items]
+  );
+  const visibleItemCount = catalogPaging.batchSize * visibleBatchCount;
+  const visibleItems = useMemo(
+    () => filteredItems.slice(0, visibleItemCount),
+    [filteredItems, visibleItemCount]
   );
   const showLoading = localMockEnabled === null || isLoading;
   const showError = localMockEnabled === false && isError;
@@ -308,7 +389,7 @@ function CharacterChatCatalogPageContent() {
           <p className="mt-6pxr text-14pxr leading-[20px] text-dark-gray-500">
             매일 무료로 즐길 수 있어요.
           </p>
-          <div className="mt-16pxr flex items-center justify-between gap-8pxr">
+          <div className="mt-16pxr flex flex-col gap-8pxr md:flex-row md:items-center">
             <nav
               aria-label="작품 범위"
               className="hidden items-center gap-8pxr md:flex"
@@ -353,7 +434,18 @@ function CharacterChatCatalogPageContent() {
                 className="h-[36px] w-[152px] text-13pxr text-black-100"
               />
             </div>
-            <div className="ml-auto">
+            <div className="flex items-center justify-end gap-8pxr md:ml-auto">
+              <SelectBox
+                ariaLabel="캐릭터 역할 선택"
+                options={CATALOG_ROLE_OPTIONS}
+                value={activeRole}
+                onChange={(event) =>
+                  handleRoleChange(
+                    event.target.value as CharacterChatCatalogRole
+                  )
+                }
+                className="h-[36px] w-[128px] text-13pxr text-black-100"
+              />
               <SelectBox
                 ariaLabel="정렬 방식 선택"
                 options={CATALOG_SORT_OPTIONS}
@@ -403,29 +495,48 @@ function CharacterChatCatalogPageContent() {
               <p>이 조건에 맞는 작품이 없어요.</p>
               <button
                 type="button"
-                onClick={() => handleScopeChange("all")}
+                onClick={handleFilterReset}
                 className="rounded-[8px] border border-light-gray-400 bg-white px-12pxr py-7pxr font-medium text-black-100 hover:border-dark-gray-300"
               >
-                전체 보기
+                필터 초기화
               </button>
             </div>
           )}
         {!showLoading && !showError && filteredItems.length > 0 && (
-          <CharacterChatCardGrid
-            items={filteredItems}
-            adultYn={adultYn}
-            entrySource="character_catalog"
-            previewReadEpisodeByProduct={
-              localMockEnabled ? LOCAL_MOCK_READ_EPISODE_BY_PRODUCT : undefined
-            }
-            previewDetailByProduct={
-              localMockEnabled
-                ? LOCAL_MOCK_PREVIEW_DETAIL_BY_PRODUCT
-                : undefined
-            }
-            imageSizes="(max-width: 767px) 46vw, (max-width: 1023px) 23vw, (max-width: 1279px) 18vw, 170px"
-            className="grid grid-cols-2 gap-x-10pxr gap-y-20pxr md:grid-cols-4 md:gap-x-20pxr lg:grid-cols-5 xl:grid-cols-6"
-          />
+          <>
+            <CharacterChatCardGrid
+              items={visibleItems}
+              adultYn={adultYn}
+              entrySource="character_catalog"
+              previewReadEpisodeByProduct={
+                localMockEnabled
+                  ? LOCAL_MOCK_READ_EPISODE_BY_PRODUCT
+                  : undefined
+              }
+              previewDetailByProduct={
+                localMockEnabled
+                  ? LOCAL_MOCK_PREVIEW_DETAIL_BY_PRODUCT
+                  : undefined
+              }
+              imageSizes="(max-width: 767px) 46vw, (max-width: 1023px) 23vw, (max-width: 1279px) 18vw, 170px"
+              className="grid grid-cols-2 gap-x-10pxr gap-y-20pxr md:grid-cols-4 md:gap-x-20pxr lg:grid-cols-5 xl:grid-cols-6"
+            />
+            {visibleItems.length < filteredItems.length && (
+              <div className="mt-28pxr flex justify-center">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleBatchCount(
+                      (currentCount) => currentCount + 1
+                    )
+                  }
+                  className="h-[44px] rounded-[8px] border border-light-gray-400 bg-white px-20pxr text-14pxr font-medium text-black-100 hover:border-dark-gray-300"
+                >
+                  캐릭터 더 보기
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </main>

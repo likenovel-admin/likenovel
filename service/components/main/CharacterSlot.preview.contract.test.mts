@@ -107,12 +107,10 @@ test("모달은 원문 회차 요약을 렌더링하지 않는다", () => {
   assert.doesNotMatch(modalSource, /\{episodeSummary\}/);
 });
 
-test("내부 주인공 role만 사용자용 문구로 정규화한다", () => {
-  assert.match(modalSource, /const rawRoleLabel =/);
-  assert.match(modalSource, /const normalizedRoleLabel =/);
-  assert.match(modalSource, /normalizedRoleLabel === "main_protagonist"/);
-  assert.match(modalSource, /normalizedRoleLabel === "main protagonist"/);
-  assert.match(modalSource, /\? "메인 주인공"[\s\S]*: rawRoleLabel/);
+test("정규화된 캐릭터 role을 사용자용 문구로 표시한다", () => {
+  assert.match(modalSource, /getCharacterChatRoleMeta/);
+  assert.match(modalSource, /roleMeta\.modalLabel/);
+  assert.doesNotMatch(modalSource, /normalizedRoleLabel|rawRoleLabel/);
 });
 
 test("대화 스타일은 공백을 정리하고 무의미한 보통 값만 숨긴다", () => {
