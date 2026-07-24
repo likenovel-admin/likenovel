@@ -9,6 +9,7 @@ import {
 } from "../utils/siteSeo.mjs";
 import {
   DEFAULT_SITE_DESCRIPTION,
+  buildHomeMetadata,
   buildPageMetadata,
   buildRootMetadata,
 } from "../utils/siteSeoMetadata.ts";
@@ -37,6 +38,22 @@ try {
   });
   assert.equal(prodRootMetadata.description, DEFAULT_SITE_DESCRIPTION);
   assert.equal(prodRootMetadata.metadataBase?.toString(), `${PRODUCTION_SITE_ORIGIN}/`);
+  assert.equal(
+    prodRootMetadata.alternates,
+    undefined,
+    "root metadata must not make every route canonical to home",
+  );
+  assert.equal(
+    prodRootMetadata.openGraph?.url,
+    undefined,
+    "root metadata must not make every route's Open Graph URL home",
+  );
+  const prodHomeMetadata = buildHomeMetadata();
+  assert.equal(
+    prodHomeMetadata.alternates?.canonical,
+    PRODUCTION_SITE_ORIGIN,
+  );
+  assert.equal(prodHomeMetadata.openGraph?.url, PRODUCTION_SITE_ORIGIN);
   assert.deepEqual(prodRootMetadata.robots, {
     index: true,
     follow: true,
@@ -44,7 +61,7 @@ try {
   assert.equal(await getSearchHeader(), undefined);
 
   const prodSitemap = sitemap();
-  assert.equal(prodSitemap.length, 6);
+  assert.equal(prodSitemap.length, 7);
   assert.equal(
     prodSitemap.every((entry) => entry.url.startsWith(PRODUCTION_SITE_ORIGIN)),
     true,
@@ -67,6 +84,10 @@ try {
     categoryMetadata.alternates?.canonical,
     `${PRODUCTION_SITE_ORIGIN}/product/free/normal`,
   );
+  assert.equal(
+    categoryMetadata.openGraph?.url,
+    `${PRODUCTION_SITE_ORIGIN}/product/free/normal`,
+  );
 
   process.env.NEXT_PUBLIC_WWW_SERVER_URI = "https://www.likenovel.dev/";
 
@@ -76,6 +97,10 @@ try {
     index: false,
     follow: false,
   });
+  assert.equal(
+    buildHomeMetadata().alternates?.canonical,
+    "https://www.likenovel.dev",
+  );
   assert.deepEqual(await getSearchHeader(), {
     key: "X-Robots-Tag",
     value: "noindex, nofollow, noarchive",
@@ -109,32 +134,50 @@ try {
   assert.match(rootLayoutSource, /<html lang="ko">/);
   assert.match(rootLayoutSource, /buildRootMetadata\(\)/);
 
+  const homePageSource = readFileSync(
+    new URL("./page.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.doesNotMatch(homePageSource, /^"use client"/);
+  assert.match(homePageSource, /buildHomeMetadata\(\)/);
+
   const routeLayouts = [
     {
       path: "./product/free/normal/layout.tsx",
       canonicalPath: "/product/free/normal",
+      title: "무료 일반연재",
     },
     {
       path: "./product/paid/layout.tsx",
       canonicalPath: "/product/paid",
+      title: "유료연재",
     },
     {
       path: "./product/top50/free-top/layout.tsx",
       canonicalPath: "/product/top50/free-top",
+      title: "무료연재 TOP50",
     },
     {
       path: "./product/top50/paid-top/layout.tsx",
       canonicalPath: "/product/top50/paid-top",
+      title: "유료연재 TOP50",
+    },
+    {
+      path: "./product/character-chat/layout.tsx",
+      canonicalPath: "/product/character-chat",
+      title: "주인공챗",
     },
     {
       path: "./websochat/layout.tsx",
       canonicalPath: "/websochat",
+      title: "웹소챗",
     },
   ];
 
-  routeLayouts.forEach(({ path, canonicalPath }) => {
+  routeLayouts.forEach(({ path, canonicalPath, title }) => {
     const source = readFileSync(new URL(path, import.meta.url), "utf8");
     assert.match(source, /buildPageMetadata\(\{/);
+    assert.ok(source.includes(`title: "${title}"`));
     assert.ok(source.includes(`path: "${canonicalPath}"`));
   });
 } finally {
