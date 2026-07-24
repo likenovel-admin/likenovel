@@ -10,7 +10,7 @@ const cpPromotionSource = readSource("./CPPromotion.tsx");
 const productListCardSource = readSource("../common/ProductListCard.tsx");
 const productCoverCardSource = readSource("../common/ProductCoverCard.tsx");
 const tasteSectionSource = readSource("../recommendation/TasteSection.tsx");
-const homePageSource = readSource("../../app/page.tsx");
+const homePageSource = readSource("../../app/HomePageClient.tsx");
 
 assert.match(freeTopSource, /optimized:\s*true/);
 assert.match(freeTopSource, /sizes:\s*"56px"/);
