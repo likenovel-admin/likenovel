@@ -13,6 +13,7 @@ import {
   createSingleFlightRunner,
   queueHomeCharacterChatLaunch,
 } from "@/utils/characterChatLaunch";
+import { getCharacterChatRoleMeta } from "@/utils/characterChatRole";
 import { buildProductDetailPath } from "@/utils/productPath";
 import { getWebsochatSafeUserMessage } from "@/utils/websochatError";
 import {
@@ -124,12 +125,13 @@ const CharacterChatCardGrid = ({
           const characterImage = resolveProductCoverImage(item.characterImagePath);
           const isDefaultImage = characterImage === DEFAULT_PRODUCT_IMAGE;
           const isLaunching = launchingScopeKey === item.characterScopeKey;
+          const roleMeta = getCharacterChatRoleMeta(item.characterRole);
 
           return (
             <li key={item.characterSlotId}>
               <button
                 type="button"
-                aria-label={`${item.characterName} · ${item.productTitle}`}
+                aria-label={`${roleMeta.gridLabel} · ${item.characterName} · ${item.productTitle}`}
                 aria-haspopup="dialog"
                 aria-busy={isLaunching}
                 disabled={launchingScopeKey !== null}
@@ -147,6 +149,16 @@ const CharacterChatCardGrid = ({
                       isLaunching ? "scale-[1.01] opacity-60" : ""
                     }`}
                   />
+                  <span
+                    aria-hidden="true"
+                    className={`absolute bottom-6pxr left-6pxr z-[1] rounded-[4px] border px-5pxr py-2pxr text-10pxr font-medium leading-[13px] shadow-sm md:bottom-8pxr md:left-8pxr md:px-7pxr md:py-3pxr md:text-11pxr md:leading-[14px] ${
+                      roleMeta.isProtagonist
+                        ? "border-primary-100 bg-primary-100 text-white"
+                        : "border-primary-100 bg-white/90 text-primary-100"
+                    }`}
+                  >
+                    {roleMeta.gridLabel}
+                  </span>
                   {item.syncedLatestEpisodeNo > 0 && (
                     <span className="absolute right-8pxr top-8pxr z-[1] rounded-full bg-black/70 px-8pxr py-4pxr text-11pxr font-medium leading-[14px] text-white shadow-sm md:text-12pxr">
                       ~{item.syncedLatestEpisodeNo}화까지
