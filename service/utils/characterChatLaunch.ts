@@ -138,6 +138,15 @@ export const savePendingHomeCharacterChatLaunch = ({
   );
 };
 
+export const clearPendingHomeCharacterChatLaunch = ({
+  storage = getCharacterChatSessionStorage() ?? undefined,
+}: {
+  storage?: CharacterChatStorage;
+} = {}) => {
+  if (!storage) return;
+  storage.removeItem(PENDING_HOME_CHARACTER_CHAT_LAUNCH_KEY);
+};
+
 export const consumePendingHomeCharacterChatLaunch = ({
   storage = getCharacterChatSessionStorage() ?? undefined,
   now = Date.now(),
@@ -148,7 +157,7 @@ export const consumePendingHomeCharacterChatLaunch = ({
   if (!storage) return null;
 
   const raw = storage.getItem(PENDING_HOME_CHARACTER_CHAT_LAUNCH_KEY);
-  storage.removeItem(PENDING_HOME_CHARACTER_CHAT_LAUNCH_KEY);
+  clearPendingHomeCharacterChatLaunch({ storage });
   if (!raw) return null;
 
   try {

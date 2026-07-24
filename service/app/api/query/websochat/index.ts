@@ -382,11 +382,16 @@ export const useCreateWebsochatSession = () => {
       game_read_episode_to?: number | null;
       account_read_episode_to?: number | null;
       model_key?: WebsochatModelKey;
+      signal?: AbortSignal;
     }
   >({
-    mutationFn: async (body) => {
+    mutationFn: async ({ signal, ...body }) => {
       const adultYn = body.adult_yn ?? "N";
-      const response = await instance.post(`/v1/command/websochat/sessions?adult_yn=${adultYn}`, body);
+      const response = await instance.post(
+        `/v1/command/websochat/sessions?adult_yn=${adultYn}`,
+        body,
+        { signal }
+      );
       return response.data;
     },
   });

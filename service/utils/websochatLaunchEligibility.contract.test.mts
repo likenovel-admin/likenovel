@@ -6,6 +6,8 @@ import {
   isVisibleWebsochatComposerShortcutAction,
   isVisibleWebsochatPublicShortcutAction,
   isWebsochatModeAllowed,
+  consumeWebsochatStartChooserRequest,
+  requestWebsochatStartChooser,
 } from "./websochatLaunch.ts";
 
 const paidReadyProduct = {
@@ -71,4 +73,37 @@ assert.deepEqual(
     { label: "작품 대화", modeKey: "qa" },
     { label: "다음 전개 예상", modeKey: "qa" },
   ]
+);
+
+const chooserRequestStorage = new Map<string, string>();
+const chooserStorage = {
+  getItem: (key: string) => chooserRequestStorage.get(key) ?? null,
+  setItem: (key: string, value: string) => {
+    chooserRequestStorage.set(key, value);
+  },
+  removeItem: (key: string) => {
+    chooserRequestStorage.delete(key);
+  },
+};
+
+assert.equal(
+  consumeWebsochatStartChooserRequest({ storage: chooserStorage }),
+  false
+);
+chooserRequestStorage.set(
+  "pending_websochat_launch",
+  JSON.stringify({ productId: 100 })
+);
+requestWebsochatStartChooser({ storage: chooserStorage });
+assert.equal(
+  chooserRequestStorage.has("pending_websochat_launch"),
+  false
+);
+assert.equal(
+  consumeWebsochatStartChooserRequest({ storage: chooserStorage }),
+  true
+);
+assert.equal(
+  consumeWebsochatStartChooserRequest({ storage: chooserStorage }),
+  false
 );

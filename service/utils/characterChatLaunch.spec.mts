@@ -5,11 +5,13 @@ import {
   buildCharacterChatChoiceMessage,
   buildHomeCharacterChatSessionRequest,
   buildHomeCharacterWarmupMessages,
+  clearPendingHomeCharacterChatLaunch,
   consumePendingHomeCharacterChatLaunch,
   createSingleFlightRunner,
   findRecoverableHomeCharacterChatSession,
   queueHomeCharacterChatLaunch,
   resolveCharacterChatComposerPlaceholder,
+  savePendingHomeCharacterChatLaunch,
 } from "./characterChatLaunch.ts";
 import {
   resolveWebsochatActiveSession,
@@ -164,6 +166,22 @@ test("오래된 홈 캐릭터 진입 요청은 소비하지 않는다", () => {
 
   assert.equal(
     consumePendingHomeCharacterChatLaunch({ storage, now: 62_001 }),
+    null
+  );
+});
+
+test("chooser 진입은 저장된 홈 캐릭터 launch를 소비 전에 제거한다", () => {
+  const storage = createMemoryStorage();
+  savePendingHomeCharacterChatLaunch({
+    payload: buildPendingLaunch(),
+    storage,
+    now: 1000,
+  });
+
+  clearPendingHomeCharacterChatLaunch({ storage });
+
+  assert.equal(
+    consumePendingHomeCharacterChatLaunch({ storage, now: 1500 }),
     null
   );
 });

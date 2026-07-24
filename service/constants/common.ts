@@ -21,6 +21,8 @@ export const ADMIN_EMAIL = "mailto:admin@likenovel.net";
 export const SHOW_PRODUCT_EVALUATION_SURFACE = false;
 export const WEBSOCHAT_NAV_LABEL = "웹소챗";
 export const WEBSOCHAT_PREPARE_NAV_EVENT = "likenovel:websochat:prepare-nav";
+export const WEBSOCHAT_START_CHOOSER_EVENT =
+  "likenovel:websochat:start-chooser";
 export const WEBSOCHAT_MESSAGE_MAX_LENGTH = 2000;
 export const WEBSOCHAT_GHOST_QUESTIONS = [
   "지금까지 떡밥 뭐 남았어?",

@@ -1,8 +1,16 @@
-import { WEBSOCHAT_NAV_LABEL, WEBSOCHAT_PREPARE_NAV_EVENT } from "@/constants/common";
+import {
+  WEBSOCHAT_NAV_LABEL,
+  WEBSOCHAT_PREPARE_NAV_EVENT,
+  WEBSOCHAT_START_CHOOSER_EVENT,
+} from "@/constants/common";
 import useConfirmStore from "@/store/confirmStore";
 import useSearchModalStore from "@/store/searchModalStore";
+import { clearPendingHomeCharacterChatLaunch } from "@/utils/characterChatLaunch";
 import { getUser } from "@/utils/getUser";
-import { saveWebsochatReturnPath } from "@/utils/websochatLaunch";
+import {
+  requestWebsochatStartChooser,
+  saveWebsochatReturnPath,
+} from "@/utils/websochatLaunch";
 import { usePathname, useRouter } from "next/navigation";
 import SquareBadge from "../common/SquareBadge";
 import AlarmMenu from "./AlarmMenu";
@@ -22,10 +30,18 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
   const { isOpen, setIsOpen } = useSearchModalStore();
 
   const navigate = (href: string) => {
-    if (href === pathname) return;
     if (href === "/websochat") {
+      clearPendingHomeCharacterChatLaunch();
+      requestWebsochatStartChooser();
+      if (href === pathname) {
+        window.dispatchEvent(new Event(WEBSOCHAT_START_CHOOSER_EVENT));
+        return;
+      }
       saveWebsochatReturnPath();
+      router.push(href);
+      return;
     }
+    if (href === pathname) return;
     if (pathname === "/websochat") {
       window.dispatchEvent(new Event(WEBSOCHAT_PREPARE_NAV_EVENT));
       window.requestAnimationFrame(() => router.push(href));
