@@ -52,6 +52,7 @@ const CharacterChatPreviewContent = ({
   initialReadEpisodeNo,
   maxSelectableEpisodeNo,
   selectableEpisodeNos,
+  episodeTitleByNo,
   previewDetail,
   onLaunch,
   onGoToProduct,
@@ -63,6 +64,7 @@ const CharacterChatPreviewContent = ({
   initialReadEpisodeNo: number;
   maxSelectableEpisodeNo: number;
   selectableEpisodeNos: number[];
+  episodeTitleByNo: Record<number, string>;
 }) => {
   const characterImage = resolveProductCoverImage(item.characterImagePath);
   const isDefaultImage = characterImage === DEFAULT_PRODUCT_IMAGE;
@@ -113,9 +115,17 @@ const CharacterChatPreviewContent = ({
       ? lastSuccessfulPreviewRef.current.data
       : undefined;
   const apiPreview = currentApiPreview || retainedApiPreview;
-  const roleLabel = String(
+  const rawRoleLabel = String(
     apiPreview?.roleLabel || previewDetail?.roleLabel || ""
   ).trim();
+  const normalizedRoleLabel = rawRoleLabel
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+  const roleLabel =
+    normalizedRoleLabel === "main_protagonist" ||
+    normalizedRoleLabel === "main protagonist"
+      ? "메인 주인공"
+      : rawRoleLabel;
   const aliases = (apiPreview?.aliases || previewDetail?.aliases || [])
     .filter(Boolean)
     .slice(0, 2);
@@ -132,7 +142,10 @@ const CharacterChatPreviewContent = ({
     ...(speechStyle.tone || []),
     speechStyle.formality,
     speechStyle.sentenceLength,
-  ].filter((value): value is string => Boolean(value));
+  ]
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.trim())
+    .filter((value) => Boolean(value) && value !== "보통");
   const sceneEpisodeNo = apiPreview?.episodeNo || selectedEpisodeNo;
   const sceneSummary = String(apiPreview?.sceneSummary || "").trim();
   const sceneExcerpt = String(apiPreview?.sceneExcerpt || "").trim();
@@ -149,6 +162,12 @@ const CharacterChatPreviewContent = ({
   const shouldShowInitialLoader = isPreviewLoading && !hasStablePreview;
   const sceneStatusContent = isSceneStatusVisible ? (
     <>
+      {!isPreviewUnavailable && (
+        <span
+          aria-hidden
+          className="mb-10pxr h-6 w-6 animate-spin rounded-full border-2 border-light-gray-500 border-t-primary-100"
+        />
+      )}
       <p role="status">
         {isPreviewNotFound
           ? "장면 미리보기는 준비 중이지만 대화는 시작할 수 있어요."
@@ -273,7 +292,13 @@ const CharacterChatPreviewContent = ({
 
         {shouldShowInitialLoader && (
           <div className="mt-16pxr border-t border-light-gray-400 pt-16pxr text-center text-13pxr text-dark-gray-400">
-            {selectedEpisodeNo}화 장면을 불러오는 중이에요.
+            <span
+              aria-hidden
+              className="mx-auto mb-10pxr block h-6 w-6 animate-spin rounded-full border-2 border-light-gray-500 border-t-primary-100"
+            />
+            <p role="status">
+              {selectedEpisodeNo}화 장면을 불러오는 중이에요.
+            </p>
           </div>
         )}
 
@@ -373,9 +398,11 @@ const CharacterChatPreviewContent = ({
           >
             {selectableEpisodeNos.map((episodeNo) => {
               const isRecentRead = episodeNo === accountReadEpisodeNo;
+              const episodeLabel =
+                episodeTitleByNo[episodeNo]?.trim() || `${episodeNo}화`;
               return (
                 <option key={episodeNo} value={episodeNo}>
-                  {episodeNo}화{isRecentRead ? " · 최근 읽은 회차" : ""}
+                  {episodeLabel}{isRecentRead ? " · 최근 읽은 회차" : ""}
                 </option>
               );
             })}
@@ -432,6 +459,7 @@ const CharacterChatPreviewModal = ({
     initialReadEpisodeNo: 1,
     maxSelectableEpisodeNo: 1,
     selectableEpisodeNos: [1],
+    episodeTitleByNo: {} as Record<number, string>,
   });
 
   useEffect(() => {
@@ -517,6 +545,7 @@ const CharacterChatPreviewModal = ({
         initialReadEpisodeNo: 1,
         maxSelectableEpisodeNo: 1,
         selectableEpisodeNos: [1],
+        episodeTitleByNo: {},
       });
       return;
     }
@@ -527,7 +556,11 @@ const CharacterChatPreviewModal = ({
       accountReadEpisodeNo: null,
     });
 
-    const applyReadScope = (rawReadEpisodeNo: number) => {
+    let availableEpisodeTitleByNo: Record<number, string> = {};
+    const applyReadScope = (
+      rawReadEpisodeNo: number,
+      episodeTitleByNo: Record<number, string> = availableEpisodeTitleByNo
+    ) => {
       if (cancelled) return;
       const accountReadEpisodeNo = Math.max(Number(rawReadEpisodeNo || 0), 0);
       const episodeScope = resolveCharacterChatEpisodeScope({
@@ -539,6 +572,7 @@ const CharacterChatPreviewModal = ({
         characterSlotId: item.characterSlotId,
         status: "ready",
         accountReadEpisodeNo: accountReadEpisodeNo || null,
+        episodeTitleByNo,
         ...episodeScope,
       });
     };
@@ -547,6 +581,7 @@ const CharacterChatPreviewModal = ({
       characterSlotId: item.characterSlotId,
       status: "loading",
       accountReadEpisodeNo: null,
+      episodeTitleByNo: {},
       ...fallbackEpisodeScope,
     });
 
@@ -557,29 +592,93 @@ const CharacterChatPreviewModal = ({
       };
     }
 
-    void queryClient.fetchQuery(
-      getEpisodeListQueryOptions(
-        {
-          product_id: String(item.productId),
-          page: 1,
-          limit: 1,
-          order_by: "episodeNo",
-          order_dir: "desc",
-        },
-        true
-      )
-    ).then(
-      (response) => applyReadScope(response.data.latestEpisodeNo),
-      () => {
+    void (async () => {
+      try {
+        const response = await queryClient.fetchQuery(
+          getEpisodeListQueryOptions(
+            {
+              product_id: String(item.productId),
+              page: 1,
+              limit: 100,
+              order_by: "episodeNo",
+              order_dir: "asc",
+            },
+            true
+          )
+        );
+        if (cancelled) return;
+
+        const accountReadEpisodeNo = Math.max(
+          Number(response.data.latestEpisodeNo || 0),
+          0
+        );
+        const episodeScope = resolveCharacterChatEpisodeScope({
+          entryEpisodeNo: item.entryEpisodeNo,
+          preparedEpisodeNo: item.syncedLatestEpisodeNo,
+          accountReadEpisodeNo,
+        });
+        const episodeTitleByNo: Record<number, string> = {};
+        const rememberEpisodeTitles = (
+          episodes: typeof response.data.episodes
+        ) => {
+          episodes.forEach((episode) => {
+            const episodeTitle = String(episode.episodeTitle || "").trim();
+            if (episodeTitle) {
+              episodeTitleByNo[episode.episodeNo] = episodeTitle;
+            }
+          });
+        };
+        rememberEpisodeTitles(response.data.episodes);
+
+        const firstAdditionalPage = Math.max(
+          2,
+          Math.floor((episodeScope.entryEpisodeNo - 1) / 100) + 1
+        );
+        const lastAdditionalPage = Math.min(
+          Math.ceil(episodeScope.maxSelectableEpisodeNo / 100),
+          Math.ceil(response.data.pagination.totalCount / 100)
+        );
+        const additionalPages =
+          lastAdditionalPage >= firstAdditionalPage
+            ? Array.from(
+                { length: lastAdditionalPage - firstAdditionalPage + 1 },
+                (_, index) => firstAdditionalPage + index
+              )
+            : [];
+        const additionalPageResults = await Promise.allSettled(
+          additionalPages.map((page) =>
+            queryClient.fetchQuery(
+              getEpisodeListQueryOptions(
+                {
+                  product_id: String(item.productId),
+                  page,
+                  limit: 100,
+                  order_by: "episodeNo",
+                  order_dir: "asc",
+                },
+                true
+              )
+            )
+          )
+        );
+        additionalPageResults.forEach((result) => {
+          if (result.status === "fulfilled") {
+            rememberEpisodeTitles(result.value.data.episodes);
+          }
+        });
+        availableEpisodeTitleByNo = episodeTitleByNo;
+        applyReadScope(response.data.latestEpisodeNo);
+      } catch {
         if (cancelled) return;
         setReadScope({
           characterSlotId: item.characterSlotId,
           status: "error",
           accountReadEpisodeNo: null,
+          episodeTitleByNo: {},
           ...fallbackEpisodeScope,
         });
       }
-    );
+    })();
 
     return () => {
       cancelled = true;
@@ -600,6 +699,7 @@ const CharacterChatPreviewModal = ({
           characterSlotId: item.characterSlotId,
           status: "loading" as CharacterChatReadScopeStatus,
           accountReadEpisodeNo: null,
+          episodeTitleByNo: {},
           ...fallbackEpisodeScope,
         };
   const content = (
@@ -613,6 +713,7 @@ const CharacterChatPreviewModal = ({
       initialReadEpisodeNo={currentReadScope.initialReadEpisodeNo}
       maxSelectableEpisodeNo={currentReadScope.maxSelectableEpisodeNo}
       selectableEpisodeNos={currentReadScope.selectableEpisodeNos}
+      episodeTitleByNo={currentReadScope.episodeTitleByNo}
       previewDetail={previewDetail}
       onLaunch={onLaunch}
       onGoToProduct={onGoToProduct}

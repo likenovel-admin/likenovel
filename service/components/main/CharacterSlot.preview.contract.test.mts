@@ -106,3 +106,43 @@ test("모달은 원문 회차 요약을 렌더링하지 않는다", () => {
   assert.doesNotMatch(modalSource, /이 회차 이야기/);
   assert.doesNotMatch(modalSource, /\{episodeSummary\}/);
 });
+
+test("내부 주인공 role만 사용자용 문구로 정규화한다", () => {
+  assert.match(modalSource, /const rawRoleLabel =/);
+  assert.match(modalSource, /const normalizedRoleLabel =/);
+  assert.match(modalSource, /normalizedRoleLabel === "main_protagonist"/);
+  assert.match(modalSource, /normalizedRoleLabel === "main protagonist"/);
+  assert.match(modalSource, /\? "메인 주인공"[\s\S]*: rawRoleLabel/);
+});
+
+test("대화 스타일은 공백을 정리하고 무의미한 보통 값만 숨긴다", () => {
+  assert.match(modalSource, /\.map\(\(value\) => value\.trim\(\)\)/);
+  assert.match(modalSource, /\.filter\(\(value\) => Boolean\(value\) && value !== "보통"\)/);
+});
+
+test("회차 선택지는 실제 제목을 우선하고 필요한 제목 페이지만 보강한다", () => {
+  assert.match(modalSource, /limit: 100/);
+  assert.match(modalSource, /order_dir: "asc"/);
+  assert.match(modalSource, /Promise\.allSettled/);
+  assert.match(modalSource, /result\.status === "fulfilled"/);
+  assert.match(modalSource, /episodeTitleByNo/);
+  assert.match(
+    modalSource,
+    /const episodeLabel =\s*episodeTitleByNo\[episodeNo\]\?\.trim\(\) \|\| `\$\{episodeNo\}화`/,
+  );
+  assert.match(
+    modalSource,
+    /\{episodeLabel\}\{isRecentRead \? " · 최근 읽은 회차" : ""\}/,
+  );
+});
+
+test("실제 장면 로딩에만 spinner를 표시하고 status 문구를 유지한다", () => {
+  assert.match(
+    modalSource,
+    /shouldShowInitialLoader[\s\S]*animate-spin[\s\S]*role="status"[\s\S]*장면을 불러오는 중이에요/,
+  );
+  assert.match(
+    modalSource,
+    /!isPreviewUnavailable && \([\s\S]*animate-spin[\s\S]*<p role="status">/,
+  );
+});
