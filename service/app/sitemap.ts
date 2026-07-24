@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
-
-const SITE_URL =
-  process.env.NEXT_PUBLIC_WWW_SERVER_URI || "https://www.likenovel.net";
+import {
+  getSiteOrigin,
+  isIndexableProductionSite,
+} from "../utils/siteSeo.mjs";
 
 const CANONICAL_ROUTES = [
   { path: "/", changeFrequency: "daily", priority: 1 },
@@ -16,15 +17,13 @@ const CANONICAL_ROUTES = [
   priority: number;
 }>;
 
-const getSiteOrigin = () => SITE_URL.replace(/\/+$/, "");
-
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date();
+  if (!isIndexableProductionSite()) return [];
+
   const siteOrigin = getSiteOrigin();
 
   return CANONICAL_ROUTES.map((route) => ({
     url: `${siteOrigin}${route.path}`,
-    lastModified,
     changeFrequency: route.changeFrequency,
     priority: route.priority,
   }));

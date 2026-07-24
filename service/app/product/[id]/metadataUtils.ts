@@ -2,9 +2,13 @@ import {
   DEFAULT_PRODUCT_IMAGE,
   resolveProductCoverImage,
 } from "@/constants/common";
+import {
+  DEFAULT_SITE_DESCRIPTION,
+  SITE_NAME,
+} from "@/utils/siteSeoMetadata";
 
-export const SITE_NAME = "라이크노벨";
-export const DEFAULT_DESCRIPTION = "라이크노벨에서 작품을 만나보세요.";
+export { SITE_NAME };
+export const DEFAULT_DESCRIPTION = DEFAULT_SITE_DESCRIPTION;
 export const PRODUCT_METADATA_REVALIDATE_SECONDS = 300;
 
 export interface ProductMetadataResponse {

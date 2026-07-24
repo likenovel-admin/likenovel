@@ -9,7 +9,7 @@ const expectedUrls = [
   "https://www.likenovel.net/websochat",
 ];
 
-delete process.env.NEXT_PUBLIC_WWW_SERVER_URI;
+process.env.NEXT_PUBLIC_WWW_SERVER_URI = "https://www.likenovel.net";
 
 const [{ default: robots }, { default: sitemap }] = await Promise.all([
   import("./robots.ts"),
@@ -47,9 +47,10 @@ assert.equal(
 );
 
 entries.forEach((entry) => {
-  assert.ok(
-    entry.lastModified instanceof Date,
-    "sitemap entries should include lastModified",
+  assert.equal(
+    entry.lastModified,
+    undefined,
+    "sitemap should not claim deploy time as content modification time",
   );
   assert.equal(
     entry.changeFrequency,
