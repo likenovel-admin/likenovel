@@ -48,8 +48,13 @@ assert.match(
 );
 assert.match(
   querySource,
-  /return useQuery<IGetCharacterChatCatalogResponse>\(\{/,
-  "The catalog hook should retain its personalized response type"
+  /export const getCharacterChatCatalogQueryOptions = \([\s\S]*queryOptions<IGetCharacterChatCatalogResponse>/,
+  "The catalog hook should expose one reusable typed query definition"
+);
+assert.match(
+  querySource,
+  /return useQuery\(\{\s*\.\.\.getCharacterChatCatalogQueryOptions\([\s\S]*enabled,\s*\}\);/,
+  "The catalog page should consume the same query definition used by home prefetch"
 );
 assert.match(
   querySource,
@@ -127,6 +132,16 @@ assert.match(
   pageSource,
   /<CharacterChatCardGrid[\s\S]*items=\{visibleItems\}/,
   "The grid should render only the current two-row window"
+);
+assert.match(
+  pageSource,
+  /<CharacterChatCardGrid[\s\S]*items=\{visibleItems\}[\s\S]*priorityItemCount=\{4\}/,
+  "The catalog should prioritize only its first visible mobile batch"
+);
+assert.match(
+  gridSource,
+  /items\.map\(\(item, index\) =>[\s\S]*priority=\{index < priorityItemCount\}/,
+  "The shared card grid should keep image priority explicitly bounded"
 );
 assert.match(
   pageSource,

@@ -290,7 +290,11 @@ export default function Home() {
             </div>
             {mainCharacterSlotItems.length > 0 && (
               <div className="mt-30pxr md:mt-70pxr">
-                <CharacterSlot items={mainCharacterSlotItems} adultYn={adultYn} />
+                <CharacterSlot
+                  items={mainCharacterSlotItems}
+                  adultYn={adultYn}
+                  cacheIdentity={mainProductCacheIdentity}
+                />
               </div>
             )}
             {mainRuleSlotSections.length > 0 && (

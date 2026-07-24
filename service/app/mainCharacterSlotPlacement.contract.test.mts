@@ -14,6 +14,10 @@ const characterModalSource = readFileSync(
   new URL("../components/main/CharacterChatPreviewModal.tsx", import.meta.url),
   "utf8"
 );
+const productQuerySource = readFileSync(
+  new URL("./api/query/product/index.ts", import.meta.url),
+  "utf8"
+);
 const recentlyViewIndex = source.indexOf("<RecentlyView");
 const characterSlotIndex = source.indexOf("<CharacterSlot", recentlyViewIndex);
 const mainRuleSlotIndex = source.indexOf(
@@ -35,8 +39,38 @@ assert.match(
 );
 assert.match(
   source,
-  /<CharacterSlot items=\{mainCharacterSlotItems\} adultYn=\{adultYn\}/,
-  "CharacterSlot should receive both cards and the current adult scope"
+  /<CharacterSlot[\s\S]*items=\{mainCharacterSlotItems\}[\s\S]*adultYn=\{adultYn\}[\s\S]*cacheIdentity=\{mainProductCacheIdentity\}/,
+  "CharacterSlot should receive cards and the exact catalog query identity"
+);
+assert.match(
+  productQuerySource,
+  /export const getCharacterChatCatalogQueryOptions = \(/,
+  "Home prefetch and catalog rendering should share one canonical query definition"
+);
+assert.match(
+  characterSlotSource,
+  /queryClient\.prefetchQuery\(\s*getCharacterChatCatalogQueryOptions\(/,
+  "CharacterSlot should prefetch the canonical catalog query"
+);
+assert.match(
+  characterSlotSource,
+  /new IntersectionObserver\([\s\S]*isSectionVisible = entry\?\.isIntersecting === true;[\s\S]*maybePrefetchCatalog\(\)/,
+  "Catalog prefetch should require the character slot to be visible"
+);
+assert.match(
+  characterSlotSource,
+  /document\.readyState !== "complete"[\s\S]*prefetchCharacterCatalog\(\)/,
+  "Catalog prefetch should wait until the home load is complete"
+);
+assert.match(
+  characterSlotSource,
+  /window\.addEventListener\("load", maybePrefetchCatalog\)[\s\S]*window\.removeEventListener\("load", maybePrefetchCatalog\)/,
+  "The load gate should be cleaned up when leaving home"
+);
+assert.match(
+  characterSlotSource,
+  /const handleMoreClick = \(\) => \{[\s\S]*prefetchCharacterCatalog\(\);[\s\S]*router\.push\("\/product\/character-chat"\)/,
+  "The more action should reuse an in-flight catalog request without delaying navigation"
 );
 assert.match(
   characterGridSource,
@@ -65,7 +99,7 @@ assert.match(
 );
 assert.match(
   characterSlotSource,
-  /hasMoreButton[\s\S]*router\.push\("\/product\/character-chat"\)/,
+  /hasMoreButton[\s\S]*moreButtonOnClick=\{handleMoreClick\}/,
   "CharacterSlot should expose the catalog only through the existing header more action"
 );
 assert.match(

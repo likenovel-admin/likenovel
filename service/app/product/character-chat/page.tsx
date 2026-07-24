@@ -506,6 +506,7 @@ function CharacterChatCatalogPageContent() {
           <>
             <CharacterChatCardGrid
               items={visibleItems}
+              priorityItemCount={4}
               adultYn={adultYn}
               entrySource="character_catalog"
               previewReadEpisodeByProduct={
