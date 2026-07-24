@@ -1,6 +1,8 @@
 const PENDING_WEBSOCHAT_LAUNCH_KEY = "pending_websochat_launch";
 const PENDING_WEBSOCHAT_LAUNCH_TTL_MS = 60 * 1000;
 const WEBSOCHAT_RETURN_PATH_STORAGE_KEY = "websochat_return_path";
+const WEBSOCHAT_START_CHOOSER_REQUEST_STORAGE_KEY =
+  "websochat_start_chooser_requested";
 export const WEBSOCHAT_ACTIVE_SESSION_STORAGE_KEY = "websochat_active_session_id";
 export const WEBSOCHAT_SESSION_SHORTCUT_PROMPTS_STORAGE_KEY =
   "websochat_session_shortcut_prompts";
@@ -56,6 +58,28 @@ export const consumeWebsochatReturnPath = ({
   const storedPath = storage.getItem(WEBSOCHAT_RETURN_PATH_STORAGE_KEY);
   storage.removeItem(WEBSOCHAT_RETURN_PATH_STORAGE_KEY);
   return normalizeWebsochatReturnPath(storedPath);
+};
+
+export const requestWebsochatStartChooser = ({
+  storage = getWebsochatReturnPathStorage(),
+}: {
+  storage?: WebsochatReturnPathStorage;
+} = {}) => {
+  if (!storage) return;
+  storage.removeItem(PENDING_WEBSOCHAT_LAUNCH_KEY);
+  storage.setItem(WEBSOCHAT_START_CHOOSER_REQUEST_STORAGE_KEY, "1");
+};
+
+export const consumeWebsochatStartChooserRequest = ({
+  storage = getWebsochatReturnPathStorage(),
+}: {
+  storage?: WebsochatReturnPathStorage;
+} = {}) => {
+  if (!storage) return false;
+  const isRequested =
+    storage.getItem(WEBSOCHAT_START_CHOOSER_REQUEST_STORAGE_KEY) === "1";
+  storage.removeItem(WEBSOCHAT_START_CHOOSER_REQUEST_STORAGE_KEY);
+  return isRequested;
 };
 
 export const resolveWebsochatSessionListTitle = ({

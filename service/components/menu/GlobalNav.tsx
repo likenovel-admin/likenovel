@@ -1,10 +1,18 @@
-import { WEBSOCHAT_NAV_LABEL, WEBSOCHAT_PREPARE_NAV_EVENT } from "@/constants/common";
+import {
+  WEBSOCHAT_NAV_LABEL,
+  WEBSOCHAT_PREPARE_NAV_EVENT,
+  WEBSOCHAT_START_CHOOSER_EVENT,
+} from "@/constants/common";
 import { useGetChatUnReadCount } from "@/app/api/query/message";
 import useAuthStore from "@/store/authStore";
 import useConfirmStore from "@/store/confirmStore";
 import useGiftBoxStore from "@/store/giftboxStore";
 import useSearchModalStore from "@/store/searchModalStore";
-import { saveWebsochatReturnPath } from "@/utils/websochatLaunch";
+import { clearPendingHomeCharacterChatLaunch } from "@/utils/characterChatLaunch";
+import {
+  requestWebsochatStartChooser,
+  saveWebsochatReturnPath,
+} from "@/utils/websochatLaunch";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import SquareBadge from "../common/SquareBadge";
@@ -31,10 +39,18 @@ const GlobalNav = () => {
   const { data: unreadCountData } = useGetChatUnReadCount(!!user?.userId);
 
   const navigate = (href: string) => {
-    if (href === pathname) return;
     if (href === "/websochat") {
+      clearPendingHomeCharacterChatLaunch();
+      requestWebsochatStartChooser();
+      if (href === pathname) {
+        window.dispatchEvent(new Event(WEBSOCHAT_START_CHOOSER_EVENT));
+        return;
+      }
       saveWebsochatReturnPath();
+      router.push(href);
+      return;
     }
+    if (href === pathname) return;
     if (pathname === "/websochat") {
       window.dispatchEvent(new Event(WEBSOCHAT_PREPARE_NAV_EVENT));
       window.requestAnimationFrame(() => router.push(href));

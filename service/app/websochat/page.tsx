@@ -7,6 +7,7 @@ import {
   WEBSOCHAT_GHOST_ROTATE_MS,
   WEBSOCHAT_MESSAGE_MAX_LENGTH,
   WEBSOCHAT_PREPARE_NAV_EVENT,
+  WEBSOCHAT_START_CHOOSER_EVENT,
 } from "@/constants/common";
 import {
   getEpisodeListQueryOptions,
@@ -96,6 +97,7 @@ import {
   buildWebsochatIdleGuideMessage,
   buildWebsochatStarterGuideMessage,
   consumeWebsochatReturnPath,
+  consumeWebsochatStartChooserRequest,
   consumePendingWebsochatLaunch,
   consumeWebsochatSessionPendingDraft,
   filterWebsochatActionsByAllowedModes,
@@ -749,6 +751,10 @@ type WebsochatStreamingKind = "qa" | "rp" | "ideal_worldcup";
 type WebsochatComposerMode = "qa" | "rp" | "ideal_worldcup";
 type WebsochatRpStage = "idle" | "awaiting_character" | "chatting";
 type WebsochatStartView = "chooser" | "character_picker";
+type PendingDirectLaunchGuard = {
+  signal: AbortSignal;
+  isCurrentOwner: () => boolean;
+};
 
 const isWebsochatAbortError = (error: unknown) => {
   if (axios.isCancel(error)) return true;
@@ -1056,8 +1062,14 @@ export default function WebsochatPage() {
   const isProgrammaticMessageListScrollRef = useRef(false);
   const activeAssistantAbortControllerRef = useRef<AbortController | null>(null);
   const didConsumeHomeCharacterLaunchRef = useRef(false);
+  const homeCharacterLaunchAbortControllerRef =
+    useRef<AbortController | null>(null);
   const homeCharacterLaunchInFlightRef = useRef(false);
+  const homeCharacterLaunchOwnerSeqRef = useRef(0);
   const homeCharacterLaunchAttemptedAtRef = useRef<number | null>(null);
+  const pendingDirectLaunchAbortControllerRef =
+    useRef<AbortController | null>(null);
+  const pendingDirectLaunchOwnerSeqRef = useRef(0);
   const characterChatChoiceRequestSeqRef = useRef(0);
   const characterChatChoiceSendLockedRef = useRef(false);
 
@@ -1472,12 +1484,21 @@ export default function WebsochatPage() {
   const startPendingHomeCharacterLaunch = useCallback(
     async (launch: PendingHomeCharacterChatLaunch) => {
       if (homeCharacterLaunchInFlightRef.current) return;
+      const launchOwnerSeq = homeCharacterLaunchOwnerSeqRef.current + 1;
+      homeCharacterLaunchOwnerSeqRef.current = launchOwnerSeq;
+      const launchAbortController = new AbortController();
+      homeCharacterLaunchAbortControllerRef.current = launchAbortController;
+      const isCurrentLaunchOwner = () => (
+        homeCharacterLaunchOwnerSeqRef.current === launchOwnerSeq
+        && !launchAbortController.signal.aborted
+      );
       homeCharacterLaunchInFlightRef.current = true;
       setIsCreatingHomeCharacterSession(true);
       setHomeCharacterLaunchError("");
       setCharacterOpeningLoadError("");
 
       const applyRecoveredSession = (session: IWebsochatSessionItem) => {
+        if (!isCurrentLaunchOwner()) return;
         const sessionId = session.sessionId;
         const coverImagePath = resolveProductCoverImage(session.coverImagePath);
         setIsPreparingNewSession(false);
@@ -1511,8 +1532,11 @@ export default function WebsochatPage() {
       };
 
       const loadRecoverableSession = async () => {
+        if (!isCurrentLaunchOwner()) return null;
         await refetchSessions();
+        if (!isCurrentLaunchOwner()) return null;
         const result = await refetchSessions();
+        if (!isCurrentLaunchOwner()) return null;
         if (result.isError) {
           throw result.error || new Error("캐릭터 대화 목록을 확인하지 못했습니다.");
         }
@@ -1528,11 +1552,18 @@ export default function WebsochatPage() {
         if (isRetry) {
           try {
             const recoveredSession = await loadRecoverableSession();
+            if (!isCurrentLaunchOwner()) return;
             if (recoveredSession) {
               applyRecoveredSession(recoveredSession);
               return;
             }
-          } catch {
+          } catch (error) {
+            if (
+              !isCurrentLaunchOwner()
+              || isWebsochatAbortError(error)
+            ) {
+              return;
+            }
             setHomeCharacterLaunchError(
               "기존 대화를 확인하지 못했어요. 잠시 후 다시 시도해 주세요."
             );
@@ -1541,7 +1572,11 @@ export default function WebsochatPage() {
         }
 
         homeCharacterLaunchAttemptedAtRef.current = launch.createdAt;
-        const created = await createSession(launch.request);
+        const created = await createSession({
+          ...launch.request,
+          signal: launchAbortController.signal,
+        });
+        if (!isCurrentLaunchOwner()) return;
         const sessionId = Number(created.data.sessionId || 0);
         if (!Number.isInteger(sessionId) || sessionId <= 0) {
           throw new Error("캐릭터 대화 세션을 만들지 못했습니다.");
@@ -1596,15 +1631,29 @@ export default function WebsochatPage() {
         homeCharacterLaunchAttemptedAtRef.current = null;
         await queryClient.invalidateQueries({ queryKey: ["websochatSessions"] });
       } catch (error) {
+        if (
+          !isCurrentLaunchOwner()
+          || isWebsochatAbortError(error)
+        ) {
+          return;
+        }
         try {
           const recoveredSession = await loadRecoverableSession();
+          if (!isCurrentLaunchOwner()) return;
           if (recoveredSession) {
             applyRecoveredSession(recoveredSession);
             return;
           }
-        } catch {
+        } catch (recoveryError) {
+          if (
+            !isCurrentLaunchOwner()
+            || isWebsochatAbortError(recoveryError)
+          ) {
+            return;
+          }
           appendWebsochatDebugLog("home_character_launch:recovery_check_failed");
         }
+        if (!isCurrentLaunchOwner()) return;
         setHomeCharacterLaunchError(
           getWebsochatSafeUserMessage(
             error,
@@ -1612,8 +1661,11 @@ export default function WebsochatPage() {
           )
         );
       } finally {
-        homeCharacterLaunchInFlightRef.current = false;
-        setIsCreatingHomeCharacterSession(false);
+        if (isCurrentLaunchOwner()) {
+          homeCharacterLaunchAbortControllerRef.current = null;
+          homeCharacterLaunchInFlightRef.current = false;
+          setIsCreatingHomeCharacterSession(false);
+        }
       }
     },
     [createSession, queryClient, refetchSessions, writeStoredActiveSessionId]
@@ -2382,7 +2434,6 @@ export default function WebsochatPage() {
     isSessionsSuccess
     && isSessionsFetchedAfterMount
     && !isSessionsPlaceholderData
-    && !isSessionsFetching
   );
   const websochatStartSurface = resolveWebsochatStartSurface({
     isPreparingNewSession,
@@ -3423,12 +3474,22 @@ export default function WebsochatPage() {
   );
 
   const enterDraftSession = useCallback((openProductPicker?: boolean) => {
+    pendingDirectLaunchAbortControllerRef.current?.abort();
+    pendingDirectLaunchAbortControllerRef.current = null;
+    pendingDirectLaunchOwnerSeqRef.current += 1;
+    homeCharacterLaunchAbortControllerRef.current?.abort();
+    homeCharacterLaunchAbortControllerRef.current = null;
+    homeCharacterLaunchOwnerSeqRef.current += 1;
+    homeCharacterLaunchInFlightRef.current = false;
+    homeCharacterLaunchAttemptedAtRef.current = null;
+    setIsCreatingHomeCharacterSession(false);
     writeStoredActiveSessionId(null);
     queueScrollMessageListToBottom("auto");
     setIsPreparingNewSession(true);
     setActiveSessionId(null);
     setSelectedProductId(null);
     setSelectedProductSnapshot(null);
+    setPendingLaunchPayload(null);
     setPendingSessionPreview(null);
     setPendingHomeCharacterLaunch(null);
     setWebsochatStartView("chooser");
@@ -3467,6 +3528,29 @@ export default function WebsochatPage() {
       window.removeEventListener(WEBSOCHAT_PREPARE_NAV_EVENT, handlePrepareNav);
     };
   }, []);
+
+  useBrowserLayoutEffect(() => {
+    if (!consumeWebsochatStartChooserRequest()) return;
+    enterDraftSession(false);
+  }, [enterDraftSession]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleStartChooser = () => {
+      consumeWebsochatStartChooserRequest();
+      enterDraftSession(false);
+    };
+    window.addEventListener(
+      WEBSOCHAT_START_CHOOSER_EVENT,
+      handleStartChooser
+    );
+    return () => {
+      window.removeEventListener(
+        WEBSOCHAT_START_CHOOSER_EVENT,
+        handleStartChooser
+      );
+    };
+  }, [enterDraftSession]);
 
   useEffect(() => {
     const pendingLaunch = consumePendingWebsochatLaunch();
@@ -3652,7 +3736,12 @@ export default function WebsochatPage() {
     });
   };
 
-  const ensureActiveSessionForComposerMode = useCallback(async () => {
+  const ensureActiveSessionForComposerMode = useCallback(async (
+    guard?: PendingDirectLaunchGuard
+  ) => {
+    const isCurrentPendingDirectLaunchOwner = () =>
+      guard?.isCurrentOwner() ?? true;
+    if (!isCurrentPendingDirectLaunchOwner()) return null;
     if (activeSessionId) return activeSessionId;
     if (!effectiveProductId || isReadScopeGuardPending) return null;
 
@@ -3661,6 +3750,7 @@ export default function WebsochatPage() {
       effectiveProductId,
       runtimeActorScope.canUseAccountScope
     );
+    if (!isCurrentPendingDirectLaunchOwner()) return null;
     const requestedReadEpisodeNo =
       effectiveReadEpisodeNo || latestAccountReadEpisodeNo || null;
     const createdDate = new Date().toISOString();
@@ -3670,7 +3760,9 @@ export default function WebsochatPage() {
       adult_yn: adultYn,
       account_read_episode_to: requestedReadEpisodeNo,
       model_key: characterChatModelKey,
+      signal: guard?.signal,
     });
+    if (!isCurrentPendingDirectLaunchOwner()) return null;
     const sessionId = created.data.sessionId;
     const resolvedReadEpisodeNo = resolveWebsochatConversationCeilingEpisodeNo(
       requestedReadEpisodeNo,
@@ -3764,7 +3856,12 @@ export default function WebsochatPage() {
     );
   }, [patchSessionMode, queryClient, resolveRuntimeWebsochatActorScope, websochatActorKey]);
 
-  const activateRpCharacterSelectionMode = useCallback(async () => {
+  const activateRpCharacterSelectionMode = useCallback(async (
+    guard?: PendingDirectLaunchGuard
+  ) => {
+    const isCurrentPendingDirectLaunchOwner = () =>
+      guard?.isCurrentOwner() ?? true;
+    if (!isCurrentPendingDirectLaunchOwner()) return null;
     appendWebsochatDebugLog("activate_rp_character_selection_mode:start", {
       activeSessionId,
       effectiveProductId,
@@ -3775,15 +3872,23 @@ export default function WebsochatPage() {
     enterRpAwaitingCharacterState();
     try {
       return await enqueueModeSync("rp", async () => {
-        const sessionId = await ensureActiveSessionForComposerMode();
-        if (!sessionId) return null;
+        if (!isCurrentPendingDirectLaunchOwner()) return null;
+        const sessionId = await ensureActiveSessionForComposerMode(guard);
+        if (!sessionId || !isCurrentPendingDirectLaunchOwner()) return null;
         await syncSessionModeGuide(sessionId, "rp");
+        if (!isCurrentPendingDirectLaunchOwner()) return null;
         appendWebsochatDebugLog("activate_rp_character_selection_mode:done", {
           sessionId,
         });
         return sessionId;
       });
     } catch (error) {
+      if (
+        !isCurrentPendingDirectLaunchOwner()
+        || isWebsochatAbortError(error)
+      ) {
+        return null;
+      }
       appendWebsochatDebugLog("activate_rp_character_selection_mode:error", {
         error: error instanceof Error ? error.message : String(error),
       });
@@ -5130,6 +5235,16 @@ export default function WebsochatPage() {
         : pendingLaunchPayload.action.prompt.trim()
     );
     if (launchActionModeKey === "rp") {
+      const pendingDirectLaunchOwnerSeq =
+        pendingDirectLaunchOwnerSeqRef.current + 1;
+      pendingDirectLaunchOwnerSeqRef.current = pendingDirectLaunchOwnerSeq;
+      const pendingDirectLaunchAbortController = new AbortController();
+      pendingDirectLaunchAbortControllerRef.current =
+        pendingDirectLaunchAbortController;
+      const isCurrentPendingDirectLaunchOwner = () => (
+        pendingDirectLaunchOwnerSeqRef.current === pendingDirectLaunchOwnerSeq
+        && !pendingDirectLaunchAbortController.signal.aborted
+      );
       const noticeId = appendModeNotice(
         buildWebsochatModeStartNotice(
           {
@@ -5141,14 +5256,31 @@ export default function WebsochatPage() {
           currentModeReadScopeText
         )
       );
-      void activateRpCharacterSelectionMode()
+      void activateRpCharacterSelectionMode({
+        signal: pendingDirectLaunchAbortController.signal,
+        isCurrentOwner: isCurrentPendingDirectLaunchOwner,
+      })
         .then((sessionId) => {
-          if (sessionId) {
+          if (sessionId && isCurrentPendingDirectLaunchOwner()) {
             bindModeNoticeToSession(noticeId, sessionId);
           }
         })
         .catch((error) => {
+          if (
+            !isCurrentPendingDirectLaunchOwner()
+            || isWebsochatAbortError(error)
+          ) {
+            return;
+          }
           appendModeNotice(buildWebsochatErrorNotice(error));
+        })
+        .finally(() => {
+          if (
+            pendingDirectLaunchAbortControllerRef.current
+              === pendingDirectLaunchAbortController
+          ) {
+            pendingDirectLaunchAbortControllerRef.current = null;
+          }
         });
       return;
     }
