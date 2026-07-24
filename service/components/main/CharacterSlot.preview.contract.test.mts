@@ -123,8 +123,6 @@ test("대화 스타일은 공백을 정리하고 무의미한 보통 값만 숨�
 test("회차 선택지는 실제 제목을 우선하고 필요한 제목 페이지만 보강한다", () => {
   assert.match(modalSource, /limit: 100/);
   assert.match(modalSource, /order_dir: "asc"/);
-  assert.match(modalSource, /Promise\.allSettled/);
-  assert.match(modalSource, /result\.status === "fulfilled"/);
   assert.match(modalSource, /episodeTitleByNo/);
   assert.match(
     modalSource,
@@ -133,6 +131,51 @@ test("회차 선택지는 실제 제목을 우선하고 필요한 제목 페이�
   assert.match(
     modalSource,
     /\{episodeLabel\}\{isRecentRead \? " · 최근 읽은 회차" : ""\}/,
+  );
+});
+
+test("회차 제목 페이지는 row-offset 기준으로 2페이지부터 순차 보강한다", () => {
+  assert.match(
+    modalSource,
+    /const totalEpisodePages = Math\.ceil\(\s*response\.data\.pagination\.totalCount \/ 100\s*\)/,
+  );
+  assert.match(
+    modalSource,
+    /for \(let page = 2; page <= totalEpisodePages; page \+= 1\)/,
+  );
+  assert.match(
+    modalSource,
+    /if \(cancelled\) return;[\s\S]*const pageResponse = await queryClient\.fetchQuery[\s\S]*if \(cancelled\) return;/,
+  );
+  assert.match(
+    modalSource,
+    /pageMaxEpisodeNo >= episodeScope\.maxSelectableEpisodeNo[\s\S]*break/,
+  );
+  assert.doesNotMatch(
+    modalSource,
+    /episodeScope\.(?:entryEpisodeNo|maxSelectableEpisodeNo)[\s\S]{0,80}\/ 100/,
+  );
+  assert.doesNotMatch(modalSource, /Promise\.allSettled/);
+});
+
+test("첫 회차 페이지로 즉시 ready가 된 뒤 제목을 stale-safe하게 보강한다", () => {
+  const readyIndex = modalSource.indexOf(
+    "applyReadScope(response.data.latestEpisodeNo);",
+  );
+  const additionalPageLoopIndex = modalSource.indexOf(
+    "for (let page = 2; page <= totalEpisodePages; page += 1)",
+  );
+
+  assert.notEqual(readyIndex, -1);
+  assert.notEqual(additionalPageLoopIndex, -1);
+  assert.ok(readyIndex < additionalPageLoopIndex);
+  assert.match(
+    modalSource,
+    /setReadScope\(\(currentReadScope\) =>[\s\S]*currentReadScope\.characterSlotId !== item\.characterSlotId[\s\S]*episodeTitleByNo: \{[\s\S]*currentReadScope\.episodeTitleByNo/,
+  );
+  assert.match(
+    modalSource,
+    /catch \{[\s\S]*continue;[\s\S]*\}/,
   );
 });
 
