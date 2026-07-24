@@ -21,6 +21,8 @@ const getRobotsMetadata = (): Metadata["robots"] =>
 
 export const buildRootMetadata = (): Metadata => {
   const siteOrigin = getSiteOrigin();
+  const naverSiteVerification =
+    process.env.NAVER_SITE_VERIFICATION?.trim();
 
   return {
     metadataBase: new URL(siteOrigin),
@@ -30,6 +32,13 @@ export const buildRootMetadata = (): Metadata => {
     },
     description: DEFAULT_SITE_DESCRIPTION,
     robots: getRobotsMetadata(),
+    verification: naverSiteVerification
+      ? {
+          other: {
+            "naver-site-verification": naverSiteVerification,
+          },
+        }
+      : undefined,
     openGraph: {
       title: SITE_NAME,
       description: DEFAULT_SITE_DESCRIPTION,
