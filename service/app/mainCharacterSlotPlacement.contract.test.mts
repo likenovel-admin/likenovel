@@ -54,8 +54,8 @@ assert.match(
 );
 assert.match(
   characterSlotSource,
-  /new IntersectionObserver\([\s\S]*isSectionVisible = entry\?\.isIntersecting === true;[\s\S]*maybePrefetchCatalog\(\)/,
-  "Catalog prefetch should require the character slot to be visible"
+  /new IntersectionObserver\([\s\S]*isSectionVisible =\s*entry\?\.isIntersecting === true &&\s*entry\.intersectionRatio >= 0\.2;[\s\S]*maybePrefetchCatalog\(\)/,
+  "Catalog prefetch should require at least 20% of the character slot to be visible"
 );
 assert.match(
   characterSlotSource,
