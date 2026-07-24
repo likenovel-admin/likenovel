@@ -1,8 +1,10 @@
 "use client";
 
+import { getCharacterChatCatalogQueryOptions } from "@/app/api/query/product";
 import type { IMainCharacterSlotItem } from "@/app/api/query/product/dto";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CircleArrow from "../common/CircleArrow";
 import MainHeader from "../common/MainHeader";
 import CharacterChatCardGrid from "./CharacterChatCardGrid";
@@ -10,6 +12,7 @@ import CharacterChatCardGrid from "./CharacterChatCardGrid";
 interface Props {
   items: IMainCharacterSlotItem[];
   adultYn: "Y" | "N";
+  cacheIdentity: string;
 }
 
 const CHARACTER_SLOT_SECTION_TITLE = "다음 회차를 기다리는 동안, 주인공챗";
@@ -42,8 +45,10 @@ const useResponsivePageSize = () => {
   return pageSize;
 };
 
-const CharacterSlot = ({ items, adultYn }: Props) => {
+const CharacterSlot = ({ items, adultYn, cacheIdentity }: Props) => {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const sectionRef = useRef<HTMLElement | null>(null);
   const pageSize = useResponsivePageSize();
   const [page, setPage] = useState(0);
   const [subtitleIndex, setSubtitleIndex] = useState(0);
@@ -66,10 +71,57 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
     return list.slice(start, start + pageSize);
   }, [list, page, pageSize]);
 
+  const prefetchCharacterCatalog = useCallback(() => {
+    void queryClient.prefetchQuery(
+      getCharacterChatCatalogQueryOptions(adultYn, cacheIdentity)
+    );
+  }, [adultYn, cacheIdentity, queryClient]);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || typeof IntersectionObserver === "undefined") return;
+
+    let isSectionVisible = false;
+    let hasPrefetched = false;
+    const maybePrefetchCatalog = () => {
+      if (
+        hasPrefetched ||
+        !isSectionVisible ||
+        document.readyState !== "complete"
+      ) {
+        return;
+      }
+      hasPrefetched = true;
+      observer.disconnect();
+      prefetchCharacterCatalog();
+    };
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isSectionVisible = entry?.isIntersecting === true;
+        maybePrefetchCatalog();
+      },
+      { threshold: 0.2 }
+    );
+
+    observer.observe(section);
+    window.addEventListener("load", maybePrefetchCatalog);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("load", maybePrefetchCatalog);
+    };
+  }, [prefetchCharacterCatalog]);
+
+  const handleMoreClick = () => {
+    prefetchCharacterCatalog();
+    router.push("/product/character-chat");
+  };
+
   if (list.length === 0) return null;
 
   return (
     <section
+      ref={sectionRef}
       data-home-section="character-slot"
       className="relative mx-auto w-full max-w-[1120px]"
     >
@@ -77,7 +129,7 @@ const CharacterSlot = ({ items, adultYn }: Props) => {
         headerText={CHARACTER_SLOT_SECTION_TITLE}
         hasMoreButton
         compactMobileMore
-        moreButtonOnClick={() => router.push("/product/character-chat")}
+        moreButtonOnClick={handleMoreClick}
         rightAction={
           hasPager ? (
             <div className="flex items-center gap-8pxr">

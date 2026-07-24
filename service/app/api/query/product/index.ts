@@ -810,13 +810,12 @@ export const useGetMainCharacterSlots = (
   });
 };
 
-export const useGetCharacterChatCatalog = (
+export const getCharacterChatCatalogQueryOptions = (
   adult_yn?: string,
-  enabled: boolean = true,
   cacheIdentity: string = "guest"
 ) => {
   const adultYnParam = adult_yn || "N";
-  return useQuery<IGetCharacterChatCatalogResponse>({
+  return queryOptions<IGetCharacterChatCatalogResponse>({
     queryKey: ["getCharacterChatCatalog", adultYnParam, cacheIdentity],
     queryFn: async () => {
       const response = await instance.get(
@@ -828,6 +827,16 @@ export const useGetCharacterChatCatalog = (
     gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
     retry: false,
     throwOnError: false,
+  });
+};
+
+export const useGetCharacterChatCatalog = (
+  adult_yn?: string,
+  enabled: boolean = true,
+  cacheIdentity: string = "guest"
+) => {
+  return useQuery({
+    ...getCharacterChatCatalogQueryOptions(adult_yn, cacheIdentity),
     enabled,
   });
 };

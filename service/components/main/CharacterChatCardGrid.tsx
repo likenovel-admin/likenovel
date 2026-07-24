@@ -35,6 +35,7 @@ interface Props {
   entrySource: CharacterChatEntrySource;
   className: string;
   imageSizes?: string;
+  priorityItemCount?: number;
   previewReadEpisodeByProduct?: Record<number, number>;
   previewDetailByProduct?: Record<number, CharacterChatPreviewDetail>;
 }
@@ -45,6 +46,7 @@ const CharacterChatCardGrid = ({
   entrySource,
   className,
   imageSizes = "(max-width: 767px) 45vw, 211px",
+  priorityItemCount = 0,
   previewReadEpisodeByProduct,
   previewDetailByProduct,
 }: Props) => {
@@ -121,7 +123,7 @@ const CharacterChatCardGrid = ({
   return (
     <>
       <ul className={className}>
-        {items.map((item) => {
+        {items.map((item, index) => {
           const characterImage = resolveProductCoverImage(item.characterImagePath);
           const isDefaultImage = characterImage === DEFAULT_PRODUCT_IMAGE;
           const isLaunching = launchingScopeKey === item.characterScopeKey;
@@ -144,6 +146,7 @@ const CharacterChatCardGrid = ({
                     alt={item.characterName}
                     fill
                     sizes={imageSizes}
+                    priority={index < priorityItemCount}
                     unoptimized={isDefaultImage}
                     className={`object-cover [object-position:50%_12%] transition duration-200 md:group-hover:scale-[1.03] ${
                       isLaunching ? "scale-[1.01] opacity-60" : ""
