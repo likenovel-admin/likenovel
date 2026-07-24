@@ -124,7 +124,9 @@ docker compose up -d --build cms       # http://localhost:3002
 - docs cleanup, legacy note, local runbook edit, formatting cleanup, unrelated test, submodule pointer drift를 기능 브랜치에 섞지 않는다.
 - root repo와 backend submodule 상태를 분리해서 읽는다.
 - active worktree가 dirty이면 worktree로 분리해서 작업할 수 있다.
-- 이 repo는 linked worktree에서 push hook이 막힌다. linked worktree에서 push를 시도하지 말고, commit SHA를 만든 뒤 primary checkout에서 `git push origin <sha>:dev` 또는 `git push origin <sha>:prod`처럼 exact ref로 push한다.
+- Root pre-push의 push 내용 판단 기준은 현재 checkout/index/submodule working tree가 아니라 pre-push stdin의 outgoing ref와 commit SHA다. 단, 현재 worktree에 진행 중인 merge/rebase/cherry-pick이 있으면 push를 차단한다.
+- Codex-owned clean integration worktree에서 exact commit을 만들고 검증했다면, 같은 worktree에서 `git push origin <sha>:dev` 또는 `git push origin <sha>:prod`처럼 exact ref로 push할 수 있다. 다른 agent/user-owned worktree는 이 허용 범위에 포함되지 않는다.
+- Root `main`/`dev`/`prod` 삭제와 branch non-fast-forward push는 금지한다. 의도된 submodule pointer push도 backend target branch 도달성과 기존 pointer 대비 비후퇴 조건을 통과해야 한다.
 - worktree에서 만든 unrelated change는 staging하지 않는다.
 - submodule pointer 변경은 `git diff --submodule=log` readback 후에만 stage한다.
 - root 로컬 작업은 정상 흐름이지만 submodule drift는 commit/push 전에 차단한다. 새 checkout 또는 hook이 의심되면 `bash devtools/install-git-hooks.sh`를 실행한다.
@@ -142,7 +144,7 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
 - parent repo가 submodule remote에 없는 SHA를 가리키게 하지 않는다.
 - 로컬 `main`/`dev`/`prod`에서 직접 통합 merge를 만들지 않는다. 필요하면 `origin/<target>` 기준 integration branch에서 작업한다.
 - `dev`/`prod`는 작업 브랜치가 아니라 배포 환경 브랜치다.
-- `git push --force` 금지.
+- Root `main`/`dev`/`prod`에는 `--force`와 `--force-with-lease`를 사용하지 않는다. Feature 및 `claude/*` branch는 해당 owner가 범위를 확인한 경우 `--force-with-lease`를 사용할 수 있지만, 무조건 덮어쓰는 `--force`는 사용하지 않는다.
 - push 전에는 `git show --stat HEAD`, staged file names, submodule diff가 mixed bag이 아님을 확인한다.
 
 ## 6.1) Deploy Merge Conflict Stop Rules
