@@ -134,7 +134,6 @@ const CharacterChatPreviewContent = ({
     speechStyle.sentenceLength,
   ].filter((value): value is string => Boolean(value));
   const sceneEpisodeNo = apiPreview?.episodeNo || selectedEpisodeNo;
-  const episodeSummary = String(apiPreview?.episodeSummary || "").trim();
   const sceneSummary = String(apiPreview?.sceneSummary || "").trim();
   const sceneExcerpt = String(apiPreview?.sceneExcerpt || "").trim();
   const hasStablePreview = Boolean(apiPreview);
@@ -287,16 +286,6 @@ const CharacterChatPreviewContent = ({
               <p className="text-13pxr font-bold leading-[18px] text-primary-100">
                 {sceneEpisodeNo}화{apiPreview?.episodeTitle ? ` · ${apiPreview.episodeTitle}` : ""}
               </p>
-              {episodeSummary && (
-                <div className="mt-12pxr">
-                  <p className="text-12pxr font-medium leading-[17px] text-dark-gray-400">
-                    이 회차 이야기
-                  </p>
-                  <p className="mt-5pxr break-words text-14pxr leading-[21px] text-black-100">
-                    {episodeSummary}
-                  </p>
-                </div>
-              )}
               {sceneSummary && (
                 <div className="mt-12pxr">
                   <p className="text-12pxr font-medium leading-[17px] text-dark-gray-400">
