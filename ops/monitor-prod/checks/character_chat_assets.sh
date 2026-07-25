@@ -75,12 +75,23 @@ try:
     if non_actionable > product_count:
         raise ValueError("invalid non-actionable product count")
     actionable = product_count - non_actionable
-    print("%s|%s" % (product_count, actionable))
+    ready_count = int(counts.get("ready") or 0)
+    ready_without_main = summary.get("readyWithoutMainProtagonistCount")
+    if (
+        isinstance(ready_without_main, bool)
+        or not isinstance(ready_without_main, int)
+        or ready_without_main < 0
+        or ready_without_main > ready_count
+    ):
+        ready_without_main = "invalid"
+    print("%s|%s|%s" % (product_count, actionable, ready_without_main))
 except (json.JSONDecodeError, KeyError, TypeError, ValueError):
-    print("invalid|invalid")
+    print("invalid|invalid|invalid")
 ')
 product_count="${metrics%%|*}"
-actionable_count="${metrics##*|}"
+remaining_metrics="${metrics#*|}"
+actionable_count="${remaining_metrics%%|*}"
+ready_without_main_count="${remaining_metrics##*|}"
 
 case "$audit_rc" in
   0)
@@ -100,3 +111,13 @@ case "$audit_rc" in
     emit "character_chat:assets" "exit=${audit_rc:-missing}" "exit 0 or 1" "UNKNOWN" "audit execution failed"
     ;;
 esac
+
+if [ "$audit_rc" = "0" ] || [ "$audit_rc" = "1" ]; then
+  if ! [[ "$ready_without_main_count" =~ ^[0-9]+$ ]]; then
+    emit "character_chat:protagonist" "invalid" "0 ready without main" "UNKNOWN" "audit schema has invalid protagonist metric"
+  elif [ "$ready_without_main_count" -eq 0 ]; then
+    emit "character_chat:protagonist" "0 products" "0 ready without main" "OK" "identified protagonist coverage"
+  else
+    emit "character_chat:protagonist" "${ready_without_main_count} products" "0 ready without main" "WARN" "ready character surface has no identified main protagonist"
+  fi
+fi
