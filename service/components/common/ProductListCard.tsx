@@ -284,7 +284,7 @@ const ProductListCard = ({
       >
         <div
           className={`relative flex items-start ${
-            isAuthorPage ? "w-[60%] cursor-pointer" : "w-full"
+            isAuthorPage ? "w-full md:w-[60%] cursor-pointer" : "w-full"
           }  gap-12pxr md:gap-20pxr p-[16px] md:p-[20px]`}
           onClick={() => {
             // Navigate to author page if user is the product author (in review page context)
@@ -439,19 +439,38 @@ const ProductListCard = ({
                 {data.title}
               </span>
             </div>
-            <div className="flex flex-wrap gap-5pxr md:gap-12pxr items-center">
+            <div
+              className={
+                isAuthorPage
+                  ? "flex flex-wrap gap-x-5pxr gap-y-3pxr md:gap-x-12pxr items-center"
+                  : "flex flex-wrap gap-5pxr md:gap-12pxr items-center"
+              }
+            >
               <UserNickname
                 userNickname={data.authorNickname || ""}
                 product={data}
                 hasGle={hasGle}
               />
               {data.properties && data.properties?.latestEpisodeDate && (
-                <>
-                  <div className="w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
-                  <span className="text-13pxr md:text-15pxr text-dark-gray-500">
-                    {getLatestEpisodeDate(data.properties?.latestEpisodeDate)}
+                isAuthorPage ? (
+                  <span className="flex shrink-0 items-center gap-5pxr">
+                    <span className="w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
+                    <span className="text-13pxr md:text-15pxr text-dark-gray-500">
+                      {getLatestEpisodeDate(
+                        data.properties?.latestEpisodeDate
+                      )}
+                    </span>
                   </span>
-                </>
+                ) : (
+                  <>
+                    <div className="w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
+                    <span className="text-13pxr md:text-15pxr text-dark-gray-500">
+                      {getLatestEpisodeDate(
+                        data.properties?.latestEpisodeDate
+                      )}
+                    </span>
+                  </>
+                )
               )}
             </div>
             <div className="flex items-center">
@@ -499,6 +518,9 @@ const ProductListCard = ({
                 data.genre.length > 0 && (
                   <div className="md:hidden w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
                 )}
+              {isAuthorPage && data.genre.length > 0 && (
+                <div className="md:hidden w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
+              )}
               {data.genre.length > 0 && (
                 <span className="md:hidden text-12pxr md:text-14pxr text-dark-gray-500">
                   {data.genre[0]}
