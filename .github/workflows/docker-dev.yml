@@ -220,7 +220,7 @@ jobs:
               (cd "$compose_dir" && docker compose pull)
             done
             for compose_dir in "${compose_dirs[@]}"; do
-              (cd "$compose_dir" && docker compose up -d --remove-orphans)
+              (cd "$compose_dir" && docker compose up -d)
             done
 
             verify_service_digest /home/ln-admin/likenovel/service-dev/docker likenovel-user-dev "$EXPECTED_SERVICE_DIGEST"
