@@ -126,15 +126,15 @@ docker compose up -d --build cms       # http://localhost:3002
 - active worktree가 dirty이면 worktree로 분리해서 작업할 수 있다.
 - Root pre-push의 push 내용 판단 기준은 현재 checkout/index/submodule working tree가 아니라 pre-push stdin의 outgoing ref와 commit SHA다. 단, 현재 worktree에 진행 중인 merge/rebase/cherry-pick이 있으면 push를 차단한다.
 - Codex-owned clean integration worktree에서 exact commit을 만들고 검증했다면, 같은 worktree에서 `git push origin <sha>:dev` 또는 `git push origin <sha>:prod`처럼 exact ref로 push할 수 있다. 다른 agent/user-owned worktree는 이 허용 범위에 포함되지 않는다.
-- Root `main`/`dev`/`prod` 삭제와 branch non-fast-forward push는 금지한다. 의도된 submodule pointer push도 backend target branch 도달성과 기존 pointer 대비 비후퇴 조건을 통과해야 한다.
+- Root `main`/`dev`/`prod` push는 remote 이름이 정확히 `origin`일 때만 허용하며, 삭제와 branch non-fast-forward push는 금지한다. 검증 전에 root/backend `origin/*` remote-tracking ref를 prune하고, 의도된 submodule pointer push도 backend target branch 도달성과 기존 pointer 대비 비후퇴 조건을 통과해야 한다.
 - worktree에서 만든 unrelated change는 staging하지 않는다.
 - submodule pointer 변경은 `git diff --submodule=log` readback 후에만 stage한다.
-- root 로컬 작업은 정상 흐름이지만 submodule drift는 commit/push 전에 차단한다. 새 checkout 또는 hook이 의심되면 `bash devtools/install-git-hooks.sh`를 실행한다.
+- root 로컬 작업은 정상 흐름이지만 submodule drift는 commit/push 전에 차단한다. 새 checkout 또는 hook이 의심되면 `bash devtools/install-git-hooks.sh`를 실행한다. Installer는 shared hooks dir에 checkout과 독립적인 self-contained pre-push를 설치하며, 기존 LikeNovel legacy/managed hook을 교체할 때 `pre-push.likenovel-backup`을 1회 보존한다. 알 수 없는 custom hook은 덮어쓰지 않는다.
 
 필수 확인:
 
 ```bash
-git fetch origin --quiet
+git -c fetch.recurseSubmodules=false fetch origin --quiet --prune --no-recurse-submodules
 git status --short --branch
 git diff --submodule=log -- likenovel-service-api/likenovel-service-api
 git -C likenovel-service-api/likenovel-service-api status --short --branch

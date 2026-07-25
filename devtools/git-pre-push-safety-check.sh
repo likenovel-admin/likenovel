@@ -109,7 +109,7 @@ ensure_backend_remote_refs() {
     return 1
   fi
 
-  if ! backend_git fetch origin --quiet; then
+  if ! backend_git fetch origin --quiet --prune; then
     fail "failed to fetch backend origin; cannot verify pushed gitlink."
     return 1
   fi
@@ -180,6 +180,7 @@ verify_changed_gitlink() {
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
+remote_name="${1:-}"
 branch="$(git branch --show-current || true)"
 head_sha="$(git rev-parse --short HEAD)"
 
@@ -220,7 +221,20 @@ done
 if (( ${#local_refs[@]} == 0 )); then
   info "(no pre-push ref updates on stdin)"
 else
-  if ! git fetch origin --quiet; then
+  protected_update_present=0
+  for remote_ref in "${remote_refs[@]}"; do
+    if is_protected_branch_ref "$remote_ref"; then
+      protected_update_present=1
+      break
+    fi
+  done
+
+  if (( protected_update_present == 1 )) && [[ "$remote_name" != "origin" ]]; then
+    fail "protected branch push must target remote 'origin': ${remote_name:-<unnamed>}"
+  fi
+
+  if ! git -c fetch.recurseSubmodules=false \
+    fetch origin --quiet --prune --no-recurse-submodules; then
     fail "failed to fetch root origin before push validation."
   fi
 

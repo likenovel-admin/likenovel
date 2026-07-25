@@ -8,6 +8,7 @@ ZERO_SHA="0000000000000000000000000000000000000000"
 repo_root="$(git rev-parse --show-toplevel)"
 pre_commit_under_test="$repo_root/devtools/git-pre-commit-safety-check.sh"
 pre_push_under_test="$repo_root/devtools/git-pre-push-safety-check.sh"
+installer_under_test="$repo_root/devtools/install-git-hooks.sh"
 fixture_root="$(mktemp -d)"
 backend_remote="$fixture_root/backend-origin.git"
 backend_work="$fixture_root/backend-work"
@@ -131,9 +132,11 @@ run_pre_commit_at() {
 }
 
 run_pre_push_at() {
-  local worktree updates git_dir index_file
+  local worktree updates remote_name remote_url git_dir index_file
   worktree="$1"
   updates="$2"
+  remote_name="${3:-origin}"
+  remote_url="${4:-$root_remote}"
   git_dir="$(git -C "$worktree" rev-parse --absolute-git-dir)"
   index_file="$(git -C "$worktree" rev-parse --git-path index)"
   (
@@ -143,14 +146,16 @@ run_pre_push_at() {
         GIT_DIR="$git_dir" \
         GIT_WORK_TREE="$worktree" \
         GIT_INDEX_FILE="$index_file" \
-        bash "$pre_push_under_test" origin "$root_remote"
+        bash "$pre_push_under_test" "$remote_name" "$remote_url"
   )
 }
 
 run_pre_push_with_pointer_allow_at() {
-  local worktree updates git_dir index_file
+  local worktree updates remote_name remote_url git_dir index_file
   worktree="$1"
   updates="$2"
+  remote_name="${3:-origin}"
+  remote_url="${4:-$root_remote}"
   git_dir="$(git -C "$worktree" rev-parse --absolute-git-dir)"
   index_file="$(git -C "$worktree" rev-parse --git-path index)"
   (
@@ -161,7 +166,14 @@ run_pre_push_with_pointer_allow_at() {
         GIT_WORK_TREE="$worktree" \
         GIT_INDEX_FILE="$index_file" \
         ALLOW_SUBMODULE_POINTER_PUSH=1 \
-        bash "$pre_push_under_test" origin "$root_remote"
+        bash "$pre_push_under_test" "$remote_name" "$remote_url"
+  )
+}
+
+run_installer_at() {
+  (
+    cd "$1"
+    bash "$installer_under_test"
   )
 }
 
@@ -260,6 +272,9 @@ root_prod_non_ff="$(
 root_feature_non_ff="$(
   make_root_commit "$root_main" "$backend_forward_one" "root feature non-ff"
 )"
+root_feature_off_target="$(
+  make_root_commit "$root_main" "$backend_off_target" "root feature off target"
+)"
 root_dev_forward="$(
   make_root_commit "$root_dev" "$backend_forward_one" "root dev forward"
 )"
@@ -325,6 +340,10 @@ for protected_branch in main dev prod; do
     run_pre_push_at "$root_work" \
     "(delete) $ZERO_SHA refs/heads/$protected_branch $(git -C "$root_work" rev-parse "origin/$protected_branch")"
 done
+expect_pass \
+  "non-protected branch deletion remains allowed" \
+  run_pre_push_at "$root_work" \
+  "(delete) $ZERO_SHA refs/heads/pointer-test $root_pointer_old"
 
 expect_fail \
   "main non-fast-forward" \
@@ -345,6 +364,17 @@ expect_pass \
   "feature branch non-fast-forward remains allowed" \
   run_pre_push_at "$root_work" \
   "$root_feature_non_ff $root_feature_non_ff refs/heads/pointer-test $root_pointer_old"
+expect_fail \
+  "protected branch push rejects non-origin remote" \
+  "protected branch push must target remote 'origin'" \
+  run_pre_push_at "$root_work" \
+  "HEAD $root_dev_ff refs/heads/dev $root_dev" \
+  backup "$root_remote"
+expect_pass \
+  "new feature ref remains allowed on alternate remote" \
+  run_pre_push_at "$root_work" \
+  "HEAD $root_main_ff refs/heads/new-feature $ZERO_SHA" \
+  backup "$root_remote"
 
 expect_pass \
   "main fast-forward" \
@@ -372,6 +402,10 @@ expect_pass \
   "intentional prod pointer forward" \
   run_pre_push_with_pointer_allow_at "$root_work" \
   "HEAD $root_prod_forward refs/heads/prod $root_prod"
+expect_pass \
+  "intentional new feature pointer is reachable before prune" \
+  run_pre_push_with_pointer_allow_at "$root_work" \
+  "HEAD $root_feature_off_target refs/heads/new-pointer $ZERO_SHA"
 expect_fail \
   "local-only pointer rejected" \
   "is not reachable from backend origin/dev" \
@@ -414,5 +448,185 @@ expect_fail \
   "$root_prod_ff $root_prod_ff refs/heads/prod $root_prod
 $root_multi_dev $root_multi_dev refs/heads/dev $root_dev
 $root_multi_main $root_multi_main refs/heads/main $root_main"
+
+git --git-dir="$backend_remote" update-ref -d refs/heads/feature-only
+git -C "$root_work/$SUBMODULE_PATH" show-ref \
+  --verify --quiet refs/remotes/origin/feature-only
+expect_fail \
+  "stale backend feature ref is pruned" \
+  "is not reachable from any backend origin branch" \
+  run_pre_push_with_pointer_allow_at "$root_work" \
+  "HEAD $root_feature_off_target refs/heads/new-pointer $ZERO_SHA"
+if git -C "$root_work/$SUBMODULE_PATH" show-ref \
+  --verify --quiet refs/remotes/origin/feature-only; then
+  echo "ERROR: stale backend feature ref was not pruned" >&2
+  exit 1
+fi
+
+git --git-dir="$root_remote" update-ref -d refs/heads/dev
+git -C "$root_work" show-ref --verify --quiet refs/remotes/origin/dev
+expect_fail \
+  "stale root dev ref is pruned before prod ancestry" \
+  "pushed prod does not contain the effective dev commit" \
+  run_pre_push_at "$root_work" \
+  "HEAD $root_prod_ff refs/heads/prod $root_prod"
+if git -C "$root_work" show-ref --verify --quiet refs/remotes/origin/dev; then
+  echo "ERROR: stale root dev ref was not pruned" >&2
+  exit 1
+fi
+git --git-dir="$root_remote" update-ref refs/heads/dev "$root_dev"
+git -C "$root_work" fetch origin \
+  '+refs/heads/dev:refs/remotes/origin/dev' >/dev/null
+
+git --git-dir="$backend_remote" update-ref -d refs/heads/dev
+git -C "$root_work/$SUBMODULE_PATH" show-ref \
+  --verify --quiet refs/remotes/origin/dev
+expect_fail \
+  "stale protected backend ref is pruned" \
+  "missing backend origin/dev" \
+  run_pre_push_with_pointer_allow_at "$root_work" \
+  "HEAD $root_dev_forward refs/heads/dev $root_dev"
+if git -C "$root_work/$SUBMODULE_PATH" show-ref \
+  --verify --quiet refs/remotes/origin/dev; then
+  echo "ERROR: stale backend dev ref was not pruned" >&2
+  exit 1
+fi
+
+installer_remote="$fixture_root/installer-origin.git"
+installer_primary="$fixture_root/installer-primary"
+installer_linked="$fixture_root/installer-linked"
+installer_backend="$fixture_root/installer-backend"
+
+git init --bare --initial-branch=main "$installer_remote" >/dev/null
+git init --initial-branch=main "$installer_backend" >/dev/null
+git_setup_identity "$installer_backend"
+touch "$installer_backend/backend.txt"
+git -C "$installer_backend" add backend.txt
+git -C "$installer_backend" commit -m "installer backend base" >/dev/null
+installer_backend_sha="$(git -C "$installer_backend" rev-parse HEAD)"
+
+git init --initial-branch=main "$installer_primary" >/dev/null
+git_setup_identity "$installer_primary"
+mkdir -p \
+  "$installer_primary/devtools" \
+  "$installer_primary/likenovel-service-api"
+printf 'installer fixture\n' >"$installer_primary/README.md"
+cp "$pre_commit_under_test" \
+  "$installer_primary/devtools/git-pre-commit-safety-check.sh"
+cp "$installer_under_test" \
+  "$installer_primary/devtools/install-git-hooks.sh"
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'echo "ERROR: primary loaded checkout-relative old pre-push" >&2' \
+  'exit 86' \
+  >"$installer_primary/devtools/git-pre-push-safety-check.sh"
+chmod +x "$installer_primary/devtools/"*.sh
+git -C "$installer_primary" add \
+  README.md \
+  devtools/git-pre-commit-safety-check.sh \
+  devtools/git-pre-push-safety-check.sh \
+  devtools/install-git-hooks.sh
+git -C "$installer_primary" update-index \
+  --add --cacheinfo \
+  "160000,$installer_backend_sha,$SUBMODULE_PATH"
+git -C "$installer_primary" commit -m "installer legacy primary" >/dev/null
+installer_legacy_sha="$(git -C "$installer_primary" rev-parse HEAD)"
+git -C "$installer_primary" remote add origin "$installer_remote"
+git -C "$installer_primary" push \
+  origin "$installer_legacy_sha:refs/heads/main" >/dev/null
+
+cp "$pre_push_under_test" \
+  "$installer_primary/devtools/git-pre-push-safety-check.sh"
+git -C "$installer_primary" add \
+  devtools/git-pre-push-safety-check.sh
+git -C "$installer_primary" commit -m "installer self-contained pre-push" >/dev/null
+installer_new_sha="$(git -C "$installer_primary" rev-parse HEAD)"
+git -C "$installer_primary" worktree add \
+  --detach "$installer_linked" "$installer_new_sha" >/dev/null
+git -C "$installer_primary" switch --detach "$installer_legacy_sha" >/dev/null
+
+installer_hooks_dir="$(
+  git -C "$installer_linked" rev-parse --path-format=absolute --git-path hooks
+)"
+primary_hooks_dir="$(
+  git -C "$installer_primary" rev-parse --path-format=absolute --git-path hooks
+)"
+if [[ "$installer_hooks_dir" != "$primary_hooks_dir" ]]; then
+  echo "ERROR: linked and primary worktrees resolved different hooks dirs" >&2
+  exit 1
+fi
+legacy_pre_push="$fixture_root/legacy-pre-push"
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'exec bash devtools/git-pre-push-safety-check.sh "$@"' \
+  >"$legacy_pre_push"
+cp "$legacy_pre_push" "$installer_hooks_dir/pre-push"
+chmod +x "$installer_hooks_dir/pre-push"
+
+expect_pass \
+  "installer migrates legacy hook from linked worktree" \
+  run_installer_at "$installer_linked"
+test -x "$installer_hooks_dir/pre-push"
+grep -Fqx \
+  "# LikeNovel managed pre-push hook" \
+  "$installer_hooks_dir/pre-push"
+grep -Fq \
+  "# source-sha256:" \
+  "$installer_hooks_dir/pre-push"
+cmp -s \
+  "$legacy_pre_push" \
+  "$installer_hooks_dir/pre-push.likenovel-backup"
+grep -Fq \
+  'exec bash devtools/git-pre-commit-safety-check.sh "$@"' \
+  "$installer_hooks_dir/pre-commit"
+backup_checksum_before="$(
+  sha256sum "$installer_hooks_dir/pre-push.likenovel-backup"
+)"
+expect_pass \
+  "installer is idempotent" \
+  run_installer_at "$installer_linked"
+backup_checksum_after="$(
+  sha256sum "$installer_hooks_dir/pre-push.likenovel-backup"
+)"
+if [[ "$backup_checksum_before" != "$backup_checksum_after" ]]; then
+  echo "ERROR: idempotent install rewrote the rollback backup" >&2
+  exit 1
+fi
+
+installer_outgoing="$(
+  printf 'installer primary dry-run\n' |
+    git -C "$installer_primary" commit-tree \
+      "$installer_legacy_sha^{tree}" \
+      -p "$installer_legacy_sha"
+)"
+expect_pass \
+  "actual primary dry-run uses shared self-contained hook" \
+  git -C "$installer_primary" push --dry-run \
+  origin "$installer_outgoing:refs/heads/main"
+
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'echo custom hook' \
+  >"$installer_hooks_dir/pre-push"
+chmod +x "$installer_hooks_dir/pre-push"
+expect_fail \
+  "installer preserves unknown custom hook" \
+  "existing hook differs" \
+  run_installer_at "$installer_linked"
+grep -Fqx 'echo custom hook' "$installer_hooks_dir/pre-push"
+
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  '# LikeNovel managed pre-push hook' \
+  'echo marker-shaped custom hook' \
+  >"$installer_hooks_dir/pre-push"
+chmod +x "$installer_hooks_dir/pre-push"
+expect_fail \
+  "installer rejects marker-only custom hook" \
+  "existing hook differs" \
+  run_installer_at "$installer_linked"
+grep -Fqx \
+  'echo marker-shaped custom hook' \
+  "$installer_hooks_dir/pre-push"
 
 echo "git hook tests passed."
