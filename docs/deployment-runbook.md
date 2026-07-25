@@ -40,9 +40,9 @@ Legacy Windows path: `C:\Users\Hongsan\Downloads\likenovel` (참고용)
 - prod batch runtime path: `/home/ln-admin/likenovel/batch`
 - dev batch runtime path: `/home/ln-admin/likenovel/batch-dev`
 
-2026-06-03 코드 readback 기준:
-- `.github/workflows/docker-dev.yml` and `.github/workflows/docker-prod.yml` deploy only frontend Docker images from the root repo.
-- `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml` packages dev backend CodeDeploy and replaces package `run_be.sh` with source `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`.
+2026-07-25 코드·서버 readback 기준:
+- `.github/workflows/docker-dev.yml` and `.github/workflows/docker-prod.yml` run hook, service lint, CMS contract gates before building frontend Docker images. They pull images before recreating containers and verify internal ports plus public URLs after deployment.
+- `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml` packages dev backend CodeDeploy, replaces package `run_be.sh` with source `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`, waits for CodeDeploy, then runs `verify_backend_dev_deploy.sh` on ln-was.
 - `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions.yml` packages prod backend CodeDeploy, waits for deployment success, then runs `verify_backend_prod_deploy.sh` on ln-was.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh` syncs batch files to `/home/ln-admin/likenovel/batch-dev` but keeps `/etc/cron.d/likenovel-dev` manual.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh` syncs batch files to `/home/ln-admin/likenovel/batch` and guards only selected prod user-crontab lines.
@@ -295,10 +295,11 @@ poetry run uvicorn app.main:be_app --reload --host 0.0.0.0 --port 8000
 - 워크플로: `.github/workflows/docker-dev.yml`
 
 워크플로 동작:
-1. `service/partner/cms` 각각에 `.env.production` 생성
-2. Docker build (`ENV_FILE=.env.production`)
-3. ECR push
-4. 태그 규칙
+1. git hook test, service lint, CMS contract test
+2. `service/partner/cms` 각각에 `.env.production` 생성
+3. Docker build (`ENV_FILE=.env.production`)
+4. ECR push
+5. 태그 규칙
    - `dev-latest`
    - `dev-${GITHUB_SHA}`
 
@@ -315,7 +316,10 @@ poetry run uvicorn app.main:be_app --reload --host 0.0.0.0 --port 8000
 
 서버 반영 표준:
 1. dev compose 이미지가 ECR 이미지(`...:dev-latest` 또는 고정 SHA 태그)를 바라보는지 확인
-2. dev 컨테이너만 pull/up
+2. 세 compose의 `pull`을 모두 먼저 성공시켜 기존 컨테이너를 보존
+3. dev 컨테이너만 `up -d --remove-orphans`
+4. 실행 컨테이너의 image digest가 이번 build output digest와 일치하는지 확인
+5. 내부 `3100/3101/3102`와 공개 URL을 모두 확인
 
 ```bash
 # user-dev
@@ -332,6 +336,8 @@ docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml up 
 ```
 
 검증:
+- `service/partner/cms` 실행 컨테이너 image digest = 해당 workflow build output digest
+- `http://127.0.0.1:3100/`, `http://127.0.0.1:3101/`, `http://127.0.0.1:3102/`
 - `https://likenovel.dev`
 - `https://partner.likenovel.dev`
 - `https://cms.likenovel.dev`
@@ -345,7 +351,8 @@ docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml up 
 1. Poetry build (`poetry build`)
 2. `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/`에서 배포 zip 생성 (`*.whl`, `appspec.yml`, `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`, `gconf.py`)
 3. S3 업로드
-4. CodeDeploy 실행 (앱/그룹은 DEV secrets 사용)
+4. CodeDeploy 실행 후 `deployment-successful`까지 대기
+5. 배포 ID와 active release 일치, systemd MainPID·pidfile, `10.0.100.110:3011` listener, 내부/공개 `/health` 검증
 
 필수 GitHub Secrets(backend dev):
 - `AWS_ACCESS_KEY_ID`
@@ -355,9 +362,11 @@ docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml up 
 - `CODEDEPLOY_GROUP_NAME_BACKEND_DEV`
 - `CODEDEPLOY_S3_BUCKET`
 - `CODEDEPLOY_CONFIG_NAME_BACKEND_DEV` (옵션, 없으면 `CodeDeployDefault.AllAtOnce`)
+- `SSH_PRIVATE_KEY`
 
 검증:
-- `https://api.likenovel.dev/docs` 접근 확인
+- `fastapi_be_server/dist/verify_backend_dev_deploy.sh <deployment-id>`가 통과해야 한다.
+- `https://api.likenovel.dev/health`와 필요한 변경 route를 확인한다.
 - 2.1의 Actions Gate를 적용한다. dev Actions가 안 뜨면 prod와 동일하게 60초 기준으로 fallback 여부를 판정하되, dev 크론은 자동 활성화하지 않는다.
 - dev `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`는 `/home/ln-admin/likenovel/releases/api-dev` release 디렉터리와 `/home/ln-admin/likenovel/api-dev` symlink를 사용한다. 최근 5개 release만 유지한다.
 - dev story context cron은 의도적으로 자동 설치하지 않는다. 필요할 때 수동으로만 `/etc/cron.d/likenovel-dev`를 설치한다.
@@ -372,10 +381,11 @@ docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml up 
 - 워크플로: `.github/workflows/docker-prod.yml`
 
 워크플로 동작:
-1. `service/partner/cms` 각각에 `.env.production` 생성
-2. Docker build (`ENV_FILE=.env.production`)
-3. ECR push
-4. 태그 규칙
+1. git hook test, service lint, CMS contract test
+2. `service/partner/cms` 각각에 `.env.production` 생성
+3. Docker build (`ENV_FILE=.env.production`)
+4. ECR push
+5. 태그 규칙
    - `prod-latest`
    - `prod-${GITHUB_SHA}`
 
@@ -388,21 +398,15 @@ docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml up 
 서버 반영 표준:
 
 ```bash
-# user(prod)
-docker compose -f /home/ln-admin/likenovel/service/prod.docker-compose.yml pull
-docker compose -f /home/ln-admin/likenovel/service/prod.docker-compose.yml up -d --remove-orphans
-
-# partner(prod)
-docker compose -f /home/ln-admin/likenovel/partner/prod.docker-compose.yml pull
-docker compose -f /home/ln-admin/likenovel/partner/prod.docker-compose.yml up -d --remove-orphans
-
-# cms(prod)
-docker compose -f /home/ln-admin/likenovel/cms/docker-compose.prod.yml pull
-docker compose -f /home/ln-admin/likenovel/cms/docker-compose.prod.yml up -d --remove-orphans
+cd /home/ln-admin/likenovel/docker-prod
+docker compose pull
+docker compose up -d --remove-orphans
 ```
 
 검증:
-- `https://likenovel.net`
+- `service/partner/cms` 실행 컨테이너 image digest = 해당 workflow build output digest
+- `http://127.0.0.1:3000/`, `http://127.0.0.1:3001/`, `http://127.0.0.1:3002/`
+- `https://www.likenovel.net`
 - `https://partner.likenovel.net`
 - `https://cms.likenovel.net`
 
