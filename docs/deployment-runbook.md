@@ -122,8 +122,24 @@ git push origin <merge_sha>:prod
 Root pre-push hook은 위 명령의 outgoing ref와 commit object를 검사한다. 다른
 checkout의 staged index, physical submodule HEAD, dirty working tree는 전송
 대상이 아니므로 push blocker로 사용하지 않는다. 대신 `main`/`dev`/`prod`
-삭제와 non-fast-forward, 환경 ancestry 위반을 차단한다. Feature branch의
+push는 remote 이름이 정확히 `origin`일 때만 허용하고, 삭제와 non-fast-forward,
+환경 ancestry 위반을 차단한다. 검증 직전에 root/backend의 `origin/*`
+remote-tracking ref를 prune하므로 삭제된 원격 branch를 도달성 근거로 쓰지 않는다.
+검증 범위는 각 outgoing ref의 최종 commit과 그 push diff이며, 범위 안의 모든
+중간 commit을 별도 재검사하지 않는다. Feature branch의
 명시적인 `--force-with-lease`는 이 환경 브랜치 보호 범위에 포함하지 않는다.
+
+Hook은 shared hooks dir에 checkout과 독립적인 self-contained 파일로 설치한다.
+기존 LikeNovel legacy/managed pre-push를 교체할 때는 최초 상태를
+`pre-push.likenovel-backup`으로 보존하며, 알 수 없는 custom hook은 중단한다.
+
+```bash
+bash devtools/install-git-hooks.sh
+git rev-parse --git-path hooks
+```
+
+Rollback이 필요하면 push를 멈춘 상태에서 설치된 `pre-push`를 별도 보존한 뒤
+같은 hooks dir의 `pre-push.likenovel-backup`을 `pre-push`로 복원한다.
 
 Submodule pointer가 포함되면 아래를 먼저 확인한다.
 
@@ -131,7 +147,7 @@ Submodule pointer가 포함되면 아래를 먼저 확인한다.
 git diff --submodule=log origin/<target> <merge_sha> -- likenovel-service-api/likenovel-service-api
 git ls-tree origin/<target> -- likenovel-service-api/likenovel-service-api
 git ls-tree <merge_sha> -- likenovel-service-api/likenovel-service-api
-git -C likenovel-service-api/likenovel-service-api fetch origin --quiet
+git -C likenovel-service-api/likenovel-service-api fetch origin --quiet --prune
 git -C likenovel-service-api/likenovel-service-api merge-base --is-ancestor <old_pointer_sha> <pointer_sha>
 git -C likenovel-service-api/likenovel-service-api merge-base --is-ancestor <pointer_sha> origin/<target>
 ```
