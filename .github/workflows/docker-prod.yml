@@ -19,11 +19,14 @@ concurrency:
 
 jobs:
   build-and-push:
+    if: github.ref == 'refs/heads/prod'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Test deployment workflow contracts
         run: python3 devtools/test-web-deploy-workflows.py
@@ -43,6 +46,10 @@ jobs:
       - name: Lint service
         working-directory: service
         run: corepack yarn lint --no-cache
+
+      - name: Test service utilities and contracts
+        working-directory: service
+        run: corepack yarn test:utils
 
       - name: Install CMS dependencies
         working-directory: cms

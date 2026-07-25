@@ -23,19 +23,47 @@ def verify_workflow(
     urls: tuple[str, str, str],
     *,
     remove_orphans: bool,
+    prod_only: bool,
 ) -> None:
     path = ROOT / ".github" / "workflows" / name
     content = path.read_text(encoding="utf-8")
+
+    require(
+        content,
+        "      - name: Checkout\n"
+        "        uses: actions/checkout@v4\n"
+        "        with:\n"
+        "          submodules: recursive",
+        name,
+    )
 
     for command in (
         "bash devtools/test-git-hooks.sh",
         "python3 devtools/test-web-deploy-workflows.py",
         "corepack yarn install --immutable",
         "corepack yarn lint --no-cache",
+        "corepack yarn test:utils",
         "npm ci --no-audit --no-fund",
         "npm run test:contracts",
     ):
         require_before(content, command, "Configure AWS credentials", name)
+
+    require(
+        content,
+        "      - name: Lint service\n"
+        "        working-directory: service\n"
+        "        run: corepack yarn lint --no-cache\n\n"
+        "      - name: Test service utilities and contracts\n"
+        "        working-directory: service\n"
+        "        run: corepack yarn test:utils",
+        name,
+    )
+    if prod_only:
+        require(
+            content,
+            "  build-and-push:\n    if: github.ref == 'refs/heads/prod'",
+            name,
+        )
 
     if 'printf \'%s\' "${{ secrets.' in content:
         raise AssertionError(f"{name}: secret must not be interpolated into shell source")
@@ -78,6 +106,7 @@ verify_workflow(
         "https://cms.likenovel.dev",
     ),
     remove_orphans=False,
+    prod_only=False,
 )
 verify_workflow(
     "docker-prod.yml",
@@ -88,6 +117,7 @@ verify_workflow(
         "https://cms.likenovel.net",
     ),
     remove_orphans=True,
+    prod_only=True,
 )
 
 print("web deploy workflow contract tests passed")

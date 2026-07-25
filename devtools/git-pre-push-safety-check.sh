@@ -19,6 +19,10 @@ fail() {
   printf 'ERROR: %s\n' "$*" >&2
 }
 
+warn() {
+  printf 'WARNING: %s\n' "$*" >&2
+}
+
 backend_git() {
   env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \
     git -C "$SUBMODULE_PATH" "$@"
@@ -291,7 +295,7 @@ else
       refs/heads/dev)
         if [[ -z "$effective_main" ]] ||
           ! git merge-base --is-ancestor "$effective_main" "$local_sha"; then
-          fail "pushed dev does not contain the effective main commit."
+          warn "pushed dev does not contain the effective main commit; push is allowed for solo-operated hotfix flow."
         else
           info "pushed dev contains effective main: OK"
         fi
@@ -299,7 +303,7 @@ else
       refs/heads/prod)
         if [[ -z "$effective_dev" ]] ||
           ! git merge-base --is-ancestor "$effective_dev" "$local_sha"; then
-          fail "pushed prod does not contain the effective dev commit."
+          warn "pushed prod does not contain the effective dev commit; push is allowed for solo-operated hotfix flow."
         else
           info "pushed prod contains effective dev: OK"
         fi

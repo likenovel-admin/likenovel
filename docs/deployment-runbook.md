@@ -41,9 +41,9 @@ Legacy Windows path: `C:\Users\Hongsan\Downloads\likenovel` (참고용)
 - dev batch runtime path: `/home/ln-admin/likenovel/batch-dev`
 
 2026-07-25 코드·서버 readback 기준:
-- `.github/workflows/docker-dev.yml` and `.github/workflows/docker-prod.yml` run hook, service lint, CMS contract gates before building frontend Docker images. They pull images before recreating containers and verify internal ports plus public URLs after deployment.
+- `.github/workflows/docker-dev.yml` and `.github/workflows/docker-prod.yml` checkout the backend submodule recursively, then run hook, service lint, service utility/contract tests, and CMS contract gates before building frontend Docker images. The prod job runs only for `refs/heads/prod`. Both workflows pull images before recreating containers and verify internal ports plus public URLs after deployment.
 - `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml` packages dev backend CodeDeploy, replaces package `run_be.sh` with source `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`, waits for CodeDeploy, then runs `verify_backend_dev_deploy.sh` on ln-was.
-- `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions.yml` packages prod backend CodeDeploy, waits for deployment success, then runs `verify_backend_prod_deploy.sh` on ln-was.
+- `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions.yml` runs only for `refs/heads/prod`, packages prod backend CodeDeploy, waits for deployment success, then runs `verify_backend_prod_deploy.sh` on ln-was.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh` syncs batch files to `/home/ln-admin/likenovel/batch-dev` but keeps `/etc/cron.d/likenovel-dev` manual.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh` syncs batch files to `/home/ln-admin/likenovel/batch` and guards only selected prod user-crontab lines.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/cron_env.sh` maps `batch-dev` to `/home/ln-admin/likenovel/api-dev/.env`, `batch` to `/home/ln-admin/likenovel/api/.env`, and Docker fallback to `/proc/1/environ`.
@@ -124,7 +124,10 @@ Root pre-push hook은 위 명령의 outgoing ref와 commit object를 검사한�
 checkout의 staged index, physical submodule HEAD, dirty working tree는 전송
 대상이 아니므로 push blocker로 사용하지 않는다. 대신 `main`/`dev`/`prod`
 push는 remote 이름이 정확히 `origin`일 때만 허용하고, 삭제와 non-fast-forward,
-환경 ancestry 위반을 차단한다. 검증 직전에 root/backend의 `origin/*`
+gitlink remote reachability 및 pointer downgrade를 차단한다. `dev`가 effective
+`main`을 포함하지 않거나 `prod`가 effective `dev`를 포함하지 않으면 1인 운영의
+hotfix 유연성을 위해 명확한 `WARNING`을 출력하되 push는 허용한다. 검증 직전에
+root/backend의 `origin/*`
 remote-tracking ref를 prune하므로 삭제된 원격 branch를 도달성 근거로 쓰지 않는다.
 검증 범위는 각 outgoing ref의 최종 commit과 그 push diff이며, 범위 안의 모든
 중간 commit을 별도 재검사하지 않는다. Feature branch의
