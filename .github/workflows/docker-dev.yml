@@ -44,6 +44,10 @@ jobs:
         working-directory: service
         run: corepack yarn lint --no-cache
 
+      - name: Test service utilities and contracts
+        working-directory: service
+        run: corepack yarn test:utils
+
       - name: Install CMS dependencies
         working-directory: cms
         run: npm ci --no-audit --no-fund

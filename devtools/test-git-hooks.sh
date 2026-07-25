@@ -65,6 +65,30 @@ expect_pass() {
   echo "ok: $label"
 }
 
+expect_pass_with_output() {
+  local label expected output status
+  label="$1"
+  expected="$2"
+  shift 2
+
+  set +e
+  output="$("$@" 2>&1)"
+  status=$?
+  set -e
+
+  if (( status != 0 )); then
+    printf '%s\n' "$output"
+    echo "ERROR: expected pass failed: $label" >&2
+    exit 1
+  fi
+  if ! grep -Fq -- "$expected" <<<"$output"; then
+    printf '%s\n' "$output"
+    echo "ERROR: expected output was not reported for $label: $expected" >&2
+    exit 1
+  fi
+  echo "ok: $label"
+}
+
 git_setup_identity() {
   git -C "$1" config user.name "LikeNovel Hook Test"
   git -C "$1" config user.email "hook-test@likenovel.invalid"
@@ -388,6 +412,12 @@ expect_pass \
   "prod fast-forward" \
   run_pre_push_at "$root_work" \
   "HEAD $root_prod_ff refs/heads/prod $root_prod"
+expect_pass_with_output \
+  "simultaneous dev warns when it lacks outgoing main" \
+  "WARNING: pushed dev does not contain the effective main commit; push is allowed for solo-operated hotfix flow." \
+  run_pre_push_at "$root_work" \
+  "$root_dev_ff $root_dev_ff refs/heads/dev $root_dev
+$root_main_ff $root_main_ff refs/heads/main $root_main"
 
 expect_fail \
   "pointer change requires intent" \
@@ -441,9 +471,9 @@ expect_pass \
 $root_multi_dev $root_multi_dev refs/heads/dev $root_dev
 $root_multi_main $root_multi_main refs/heads/main $root_main"
 
-expect_fail \
-  "simultaneous prod must contain outgoing dev" \
-  "pushed prod does not contain the effective dev commit" \
+expect_pass_with_output \
+  "simultaneous prod warns when it lacks outgoing dev" \
+  "WARNING: pushed prod does not contain the effective dev commit; push is allowed for solo-operated hotfix flow." \
   run_pre_push_at "$root_work" \
   "$root_prod_ff $root_prod_ff refs/heads/prod $root_prod
 $root_multi_dev $root_multi_dev refs/heads/dev $root_dev
@@ -465,9 +495,9 @@ fi
 
 git --git-dir="$root_remote" update-ref -d refs/heads/dev
 git -C "$root_work" show-ref --verify --quiet refs/remotes/origin/dev
-expect_fail \
-  "stale root dev ref is pruned before prod ancestry" \
-  "pushed prod does not contain the effective dev commit" \
+expect_pass_with_output \
+  "stale root dev ref is pruned before prod ancestry warning" \
+  "WARNING: pushed prod does not contain the effective dev commit; push is allowed for solo-operated hotfix flow." \
   run_pre_push_at "$root_work" \
   "HEAD $root_prod_ff refs/heads/prod $root_prod"
 if git -C "$root_work" show-ref --verify --quiet refs/remotes/origin/dev; then
