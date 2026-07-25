@@ -105,28 +105,56 @@ ssh -i /home/hongsan/.ssh/ln_kp.pem -o IdentitiesOnly=yes \
 
 위 hard gate 전부가 끝나기 전에는 "배포 완료"라고 말하지 않는다.
 
-## 2.2 Dirty Worktree 배포 통합 경로
+## 2.2 Dirty Worktree exact-SHA 배포 통합 경로
 
 현재 checkout에 unrelated local change가 남아 있으면 `dev`/`prod`를 직접 checkout하지 않는다.
-단, root repo는 linked worktree에서 push hook이 막히므로 아래 순서를 고정한다.
+아래 순서로 Codex-owned clean integration worktree에서 배포 commit을 분리한다.
 
-1. 임시 linked worktree는 merge commit 생성과 검증에만 사용한다.
-2. linked worktree에서 `git push`를 시도하지 않는다.
-3. merge commit SHA를 만든 뒤 primary checkout에서 exact ref로 push한다.
+1. `origin/<target>` 기준 integration worktree에서 요청된 exact commit만 통합한다.
+2. 같은 worktree에서 test/build와 outgoing diff를 검증한다.
+3. 검증한 commit SHA를 같은 worktree에서 exact ref로 push한다.
 
 ```bash
 git push origin <merge_sha>:dev
 git push origin <merge_sha>:prod
 ```
 
+Root pre-push hook은 위 명령의 outgoing ref와 commit object를 검사한다. 다른
+checkout의 staged index, physical submodule HEAD, dirty working tree는 전송
+대상이 아니므로 push blocker로 사용하지 않는다. 대신 `main`/`dev`/`prod`
+push는 remote 이름이 정확히 `origin`일 때만 허용하고, 삭제와 non-fast-forward,
+환경 ancestry 위반을 차단한다. 검증 직전에 root/backend의 `origin/*`
+remote-tracking ref를 prune하므로 삭제된 원격 branch를 도달성 근거로 쓰지 않는다.
+검증 범위는 각 outgoing ref의 최종 commit과 그 push diff이며, 범위 안의 모든
+중간 commit을 별도 재검사하지 않는다. Feature branch의
+명시적인 `--force-with-lease`는 이 환경 브랜치 보호 범위에 포함하지 않는다.
+
+Hook은 shared hooks dir에 checkout과 독립적인 self-contained 파일로 설치한다.
+기존 LikeNovel legacy/managed pre-push를 교체할 때는 최초 상태를
+`pre-push.likenovel-backup`으로 보존하며, 알 수 없는 custom hook은 중단한다.
+
+```bash
+bash devtools/install-git-hooks.sh
+git rev-parse --git-path hooks
+```
+
+Rollback이 필요하면 push를 멈춘 상태에서 설치된 `pre-push`를 별도 보존한 뒤
+같은 hooks dir의 `pre-push.likenovel-backup`을 `pre-push`로 복원한다.
+
 Submodule pointer가 포함되면 아래를 먼저 확인한다.
 
 ```bash
-git diff --submodule=log -- likenovel-service-api/likenovel-service-api
+git diff --submodule=log origin/<target> <merge_sha> -- likenovel-service-api/likenovel-service-api
+git ls-tree origin/<target> -- likenovel-service-api/likenovel-service-api
+git ls-tree <merge_sha> -- likenovel-service-api/likenovel-service-api
+git -C likenovel-service-api/likenovel-service-api fetch origin --quiet --prune
+git -C likenovel-service-api/likenovel-service-api merge-base --is-ancestor <old_pointer_sha> <pointer_sha>
 git -C likenovel-service-api/likenovel-service-api merge-base --is-ancestor <pointer_sha> origin/<target>
 ```
 
-의도된 pointer push일 때만 해당 명령 1회에 한해 `ALLOW_SUBMODULE_POINTER_PUSH=1`을 붙인다.
+의도된 pointer push일 때만 해당 명령 1회에 한해
+`ALLOW_SUBMODULE_POINTER_PUSH=1`을 붙인다. 이 flag는 의도 확인만 생략하며,
+backend remote 도달성과 pointer 비후퇴 검사는 우회하지 않는다.
 
 ## 2.3 Deploy Merge Conflict Stop Rules
 
