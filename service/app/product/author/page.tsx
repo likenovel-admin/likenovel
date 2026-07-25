@@ -9,10 +9,10 @@ import { useEffect } from "react";
 
 export default function AuthorHome() {
   const router = useRouter();
-  const { isAuthInitialized, isAuthenticated } = useAuthStore((state) => ({
-    isAuthInitialized: state.isAuthInitialized,
-    isAuthenticated: state.isAuthenticated,
-  }));
+  const isAuthInitialized = useAuthStore(
+    (state) => state.isAuthInitialized
+  );
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     if (!isAuthInitialized || isAuthenticated) return;
