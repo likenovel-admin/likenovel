@@ -28,6 +28,15 @@ def verify_workflow(
     path = ROOT / ".github" / "workflows" / name
     content = path.read_text(encoding="utf-8")
 
+    require(
+        content,
+        "      - name: Checkout\n"
+        "        uses: actions/checkout@v4\n"
+        "        with:\n"
+        "          submodules: recursive",
+        name,
+    )
+
     for command in (
         "bash devtools/test-git-hooks.sh",
         "python3 devtools/test-web-deploy-workflows.py",

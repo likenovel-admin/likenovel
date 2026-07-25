@@ -41,7 +41,7 @@ Legacy Windows path: `C:\Users\Hongsan\Downloads\likenovel` (참고용)
 - dev batch runtime path: `/home/ln-admin/likenovel/batch-dev`
 
 2026-07-25 코드·서버 readback 기준:
-- `.github/workflows/docker-dev.yml` and `.github/workflows/docker-prod.yml` run hook, service lint, service utility/contract tests, and CMS contract gates before building frontend Docker images. The prod job runs only for `refs/heads/prod`. Both workflows pull images before recreating containers and verify internal ports plus public URLs after deployment.
+- `.github/workflows/docker-dev.yml` and `.github/workflows/docker-prod.yml` checkout the backend submodule recursively, then run hook, service lint, service utility/contract tests, and CMS contract gates before building frontend Docker images. The prod job runs only for `refs/heads/prod`. Both workflows pull images before recreating containers and verify internal ports plus public URLs after deployment.
 - `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml` packages dev backend CodeDeploy, replaces package `run_be.sh` with source `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`, waits for CodeDeploy, then runs `verify_backend_dev_deploy.sh` on ln-was.
 - `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions.yml` runs only for `refs/heads/prod`, packages prod backend CodeDeploy, waits for deployment success, then runs `verify_backend_prod_deploy.sh` on ln-was.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh` syncs batch files to `/home/ln-admin/likenovel/batch-dev` but keeps `/etc/cron.d/likenovel-dev` manual.

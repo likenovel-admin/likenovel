@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Test deployment workflow contracts
         run: python3 devtools/test-web-deploy-workflows.py
