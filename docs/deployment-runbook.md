@@ -317,22 +317,26 @@ poetry run uvicorn app.main:be_app --reload --host 0.0.0.0 --port 8000
 서버 반영 표준:
 1. dev compose 이미지가 ECR 이미지(`...:dev-latest` 또는 고정 SHA 태그)를 바라보는지 확인
 2. 세 compose의 `pull`을 모두 먼저 성공시켜 기존 컨테이너를 보존
-3. dev 컨테이너만 `up -d --remove-orphans`
+3. dev 컨테이너만 `up -d`
 4. 실행 컨테이너의 image digest가 이번 build output digest와 일치하는지 확인
 5. 내부 `3100/3101/3102`와 공개 URL을 모두 확인
+
+DEV의 세 compose 파일은 서로 다른 디렉터리에 있지만 현재 Docker Compose project명이 모두 `docker`다.
+따라서 DEV에서 `--remove-orphans`를 사용하면 뒤 compose가 앞의 정상 컨테이너를 삭제한다. 세 compose를
+별도 project명으로 마이그레이션하기 전까지 DEV 배포에는 `--remove-orphans`를 쓰지 않는다.
 
 ```bash
 # user-dev
 docker compose -f /home/ln-admin/likenovel/service-dev/docker/docker-compose.yml pull
-docker compose -f /home/ln-admin/likenovel/service-dev/docker/docker-compose.yml up -d --remove-orphans
+docker compose -f /home/ln-admin/likenovel/service-dev/docker/docker-compose.yml up -d
 
 # partner-dev
 docker compose -f /home/ln-admin/likenovel/partner-dev/docker/docker-compose.yml pull
-docker compose -f /home/ln-admin/likenovel/partner-dev/docker/docker-compose.yml up -d --remove-orphans
+docker compose -f /home/ln-admin/likenovel/partner-dev/docker/docker-compose.yml up -d
 
 # cms-dev
 docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml pull
-docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml up -d --remove-orphans
+docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml up -d
 ```
 
 검증:

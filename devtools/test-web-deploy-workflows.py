@@ -17,7 +17,13 @@ def require_before(content: str, first: str, second: str, workflow: str) -> None
         raise AssertionError(f"{workflow}: {first!r} must precede {second!r}")
 
 
-def verify_workflow(name: str, ports: tuple[int, int, int], urls: tuple[str, str, str]) -> None:
+def verify_workflow(
+    name: str,
+    ports: tuple[int, int, int],
+    urls: tuple[str, str, str],
+    *,
+    remove_orphans: bool,
+) -> None:
     path = ROOT / ".github" / "workflows" / name
     content = path.read_text(encoding="utf-8")
 
@@ -41,7 +47,11 @@ def verify_workflow(name: str, ports: tuple[int, int, int], urls: tuple[str, str
         raise AssertionError(f"{name}: must not remove containers before pulling")
 
     require(content, ' bash -s" << \'ENDSSH\'', name)
-    require_before(content, "docker compose pull", "docker compose up -d --remove-orphans", name)
+    require_before(content, "docker compose pull", "docker compose up -d", name)
+    if remove_orphans:
+        require(content, "docker compose up -d --remove-orphans", name)
+    elif "docker compose up -d --remove-orphans" in content:
+        raise AssertionError(f"{name}: shared DEV compose project must preserve sibling containers")
     require(content, "wait_for_url()", name)
     require(content, '[[ "$status" == 2* ]]', name)
     require(content, "id: build-service", name)
@@ -67,6 +77,7 @@ verify_workflow(
         "https://partner.likenovel.dev",
         "https://cms.likenovel.dev",
     ),
+    remove_orphans=False,
 )
 verify_workflow(
     "docker-prod.yml",
@@ -76,6 +87,7 @@ verify_workflow(
         "https://partner.likenovel.net",
         "https://cms.likenovel.net",
     ),
+    remove_orphans=True,
 )
 
 print("web deploy workflow contract tests passed")
