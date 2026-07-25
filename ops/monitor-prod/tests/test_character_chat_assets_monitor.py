@@ -20,20 +20,28 @@ class CharacterChatAssetsMonitorTest(unittest.TestCase):
             self.repo_root / "ops" / "monitor-prod" / "monitor.sh"
         ).read_text(encoding="utf-8")
 
-    def _run_check(self, *, audit_rc: int, action_plan_counts: dict[str, int]) -> str:
+    def _run_check(
+        self,
+        *,
+        audit_rc: int | None,
+        action_plan_counts: dict[str, int],
+        raw_summary: str | None = None,
+    ) -> str:
         with tempfile.TemporaryDirectory() as temp_dir:
             fake_ssh = Path(temp_dir) / "ssh"
-            summary = json.dumps(
+            summary = raw_summary or json.dumps(
                 {
                     "productCount": 50,
                     "actionPlanCounts": action_plan_counts,
+                    "outOfCohortHoldCount": 0,
                 },
                 ensure_ascii=False,
             )
+            audit_line = f"'AUDIT_RC={audit_rc}' " if audit_rc is not None else ""
             fake_ssh.write_text(
                 "#!/usr/bin/env bash\n"
                 "cat >/dev/null\n"
-                f"printf '%s\\n' 'AUDIT_RC={audit_rc}' '{summary}'\n",
+                f"printf '%s\\n' {audit_line}'{summary}'\n",
                 encoding="utf-8",
             )
             fake_ssh.chmod(0o755)
@@ -90,6 +98,59 @@ class CharacterChatAssetsMonitorTest(unittest.TestCase):
             "MON|character_chat:assets|1 / 50 products|0 actionable|ALERT|",
             output,
         )
+
+    def test_multiple_actions_for_one_product_count_once(self) -> None:
+        output = self._run_check(
+            audit_rc=1,
+            action_plan_counts={
+                "ready": 49,
+                "generate_rp_profile_examples": 1,
+                "generate_episode_scene_extraction": 1,
+                "rebuild_rp_assets_with_v3_scope": 1,
+            },
+        )
+
+        self.assertIn(
+            "MON|character_chat:assets|1 / 50 products|0 actionable|ALERT|",
+            output,
+        )
+
+    def test_malformed_or_incomplete_success_is_unknown(self) -> None:
+        invalid_summaries = (
+            "not-json",
+            json.dumps({"productCount": 50}),
+            json.dumps(
+                {
+                    "actionPlanCounts": {},
+                    "outOfCohortHoldCount": 0,
+                }
+            ),
+            json.dumps(
+                {
+                    "productCount": 50,
+                    "actionPlanCounts": {},
+                }
+            ),
+        )
+
+        for summary in invalid_summaries:
+            with self.subTest(summary=summary):
+                output = self._run_check(
+                    audit_rc=0,
+                    action_plan_counts={},
+                    raw_summary=summary,
+                )
+                self.assertIn("|UNKNOWN|", output)
+                self.assertNotIn("|OK|", output)
+
+    def test_missing_audit_rc_is_unknown(self) -> None:
+        output = self._run_check(
+            audit_rc=None,
+            action_plan_counts={"ready": 50},
+        )
+
+        self.assertIn("|UNKNOWN|", output)
+        self.assertNotIn("|OK|", output)
 
 
 if __name__ == "__main__":

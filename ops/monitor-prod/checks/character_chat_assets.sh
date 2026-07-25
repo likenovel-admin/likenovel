@@ -45,16 +45,39 @@ import sys
 text = sys.stdin.read()
 start = text.find("{")
 try:
-    summary = json.loads(text[start:]) if start >= 0 else {}
-except json.JSONDecodeError:
-    summary = {}
-counts = dict(summary.get("actionPlanCounts") or {})
-actionable = sum(
-    int(count or 0)
-    for action, count in counts.items()
-    if action not in {"ready", "no_public_character_candidate"}
-)
-print("%s|%s" % (int(summary.get("productCount") or 0), actionable))
+    if start < 0:
+        raise ValueError("JSON summary missing")
+    summary = json.loads(text[start:])
+    product_count = summary["productCount"]
+    counts = summary["actionPlanCounts"]
+    out_of_cohort_hold_count = summary["outOfCohortHoldCount"]
+    if (
+        isinstance(product_count, bool)
+        or not isinstance(product_count, int)
+        or product_count < 0
+        or isinstance(out_of_cohort_hold_count, bool)
+        or not isinstance(out_of_cohort_hold_count, int)
+        or out_of_cohort_hold_count < 0
+        or not isinstance(counts, dict)
+        or any(
+            isinstance(count, bool)
+            or not isinstance(count, int)
+            or count < 0
+            for count in counts.values()
+        )
+    ):
+        raise ValueError("invalid audit summary")
+    non_actionable = (
+        int(counts.get("ready") or 0)
+        + int(counts.get("no_public_character_candidate") or 0)
+        + out_of_cohort_hold_count
+    )
+    if non_actionable > product_count:
+        raise ValueError("invalid non-actionable product count")
+    actionable = product_count - non_actionable
+    print("%s|%s" % (product_count, actionable))
+except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+    print("invalid|invalid")
 ')
 product_count="${metrics%%|*}"
 actionable_count="${metrics##*|}"
