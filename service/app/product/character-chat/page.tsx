@@ -1,7 +1,14 @@
 "use client";
 
-import { useGetCharacterChatCatalog } from "@/app/api/query/product";
-import type { ICharacterChatCatalogItem } from "@/app/api/query/product/dto";
+import {
+  getMainCharacterSlotsQueryKey,
+  useGetCharacterChatCatalog,
+} from "@/app/api/query/product";
+import type {
+  ICharacterChatCatalogItem,
+  IGetMainCharacterSlotsResponse,
+  IMainCharacterSlotItem,
+} from "@/app/api/query/product/dto";
 import Spinner from "@/components/common/Spinner";
 import SelectBox from "@/components/form/selectbox";
 import CharacterChatCardGrid from "@/components/main/CharacterChatCardGrid";
@@ -9,6 +16,7 @@ import type { CharacterChatPreviewDetail } from "@/components/main/CharacterChat
 import useAuthStore from "@/store/authStore";
 import { getHomeQueryState } from "@/utils/homeQueryState";
 import { findPreviousNonMatchingPath } from "@/utils/navigationHistory";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Return from "/public/images/return.svg";
@@ -126,6 +134,7 @@ const LOCAL_MOCK_ITEMS: ICharacterChatCatalogItem[] =
   });
 
 const EMPTY_CATALOG_ITEMS: ICharacterChatCatalogItem[] = [];
+const EMPTY_SLOT_ITEMS: IMainCharacterSlotItem[] = [];
 
 const LOCAL_MOCK_READ_EPISODE_BY_PRODUCT = Object.fromEntries(
   LOCAL_MOCK_ITEMS.map((item) => [
@@ -172,6 +181,7 @@ const LOCAL_MOCK_PREVIEW_DETAIL_BY_PRODUCT: Record<
 function CharacterChatCatalogPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const { user, isAuthenticated, accessToken, isAuthInitialized } = useAuthStore();
   const [localMockEnabled, setLocalMockEnabled] = useState<boolean | null>(null);
   const [visibleBatchCount, setVisibleBatchCount] = useState(1);
@@ -351,6 +361,13 @@ function CharacterChatCatalogPageContent() {
     queryState.enabled && localMockEnabled === false,
     queryState.productCacheIdentity
   );
+  const slotSeedItems =
+    queryClient.getQueryData<IGetMainCharacterSlotsResponse>(
+      getMainCharacterSlotsQueryKey(
+        adultYn,
+        queryState.productCacheIdentity
+      )
+    )?.data ?? EMPTY_SLOT_ITEMS;
   const items = localMockEnabled
     ? LOCAL_MOCK_ITEMS
     : data?.data ?? EMPTY_CATALOG_ITEMS;
@@ -364,8 +381,27 @@ function CharacterChatCatalogPageContent() {
     () => filteredItems.slice(0, visibleItemCount),
     [filteredItems, visibleItemCount]
   );
-  const showLoading = localMockEnabled === null || isLoading;
-  const showError = localMockEnabled === false && isError;
+  const isDefaultCatalogView =
+    activeScope === "all" &&
+    activeRole === "all" &&
+    activeSort === "recommended";
+  const canShowSlotSeed =
+    localMockEnabled === false &&
+    data === undefined &&
+    isDefaultCatalogView &&
+    slotSeedItems.length > 0;
+  const seedVisibleItems = useMemo(
+    () => slotSeedItems.slice(0, catalogPaging.batchSize),
+    [catalogPaging.batchSize, slotSeedItems]
+  );
+  const displayItems = canShowSlotSeed ? seedVisibleItems : visibleItems;
+  const showLoading =
+    (localMockEnabled === null || isLoading) && !canShowSlotSeed;
+  const showError =
+    localMockEnabled === false && isError && !canShowSlotSeed;
+  const showGrid =
+    canShowSlotSeed ||
+    (!showLoading && !showError && filteredItems.length > 0);
 
   return (
     <main className="w-full px-16pxr md:px-24pxr lg:px-32pxr">
@@ -482,7 +518,10 @@ function CharacterChatCatalogPageContent() {
             </button>
           </div>
         )}
-        {!showLoading && !showError && items.length === 0 && (
+        {!showLoading &&
+          !showError &&
+          !canShowSlotSeed &&
+          items.length === 0 && (
           <div className="flex min-h-[240px] items-center justify-center text-14pxr text-dark-gray-500">
             지금 대화할 수 있는 캐릭터가 없어요.
           </div>
@@ -502,10 +541,10 @@ function CharacterChatCatalogPageContent() {
               </button>
             </div>
           )}
-        {!showLoading && !showError && filteredItems.length > 0 && (
+        {showGrid && (
           <>
             <CharacterChatCardGrid
-              items={visibleItems}
+              items={displayItems}
               priorityItemCount={4}
               adultYn={adultYn}
               entrySource="character_catalog"
@@ -522,7 +561,29 @@ function CharacterChatCatalogPageContent() {
               imageSizes="(max-width: 767px) 46vw, (max-width: 1023px) 23vw, (max-width: 1279px) 18vw, 170px"
               className="grid grid-cols-2 gap-x-10pxr gap-y-20pxr md:grid-cols-4 md:gap-x-20pxr lg:grid-cols-5 xl:grid-cols-6"
             />
-            {visibleItems.length < filteredItems.length && (
+            {canShowSlotSeed && !isError && (
+              <p role="status" className="sr-only">
+                전체 목록을 불러오는 중입니다.
+              </p>
+            )}
+            {canShowSlotSeed && isError && (
+              <div
+                role="alert"
+                className="mt-24pxr flex items-center justify-center gap-8pxr text-13pxr text-dark-gray-500"
+              >
+                <span>전체 목록을 불러오지 못했어요.</span>
+                <button
+                  type="button"
+                  onClick={() => void refetchCatalog()}
+                  disabled={isFetching}
+                  className="font-medium text-primary-100 underline underline-offset-4 disabled:text-dark-gray-300"
+                >
+                  {isFetching ? "불러오는 중..." : "다시 불러오기"}
+                </button>
+              </div>
+            )}
+            {!canShowSlotSeed &&
+              visibleItems.length < filteredItems.length && (
               <div className="mt-28pxr flex justify-center">
                 <button
                   type="button"
@@ -536,7 +597,7 @@ function CharacterChatCatalogPageContent() {
                   캐릭터 더 보기
                 </button>
               </div>
-            )}
+              )}
           </>
         )}
       </div>

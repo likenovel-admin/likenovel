@@ -58,6 +58,16 @@ assert.match(
 );
 assert.match(
   querySource,
+  /export const getMainCharacterSlotsQueryKey = \([\s\S]*\["getMainCharacterSlots", adultYnParam, cacheIdentity\] as const;/,
+  "Home and catalog should share one cache key for the existing character slots"
+);
+assert.match(
+  querySource,
+  /useGetMainCharacterSlots[\s\S]*queryKey: getMainCharacterSlotsQueryKey\(adult_yn, cacheIdentity\)/,
+  "The home character-slot query should use the shared cache key"
+);
+assert.match(
+  querySource,
   /\/v1\/query\/products\/\$\{productId\}\/character-chat-preview/,
   "The modal should load the selected episode preview from the API"
 );
@@ -130,13 +140,53 @@ assert.match(
 );
 assert.match(
   pageSource,
-  /<CharacterChatCardGrid[\s\S]*items=\{visibleItems\}/,
-  "The grid should render only the current two-row window"
+  /const displayItems = canShowSlotSeed \? seedVisibleItems : visibleItems;/,
+  "The grid should switch from the viewport-sized seed to the authoritative window"
 );
 assert.match(
   pageSource,
-  /<CharacterChatCardGrid[\s\S]*items=\{visibleItems\}[\s\S]*priorityItemCount=\{4\}/,
+  /<CharacterChatCardGrid[\s\S]*items=\{displayItems\}[\s\S]*priorityItemCount=\{4\}/,
   "The catalog should prioritize only its first visible mobile batch"
+);
+assert.match(
+  pageSource,
+  /queryClient\.getQueryData<IGetMainCharacterSlotsResponse>\(\s*getMainCharacterSlotsQueryKey\(\s*adultYn,\s*queryState\.productCacheIdentity\s*\)\s*\)/,
+  "The catalog should reuse the exact home character-slot cache entry"
+);
+assert.match(
+  pageSource,
+  /const isDefaultCatalogView =\s*activeScope === "all" &&\s*activeRole === "all" &&\s*activeSort === "recommended";/,
+  "Random home slots should only seed the unfiltered default catalog view"
+);
+assert.match(
+  pageSource,
+  /const canShowSlotSeed =[\s\S]*data === undefined[\s\S]*isDefaultCatalogView[\s\S]*slotSeedItems\.length > 0;/,
+  "The home seed should stop as soon as authoritative catalog data arrives"
+);
+assert.match(
+  pageSource,
+  /slotSeedItems\.slice\(0, catalogPaging\.batchSize\)/,
+  "The seed should fill exactly the viewport-sized first two rows"
+);
+assert.match(
+  pageSource,
+  /const displayItems = canShowSlotSeed \? seedVisibleItems : visibleItems;[\s\S]*<CharacterChatCardGrid[\s\S]*items=\{displayItems\}[\s\S]*entrySource="character_catalog"/,
+  "The catalog should render cached home slots through the same grid while loading"
+);
+assert.match(
+  pageSource,
+  /const showLoading =[\s\S]*!canShowSlotSeed;/,
+  "A usable slot seed should replace the blocking spinner"
+);
+assert.match(
+  pageSource,
+  /const showError =[\s\S]*isError && !canShowSlotSeed;/,
+  "A catalog error should not remove still-usable seeded cards"
+);
+assert.match(
+  pageSource,
+  /canShowSlotSeed && isError[\s\S]*role="alert"[\s\S]*전체 목록을 불러오지 못했어요/,
+  "A background catalog failure should remain visible and retryable"
 );
 assert.match(
   gridSource,

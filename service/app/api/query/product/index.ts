@@ -790,6 +790,14 @@ export const useGetMainSingleSlots = (
   });
 };
 
+export const getMainCharacterSlotsQueryKey = (
+  adult_yn?: string,
+  cacheIdentity: string = "guest"
+) => {
+  const adultYnParam = adult_yn || "N";
+  return ["getMainCharacterSlots", adultYnParam, cacheIdentity] as const;
+};
+
 export const useGetMainCharacterSlots = (
   adult_yn?: string,
   enabled: boolean = true,
@@ -797,7 +805,7 @@ export const useGetMainCharacterSlots = (
 ) => {
   const adultYnParam = adult_yn || "N";
   return useQuery<IGetMainCharacterSlotsResponse>({
-    queryKey: ["getMainCharacterSlots", adultYnParam, cacheIdentity],
+    queryKey: getMainCharacterSlotsQueryKey(adult_yn, cacheIdentity),
     queryFn: async () => {
       const response = await instance.get(
         `/v1/query/products/main-character-slots?adult_yn=${adultYnParam}`
