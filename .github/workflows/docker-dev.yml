@@ -25,6 +25,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Test deployment workflow contracts
+        run: python3 devtools/test-web-deploy-workflows.py
+
+      - name: Test git hooks
+        run: bash devtools/test-git-hooks.sh
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install service dependencies
+        working-directory: service
+        run: corepack yarn install --immutable
+
+      - name: Lint service
+        working-directory: service
+        run: corepack yarn lint --no-cache
+
+      - name: Install CMS dependencies
+        working-directory: cms
+        run: npm ci --no-audit --no-fund
+
+      - name: Test CMS contracts
+        working-directory: cms
+        run: npm run test:contracts
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -49,26 +76,33 @@ jobs:
       # ---------------------------------------------------------------------
       - name: Write .env.production (DEV) - service(user web)
         working-directory: service
+        env:
+          SERVICE_ENV_DEV: ${{ secrets.SERVICE_ENV_DEV }}
         run: |
           set -e
-          printf '%s' "${{ secrets.SERVICE_ENV_DEV }}" | tr -d '\r' > .env.production
+          printf '%s' "$SERVICE_ENV_DEV" | tr -d '\r' > .env.production
 
       - name: Write .env.production (DEV) - partner
         working-directory: partner
+        env:
+          PARTNER_ENV_DEV: ${{ secrets.PARTNER_ENV_DEV }}
         run: |
           set -e
-          printf '%s' "${{ secrets.PARTNER_ENV_DEV }}" | tr -d '\r' > .env.production
+          printf '%s' "$PARTNER_ENV_DEV" | tr -d '\r' > .env.production
 
       - name: Write .env.production (DEV) - cms
         working-directory: cms
+        env:
+          CMS_ENV_DEV: ${{ secrets.CMS_ENV_DEV }}
         run: |
           set -e
-          printf '%s' "${{ secrets.CMS_ENV_DEV }}" | tr -d '\r' > .env.production
+          printf '%s' "$CMS_ENV_DEV" | tr -d '\r' > .env.production
 
       # ---------------------------------------------------------------------
       # Build & Push (dev-latest + dev-${SHA})
       # ---------------------------------------------------------------------
       - name: Build & Push - service(user web)
+        id: build-service
         uses: docker/build-push-action@v6
         with:
           context: service
@@ -81,6 +115,7 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_SERVICE }}:dev-${{ github.sha }}
 
       - name: Build & Push - partner
+        id: build-partner
         uses: docker/build-push-action@v6
         with:
           context: partner
@@ -93,6 +128,7 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_PARTNER }}:dev-${{ github.sha }}
 
       - name: Build & Push - cms
+        id: build-cms
         uses: docker/build-push-action@v6
         with:
           context: cms
@@ -109,14 +145,114 @@ jobs:
       # ECR login → pull new images → recreate containers
       # ---------------------------------------------------------------------
       - name: Deploy to dev server (ln-web)
+        env:
+          SSH_PRIVATE_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY_B64 }}" | base64 -d > ~/.ssh/deploy_key
+          printf '%s' "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -T ln-admin@ec2-3-34-11-39.ap-northeast-2.compute.amazonaws.com << 'ENDSSH'
-            set -e
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -T ln-admin@ec2-3-34-11-39.ap-northeast-2.compute.amazonaws.com \
+            "EXPECTED_SERVICE_DIGEST='${{ steps.build-service.outputs.digest }}' EXPECTED_PARTNER_DIGEST='${{ steps.build-partner.outputs.digest }}' EXPECTED_CMS_DIGEST='${{ steps.build-cms.outputs.digest }}' bash -s" << 'ENDSSH'
+            set -euo pipefail
+            compose_dirs=(
+              /home/ln-admin/likenovel/service-dev/docker
+              /home/ln-admin/likenovel/partner-dev/docker
+              /home/ln-admin/likenovel/cms-dev/docker
+            )
+
+            dump_state() {
+              for compose_dir in "${compose_dirs[@]}"; do
+                (cd "$compose_dir" && docker compose ps) || true
+              done
+            }
+
+            wait_for_url() {
+              local url="$1"
+              local label="$2"
+              local attempt
+              local status
+
+              for attempt in $(seq 1 30); do
+                status="$(curl -sS --max-time 5 --output /dev/null --write-out '%{http_code}' "$url" || true)"
+                if [[ "$status" == 2* ]]; then
+                  echo "[health] $label ready"
+                  return 0
+                fi
+                sleep 2
+              done
+
+              echo "[health] $label failed: $url" >&2
+              return 1
+            }
+
+            verify_service_digest() {
+              local compose_dir="$1"
+              local service_name="$2"
+              local expected_digest="$3"
+              local container_id
+              local image_id
+              local repo_digests
+
+              if [[ ! "$expected_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+                echo "[image] invalid expected digest for $service_name: $expected_digest" >&2
+                return 1
+              fi
+
+              container_id="$(cd "$compose_dir" && docker compose ps -q "$service_name")"
+              if [[ ! "$container_id" =~ ^[0-9a-f]+$ ]]; then
+                echo "[image] expected one running container for $service_name" >&2
+                return 1
+              fi
+
+              image_id="$(docker inspect --format '{{.Image}}' "$container_id")"
+              repo_digests="$(docker image inspect "$image_id" --format '{{range .RepoDigests}}{{println .}}{{end}}')"
+              if ! grep -F "@$expected_digest" <<< "$repo_digests" >/dev/null; then
+                echo "[image] $service_name is not running expected digest $expected_digest" >&2
+                echo "$repo_digests" >&2
+                return 1
+              fi
+              echo "[image] $service_name running expected digest $expected_digest"
+            }
+
+            trap dump_state ERR
             aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 992382709044.dkr.ecr.ap-northeast-2.amazonaws.com
-            cd /home/ln-admin/likenovel/service-dev/docker && docker compose down && docker compose pull && docker compose up -d
-            cd /home/ln-admin/likenovel/partner-dev/docker && docker compose down && docker compose pull && docker compose up -d
-            cd /home/ln-admin/likenovel/cms-dev/docker && docker compose down && docker compose pull && docker compose up -d
+            for compose_dir in "${compose_dirs[@]}"; do
+              (cd "$compose_dir" && docker compose pull)
+            done
+            for compose_dir in "${compose_dirs[@]}"; do
+              (cd "$compose_dir" && docker compose up -d --remove-orphans)
+            done
+
+            verify_service_digest /home/ln-admin/likenovel/service-dev/docker likenovel-user-dev "$EXPECTED_SERVICE_DIGEST"
+            verify_service_digest /home/ln-admin/likenovel/partner-dev/docker likenovel-partner-dev "$EXPECTED_PARTNER_DIGEST"
+            verify_service_digest /home/ln-admin/likenovel/cms-dev/docker likenovel-admin-dev "$EXPECTED_CMS_DIGEST"
+            wait_for_url http://127.0.0.1:3100/ service-dev
+            wait_for_url http://127.0.0.1:3101/ partner-dev
+            wait_for_url http://127.0.0.1:3102/ cms-dev
+            trap - ERR
           ENDSSH
+
+      - name: Verify public dev endpoints
+        run: |
+          set -euo pipefail
+          wait_for_url() {
+            local url="$1"
+            local attempt
+            local status
+
+            for attempt in $(seq 1 30); do
+              status="$(curl -sS --max-time 10 --output /dev/null --write-out '%{http_code}' "$url" || true)"
+              if [[ "$status" == 2* ]]; then
+                echo "[health] ready: $url"
+                return 0
+              fi
+              sleep 2
+            done
+
+            echo "[health] failed: $url" >&2
+            return 1
+          }
+
+          wait_for_url https://likenovel.dev
+          wait_for_url https://partner.likenovel.dev
+          wait_for_url https://cms.likenovel.dev
