@@ -17,6 +17,7 @@ import robots from "./robots.ts";
 import sitemap from "./sitemap.ts";
 
 const originalSiteUrl = process.env.NEXT_PUBLIC_WWW_SERVER_URI;
+const originalFetch = globalThis.fetch;
 
 const getSearchHeader = async () => {
   const headers = await nextConfig.headers();
@@ -27,6 +28,11 @@ const getSearchHeader = async () => {
 
 try {
   process.env.NEXT_PUBLIC_WWW_SERVER_URI = `${PRODUCTION_SITE_ORIGIN}/`;
+  globalThis.fetch = (async () =>
+    new Response(JSON.stringify({ data: [] }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    })) as typeof fetch;
 
   assert.equal(getSiteOrigin(), PRODUCTION_SITE_ORIGIN);
   assert.equal(isIndexableProductionSite(), true);
@@ -60,7 +66,7 @@ try {
   });
   assert.equal(await getSearchHeader(), undefined);
 
-  const prodSitemap = sitemap();
+  const prodSitemap = await sitemap();
   assert.equal(prodSitemap.length, 7);
   assert.equal(
     prodSitemap.every((entry) => entry.url.startsWith(PRODUCTION_SITE_ORIGIN)),
@@ -105,7 +111,7 @@ try {
     key: "X-Robots-Tag",
     value: "noindex, nofollow, noarchive",
   });
-  assert.deepEqual(sitemap(), []);
+  assert.deepEqual(await sitemap(), []);
 
   const devRobots = robots();
   const devRules = Array.isArray(devRobots.rules)
@@ -181,6 +187,7 @@ try {
     assert.ok(source.includes(`path: "${canonicalPath}"`));
   });
 } finally {
+  globalThis.fetch = originalFetch;
   if (originalSiteUrl === undefined) {
     delete process.env.NEXT_PUBLIC_WWW_SERVER_URI;
   } else {

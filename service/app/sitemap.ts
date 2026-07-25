@@ -1,8 +1,11 @@
 import type { MetadataRoute } from "next";
 import {
+  getApiOrigin,
   getSiteOrigin,
   isIndexableProductionSite,
 } from "../utils/siteSeo.mjs";
+
+export const revalidate = 3600;
 
 const CANONICAL_ROUTES = [
   { path: "/", changeFrequency: "daily", priority: 1 },
@@ -18,14 +21,80 @@ const CANONICAL_ROUTES = [
   priority: number;
 }>;
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  if (!isIndexableProductionSite()) return [];
+interface ProductSitemapEntry {
+  productId?: unknown;
+  lastModified?: unknown;
+}
 
-  const siteOrigin = getSiteOrigin();
+interface ProductSitemapResponse {
+  data?: ProductSitemapEntry[];
+}
 
-  return CANONICAL_ROUTES.map((route) => ({
+const getStaticEntries = (siteOrigin: string): MetadataRoute.Sitemap =>
+  CANONICAL_ROUTES.map((route) => ({
     url: `${siteOrigin}${route.path}`,
     changeFrequency: route.changeFrequency,
     priority: route.priority,
   }));
+
+const getProductEntries = async (
+  siteOrigin: string,
+): Promise<MetadataRoute.Sitemap> => {
+  try {
+    const response = await fetch(`${getApiOrigin()}/v1/query/products/sitemap`, {
+      headers: {
+        Accept: "application/json",
+      },
+      signal: AbortSignal.timeout(5000),
+      next: {
+        revalidate,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`backend returned ${response.status}`);
+    }
+
+    const payload = (await response.json()) as ProductSitemapResponse;
+    const seenProductIds = new Set<number>();
+
+    return (payload.data ?? []).flatMap((entry) => {
+      const productId = entry.productId;
+      if (
+        typeof productId !== "number" ||
+        !Number.isSafeInteger(productId) ||
+        productId <= 0 ||
+        seenProductIds.has(productId)
+      ) {
+        return [];
+      }
+      seenProductIds.add(productId);
+
+      const parsedLastModified =
+        typeof entry.lastModified === "string"
+          ? new Date(entry.lastModified)
+          : null;
+      const lastModified =
+        parsedLastModified && !Number.isNaN(parsedLastModified.getTime())
+          ? parsedLastModified
+          : undefined;
+
+      return [
+        {
+          url: `${siteOrigin}/product/${productId}`,
+          ...(lastModified ? { lastModified } : {}),
+        },
+      ];
+    });
+  } catch (error) {
+    console.error("[sitemap] Failed to load product entries", error);
+    return [];
+  }
+};
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  if (!isIndexableProductionSite()) return [];
+
+  const siteOrigin = getSiteOrigin();
+  const productEntries = await getProductEntries(siteOrigin);
+  return [...getStaticEntries(siteOrigin), ...productEntries];
 }

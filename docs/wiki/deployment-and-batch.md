@@ -1,8 +1,8 @@
 # Deployment And Batch
 
 > Status: CURRENT GUIDE
-> Last verified: 2026-06-18
-> Code readback: 2026-06-18
+> Last verified: 2026-07-25
+> Code readback: 2026-07-25
 > Rule: do not execute deploy, DB, cron, or batch operations from this summary.
 > Open the linked runbook/source files and read back the live target first.
 
@@ -14,9 +14,10 @@
 - Backend prod verification script: `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/verify_backend_prod_deploy.sh`
 - Prod monitor: `ops/monitor-prod/README.md`
 
-Code-readback anchors checked on 2026-06-18:
+Code-readback anchors checked on 2026-07-25:
 
-- Dev backend workflow copies source `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh` to package `run_be.sh` before CodeDeploy: `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml`
+- Dev backend workflow copies source `run_be.dev.sh` to package `run_be.sh`, waits for CodeDeploy success, then runs `verify_backend_dev_deploy.sh` against the exact deployment ID: `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml`
+- Dev web compose files currently share Compose project name `docker`; never use `--remove-orphans` across their sequential deploys: `.github/workflows/docker-dev.yml`
 - Prod backend workflow packages `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`, `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/verify_backend_prod_deploy.sh`, `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/init/`, and `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/`, then runs on-host verification: `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions.yml`
 - Dev deploy script syncs batch files to `/home/ln-admin/likenovel/batch-dev` and leaves `/etc/cron.d/likenovel-dev` manual: `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`
 - Prod deploy script syncs batch files to `/home/ln-admin/likenovel/batch` and only guards selected user crontab lines: `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`
@@ -36,6 +37,14 @@ is legacy and must not be used as an execution runbook.
 | Runtime service | systemd unit: `likenovel-api-dev.service` | systemd unit: `likenovel-api.service` | Calling deployment complete before systemd/pid readback |
 | Runtime API path | absolute server path: `/home/ln-admin/likenovel/api-dev` symlink to `/home/ln-admin/likenovel/releases/api-dev/<release>` | absolute server path: `/home/ln-admin/likenovel/api` | Looking at the package path instead of the active runtime path |
 | Runtime batch path | absolute server path: `/home/ln-admin/likenovel/batch-dev` | absolute server path: `/home/ln-admin/likenovel/batch` | Running repo source path `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/` directly on the server |
+
+Backend dev completion requires the workflow's CodeDeploy wait plus:
+
+- active `/home/ln-admin/likenovel/api-dev` release suffix matching the deployment ID
+- `likenovel-api-dev.service` active/running
+- systemd MainPID and `gunicorn.pid` matching and live
+- `10.0.100.110:3011` listener
+- internal and public `/health`
 
 Backend prod completion requires readback beyond Actions/CodeDeploy success:
 

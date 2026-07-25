@@ -40,9 +40,9 @@ Legacy Windows path: `C:\Users\Hongsan\Downloads\likenovel` (참고용)
 - prod batch runtime path: `/home/ln-admin/likenovel/batch`
 - dev batch runtime path: `/home/ln-admin/likenovel/batch-dev`
 
-2026-06-18 코드 readback 기준:
-- `.github/workflows/docker-dev.yml` and `.github/workflows/docker-prod.yml` deploy only frontend Docker images from the root repo.
-- `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml` packages dev backend CodeDeploy and replaces package `run_be.sh` with source `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`.
+2026-07-25 코드·서버 readback 기준:
+- `.github/workflows/docker-dev.yml` and `.github/workflows/docker-prod.yml` run hook, service lint, CMS contract gates before building frontend Docker images. They pull images before recreating containers and verify internal ports plus public URLs after deployment.
+- `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml` packages dev backend CodeDeploy, replaces package `run_be.sh` with source `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`, waits for CodeDeploy, then runs `verify_backend_dev_deploy.sh` on ln-was.
 - `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions.yml` packages prod backend CodeDeploy, waits for deployment success, then runs `verify_backend_prod_deploy.sh` on ln-was.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh` syncs batch files to `/home/ln-admin/likenovel/batch-dev` but keeps `/etc/cron.d/likenovel-dev` manual.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh` syncs batch files to `/home/ln-admin/likenovel/batch` and guards only selected prod user-crontab lines.
@@ -106,28 +106,56 @@ ssh -i /home/hongsan/.ssh/ln_kp.pem -o IdentitiesOnly=yes \
 
 위 hard gate 전부가 끝나기 전에는 "배포 완료"라고 말하지 않는다.
 
-## 2.2 Dirty Worktree 배포 통합 경로
+## 2.2 Dirty Worktree exact-SHA 배포 통합 경로
 
 현재 checkout에 unrelated local change가 남아 있으면 `dev`/`prod`를 직접 checkout하지 않는다.
-단, root repo는 linked worktree에서 push hook이 막히므로 아래 순서를 고정한다.
+아래 순서로 Codex-owned clean integration worktree에서 배포 commit을 분리한다.
 
-1. 임시 linked worktree는 merge commit 생성과 검증에만 사용한다.
-2. linked worktree에서 `git push`를 시도하지 않는다.
-3. merge commit SHA를 만든 뒤 primary checkout에서 exact ref로 push한다.
+1. `origin/<target>` 기준 integration worktree에서 요청된 exact commit만 통합한다.
+2. 같은 worktree에서 test/build와 outgoing diff를 검증한다.
+3. 검증한 commit SHA를 같은 worktree에서 exact ref로 push한다.
 
 ```bash
 git push origin <merge_sha>:dev
 git push origin <merge_sha>:prod
 ```
 
+Root pre-push hook은 위 명령의 outgoing ref와 commit object를 검사한다. 다른
+checkout의 staged index, physical submodule HEAD, dirty working tree는 전송
+대상이 아니므로 push blocker로 사용하지 않는다. 대신 `main`/`dev`/`prod`
+push는 remote 이름이 정확히 `origin`일 때만 허용하고, 삭제와 non-fast-forward,
+환경 ancestry 위반을 차단한다. 검증 직전에 root/backend의 `origin/*`
+remote-tracking ref를 prune하므로 삭제된 원격 branch를 도달성 근거로 쓰지 않는다.
+검증 범위는 각 outgoing ref의 최종 commit과 그 push diff이며, 범위 안의 모든
+중간 commit을 별도 재검사하지 않는다. Feature branch의
+명시적인 `--force-with-lease`는 이 환경 브랜치 보호 범위에 포함하지 않는다.
+
+Hook은 shared hooks dir에 checkout과 독립적인 self-contained 파일로 설치한다.
+기존 LikeNovel legacy/managed pre-push를 교체할 때는 최초 상태를
+`pre-push.likenovel-backup`으로 보존하며, 알 수 없는 custom hook은 중단한다.
+
+```bash
+bash devtools/install-git-hooks.sh
+git rev-parse --git-path hooks
+```
+
+Rollback이 필요하면 push를 멈춘 상태에서 설치된 `pre-push`를 별도 보존한 뒤
+같은 hooks dir의 `pre-push.likenovel-backup`을 `pre-push`로 복원한다.
+
 Submodule pointer가 포함되면 아래를 먼저 확인한다.
 
 ```bash
-git diff --submodule=log -- likenovel-service-api/likenovel-service-api
+git diff --submodule=log origin/<target> <merge_sha> -- likenovel-service-api/likenovel-service-api
+git ls-tree origin/<target> -- likenovel-service-api/likenovel-service-api
+git ls-tree <merge_sha> -- likenovel-service-api/likenovel-service-api
+git -C likenovel-service-api/likenovel-service-api fetch origin --quiet --prune
+git -C likenovel-service-api/likenovel-service-api merge-base --is-ancestor <old_pointer_sha> <pointer_sha>
 git -C likenovel-service-api/likenovel-service-api merge-base --is-ancestor <pointer_sha> origin/<target>
 ```
 
-의도된 pointer push일 때만 해당 명령 1회에 한해 `ALLOW_SUBMODULE_POINTER_PUSH=1`을 붙인다.
+의도된 pointer push일 때만 해당 명령 1회에 한해
+`ALLOW_SUBMODULE_POINTER_PUSH=1`을 붙인다. 이 flag는 의도 확인만 생략하며,
+backend remote 도달성과 pointer 비후퇴 검사는 우회하지 않는다.
 
 ## 2.3 Deploy Merge Conflict Stop Rules
 
@@ -268,10 +296,11 @@ poetry run uvicorn app.main:be_app --reload --host 0.0.0.0 --port 8000
 - 워크플로: `.github/workflows/docker-dev.yml`
 
 워크플로 동작:
-1. `service/partner/cms` 각각에 `.env.production` 생성
-2. Docker build (`ENV_FILE=.env.production`)
-3. ECR push
-4. 태그 규칙
+1. git hook test, service lint, CMS contract test
+2. `service/partner/cms` 각각에 `.env.production` 생성
+3. Docker build (`ENV_FILE=.env.production`)
+4. ECR push
+5. 태그 규칙
    - `dev-latest`
    - `dev-${GITHUB_SHA}`
 
@@ -288,23 +317,32 @@ poetry run uvicorn app.main:be_app --reload --host 0.0.0.0 --port 8000
 
 서버 반영 표준:
 1. dev compose 이미지가 ECR 이미지(`...:dev-latest` 또는 고정 SHA 태그)를 바라보는지 확인
-2. dev 컨테이너만 pull/up
+2. 세 compose의 `pull`을 모두 먼저 성공시켜 기존 컨테이너를 보존
+3. dev 컨테이너만 `up -d`
+4. 실행 컨테이너의 image digest가 이번 build output digest와 일치하는지 확인
+5. 내부 `3100/3101/3102`와 공개 URL을 모두 확인
+
+DEV의 세 compose 파일은 서로 다른 디렉터리에 있지만 현재 Docker Compose project명이 모두 `docker`다.
+따라서 DEV에서 `--remove-orphans`를 사용하면 뒤 compose가 앞의 정상 컨테이너를 삭제한다. 세 compose를
+별도 project명으로 마이그레이션하기 전까지 DEV 배포에는 `--remove-orphans`를 쓰지 않는다.
 
 ```bash
 # user-dev
 docker compose -f /home/ln-admin/likenovel/service-dev/docker/docker-compose.yml pull
-docker compose -f /home/ln-admin/likenovel/service-dev/docker/docker-compose.yml up -d --remove-orphans
+docker compose -f /home/ln-admin/likenovel/service-dev/docker/docker-compose.yml up -d
 
 # partner-dev
 docker compose -f /home/ln-admin/likenovel/partner-dev/docker/docker-compose.yml pull
-docker compose -f /home/ln-admin/likenovel/partner-dev/docker/docker-compose.yml up -d --remove-orphans
+docker compose -f /home/ln-admin/likenovel/partner-dev/docker/docker-compose.yml up -d
 
 # cms-dev
 docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml pull
-docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml up -d --remove-orphans
+docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml up -d
 ```
 
 검증:
+- `service/partner/cms` 실행 컨테이너 image digest = 해당 workflow build output digest
+- `http://127.0.0.1:3100/`, `http://127.0.0.1:3101/`, `http://127.0.0.1:3102/`
 - `https://likenovel.dev`
 - `https://partner.likenovel.dev`
 - `https://cms.likenovel.dev`
@@ -318,7 +356,8 @@ docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml up 
 1. Poetry build (`poetry build`)
 2. `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/`에서 배포 zip 생성 (`*.whl`, `appspec.yml`, `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`, `gconf.py`)
 3. S3 업로드
-4. CodeDeploy 실행 (앱/그룹은 DEV secrets 사용)
+4. CodeDeploy 실행 후 `deployment-successful`까지 대기
+5. 배포 ID와 active release 일치, systemd MainPID·pidfile, `10.0.100.110:3011` listener, 내부/공개 `/health` 검증
 
 필수 GitHub Secrets(backend dev):
 - `AWS_ACCESS_KEY_ID`
@@ -328,9 +367,11 @@ docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml up 
 - `CODEDEPLOY_GROUP_NAME_BACKEND_DEV`
 - `CODEDEPLOY_S3_BUCKET`
 - `CODEDEPLOY_CONFIG_NAME_BACKEND_DEV` (옵션, 없으면 `CodeDeployDefault.AllAtOnce`)
+- `SSH_PRIVATE_KEY`
 
 검증:
-- `https://api.likenovel.dev/docs` 접근 확인
+- `fastapi_be_server/dist/verify_backend_dev_deploy.sh <deployment-id>`가 통과해야 한다.
+- `https://api.likenovel.dev/health`와 필요한 변경 route를 확인한다.
 - 2.1의 Actions Gate를 적용한다. dev Actions가 안 뜨면 prod와 동일하게 60초 기준으로 fallback 여부를 판정하되, dev 크론은 자동 활성화하지 않는다.
 - dev `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`는 `/home/ln-admin/likenovel/releases/api-dev` release 디렉터리와 `/home/ln-admin/likenovel/api-dev` symlink를 사용한다. 최근 5개 release만 유지한다.
 - dev story context cron은 의도적으로 자동 설치하지 않는다. 필요할 때 수동으로만 `/etc/cron.d/likenovel-dev`를 설치한다.
@@ -345,10 +386,11 @@ docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml up 
 - 워크플로: `.github/workflows/docker-prod.yml`
 
 워크플로 동작:
-1. `service/partner/cms` 각각에 `.env.production` 생성
-2. Docker build (`ENV_FILE=.env.production`)
-3. ECR push
-4. 태그 규칙
+1. git hook test, service lint, CMS contract test
+2. `service/partner/cms` 각각에 `.env.production` 생성
+3. Docker build (`ENV_FILE=.env.production`)
+4. ECR push
+5. 태그 규칙
    - `prod-latest`
    - `prod-${GITHUB_SHA}`
 
@@ -361,21 +403,15 @@ docker compose -f /home/ln-admin/likenovel/cms-dev/docker/docker-compose.yml up 
 서버 반영 표준:
 
 ```bash
-# user(prod)
-docker compose -f /home/ln-admin/likenovel/service/prod.docker-compose.yml pull
-docker compose -f /home/ln-admin/likenovel/service/prod.docker-compose.yml up -d --remove-orphans
-
-# partner(prod)
-docker compose -f /home/ln-admin/likenovel/partner/prod.docker-compose.yml pull
-docker compose -f /home/ln-admin/likenovel/partner/prod.docker-compose.yml up -d --remove-orphans
-
-# cms(prod)
-docker compose -f /home/ln-admin/likenovel/cms/docker-compose.prod.yml pull
-docker compose -f /home/ln-admin/likenovel/cms/docker-compose.prod.yml up -d --remove-orphans
+cd /home/ln-admin/likenovel/docker-prod
+docker compose pull
+docker compose up -d --remove-orphans
 ```
 
 검증:
-- `https://likenovel.net`
+- `service/partner/cms` 실행 컨테이너 image digest = 해당 workflow build output digest
+- `http://127.0.0.1:3000/`, `http://127.0.0.1:3001/`, `http://127.0.0.1:3002/`
+- `https://www.likenovel.net`
 - `https://partner.likenovel.net`
 - `https://cms.likenovel.net`
 

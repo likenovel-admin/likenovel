@@ -6,6 +6,9 @@ SUBMODULE_PATH="likenovel-service-api/likenovel-service-api"
 ZERO_SHA="0000000000000000000000000000000000000000"
 
 failures=0
+backend_refs_ready=0
+gitlink_oid_result=""
+push_diff_base_result=""
 
 info() {
   printf '%s\n' "$*" >&2
@@ -16,58 +19,46 @@ fail() {
   printf 'ERROR: %s\n' "$*" >&2
 }
 
-warn() {
-  printf 'WARN: %s\n' "$*" >&2
+backend_git() {
+  env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \
+    git -C "$SUBMODULE_PATH" "$@"
 }
 
-submodule_git() {
-  env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$SUBMODULE_PATH" "$@"
+is_protected_branch_ref() {
+  case "$1" in
+    refs/heads/main | refs/heads/dev | refs/heads/prod)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
 }
 
-check_submodule_worktree_alignment() {
-  info "--- submodule worktree readback ---"
-
-  local git_ref label tree_row expected_sha actual_sha submodule_status
+read_gitlink() {
+  local git_ref label tree_row mode object_type object_sha
   git_ref="$1"
   label="$2"
+  gitlink_oid_result=""
+
   tree_row="$(git ls-tree "$git_ref" -- "$SUBMODULE_PATH" 2>/dev/null || true)"
   if [[ -z "$tree_row" ]]; then
-    fail "submodule path is not tracked in $label: $SUBMODULE_PATH"
-    info ""
-    return
+    fail "$label does not contain a valid submodule gitlink: $SUBMODULE_PATH"
+    return 1
   fi
 
-  expected_sha="$(printf '%s\n' "$tree_row" | awk '{print $3}')"
-  actual_sha="$(submodule_git rev-parse HEAD 2>/dev/null || true)"
-  if [[ -z "$actual_sha" ]]; then
-    fail "submodule is not initialized or has no readable HEAD: $SUBMODULE_PATH"
-    info "Run: git submodule update --init --checkout $SUBMODULE_PATH"
-    info ""
-    return
+  read -r mode object_type object_sha _ <<<"$tree_row"
+  if [[ "$mode" != "160000" || "$object_type" != "commit" || -z "$object_sha" ]]; then
+    fail "$label does not contain a valid submodule gitlink: $SUBMODULE_PATH"
+    return 1
   fi
 
-  info "$label expects: $expected_sha"
-  info "submodule HEAD:  $actual_sha"
-
-  if [[ "$actual_sha" != "$expected_sha" ]]; then
-    fail "submodule working tree HEAD does not match $label gitlink: $SUBMODULE_PATH"
-    info "Run: git submodule update --init --checkout $SUBMODULE_PATH"
-  fi
-
-  submodule_status="$(submodule_git status --porcelain)"
-  if [[ -n "$submodule_status" ]]; then
-    fail "submodule has its own dirty worktree: $SUBMODULE_PATH"
-    printf '%s\n' "$submodule_status" >&2
-    info "Commit or stash backend changes in the submodule before pushing from the root repo."
-  fi
-
-  info ""
+  gitlink_oid_result="$object_sha"
+  return 0
 }
 
-push_diff_base_result=""
-
 resolve_push_diff_base() {
-  local local_ref local_sha remote_ref remote_sha base_ref base_sha local_branch upstream
+  local local_ref local_sha remote_ref remote_sha base_ref base_sha
   local_ref="$1"
   local_sha="$2"
   remote_ref="$3"
@@ -80,6 +71,9 @@ resolve_push_diff_base() {
   fi
 
   case "$remote_ref" in
+    refs/heads/main)
+      base_ref="origin/main"
+      ;;
     refs/heads/dev)
       base_ref="origin/main"
       ;;
@@ -87,22 +81,7 @@ resolve_push_diff_base() {
       base_ref="origin/dev"
       ;;
     *)
-      base_ref=""
-      if [[ "$local_ref" == refs/heads/* ]]; then
-        local_branch="${local_ref#refs/heads/}"
-        upstream="$(git rev-parse --abbrev-ref --symbolic-full-name "$local_branch@{upstream}" 2>/dev/null || true)"
-        if [[ -n "$upstream" ]]; then
-          base_ref="$upstream"
-        fi
-      elif [[ "$local_ref" == "HEAD" && -n "${branch:-}" ]]; then
-        upstream="$(git rev-parse --abbrev-ref --symbolic-full-name "$branch@{upstream}" 2>/dev/null || true)"
-        if [[ -n "$upstream" ]]; then
-          base_ref="$upstream"
-        fi
-      fi
-      if [[ -z "$base_ref" ]]; then
-        base_ref="origin/main"
-      fi
+      base_ref="origin/main"
       ;;
   esac
 
@@ -120,9 +99,88 @@ resolve_push_diff_base() {
   return 0
 }
 
+ensure_backend_remote_refs() {
+  if (( backend_refs_ready == 1 )); then
+    return 0
+  fi
+
+  if ! backend_git rev-parse --git-dir >/dev/null 2>&1; then
+    fail "backend repository is not initialized; cannot verify pushed gitlink: $SUBMODULE_PATH"
+    return 1
+  fi
+
+  if ! backend_git fetch origin --quiet --prune; then
+    fail "failed to fetch backend origin; cannot verify pushed gitlink."
+    return 1
+  fi
+
+  backend_refs_ready=1
+  return 0
+}
+
+verify_changed_gitlink() {
+  local old_pointer new_pointer remote_ref target_branch containing_ref
+  old_pointer="$1"
+  new_pointer="$2"
+  remote_ref="$3"
+
+  if ! ensure_backend_remote_refs; then
+    return
+  fi
+
+  if ! backend_git cat-file -e "$new_pointer^{commit}" 2>/dev/null; then
+    fail "pushed submodule pointer is not present in the backend repository: $new_pointer"
+    return
+  fi
+
+  case "$remote_ref" in
+    refs/heads/main)
+      target_branch="main"
+      ;;
+    refs/heads/dev)
+      target_branch="dev"
+      ;;
+    refs/heads/prod)
+      target_branch="prod"
+      ;;
+    *)
+      target_branch=""
+      ;;
+  esac
+
+  if [[ -n "$target_branch" ]]; then
+    if ! backend_git rev-parse \
+      --verify --quiet "origin/$target_branch^{commit}" >/dev/null; then
+      fail "missing backend origin/$target_branch; cannot verify pushed gitlink."
+    elif ! backend_git merge-base \
+      --is-ancestor "$new_pointer" "origin/$target_branch"; then
+      fail "$new_pointer is not reachable from backend origin/$target_branch"
+    fi
+  else
+    containing_ref="$(
+      backend_git for-each-ref \
+        --format='%(refname)' \
+        --contains "$new_pointer" \
+        refs/remotes/origin |
+        head -n 1
+    )"
+    if [[ -z "$containing_ref" ]]; then
+      fail "$new_pointer is not reachable from any backend origin branch"
+    fi
+  fi
+
+  if ! backend_git cat-file -e "$old_pointer^{commit}" 2>/dev/null; then
+    fail "previous submodule pointer is not present in the backend repository: $old_pointer"
+  elif ! backend_git merge-base \
+    --is-ancestor "$old_pointer" "$new_pointer"; then
+    fail "submodule pointer would move backward or diverge: $old_pointer -> $new_pointer"
+  fi
+}
+
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
+remote_name="${1:-}"
 branch="$(git branch --show-current || true)"
 head_sha="$(git rev-parse --short HEAD)"
 
@@ -132,136 +190,159 @@ info "branch: ${branch:-DETACHED}"
 info "HEAD: $head_sha"
 info ""
 
-if [[ -f .git ]]; then
-  fail "linked git worktree detected. Do not push from git worktree in this repo."
-fi
-
 for state_file in CHERRY_PICK_HEAD REBASE_HEAD MERGE_HEAD; do
-  if [[ -e ".git/$state_file" ]]; then
+  state_path="$(git rev-parse --git-path "$state_file")"
+  if [[ -e "$state_path" ]]; then
     fail "$state_file exists. Finish or abort the in-progress git operation before push."
   fi
 done
 
-info "--- status --short --branch ---"
-git status --short --branch >&2
-info ""
+declare -a local_refs=()
+declare -a local_shas=()
+declare -a remote_refs=()
+declare -a remote_shas=()
 
-info "--- staged files ---"
-staged_files="$(git diff --cached --name-status)"
-if [[ -n "$staged_files" ]]; then
-  printf '%s\n' "$staged_files" >&2
+while read -r local_ref local_sha remote_ref remote_sha extra; do
+  if [[ -z "${local_ref:-}" ]]; then
+    continue
+  fi
+  if [[ -z "${local_sha:-}" || -z "${remote_ref:-}" ||
+        -z "${remote_sha:-}" || -n "${extra:-}" ]]; then
+    fail "malformed pre-push ref update input."
+    continue
+  fi
+
+  local_refs+=("$local_ref")
+  local_shas+=("$local_sha")
+  remote_refs+=("$remote_ref")
+  remote_shas+=("$remote_sha")
+done
+
+if (( ${#local_refs[@]} == 0 )); then
+  info "(no pre-push ref updates on stdin)"
 else
-  info "(none)"
-fi
-info ""
+  protected_update_present=0
+  for remote_ref in "${remote_refs[@]}"; do
+    if is_protected_branch_ref "$remote_ref"; then
+      protected_update_present=1
+      break
+    fi
+  done
 
-if git diff --cached --name-only -- "$SUBMODULE_PATH" | grep -q .; then
-  if [[ "${ALLOW_SUBMODULE_POINTER_COMMIT:-}" == "1" ]]; then
-    info "ALLOW_SUBMODULE_POINTER_COMMIT=1 set; staged submodule pointer is intentional."
-    git diff --cached --submodule=log -- "$SUBMODULE_PATH" >&2 || true
-  else
-    fail "submodule pointer is staged: $SUBMODULE_PATH"
-  fi
-fi
-
-info "--- remote ancestry readback ---"
-git fetch origin --quiet
-
-if git show-ref --verify --quiet refs/remotes/origin/main &&
-   git show-ref --verify --quiet refs/remotes/origin/dev &&
-   git show-ref --verify --quiet refs/remotes/origin/prod; then
-  if git merge-base --is-ancestor origin/main origin/dev; then
-    info "origin/main -> origin/dev: OK"
-  else
-    warn "origin/main is not ancestor of origin/dev. Expected only before pushing a dev merge."
+  if (( protected_update_present == 1 )) && [[ "$remote_name" != "origin" ]]; then
+    fail "protected branch push must target remote 'origin': ${remote_name:-<unnamed>}"
   fi
 
-  if git merge-base --is-ancestor origin/dev origin/prod; then
-    info "origin/dev -> origin/prod: OK"
-  else
-    warn "origin/dev is not ancestor of origin/prod. Expected only before pushing a prod merge."
+  if ! git -c fetch.recurseSubmodules=false \
+    fetch origin --quiet --prune --no-recurse-submodules; then
+    fail "failed to fetch root origin before push validation."
   fi
-else
-  fail "missing origin/main, origin/dev, or origin/prod ref."
-fi
-info ""
 
-if [[ "$branch" == "dev" ]]; then
-  if git merge-base --is-ancestor origin/main HEAD; then
-    info "local dev contains origin/main: OK"
-  else
-    fail "local dev does not contain origin/main. Merge main into dev before push."
-  fi
-elif [[ "$branch" == "prod" ]]; then
-  if git merge-base --is-ancestor origin/dev HEAD; then
-    info "local prod contains origin/dev: OK"
-  else
-    fail "local prod does not contain origin/dev. Merge dev into prod before push."
-  fi
-fi
+  effective_main="$(git rev-parse --verify 'origin/main^{commit}' 2>/dev/null || true)"
+  effective_dev="$(git rev-parse --verify 'origin/dev^{commit}' 2>/dev/null || true)"
 
-info "--- pushed ref checks ---"
-processed_ref_updates=0
-if [[ -t 0 ]]; then
-  info "(manual run: no pre-push ref update stream)"
-  check_submodule_worktree_alignment HEAD "HEAD"
-else
-  while read -r local_ref local_sha remote_ref remote_sha; do
-    [[ -z "${local_ref:-}" ]] && continue
-    processed_ref_updates=$((processed_ref_updates + 1))
+  for index in "${!local_refs[@]}"; do
+    if [[ "${local_shas[$index]}" == "$ZERO_SHA" ]]; then
+      continue
+    fi
+    case "${remote_refs[$index]}" in
+      refs/heads/main)
+        effective_main="${local_shas[$index]}"
+        ;;
+      refs/heads/dev)
+        effective_dev="${local_shas[$index]}"
+        ;;
+    esac
+  done
+
+  info "--- pushed ref checks ---"
+  for index in "${!local_refs[@]}"; do
+    local_ref="${local_refs[$index]}"
+    local_sha="${local_shas[$index]}"
+    remote_ref="${remote_refs[$index]}"
+    remote_sha="${remote_shas[$index]}"
 
     info "$local_ref $local_sha -> $remote_ref $remote_sha"
+
     if [[ "$local_sha" == "$ZERO_SHA" ]]; then
-      info "delete push detected; no commit diff to inspect."
+      if is_protected_branch_ref "$remote_ref"; then
+        fail "protected branch deletion is forbidden: $remote_ref"
+      else
+        info "delete push detected for non-protected ref; no commit diff to inspect."
+      fi
       continue
+    fi
+
+    if ! git cat-file -e "$local_sha^{commit}" 2>/dev/null; then
+      fail "outgoing object is not a readable commit: $local_sha"
+      continue
+    fi
+
+    if is_protected_branch_ref "$remote_ref" &&
+      [[ "$remote_sha" != "$ZERO_SHA" ]]; then
+      if ! git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+        fail "remote branch tip is not a readable commit: $remote_sha"
+      elif ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+        fail "non-fast-forward push is forbidden: $remote_ref"
+      fi
     fi
 
     case "$remote_ref" in
       refs/heads/dev)
-        if git merge-base --is-ancestor origin/main "$local_sha"; then
-          info "pushed dev contains origin/main: OK"
+        if [[ -z "$effective_main" ]] ||
+          ! git merge-base --is-ancestor "$effective_main" "$local_sha"; then
+          fail "pushed dev does not contain the effective main commit."
         else
-          fail "pushed dev does not contain origin/main. Merge main into dev before push."
+          info "pushed dev contains effective main: OK"
         fi
         ;;
       refs/heads/prod)
-        if git merge-base --is-ancestor origin/dev "$local_sha"; then
-          info "pushed prod contains origin/dev: OK"
+        if [[ -z "$effective_dev" ]] ||
+          ! git merge-base --is-ancestor "$effective_dev" "$local_sha"; then
+          fail "pushed prod does not contain the effective dev commit."
         else
-          fail "pushed prod does not contain origin/dev. Merge dev into prod before push."
+          info "pushed prod contains effective dev: OK"
         fi
         ;;
     esac
 
-    check_submodule_worktree_alignment "$local_sha" "$local_ref"
+    if ! read_gitlink "$local_sha" "outgoing commit $local_sha"; then
+      continue
+    fi
+    new_pointer="$gitlink_oid_result"
 
-    if resolve_push_diff_base "$local_ref" "$local_sha" "$remote_ref" "$remote_sha"; then
-      changed_files="$(git diff --name-only "$push_diff_base_result" "$local_sha")"
-    else
-      changed_files=""
+    if ! resolve_push_diff_base \
+      "$local_ref" "$local_sha" "$remote_ref" "$remote_sha"; then
       fail "cannot determine pushed range diff base for $local_ref -> $remote_ref"
+      continue
+    fi
+    pointer_base="$push_diff_base_result"
+
+    if ! read_gitlink "$pointer_base" "push base $pointer_base"; then
+      continue
+    fi
+    old_pointer="$gitlink_oid_result"
+
+    if [[ "$old_pointer" == "$new_pointer" ]]; then
+      continue
     fi
 
-    if printf '%s\n' "$changed_files" | grep -Fxq "$SUBMODULE_PATH"; then
-      if [[ "${ALLOW_SUBMODULE_POINTER_PUSH:-}" == "1" ]]; then
-        info "ALLOW_SUBMODULE_POINTER_PUSH=1 set; pushed submodule pointer is intentional."
-        git diff --submodule=log "$push_diff_base_result" "$local_sha" -- "$SUBMODULE_PATH" >&2 || true
-      else
-        fail "push contains submodule pointer change: $SUBMODULE_PATH"
-      fi
+    if [[ "${ALLOW_SUBMODULE_POINTER_PUSH:-}" == "1" ]]; then
+      info "ALLOW_SUBMODULE_POINTER_PUSH=1 set; pushed submodule pointer is intentional."
+      git diff --submodule=log \
+        "$pointer_base" "$local_sha" -- "$SUBMODULE_PATH" >&2 || true
+    else
+      fail "push contains submodule pointer change: $SUBMODULE_PATH"
     fi
+
+    verify_changed_gitlink "$old_pointer" "$new_pointer" "$remote_ref"
   done
-
-  if (( processed_ref_updates == 0 )); then
-    info "(no pre-push ref updates on stdin; checking HEAD)"
-    check_submodule_worktree_alignment HEAD "HEAD"
-  fi
 fi
 info ""
 
 if (( failures > 0 )); then
   info "pre-push safety check failed with $failures blocker(s)."
-  info "If a blocker is intentional, state the reason and use the explicit ALLOW_* env var only for that command."
+  info "If a pointer change is intentional, use ALLOW_SUBMODULE_POINTER_PUSH=1 only for that command."
   exit 1
 fi
 
