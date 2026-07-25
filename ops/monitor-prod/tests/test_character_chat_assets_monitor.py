@@ -25,6 +25,7 @@ class CharacterChatAssetsMonitorTest(unittest.TestCase):
         *,
         audit_rc: int | None,
         action_plan_counts: dict[str, int],
+        ready_without_main_count: object = 0,
         raw_summary: str | None = None,
     ) -> str:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -34,6 +35,7 @@ class CharacterChatAssetsMonitorTest(unittest.TestCase):
                     "productCount": 50,
                     "actionPlanCounts": action_plan_counts,
                     "outOfCohortHoldCount": 0,
+                    "readyWithoutMainProtagonistCount": ready_without_main_count,
                 },
                 ensure_ascii=False,
             )
@@ -87,6 +89,10 @@ class CharacterChatAssetsMonitorTest(unittest.TestCase):
             "MON|character_chat:assets|0 / 50 products|0 actionable|OK|",
             output,
         )
+        self.assertIn(
+            "MON|character_chat:protagonist|0 products|0 ready without main|OK|",
+            output,
+        )
 
     def test_actionable_products_are_alert(self) -> None:
         output = self._run_check(
@@ -98,6 +104,81 @@ class CharacterChatAssetsMonitorTest(unittest.TestCase):
             "MON|character_chat:assets|1 / 50 products|0 actionable|ALERT|",
             output,
         )
+
+    def test_ready_without_main_protagonist_is_warn_without_changing_assets(self) -> None:
+        output = self._run_check(
+            audit_rc=0,
+            action_plan_counts={"ready": 47, "no_public_character_candidate": 3},
+            ready_without_main_count=2,
+        )
+
+        self.assertIn(
+            "MON|character_chat:assets|0 / 50 products|0 actionable|OK|",
+            output,
+        )
+        self.assertIn(
+            "MON|character_chat:protagonist|2 products|0 ready without main|WARN|",
+            output,
+        )
+
+    def test_invalid_ready_without_main_protagonist_is_unknown(self) -> None:
+        summaries = (
+            {
+                "productCount": 50,
+                "actionPlanCounts": {"ready": 49, "repair": 1},
+                "outOfCohortHoldCount": 0,
+            },
+            {
+                "productCount": 50,
+                "actionPlanCounts": {"ready": 49, "repair": 1},
+                "outOfCohortHoldCount": 0,
+                "readyWithoutMainProtagonistCount": True,
+            },
+            {
+                "productCount": 50,
+                "actionPlanCounts": {"ready": 49, "repair": 1},
+                "outOfCohortHoldCount": 0,
+                "readyWithoutMainProtagonistCount": "1",
+            },
+            {
+                "productCount": 50,
+                "actionPlanCounts": {"ready": 49, "repair": 1},
+                "outOfCohortHoldCount": 0,
+                "readyWithoutMainProtagonistCount": -1,
+            },
+            {
+                "productCount": 50,
+                "actionPlanCounts": {"ready": 49, "repair": 1},
+                "outOfCohortHoldCount": 0,
+                "readyWithoutMainProtagonistCount": 50,
+            },
+        )
+
+        for summary in summaries:
+            with self.subTest(summary=summary):
+                output = self._run_check(
+                    audit_rc=1,
+                    action_plan_counts={},
+                    raw_summary=json.dumps(summary),
+                )
+                self.assertIn(
+                    "MON|character_chat:assets|1 / 50 products|0 actionable|ALERT|",
+                    output,
+                )
+                self.assertIn(
+                    "MON|character_chat:protagonist|invalid|"
+                    "0 ready without main|UNKNOWN|",
+                    output,
+                )
+
+    def test_protagonist_status_is_emitted_only_for_audit_result_rc(self) -> None:
+        for audit_rc in (2, 126, 127):
+            with self.subTest(audit_rc=audit_rc):
+                output = self._run_check(
+                    audit_rc=audit_rc,
+                    action_plan_counts={"ready": 50},
+                )
+                self.assertNotIn("MON|character_chat:protagonist|", output)
 
     def test_multiple_actions_for_one_product_count_once(self) -> None:
         output = self._run_check(

@@ -37,3 +37,4 @@ performs a bounded read-only prod DB audit. The check runs the audit CLI from
 the active backend runtime and reports `ALERT` when exact-key RP assets,
 identity continuity, or usable scene assets require repair. A missing deployed
 audit CLI is `UNKNOWN`, never normal.
+Missing main protagonists are reported separately as `character_chat:protagonist` `WARN` and do not change the asset verdict.
