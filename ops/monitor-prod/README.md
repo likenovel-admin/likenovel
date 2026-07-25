@@ -31,3 +31,9 @@ Rule for GitHub Actions checks:
 - Alert only when the latest completed run for a branch/workflow is failed.
 - Do not alert on older failed runs if a newer completed run for the same
   branch/workflow has succeeded.
+
+Character-chat asset continuity is checked only at `deep` level because it
+performs a bounded read-only prod DB audit. The check runs the audit CLI from
+the active backend runtime and reports `ALERT` when exact-key RP assets,
+identity continuity, or usable scene assets require repair. A missing deployed
+audit CLI is `UNKNOWN`, never normal.
