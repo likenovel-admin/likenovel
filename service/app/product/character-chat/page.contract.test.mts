@@ -58,6 +58,16 @@ assert.match(
 );
 assert.match(
   querySource,
+  /export const getMainCharacterSlotsQueryKey = \([\s\S]*\["getMainCharacterSlots", adultYnParam, cacheIdentity\] as const;/,
+  "Home and catalog should share one cache key for the existing character slots"
+);
+assert.match(
+  querySource,
+  /useGetMainCharacterSlots[\s\S]*queryKey: getMainCharacterSlotsQueryKey\(adult_yn, cacheIdentity\)/,
+  "The home character-slot query should use the shared cache key"
+);
+assert.match(
+  querySource,
   /\/v1\/query\/products\/\$\{productId\}\/character-chat-preview/,
   "The modal should load the selected episode preview from the API"
 );
@@ -130,13 +140,53 @@ assert.match(
 );
 assert.match(
   pageSource,
-  /<CharacterChatCardGrid[\s\S]*items=\{visibleItems\}/,
-  "The grid should render only the current two-row window"
+  /const displayItems = canShowSlotSeed \? seedVisibleItems : visibleItems;/,
+  "The grid should switch from the viewport-sized seed to the authoritative window"
 );
 assert.match(
   pageSource,
-  /<CharacterChatCardGrid[\s\S]*items=\{visibleItems\}[\s\S]*priorityItemCount=\{4\}/,
+  /<CharacterChatCardGrid[\s\S]*items=\{displayItems\}[\s\S]*priorityItemCount=\{4\}/,
   "The catalog should prioritize only its first visible mobile batch"
+);
+assert.match(
+  pageSource,
+  /queryClient\.getQueryData<IGetMainCharacterSlotsResponse>\(\s*getMainCharacterSlotsQueryKey\(\s*adultYn,\s*queryState\.productCacheIdentity\s*\)\s*\)/,
+  "The catalog should reuse the exact home character-slot cache entry"
+);
+assert.match(
+  pageSource,
+  /const isDefaultCatalogView =\s*activeScope === "all" &&\s*activeRole === "all" &&\s*activeSort === "recommended";/,
+  "Random home slots should only seed the unfiltered default catalog view"
+);
+assert.match(
+  pageSource,
+  /const canShowSlotSeed =[\s\S]*data === undefined[\s\S]*isDefaultCatalogView[\s\S]*slotSeedItems\.length > 0;/,
+  "The home seed should stop as soon as authoritative catalog data arrives"
+);
+assert.match(
+  pageSource,
+  /slotSeedItems\.slice\(0, catalogPaging\.batchSize\)/,
+  "The seed should fill exactly the viewport-sized first two rows"
+);
+assert.match(
+  pageSource,
+  /const displayItems = canShowSlotSeed \? seedVisibleItems : visibleItems;[\s\S]*<CharacterChatCardGrid[\s\S]*items=\{displayItems\}[\s\S]*entrySource="character_catalog"/,
+  "The catalog should render cached home slots through the same grid while loading"
+);
+assert.match(
+  pageSource,
+  /const showLoading =[\s\S]*!canShowSlotSeed;/,
+  "A usable slot seed should replace the blocking spinner"
+);
+assert.match(
+  pageSource,
+  /const showError =[\s\S]*isError && !canShowSlotSeed;/,
+  "A catalog error should not remove still-usable seeded cards"
+);
+assert.match(
+  pageSource,
+  /canShowSlotSeed && isError[\s\S]*role="alert"[\s\S]*전체 목록을 불러오지 못했어요/,
+  "A background catalog failure should remain visible and retryable"
 );
 assert.match(
   gridSource,
@@ -215,36 +265,16 @@ assert.equal(
   4,
   "Login, desktop, mobile, and normalization gates should share the personalized-scope helper"
 );
-assert.match(
-  pageSource,
-  /localMockEnabled/,
-  "The localhost mock should remain available for personalized-filter QA"
-);
 assert.match(pageSource, /필터 초기화/);
-assert.match(
+assert.doesNotMatch(
   pageSource,
-  /window\.location\.hostname === "localhost"/,
-  "The visual mock should only activate on localhost"
+  /LOCAL_MOCK|localMockEnabled|searchParams\.get\("mock"\)|window\.location\.hostname/,
+  "Production catalog code should not ship a localhost mock path or fixture data"
 );
 assert.match(
   pageSource,
-  /searchParams\.get\("mock"\) === "1"/,
-  "The visual mock should require the explicit mock=1 query"
-);
-assert.match(
-  pageSource,
-  /queryState\.enabled && localMockEnabled === false/,
-  "The visual mock should not call the real catalog API"
-);
-assert.match(
-  pageSource,
-  /LOCAL_MOCK_ITEMS\.map\(\(item\) => \[\s*item\.productId,\s*item\.lastViewedEpisodeNo \?\? 0,/,
-  "Unread mock cards should open at the first-episode scope"
-);
-assert.match(
-  pageSource,
-  /fullReady:[\s\S]*readinessCoverageRatio:/,
-  "Local catalog mocks should expose recommendation readiness"
+  /useGetCharacterChatCatalog\(\s*adultYn,\s*queryState\.enabled,\s*queryState\.productCacheIdentity\s*\)/,
+  "The production catalog query should depend only on the authenticated query state"
 );
 const homeDtoStart = dtoSource.indexOf(
   "export interface IMainCharacterSlotItem"
@@ -306,8 +336,8 @@ assert.match(modalSource, /원문 장면/);
 assert.match(modalSource, /useGetCharacterChatPreview/);
 assert.match(
   modalSource,
-  /readScopeStatus === "ready" && !previewDetail/,
-  "Mock preview details should suppress the real preview API"
+  /readScopeStatus === "ready"/,
+  "The real preview API should start after the read scope is ready"
 );
 const sceneSummaryIndex = modalSource.indexOf("장면 요약");
 assert.ok(
@@ -337,10 +367,14 @@ assert.ok(
 );
 assert.match(modalSource, /selectedEpisodeNo/);
 assert.match(modalSource, /화의 \$\{item\.characterName\}에게 말 걸기/);
-assert.match(pageSource, /previewDetailByProduct/);
 assert.match(modalSource, /personalityCore/);
 assert.match(modalSource, /speechStyle/);
 assert.match(modalSource, /<select/);
+assert.doesNotMatch(
+  `${pageSource}\n${gridSource}\n${modalSource}`,
+  /LOCAL_MOCK|localMockEnabled|mockReadEpisodeNo|previewDetail/,
+  "Production catalog, grid, and modal code should not retain mock-only paths"
+);
 assert.match(
   modalSource,
   /getEpisodeListQueryOptions/,

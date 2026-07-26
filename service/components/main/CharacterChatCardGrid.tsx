@@ -13,6 +13,7 @@ import {
   createSingleFlightRunner,
   queueHomeCharacterChatLaunch,
 } from "@/utils/characterChatLaunch";
+import { resolveCharacterChatAccountReadEpisodeSeed } from "@/utils/characterChatEpisodeScope";
 import { getCharacterChatRoleMeta } from "@/utils/characterChatRole";
 import { buildProductDetailPath } from "@/utils/productPath";
 import { getWebsochatSafeUserMessage } from "@/utils/websochatError";
@@ -25,9 +26,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import CharacterChatPreviewModal, {
-  type CharacterChatPreviewDetail,
-} from "./CharacterChatPreviewModal";
+import CharacterChatPreviewModal from "./CharacterChatPreviewModal";
 
 interface Props {
   items: IMainCharacterSlotItem[];
@@ -36,8 +35,6 @@ interface Props {
   className: string;
   imageSizes?: string;
   priorityItemCount?: number;
-  previewReadEpisodeByProduct?: Record<number, number>;
-  previewDetailByProduct?: Record<number, CharacterChatPreviewDetail>;
 }
 
 const CharacterChatCardGrid = ({
@@ -47,8 +44,6 @@ const CharacterChatCardGrid = ({
   className,
   imageSizes = "(max-width: 767px) 45vw, 211px",
   priorityItemCount = 0,
-  previewReadEpisodeByProduct,
-  previewDetailByProduct,
 }: Props) => {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -62,6 +57,8 @@ const CharacterChatCardGrid = ({
   const [launchingScopeKey, setLaunchingScopeKey] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] =
     useState<IMainCharacterSlotItem | null>(null);
+  const selectedAccountReadEpisodeNoSeed =
+    resolveCharacterChatAccountReadEpisodeSeed(selectedItem);
 
   const handleCharacterClick = async (
     item: IMainCharacterSlotItem,
@@ -187,17 +184,8 @@ const CharacterChatCardGrid = ({
 
       <CharacterChatPreviewModal
         item={selectedItem}
+        accountReadEpisodeNoSeed={selectedAccountReadEpisodeNoSeed}
         isLaunching={launchingScopeKey !== null}
-        mockReadEpisodeNo={
-          selectedItem
-            ? previewReadEpisodeByProduct?.[selectedItem.productId]
-            : undefined
-        }
-        previewDetail={
-          selectedItem
-            ? previewDetailByProduct?.[selectedItem.productId]
-            : undefined
-        }
         onLaunch={(item, selectedEpisodeNo) =>
           void handleCharacterClick(item, selectedEpisodeNo)
         }

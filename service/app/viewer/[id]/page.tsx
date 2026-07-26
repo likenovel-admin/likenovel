@@ -151,6 +151,9 @@ const Viewer = () => {
     queryClient.invalidateQueries({
       queryKey: ["selectUserInfo"],
     });
+    queryClient.invalidateQueries({
+      queryKey: ["getCharacterChatCatalog"],
+    });
 
     confirmViewerPageContext({
       episodeId,

@@ -28,17 +28,10 @@ export type CharacterChatReadScopeStatus =
   | "ready"
   | "error";
 
-export interface CharacterChatPreviewDetail {
-  roleLabel?: string;
-  aliases?: string[];
-  sceneTeaser?: string;
-}
-
 interface Props {
   item: IMainCharacterSlotItem | null;
+  accountReadEpisodeNoSeed?: number | null;
   isLaunching: boolean;
-  mockReadEpisodeNo?: number;
-  previewDetail?: CharacterChatPreviewDetail;
   onLaunch: (item: IMainCharacterSlotItem, readEpisodeNo: number) => void;
   onGoToProduct: (item: IMainCharacterSlotItem) => void;
   onClose: () => void;
@@ -54,10 +47,9 @@ const CharacterChatPreviewContent = ({
   maxSelectableEpisodeNo,
   selectableEpisodeNos,
   episodeTitleByNo,
-  previewDetail,
   onLaunch,
   onGoToProduct,
-}: Omit<Props, "item" | "onClose" | "mockReadEpisodeNo"> & {
+}: Omit<Props, "item" | "onClose"> & {
   item: IMainCharacterSlotItem;
   readScopeStatus: CharacterChatReadScopeStatus;
   accountReadEpisodeNo: number | null;
@@ -86,7 +78,7 @@ const CharacterChatPreviewContent = ({
     item.productId,
     item.characterScopeKey,
     selectedEpisodeNo,
-    readScopeStatus === "ready" && !previewDetail
+    readScopeStatus === "ready"
   );
   const lastSuccessfulPreviewRef = useRef<{
     productId: number;
@@ -117,10 +109,9 @@ const CharacterChatPreviewContent = ({
       : undefined;
   const apiPreview = currentApiPreview || retainedApiPreview;
   const roleMeta = getCharacterChatRoleMeta(item.characterRole);
-  const aliases = (apiPreview?.aliases || previewDetail?.aliases || [])
+  const aliases = (apiPreview?.aliases || [])
     .filter(Boolean)
     .slice(0, 2);
-  const sceneTeaser = String(previewDetail?.sceneTeaser || "").trim();
   const personalityCore = (
     apiPreview?.personalityCore ||
     item.personalityCore ||
@@ -327,31 +318,9 @@ const CharacterChatPreviewContent = ({
           </section>
         )}
 
-        {!shouldShowInitialLoader && !sceneSummary && !sceneExcerpt && sceneTeaser && (
-          <section className="relative mt-16pxr border-t border-light-gray-400 pt-16pxr">
-            <div
-              className={isSceneStatusVisible ? "invisible" : undefined}
-              aria-hidden={isSceneStatusVisible}
-            >
-              <p className="text-13pxr font-bold leading-[18px] text-primary-100">
-                {selectedEpisodeNo}화 장면 미리보기
-              </p>
-              <p className="mt-8pxr break-words text-15pxr leading-[23px] text-black-100">
-                {sceneTeaser}
-              </p>
-            </div>
-            {isSceneStatusVisible && (
-              <div className="absolute inset-0 flex flex-col items-center justify-start bg-white pt-16pxr text-13pxr text-dark-gray-400">
-                {sceneStatusContent}
-              </div>
-            )}
-          </section>
-        )}
-
         {!shouldShowInitialLoader &&
           !sceneSummary &&
           !sceneExcerpt &&
-          !sceneTeaser &&
           isSceneStatusVisible && (
             <section className="mt-16pxr border-t border-light-gray-400 pt-16pxr">
               <div className="flex min-h-[96px] flex-col items-center justify-start text-13pxr text-dark-gray-400">
@@ -426,9 +395,8 @@ const CharacterChatPreviewContent = ({
 
 const CharacterChatPreviewModal = ({
   item,
+  accountReadEpisodeNoSeed,
   isLaunching,
-  mockReadEpisodeNo,
-  previewDetail,
   onLaunch,
   onGoToProduct,
   onClose,
@@ -545,7 +513,7 @@ const CharacterChatPreviewModal = ({
 
     let availableEpisodeTitleByNo: Record<number, string> = {};
     const applyReadScope = (
-      rawReadEpisodeNo: number,
+      rawReadEpisodeNo: number | null,
       episodeTitleByNo: Record<number, string> = availableEpisodeTitleByNo
     ) => {
       if (cancelled) return;
@@ -564,6 +532,13 @@ const CharacterChatPreviewModal = ({
       });
     };
 
+    if (accountReadEpisodeNoSeed !== undefined) {
+      applyReadScope(accountReadEpisodeNoSeed);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     setReadScope({
       characterSlotId: item.characterSlotId,
       status: "loading",
@@ -571,13 +546,6 @@ const CharacterChatPreviewModal = ({
       episodeTitleByNo: {},
       ...fallbackEpisodeScope,
     });
-
-    if (mockReadEpisodeNo !== undefined) {
-      applyReadScope(mockReadEpisodeNo);
-      return () => {
-        cancelled = true;
-      };
-    }
 
     void (async () => {
       try {
@@ -706,7 +674,7 @@ const CharacterChatPreviewModal = ({
     return () => {
       cancelled = true;
     };
-  }, [item, mockReadEpisodeNo, queryClient]);
+  }, [accountReadEpisodeNoSeed, item, queryClient]);
 
   if (!item || device === null) return null;
   const fallbackEpisodeScope = resolveCharacterChatEpisodeScope({
@@ -714,9 +682,25 @@ const CharacterChatPreviewModal = ({
     preparedEpisodeNo: item.syncedLatestEpisodeNo,
     accountReadEpisodeNo: null,
   });
+  const seededEpisodeScope =
+    accountReadEpisodeNoSeed !== undefined
+      ? resolveCharacterChatEpisodeScope({
+          entryEpisodeNo: item.entryEpisodeNo,
+          preparedEpisodeNo: item.syncedLatestEpisodeNo,
+          accountReadEpisodeNo: accountReadEpisodeNoSeed,
+        })
+      : null;
 
   const currentReadScope =
-    readScope.characterSlotId === item.characterSlotId
+    seededEpisodeScope
+      ? {
+          characterSlotId: item.characterSlotId,
+          status: "ready" as CharacterChatReadScopeStatus,
+          accountReadEpisodeNo: accountReadEpisodeNoSeed || null,
+          episodeTitleByNo: {},
+          ...seededEpisodeScope,
+        }
+      : readScope.characterSlotId === item.characterSlotId
       ? readScope
       : {
           characterSlotId: item.characterSlotId,
@@ -737,7 +721,6 @@ const CharacterChatPreviewModal = ({
       maxSelectableEpisodeNo={currentReadScope.maxSelectableEpisodeNo}
       selectableEpisodeNos={currentReadScope.selectableEpisodeNos}
       episodeTitleByNo={currentReadScope.episodeTitleByNo}
-      previewDetail={previewDetail}
       onLaunch={onLaunch}
       onGoToProduct={onGoToProduct}
     />

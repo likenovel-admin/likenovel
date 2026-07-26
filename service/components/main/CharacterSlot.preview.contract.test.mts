@@ -74,6 +74,38 @@ test("모바일과 데스크톱 모달에서 기존 시작 동작과 작품 이�
   assert.match(gridSource, /queueHomeCharacterChatLaunch/);
 });
 
+test("catalog 저장 회차는 모달에 보존하고 홈 구좌만 회차 목록을 조회한다", () => {
+  assert.match(
+    gridSource,
+    /resolveCharacterChatAccountReadEpisodeSeed\(selectedItem\)/
+  );
+  assert.match(
+    gridSource,
+    /accountReadEpisodeNoSeed=\{selectedAccountReadEpisodeNoSeed\}/
+  );
+  assert.match(
+    modalSource,
+    /if \(accountReadEpisodeNoSeed !== undefined\) \{[\s\S]*applyReadScope\(accountReadEpisodeNoSeed\);[\s\S]*return/
+  );
+
+  const storedReadSeedGuardIndex = modalSource.indexOf(
+    "if (accountReadEpisodeNoSeed !== undefined)"
+  );
+  const episodeListFetchIndex = modalSource.indexOf(
+    "getEpisodeListQueryOptions("
+  );
+  assert.notEqual(storedReadSeedGuardIndex, -1);
+  assert.notEqual(episodeListFetchIndex, -1);
+  assert.ok(storedReadSeedGuardIndex < episodeListFetchIndex);
+});
+
+test("catalog seed는 같은 캐릭터의 이전 home read scope보다 첫 렌더에서 우선한다", () => {
+  assert.match(
+    modalSource,
+    /const currentReadScope =\s*seededEpisodeScope\s*\?[\s\S]*:\s*readScope\.characterSlotId === item\.characterSlotId\s*\?\s*readScope/
+  );
+});
+
 test("존재하지 않는 preview API를 호출하지 않는다", () => {
   assert.doesNotMatch(slotSource, /getMainCharacterSlotPreview/);
   assert.doesNotMatch(modalSource, /getMainCharacterSlotPreview/);
