@@ -265,36 +265,16 @@ assert.equal(
   4,
   "Login, desktop, mobile, and normalization gates should share the personalized-scope helper"
 );
-assert.match(
-  pageSource,
-  /localMockEnabled/,
-  "The localhost mock should remain available for personalized-filter QA"
-);
 assert.match(pageSource, /필터 초기화/);
-assert.match(
+assert.doesNotMatch(
   pageSource,
-  /window\.location\.hostname === "localhost"/,
-  "The visual mock should only activate on localhost"
+  /LOCAL_MOCK|localMockEnabled|searchParams\.get\("mock"\)|window\.location\.hostname/,
+  "Production catalog code should not ship a localhost mock path or fixture data"
 );
 assert.match(
   pageSource,
-  /searchParams\.get\("mock"\) === "1"/,
-  "The visual mock should require the explicit mock=1 query"
-);
-assert.match(
-  pageSource,
-  /queryState\.enabled && localMockEnabled === false/,
-  "The visual mock should not call the real catalog API"
-);
-assert.match(
-  pageSource,
-  /LOCAL_MOCK_ITEMS\.map\(\(item\) => \[\s*item\.productId,\s*item\.lastViewedEpisodeNo \?\? 0,/,
-  "Unread mock cards should open at the first-episode scope"
-);
-assert.match(
-  pageSource,
-  /fullReady:[\s\S]*readinessCoverageRatio:/,
-  "Local catalog mocks should expose recommendation readiness"
+  /useGetCharacterChatCatalog\(\s*adultYn,\s*queryState\.enabled,\s*queryState\.productCacheIdentity\s*\)/,
+  "The production catalog query should depend only on the authenticated query state"
 );
 const homeDtoStart = dtoSource.indexOf(
   "export interface IMainCharacterSlotItem"
@@ -356,8 +336,8 @@ assert.match(modalSource, /원문 장면/);
 assert.match(modalSource, /useGetCharacterChatPreview/);
 assert.match(
   modalSource,
-  /readScopeStatus === "ready" && !previewDetail/,
-  "Mock preview details should suppress the real preview API"
+  /readScopeStatus === "ready"/,
+  "The real preview API should start after the read scope is ready"
 );
 const sceneSummaryIndex = modalSource.indexOf("장면 요약");
 assert.ok(
@@ -387,10 +367,14 @@ assert.ok(
 );
 assert.match(modalSource, /selectedEpisodeNo/);
 assert.match(modalSource, /화의 \$\{item\.characterName\}에게 말 걸기/);
-assert.match(pageSource, /previewDetailByProduct/);
 assert.match(modalSource, /personalityCore/);
 assert.match(modalSource, /speechStyle/);
 assert.match(modalSource, /<select/);
+assert.doesNotMatch(
+  `${pageSource}\n${gridSource}\n${modalSource}`,
+  /LOCAL_MOCK|localMockEnabled|mockReadEpisodeNo|previewDetail/,
+  "Production catalog, grid, and modal code should not retain mock-only paths"
+);
 assert.match(
   modalSource,
   /getEpisodeListQueryOptions/,
