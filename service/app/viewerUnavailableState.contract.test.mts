@@ -72,6 +72,12 @@ assert.match(
   "Unavailable viewer login action should preserve the current viewer path before opening login"
 );
 
+assert.match(
+  source,
+  /queryClient\.invalidateQueries\(\{\s*queryKey: \["getCharacterChatCatalog"\],\s*\}\);/,
+  "Viewer episode data should invalidate the cached character-chat catalog read progress"
+);
+
 const episodeQuerySource = readFileSync(
   existsSync("service/app/api/query/episode/index.ts")
     ? "service/app/api/query/episode/index.ts"

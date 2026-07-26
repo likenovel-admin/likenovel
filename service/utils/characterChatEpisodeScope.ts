@@ -11,6 +11,21 @@ export interface CharacterChatEpisodeScope {
   selectableEpisodeNos: number[];
 }
 
+const hasOwnLastViewedEpisodeNo = (
+  item: object
+): item is { lastViewedEpisodeNo: unknown } =>
+  Object.prototype.hasOwnProperty.call(item, "lastViewedEpisodeNo");
+
+export const resolveCharacterChatAccountReadEpisodeSeed = (
+  item: object | null
+): number | null | undefined => {
+  if (!item || !hasOwnLastViewedEpisodeNo(item)) return undefined;
+  if (item.lastViewedEpisodeNo === null) return null;
+  return typeof item.lastViewedEpisodeNo === "number"
+    ? item.lastViewedEpisodeNo
+    : undefined;
+};
+
 export const resolveCharacterChatEpisodeScope = ({
   entryEpisodeNo: rawEntryEpisodeNo,
   preparedEpisodeNo: rawPreparedEpisodeNo,

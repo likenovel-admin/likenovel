@@ -13,6 +13,7 @@ import {
   createSingleFlightRunner,
   queueHomeCharacterChatLaunch,
 } from "@/utils/characterChatLaunch";
+import { resolveCharacterChatAccountReadEpisodeSeed } from "@/utils/characterChatEpisodeScope";
 import { getCharacterChatRoleMeta } from "@/utils/characterChatRole";
 import { buildProductDetailPath } from "@/utils/productPath";
 import { getWebsochatSafeUserMessage } from "@/utils/websochatError";
@@ -56,6 +57,8 @@ const CharacterChatCardGrid = ({
   const [launchingScopeKey, setLaunchingScopeKey] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] =
     useState<IMainCharacterSlotItem | null>(null);
+  const selectedAccountReadEpisodeNoSeed =
+    resolveCharacterChatAccountReadEpisodeSeed(selectedItem);
 
   const handleCharacterClick = async (
     item: IMainCharacterSlotItem,
@@ -181,6 +184,7 @@ const CharacterChatCardGrid = ({
 
       <CharacterChatPreviewModal
         item={selectedItem}
+        accountReadEpisodeNoSeed={selectedAccountReadEpisodeNoSeed}
         isLaunching={launchingScopeKey !== null}
         onLaunch={(item, selectedEpisodeNo) =>
           void handleCharacterClick(item, selectedEpisodeNo)

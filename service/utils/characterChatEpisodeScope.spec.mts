@@ -1,6 +1,34 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { resolveCharacterChatEpisodeScope } from "./characterChatEpisodeScope.ts";
+import {
+  resolveCharacterChatAccountReadEpisodeSeed,
+  resolveCharacterChatEpisodeScope,
+} from "./characterChatEpisodeScope.ts";
+
+test("catalog 읽은 회차는 필드 부재, 기록 없음, 저장 회차를 구분한다", () => {
+  const inheritedProgressItem = {};
+  Object.setPrototypeOf(inheritedProgressItem, {
+    lastViewedEpisodeNo: 13,
+  });
+
+  assert.equal(resolveCharacterChatAccountReadEpisodeSeed({}), undefined);
+  assert.equal(
+    resolveCharacterChatAccountReadEpisodeSeed(inheritedProgressItem),
+    undefined
+  );
+  assert.equal(
+    resolveCharacterChatAccountReadEpisodeSeed({
+      lastViewedEpisodeNo: null,
+    }),
+    null
+  );
+  assert.equal(
+    resolveCharacterChatAccountReadEpisodeSeed({
+      lastViewedEpisodeNo: 8,
+    }),
+    8
+  );
+});
 
 test("최초 등장 회차가 없으면 기존 홈 슬롯처럼 1화에서 시작한다", () => {
   assert.deepEqual(

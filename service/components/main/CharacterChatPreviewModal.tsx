@@ -30,6 +30,7 @@ export type CharacterChatReadScopeStatus =
 
 interface Props {
   item: IMainCharacterSlotItem | null;
+  accountReadEpisodeNoSeed?: number | null;
   isLaunching: boolean;
   onLaunch: (item: IMainCharacterSlotItem, readEpisodeNo: number) => void;
   onGoToProduct: (item: IMainCharacterSlotItem) => void;
@@ -394,6 +395,7 @@ const CharacterChatPreviewContent = ({
 
 const CharacterChatPreviewModal = ({
   item,
+  accountReadEpisodeNoSeed,
   isLaunching,
   onLaunch,
   onGoToProduct,
@@ -511,7 +513,7 @@ const CharacterChatPreviewModal = ({
 
     let availableEpisodeTitleByNo: Record<number, string> = {};
     const applyReadScope = (
-      rawReadEpisodeNo: number,
+      rawReadEpisodeNo: number | null,
       episodeTitleByNo: Record<number, string> = availableEpisodeTitleByNo
     ) => {
       if (cancelled) return;
@@ -529,6 +531,13 @@ const CharacterChatPreviewModal = ({
         ...episodeScope,
       });
     };
+
+    if (accountReadEpisodeNoSeed !== undefined) {
+      applyReadScope(accountReadEpisodeNoSeed);
+      return () => {
+        cancelled = true;
+      };
+    }
 
     setReadScope({
       characterSlotId: item.characterSlotId,
@@ -665,7 +674,7 @@ const CharacterChatPreviewModal = ({
     return () => {
       cancelled = true;
     };
-  }, [item, queryClient]);
+  }, [accountReadEpisodeNoSeed, item, queryClient]);
 
   if (!item || device === null) return null;
   const fallbackEpisodeScope = resolveCharacterChatEpisodeScope({
@@ -673,9 +682,25 @@ const CharacterChatPreviewModal = ({
     preparedEpisodeNo: item.syncedLatestEpisodeNo,
     accountReadEpisodeNo: null,
   });
+  const seededEpisodeScope =
+    accountReadEpisodeNoSeed !== undefined
+      ? resolveCharacterChatEpisodeScope({
+          entryEpisodeNo: item.entryEpisodeNo,
+          preparedEpisodeNo: item.syncedLatestEpisodeNo,
+          accountReadEpisodeNo: accountReadEpisodeNoSeed,
+        })
+      : null;
 
   const currentReadScope =
-    readScope.characterSlotId === item.characterSlotId
+    seededEpisodeScope
+      ? {
+          characterSlotId: item.characterSlotId,
+          status: "ready" as CharacterChatReadScopeStatus,
+          accountReadEpisodeNo: accountReadEpisodeNoSeed || null,
+          episodeTitleByNo: {},
+          ...seededEpisodeScope,
+        }
+      : readScope.characterSlotId === item.characterSlotId
       ? readScope
       : {
           characterSlotId: item.characterSlotId,
