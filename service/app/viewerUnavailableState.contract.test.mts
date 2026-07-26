@@ -1,5 +1,110 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
+import {
+  isViewerPurchaseRequiredResponse,
+  shouldAutoOpenViewerPurchaseModal,
+  shouldOpenViewerPurchaseModal,
+} from "../utils/viewerPurchaseResume.ts";
+
+const purchaseRequiredResponse = {
+  status: 403,
+  code: "PURCHASE_REQUIRED",
+};
+
+assert.equal(
+  isViewerPurchaseRequiredResponse(purchaseRequiredResponse),
+  true,
+  "The exact backend purchase-required response should be classified separately"
+);
+assert.equal(
+  isViewerPurchaseRequiredResponse({ status: 403, code: "FORBIDDEN" }),
+  false,
+  "An unrelated 403 must not be classified as purchase-required"
+);
+assert.equal(
+  shouldOpenViewerPurchaseModal({
+    ...purchaseRequiredResponse,
+    isAuthenticated: true,
+    episodeId: 22255,
+    productId: 1135,
+  }),
+  true,
+  "An authenticated paid viewer resume with complete identifiers should open the purchase modal"
+);
+
+for (const ineligibleCase of [
+  {
+    ...purchaseRequiredResponse,
+    isAuthenticated: false,
+    episodeId: 22255,
+    productId: 1135,
+  },
+  {
+    status: 401,
+    code: "PURCHASE_REQUIRED",
+    isAuthenticated: true,
+    episodeId: 22255,
+    productId: 1135,
+  },
+  {
+    status: 403,
+    code: "FORBIDDEN",
+    isAuthenticated: true,
+    episodeId: 22255,
+    productId: 1135,
+  },
+  {
+    ...purchaseRequiredResponse,
+    isAuthenticated: true,
+    episodeId: 0,
+    productId: 1135,
+  },
+  {
+    ...purchaseRequiredResponse,
+    isAuthenticated: true,
+    episodeId: 22255,
+    productId: 0,
+  },
+]) {
+  assert.equal(
+    shouldOpenViewerPurchaseModal(ineligibleCase),
+    false,
+    "Guest, non-purchase errors, and incomplete viewer identifiers must not open the purchase modal"
+  );
+}
+
+const autoOpenDecision = {
+  shouldOpenPurchaseModal: true,
+  episodeId: 22255,
+  autoOpenedEpisodeId: null as number | null,
+};
+assert.equal(
+  shouldAutoOpenViewerPurchaseModal(autoOpenDecision),
+  true,
+  "The first eligible purchase-required response should auto-open the modal"
+);
+autoOpenDecision.autoOpenedEpisodeId = autoOpenDecision.episodeId;
+assert.equal(
+  shouldAutoOpenViewerPurchaseModal(autoOpenDecision),
+  false,
+  "Closing and re-rendering the same episode must not auto-open the modal again"
+);
+assert.equal(
+  shouldAutoOpenViewerPurchaseModal({
+    ...autoOpenDecision,
+    shouldOpenPurchaseModal: false,
+  }),
+  false,
+  "A successful viewer refetch must not reopen the purchase modal"
+);
+assert.equal(
+  shouldAutoOpenViewerPurchaseModal({
+    ...autoOpenDecision,
+    episodeId: 22256,
+  }),
+  true,
+  "A different eligible episode should be allowed to auto-open once"
+);
 
 const viewerPagePath = existsSync("service/app/viewer/[id]/page.tsx")
   ? "service/app/viewer/[id]/page.tsx"
@@ -32,14 +137,56 @@ assert.match(
 
 assert.match(
   source,
+  /const viewerErrorCode = axios\.isAxiosError/,
+  "Viewer page should read the backend error code instead of classifying every 403 as an auth error"
+);
+
+assert.match(
+  source,
+  /shouldOpenViewerPurchaseModal\(\{[\s\S]*status: viewerErrorStatus,[\s\S]*code: viewerErrorCode,[\s\S]*isAuthenticated,[\s\S]*episodeId,[\s\S]*productId: hintedProductId,[\s\S]*\}\)/,
+  "Viewer page should use the guarded purchase-modal decision with the resumed viewer identifiers"
+);
+
+assert.match(
+  source,
+  /setTypeModal\(TYPE_MODAL\.RENT_OWN,\s*\{[\s\S]*episodeId,[\s\S]*productId: hintedProductId,[\s\S]*\}\)/,
+  "Viewer purchase-required handling should open the existing rent/own modal with exact identifiers"
+);
+
+assert.match(
+  source,
+  /shouldAutoOpenViewerPurchaseModal\(\{[\s\S]*autoOpenedEpisodeId: autoOpenedPurchaseEpisodeIdRef\.current[\s\S]*\}\)[\s\S]*autoOpenedPurchaseEpisodeIdRef\.current = episodeId;[\s\S]*handleOpenViewerPurchase\(\)/,
+  "Viewer should auto-open the purchase modal only once per resumed episode"
+);
+
+assert.match(
+  source,
+  /shouldOpenPurchaseModal && \([\s\S]*onClick=\{handleOpenViewerPurchase\}[\s\S]*구매하기/,
+  "Closing the modal should leave a manual purchase action available"
+);
+
+assert.match(
+  source,
+  /viewerErrorStatus === 403 && !isViewerPurchaseRequired/,
+  "Viewer should preserve unrelated 403 responses as auth/access errors"
+);
+
+assert.match(
+  source,
+  /isViewerPurchaseRequired[\s\S]*구매가 필요한 회차입니다\.[\s\S]*구매 후 감상할 수 있습니다\./,
+  "Closing the purchase modal should leave accurate purchase-required copy instead of a login error"
+);
+
+assert.match(
+  source,
   /const isViewerMissingData = !isViewerError && !episodeData/,
   "Viewer page should treat missing data as not-found copy only when there is no HTTP error"
 );
 
 assert.match(
   source,
-  /const isViewerTransientError =\s*isViewerError && !isViewerAuthError && !isViewerNotFoundError/,
-  "Viewer page should classify non-auth non-404 viewer errors as transient errors"
+  /const isViewerTransientError =[\s\S]*isViewerError &&[\s\S]*!isViewerPurchaseRequired &&[\s\S]*!isViewerAuthError &&[\s\S]*!isViewerNotFoundError/,
+  "Viewer page should classify non-purchase non-auth non-404 viewer errors as transient errors"
 );
 
 assert.match(

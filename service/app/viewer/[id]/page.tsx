@@ -34,12 +34,17 @@ import {
   buildProductDetailPath,
   getProductDetailEntrySource,
 } from "@/utils/productPath";
+import {
+  isViewerPurchaseRequiredResponse,
+  shouldAutoOpenViewerPurchaseModal,
+  shouldOpenViewerPurchaseModal,
+} from "@/utils/viewerPurchaseResume";
 import { buildViewerPath } from "@/utils/viewerPath";
 import { savePendingWebsochatLaunch } from "@/utils/websochatLaunch";
 import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 const Viewer = () => {
   const params = useParams<{ id: string }>();
   const episodeId = Number(params.id || 0);
@@ -76,6 +81,7 @@ const Viewer = () => {
   const [epubUrl, setEpubUrl] = useState<string | null>(null);
   const [goFirstRequest, setGoFirstRequest] = useState(0);
   const [suppressViewerClickTick, setSuppressViewerClickTick] = useState(0);
+  const autoOpenedPurchaseEpisodeIdRef = useRef<number | null>(null);
 
   const {
     data,
@@ -92,23 +98,52 @@ const Viewer = () => {
   const viewerErrorStatus = axios.isAxiosError(viewerError)
     ? viewerError.response?.status
     : undefined;
+  const viewerErrorCode = axios.isAxiosError<{ code?: string }>(viewerError)
+    ? viewerError.response?.data?.code
+    : undefined;
+  const isViewerPurchaseRequired =
+    isAuthenticated &&
+    isViewerPurchaseRequiredResponse({
+      status: viewerErrorStatus,
+      code: viewerErrorCode,
+    });
+  const shouldOpenPurchaseModal = shouldOpenViewerPurchaseModal({
+    status: viewerErrorStatus,
+    code: viewerErrorCode,
+    isAuthenticated,
+    episodeId,
+    productId: hintedProductId,
+  });
+  const shouldAutoOpenPurchaseModal = shouldAutoOpenViewerPurchaseModal({
+    shouldOpenPurchaseModal,
+    episodeId,
+    autoOpenedEpisodeId: autoOpenedPurchaseEpisodeIdRef.current,
+  });
   const isViewerAuthError =
-    viewerErrorStatus === 401 || viewerErrorStatus === 403;
+    viewerErrorStatus === 401 ||
+    (viewerErrorStatus === 403 && !isViewerPurchaseRequired);
   const isViewerNotFoundError = viewerErrorStatus === 404;
   const isViewerMissingData = !isViewerError && !episodeData;
   const isViewerMissingEpisode = isViewerNotFoundError || isViewerMissingData;
   const isViewerTransientError =
-    isViewerError && !isViewerAuthError && !isViewerNotFoundError;
-  const viewerUnavailableTitle = isViewerAuthError
-    ? "로그인이 필요합니다."
-    : isViewerMissingEpisode
-      ? "회차를 찾을 수 없습니다."
-      : "회차를 불러오지 못했습니다.";
-  const viewerUnavailableMessage = isViewerAuthError
-    ? "로그인이 필요한 회차이거나 접근할 수 없는 회차입니다."
-    : isViewerMissingEpisode
-      ? "삭제되었거나 공개되지 않은 회차입니다."
-      : "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+    isViewerError &&
+    !isViewerPurchaseRequired &&
+    !isViewerAuthError &&
+    !isViewerNotFoundError;
+  const viewerUnavailableTitle = isViewerPurchaseRequired
+    ? "구매가 필요한 회차입니다."
+    : isViewerAuthError
+      ? "로그인이 필요합니다."
+      : isViewerMissingEpisode
+        ? "회차를 찾을 수 없습니다."
+        : "회차를 불러오지 못했습니다.";
+  const viewerUnavailableMessage = isViewerPurchaseRequired
+    ? "구매 후 감상할 수 있습니다."
+    : isViewerAuthError
+      ? "로그인이 필요한 회차이거나 접근할 수 없는 회차입니다."
+      : isViewerMissingEpisode
+        ? "삭제되었거나 공개되지 않은 회차입니다."
+        : "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
 
   // Check for notice data from store and set notice state
   useEffect(() => {
@@ -387,6 +422,31 @@ const Viewer = () => {
     router.push("/login?modal=open", { scroll: false });
   }, [router]);
 
+  const handleOpenViewerPurchase = useCallback(() => {
+    if (!shouldOpenPurchaseModal) return;
+
+    setTypeModal(TYPE_MODAL.RENT_OWN, {
+      title: productTitle || "회차 구매",
+      episodeId,
+      productId: hintedProductId,
+      entrySource,
+    });
+  }, [
+    entrySource,
+    episodeId,
+    hintedProductId,
+    productTitle,
+    setTypeModal,
+    shouldOpenPurchaseModal,
+  ]);
+
+  useEffect(() => {
+    if (!shouldAutoOpenPurchaseModal) return;
+
+    autoOpenedPurchaseEpisodeIdRef.current = episodeId;
+    handleOpenViewerPurchase();
+  }, [episodeId, handleOpenViewerPurchase, shouldAutoOpenPurchaseModal]);
+
   const handleGoToProductDetail = useCallback(() => {
     if (hintedProductId) {
       router.push(
@@ -424,6 +484,15 @@ const Viewer = () => {
               className="h-44pxr px-18pxr rounded-[8px] bg-primary-100 text-white text-14pxr font-semibold"
             >
               로그인하기
+            </button>
+          )}
+          {shouldOpenPurchaseModal && (
+            <button
+              type="button"
+              onClick={handleOpenViewerPurchase}
+              className="h-44pxr px-18pxr rounded-[8px] bg-primary-100 text-white text-14pxr font-semibold"
+            >
+              구매하기
             </button>
           )}
           {isViewerTransientError && (
