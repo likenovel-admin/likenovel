@@ -4,9 +4,9 @@ import { usePathname, useRouter } from "next/navigation";
 import Coin from "/public/images/coin.svg";
 import Event from "/public/images/event.svg";
 import Favorite from "/public/images/favorite.svg";
+import ProtagonistChat from "/public/images/protagonist-chat.svg";
 import Promotion from "/public/images/promotions.svg";
 import Quest from "/public/images/quest.svg";
-import Review from "/public/images/review.svg";
 import Sale from "/public/images/sale.svg";
 const MiddleMenu = () => {
   const router = useRouter();
@@ -59,10 +59,10 @@ const MiddleMenu = () => {
       style: "w-[20px] md:w-[30px]",
     },
     {
-      icon: Review,
-      text: "작품리뷰",
+      icon: ProtagonistChat,
+      text: "주인공챗",
       onClick: () => {
-        router.push("/product/review");
+        router.push("/product/character-chat");
       },
       style: "w-[19px] md:w-[30px]",
     },
