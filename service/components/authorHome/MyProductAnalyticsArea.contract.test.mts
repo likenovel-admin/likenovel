@@ -17,6 +17,10 @@ const recent24hShareSource = readFileSync(
   new URL("./Recent24hShareReport.tsx", import.meta.url),
   "utf8"
 );
+const authorShareSource = readFileSync(
+  new URL("./AuthorShareReport.tsx", import.meta.url),
+  "utf8"
+);
 
 assert.match(source, /useProductInflowDropoffStatistics/);
 assert.match(source, /source_groups/);
@@ -52,6 +56,16 @@ assert.match(
 assert.match(
   source,
   /비로그인 포함 집계는 \{guestInclusiveStartDate\}부터 반영됩니다\./
+);
+assert.match(
+  source,
+  /const sourceReportPeriodLabel =[\s\S]*inflowDropoffData\?\.effective_start_date[\s\S]*inflowDropoffData\?\.requested_start_date[\s\S]*\.isAfter\([\s\S]*inflowDropoffData\.requested_start_date,[\s\S]*"day"[\s\S]*inflowDropoffData\.end_date[\s\S]*: null;/
+);
+assert.match(source, /sourcePeriodLabel=\{sourceReportPeriodLabel\}/);
+assert.match(authorShareSource, /sourcePeriodLabel: string \| null;/);
+assert.match(
+  authorShareSource,
+  /\{sourcePeriodLabel \? \([\s\S]*집계 기간 \{sourcePeriodLabel\}[\s\S]*\) : null\}/
 );
 assert.match(source, />상세페이지 유입</);
 assert.match(source, />방문자</);

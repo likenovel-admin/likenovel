@@ -455,6 +455,18 @@ const MyProductAnalyticsArea = () => {
         inflowDropoffData.effective_start_date || inflowDropoffData.start_date
       ).format("YYYY.MM.DD")
     : null;
+  const sourceReportPeriodLabel =
+    !isSampleSelected &&
+    !!inflowDropoffData?.effective_start_date &&
+    !!inflowDropoffData?.requested_start_date &&
+    dayjs(inflowDropoffData.effective_start_date).isAfter(
+      inflowDropoffData.requested_start_date,
+      "day"
+    )
+      ? `${dayjs(inflowDropoffData.effective_start_date).format(
+          "YYYY.MM.DD"
+        )} ~ ${dayjs(inflowDropoffData.end_date).format("YYYY.MM.DD")}`
+      : null;
 
   const rows = useMemo(
     () => (isSampleSelected ? sampleFunnelRows : funnelData?.results || []),
@@ -608,6 +620,7 @@ const MyProductAnalyticsArea = () => {
           episodeEntry={summaryDetailToViewSessions}
           firstEpisodeComplete={funnelFirstEpisodeCompleteCount}
           sourceGroups={sourceGroupRows}
+          sourcePeriodLabel={sourceReportPeriodLabel}
           episodeDropoffs={episodeDropoffRows}
           getSourceLabel={getSourceGroupLabel}
         />

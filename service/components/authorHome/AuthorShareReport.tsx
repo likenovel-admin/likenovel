@@ -21,6 +21,7 @@ export interface AuthorShareReportData {
   episodeEntry: number;
   firstEpisodeComplete: number | null;
   sourceGroups: IAuthorProductInflowDropoffSourceGroup[];
+  sourcePeriodLabel: string | null;
   episodeDropoffs: IAuthorProductEpisodeDropoffRow[];
   getSourceLabel: (row: IAuthorProductInflowDropoffSourceGroup) => string;
 }
@@ -74,6 +75,7 @@ const AuthorShareReport = (props: AuthorShareReportData) => {
     episodeEntry,
     firstEpisodeComplete,
     sourceGroups,
+    sourcePeriodLabel,
     episodeDropoffs,
     getSourceLabel,
   } = props;
@@ -97,6 +99,11 @@ const AuthorShareReport = (props: AuthorShareReportData) => {
 
       {sourceGroups.length ? (
         <ReportSection title="유입 경로 전환">
+          {sourcePeriodLabel ? (
+            <div className="mb-8pxr text-11pxr text-dark-gray-300">
+              집계 기간 {sourcePeriodLabel}
+            </div>
+          ) : null}
           <SourceConversionBars
             embedded
             rows={sourceGroups}
