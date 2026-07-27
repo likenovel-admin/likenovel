@@ -440,6 +440,21 @@ const MyProductAnalyticsArea = () => {
       return b.detail_session_count - a.detail_session_count;
     });
   }, [inflowDropoffData?.source_groups, isSampleSelected]);
+  const shouldShowGuestInclusiveNotice =
+    !isSampleSelected &&
+    !!inflowDropoffData &&
+    (inflowDropoffData.measurement_basis === "guest_inclusive" ||
+      (!!inflowDropoffData.effective_start_date &&
+        !!inflowDropoffData.requested_start_date &&
+        dayjs(inflowDropoffData.effective_start_date).isAfter(
+          inflowDropoffData.requested_start_date,
+          "day"
+        )));
+  const guestInclusiveStartDate = shouldShowGuestInclusiveNotice
+    ? dayjs(
+        inflowDropoffData.effective_start_date || inflowDropoffData.start_date
+      ).format("YYYY.MM.DD")
+    : null;
 
   const rows = useMemo(
     () => (isSampleSelected ? sampleFunnelRows : funnelData?.results || []),
@@ -881,6 +896,11 @@ const MyProductAnalyticsArea = () => {
         {isSampleSelected ? (
           <div className="rounded-[10px] bg-light-gray-100 px-16pxr py-10pxr text-12pxr text-dark-gray-400">
             아래는 예시(샘플) 작품 데이터입니다. 위 작품 선택에서 본인 작품을 고르면 실제 데이터로 바뀝니다.
+          </div>
+        ) : null}
+        {guestInclusiveStartDate ? (
+          <div className="rounded-[10px] bg-light-gray-100 px-16pxr py-10pxr text-12pxr text-dark-gray-400">
+            비로그인 포함 집계는 {guestInclusiveStartDate}부터 반영됩니다.
           </div>
         ) : null}
         {hasFunnelData ? (

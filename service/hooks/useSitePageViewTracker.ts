@@ -15,43 +15,19 @@ import {
 } from "@/utils/marketingAttribution";
 import { resolveProductEntryAttribution } from "@/utils/productEntryAttribution";
 import { getProductDetailEntrySource } from "@/utils/productPath";
+import {
+  createSiteAnalyticsEventId,
+  getSiteAnalyticsAccessToken,
+  getSiteAnalyticsIdentity,
+  getSiteAnalyticsStorage,
+  safeGetSiteAnalyticsStorageItem,
+} from "@/utils/siteAnalyticsIdentity";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
-const VISITOR_ID_KEY = "ln_site_pv_visitor_id";
-const SESSION_ID_KEY = "ln_site_pv_session_id";
 const LAST_PV_KEY = "ln_site_pv_last_key";
 const DEDUPE_WINDOW_MS = 2000;
-let memoryVisitorId: string | null = null;
-let memorySessionId: string | null = null;
 let memoryLastPageView: { key: string; at: number } | null = null;
-
-function randomId(prefix: string): string {
-  const uuid =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  return `${prefix}_${uuid}`;
-}
-
-function randomEventId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  const randomPart = Math.random().toString(16).slice(2).padEnd(12, "0").slice(0, 12);
-  return `00000000-0000-4000-8000-${randomPart}`;
-}
-
-function safeGetStorageItem(storage: Storage | null, key: string): string | null {
-  if (!storage) {
-    return null;
-  }
-  try {
-    return storage.getItem(key);
-  } catch {
-    return null;
-  }
-}
 
 function safeSetStorageItem(storage: Storage | null, key: string, value: string) {
   if (!storage) {
@@ -64,47 +40,12 @@ function safeSetStorageItem(storage: Storage | null, key: string, value: string)
   }
 }
 
-function getBrowserStorage(kind: "local" | "session"): Storage | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  return kind === "local" ? window.localStorage : window.sessionStorage;
-}
-
-function getOrCreateLocalId(
-  storage: Storage | null,
-  key: string,
-  prefix: string,
-  memoryValue: string | null,
-  setMemoryValue: (value: string) => void
-): string {
-  const existing = safeGetStorageItem(storage, key);
-  if (existing) {
-    setMemoryValue(existing);
-    return existing;
-  }
-  if (memoryValue) {
-    return memoryValue;
-  }
-  const next = randomId(prefix);
-  setMemoryValue(next);
-  safeSetStorageItem(storage, key, next);
-  return next;
-}
-
-function getAccessToken(): string | null {
-  return (
-    safeGetStorageItem(getBrowserStorage("local"), "access_token") ||
-    safeGetStorageItem(getBrowserStorage("session"), "access_token")
-  );
-}
-
 function getSessionMarketingAttribution(): MarketingAttribution | null {
   if (typeof window === "undefined") {
     return null;
   }
 
-  const sessionStorageRef = getBrowserStorage("session");
+  const sessionStorageRef = getSiteAnalyticsStorage("session");
   const currentAttribution = extractMarketingAttribution({
     search: window.location.search,
     referrer: document.referrer,
@@ -113,7 +54,10 @@ function getSessionMarketingAttribution(): MarketingAttribution | null {
   });
   const cookieAttribution = getMarketingAttributionCookiePayload(document.cookie);
   const storedAttribution = parseMarketingAttributionValue(
-    safeGetStorageItem(sessionStorageRef, MARKETING_ATTRIBUTION_STORAGE_KEY)
+    safeGetSiteAnalyticsStorageItem(
+      sessionStorageRef,
+      MARKETING_ATTRIBUTION_STORAGE_KEY
+    )
   );
   const selectedAttribution = resolveSessionMarketingAttribution({
     pathname: window.location.pathname,
@@ -134,8 +78,8 @@ function getSessionMarketingAttribution(): MarketingAttribution | null {
 }
 
 function shouldSendPageView(currentKey: string, now: number): boolean {
-  const sessionStorageRef = getBrowserStorage("session");
-  const rawLast = safeGetStorageItem(sessionStorageRef, LAST_PV_KEY);
+  const sessionStorageRef = getSiteAnalyticsStorage("session");
+  const rawLast = safeGetSiteAnalyticsStorageItem(sessionStorageRef, LAST_PV_KEY);
   if (!rawLast && !memoryLastPageView) {
     memoryLastPageView = { key: currentKey, at: now };
     safeSetStorageItem(
@@ -185,24 +129,8 @@ export function useSitePageViewTracker() {
         return;
       }
 
-      const visitorId = getOrCreateLocalId(
-        getBrowserStorage("local"),
-        VISITOR_ID_KEY,
-        "pv",
-        memoryVisitorId,
-        (value) => {
-          memoryVisitorId = value;
-        }
-      );
-      const sessionId = getOrCreateLocalId(
-        getBrowserStorage("session"),
-        SESSION_ID_KEY,
-        "pvs",
-        memorySessionId,
-        (value) => {
-          memorySessionId = value;
-        }
-      );
+      const { visitorId, browserSessionId: sessionId } =
+        getSiteAnalyticsIdentity();
       const search = typeof window !== "undefined" ? window.location.search : "";
       const marketingAttribution = getSessionMarketingAttribution();
       const urlEntrySource = getProductDetailEntrySource(
@@ -220,7 +148,7 @@ export function useSitePageViewTracker() {
         referrerPath: previousPathRef.current,
         visitorId,
         sessionId,
-        eventId: randomEventId(),
+        eventId: createSiteAnalyticsEventId(),
         occurredAt: new Date().toISOString(),
         marketingAttribution,
         productEntryAttribution,
@@ -231,7 +159,7 @@ export function useSitePageViewTracker() {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
-      const accessToken = getAccessToken();
+      const accessToken = getSiteAnalyticsAccessToken();
       if (accessToken) {
         headers.Authorization = `Bearer ${accessToken}`;
       }
