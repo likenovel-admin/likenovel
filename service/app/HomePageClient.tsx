@@ -9,6 +9,7 @@ import CompanyNoticeCarousel from "@/components/main/CompanyNoticeCarousel";
 import CPPromotion from "@/components/main/CPPromotion";
 import FreeTop from "@/components/main/FreeTop";
 import HomeTicker from "@/components/main/HomeTicker";
+import LatestUpdate from "@/components/main/LatestUpdate";
 import MiddleBanner from "@/components/main/MiddleBanner";
 import MiddleMenu from "@/components/main/MiddleMenu";
 import PaidTop from "@/components/main/PaidTop";
@@ -285,6 +286,9 @@ export default function HomePageClient() {
               )}
               <div className="flex flex-col mt-30pxr md:mt-80pxr gap-70pxr">
                 <FreeTop data={freeTopProducts} />
+                {hasLatestUpdateProducts && (
+                  <LatestUpdate products={latestUpdateProducts} />
+                )}
                 <RecentlyView />
               </div>
             </div>
@@ -352,28 +356,14 @@ export default function HomePageClient() {
                 </div>
               ))}
               {/* TODO: 관심 끊기기 임박 작품 api 연결 */}
-              {hasLatestUpdateProducts && (
-                <div data-home-section="latest-update" className="contents">
-                  <BottomProducts
-                    suggestionData={{
-                      products: latestUpdateProducts,
-                      suggestId: 0,
-                      suggestName: "",
-                      suggestTarget: "",
-                      suggestTitle: "최신 업데이트 작품",
-                    }}
-                    key="suggest"
-                  />
-                  {shouldRenderFirstSingleSlotAfterLatest &&
-                    betweenDirectRecommendFirstSingleSlot && (
-                      <SingleSlot slot={betweenDirectRecommendFirstSingleSlot} />
-                    )}
-                  {shouldRenderSecondSingleSlotAfterLatest &&
-                    betweenDirectRecommendSecondSingleSlot && (
-                      <SingleSlot slot={betweenDirectRecommendSecondSingleSlot} />
-                    )}
-                </div>
-              )}
+              {shouldRenderFirstSingleSlotAfterLatest &&
+                betweenDirectRecommendFirstSingleSlot && (
+                  <SingleSlot slot={betweenDirectRecommendFirstSingleSlot} />
+                )}
+              {shouldRenderSecondSingleSlotAfterLatest &&
+                betweenDirectRecommendSecondSingleSlot && (
+                  <SingleSlot slot={betweenDirectRecommendSecondSingleSlot} />
+                )}
               {hasInterestDropSoonProducts && (
                 <div data-home-section="interest-drop-soon" className="contents">
                   <BottomProducts
