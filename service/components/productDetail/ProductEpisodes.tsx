@@ -14,6 +14,7 @@ import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import { buildEpisodeSummaryLabel } from "@/utils/episodeSummaryLabel";
 import type { ProductDetailEntrySource } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
+import { isGuestEpisodeLoginRequired } from "@/utils/guestEpisodeAccess";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -258,7 +259,13 @@ const ProductEpisodes = ({
     });
     const canBypassEpisodePayment = isAuthor || isAdminCPEditor;
 
-    if (!isAuthenticated && (episode.priceType === "paid" || (episode.episodeNo || 0) > 5)) {
+    if (
+      isGuestEpisodeLoginRequired({
+        isAuthenticated,
+        episodePriceType: episode.priceType,
+        episodeNo: episode.episodeNo,
+      })
+    ) {
       withLoginRequired(() => undefined, {
         redirectPath: viewerPath,
         resumeContext: {
@@ -516,7 +523,11 @@ const ProductEpisodes = ({
                       </div>
                     )}
                     <span className="text-14pxr text-dark-gray-300">
-                      {!isAuthenticated && (episode.episodeNo || 0) > 5
+                      {isGuestEpisodeLoginRequired({
+                        isAuthenticated,
+                        episodePriceType: episode.priceType,
+                        episodeNo: episode.episodeNo,
+                      })
                         ? "로그인 필요"
                         : `${episode.episodeTextCount}자`}
                     </span>

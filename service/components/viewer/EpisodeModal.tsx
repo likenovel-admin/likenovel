@@ -9,6 +9,7 @@ import { getEpisodeBadge } from "@/utils/getEpisodeBadge";
 import { getFormattingDate } from "@/utils/getFormattingDate";
 import type { ProductDetailEntrySource } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
+import { isGuestEpisodeLoginRequired } from "@/utils/guestEpisodeAccess";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import EpisodeCard from "./EpisodeCard";
@@ -202,8 +203,11 @@ const EpisodeModal = ({
                     likeCount={episode.countLike || 0}
                     onClick={() => {
                       if (
-                        !isAuthenticated &&
-                        (episode.priceType === "paid" || (episode.episodeNo || 0) > 5)
+                        isGuestEpisodeLoginRequired({
+                          isAuthenticated,
+                          episodePriceType: episode.priceType,
+                          episodeNo: episode.episodeNo,
+                        })
                       ) {
                         withLoginRequired(() => undefined, {
                           redirectPath: buildViewerPath(episode.episodeId, {
