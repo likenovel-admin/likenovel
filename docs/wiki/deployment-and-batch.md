@@ -124,6 +124,10 @@ selects env by runtime directory:
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/free_episode_campaign_expire_batch.sh`
   expires active `tb_product_free_episode_campaign` rows every 5 minutes and restores
   product free episode ranges to the row's restore range, currently 1~25.
+- The same minute batch rechecks only products released in its current run. If
+  a free, public, non-blind product reaches at least 5 public episodes and
+  20,000 public characters, it promotes the product to normal serialization
+  and inserts one author notification in the release transaction.
 - Story context prod cron has live-state history and source fallback differences.
   Do not infer current max parallel from one file; verify active `crontab -l` and
   then compare with `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`.

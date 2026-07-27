@@ -151,7 +151,7 @@
 | `author_product_entry_daily_batch.sql` | daily | 작품상세 page view 원천 | `tb_author_product_entry_daily`, 오래된 `tb_site_reader_funnel_event` purge | 작가 작품 진입 통계, guest 부분합, `metric_version`, reader raw 120일 보관 | O |
 | `main_rule_slot_snapshot_batch.sql` | 4/day | 메인 규칙 구좌 후보 | `tb_main_rule_slot_snapshot` | 구좌별 후보 스냅샷 | O |
 | `ai_dna_extract_daily_batch.sh` | daily | 작품/회차/AI 메타 대상 | `tb_product_ai_metadata` 등 | AI DNA 추출/갱신 | 부분 |
-| `episode_state_transition_minute_batch.sql` | minute | 회차 예약/상태 조건 | `tb_product_episode`, `tb_product` | 회차 상태 전환 | O |
+| `episode_state_transition_minute_batch.sql` | minute | 회차 예약/상태 조건 | `tb_product_episode`, `tb_product`, `tb_user_notification_item` | 회차 상태 전환, 예약공개 후 조건 충족 무료 작품 일반승급·알림 | O |
 | `build_story_agent_context_batch.sh` | hourly | 공개 회차/EPUB 원문 | `tb_story_agent_context_*` | websochat/story-agent 컨텍스트 | O (delta 기본) |
 | `service_reset_weekly_batch.sql` | weekly | `tb_quest_user`, `tb_quest`, `tb_direct_promotion` | 동일 테이블 update | 주간 퀘스트(투표하기), `reader-of-prev` 상태 reset | O |
 | `partner_report_monthly_batch.sql` | monthly | `tb_ptn_product_sales_temp_summary`, `tb_ptn_income_settlement_temp_summary`, `tb_common_code`, `tb_product_contract_offer` | `tb_ptn_product_sales`, `tb_ptn_product_settlement`, `tb_ptn_product_contract_offer_deduction`, `tb_ptn_income_settlement` | 월 매출/환불/수수료/정산율, 선계약금 차감, 최종정산 | O (월간 재집계) |
