@@ -8,10 +8,16 @@ import useAuthStore from "@/store/authStore";
 import useViewStore from "@/store/viewerStore";
 import {
   type NextEpisodeClickSignalContext,
+  postGuestNextEpisodeClickSignalBestEffort,
   postNextEpisodeClickSignalBestEffort,
 } from "@/utils/nextEpisodeClickSignal";
 import { getProductDetailEntrySource } from "@/utils/productPath";
 import { buildViewerPath } from "@/utils/viewerPath";
+import { isGuestEpisodeLoginRequired } from "@/utils/guestEpisodeAccess";
+import {
+  getReaderFunnelViewerSession,
+  postReaderFunnelEventBestEffort,
+} from "@/utils/readerFunnelSignal";
 import Image from "next/image";
 import { useRef } from "react";
 
@@ -69,11 +75,19 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
             entrySource,
           }
         : null;
+    const readerSession = getReaderFunnelViewerSession(currentEpisodeId);
+    postGuestNextEpisodeClickSignalBestEffort(
+      signalContext,
+      readerSession,
+      postReaderFunnelEventBestEffort
+    );
 
     if (
-      !isAuthenticated &&
-      (episode?.nextEpisodePriceType === "paid" ||
-        (episode?.nextEpisodes || 0) > 5)
+      isGuestEpisodeLoginRequired({
+        isAuthenticated,
+        episodePriceType: episode?.nextEpisodePriceType,
+        episodeNo: episode?.nextEpisodes,
+      })
     ) {
       withLoginRequired(() => undefined, {
         redirectPath: nextViewerPath,
@@ -106,7 +120,11 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
       return;
     }
 
-    postNextEpisodeClickSignalBestEffort(signalContext);
+    postNextEpisodeClickSignalBestEffort(
+      signalContext,
+      readerSession,
+      postReaderFunnelEventBestEffort
+    );
 
     // Navigate to next episode if owned or rental is valid
     router.push(nextViewerPath);

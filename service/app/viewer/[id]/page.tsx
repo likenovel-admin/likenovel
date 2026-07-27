@@ -22,12 +22,18 @@ import {
   STORAGE_KEYS,
 } from "@/utils/localStorage";
 import { setGuestReadProgress } from "@/utils/guestReadProgress";
+import { isGuestEpisodeLoginRequired } from "@/utils/guestEpisodeAccess";
+import {
+  getReaderFunnelViewerSession,
+  postReaderFunnelEventBestEffort,
+} from "@/utils/readerFunnelSignal";
 import {
   confirmViewerPageContext,
   upsertPendingViewerPageContext,
 } from "@/utils/viewerPageContext";
 import {
   type NextEpisodeClickSignalContext,
+  postGuestNextEpisodeClickSignalBestEffort,
   postNextEpisodeClickSignalBestEffort,
 } from "@/utils/nextEpisodeClickSignal";
 import {
@@ -169,6 +175,9 @@ const Viewer = () => {
   ]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let isCurrentEpisodeRequest = true;
+
     const fetchEpubFile = async () => {
       if (!data?.data.epubFilePath) {
         setEpubUrl(null);
@@ -178,9 +187,12 @@ const Viewer = () => {
       try {
         await axios.get(data.data.epubFilePath, {
           responseType: "blob",
+          signal: controller.signal,
         });
+        if (!isCurrentEpisodeRequest) return;
         setEpubUrl(data.data.epubFilePath);
       } catch (error) {
+        if (axios.isCancel(error)) return;
         setToast({
           message: "Epub 파일을 불러오는데 실패했습니다.",
           type: "error",
@@ -188,7 +200,11 @@ const Viewer = () => {
       }
     };
     fetchEpubFile();
-  }, [data?.data.epubFilePath, setToast]);
+    return () => {
+      isCurrentEpisodeRequest = false;
+      controller.abort();
+    };
+  }, [data?.data.epubFilePath, episodeId, setToast]);
 
   useEffect(() => {
     if (isAuthenticated || isNoticeViewer) return;
@@ -266,11 +282,19 @@ const Viewer = () => {
             entrySource,
           }
         : null;
+    const readerSession = getReaderFunnelViewerSession(episodeId);
+    postGuestNextEpisodeClickSignalBestEffort(
+      signalContext,
+      readerSession,
+      postReaderFunnelEventBestEffort
+    );
 
     if (
-      !isAuthenticated &&
-      (episode?.nextEpisodePriceType === "paid" ||
-        (episode?.nextEpisodes || 0) > 5)
+      isGuestEpisodeLoginRequired({
+        isAuthenticated,
+        episodePriceType: episode?.nextEpisodePriceType,
+        episodeNo: episode?.nextEpisodes,
+      })
     ) {
       withLoginRequired(() => undefined, {
         redirectPath: nextViewerPath,
@@ -301,7 +325,11 @@ const Viewer = () => {
       return;
     }
     if (data && data?.data?.nextEpisodeId) {
-      postNextEpisodeClickSignalBestEffort(signalContext);
+      postNextEpisodeClickSignalBestEffort(
+        signalContext,
+        readerSession,
+        postReaderFunnelEventBestEffort
+      );
       router.push(nextViewerPath);
     }
   };
@@ -499,19 +527,25 @@ const Viewer = () => {
             />
           </div>
         </div>
-      ) : commentState ? (
-        <Rating
-          productId={data?.data.product_id || undefined}
-          episodeId={episodeId}
-          commentOpenYn={data?.data.commentOpenYn || "Y"}
-          evaluationOpenYn={data?.data.evaluationOpenYn || "Y"}
-          setModalType={setModalType}
-        />
       ) : (
         <>
-          <div className={`relative ${showNav ? "" : ""} `}>
+          {commentState && (
+            <Rating
+              productId={data?.data.product_id || undefined}
+              episodeId={episodeId}
+              commentOpenYn={data?.data.commentOpenYn || "Y"}
+              evaluationOpenYn={data?.data.evaluationOpenYn || "Y"}
+              setModalType={setModalType}
+            />
+          )}
+          <div
+            className={`${commentState ? "hidden" : ""} relative ${
+              showNav ? "" : ""
+            }`}
+          >
             {epubUrl && (
               <EpubViewer
+                key={`${episodeId}:${epubUrl}`}
                 location={location}
                 setLocation={setLocation}
                 goFirstRequest={goFirstRequest}
@@ -521,6 +555,7 @@ const Viewer = () => {
                 showNav={showNav}
                 setShowNav={setShowNav}
                 suppressViewerClickTick={suppressViewerClickTick}
+                readerPaused={commentState}
                 currentEpisodeId={episodeId}
                 productId={data?.data?.product_id}
                 nextEpisodeId={data?.data?.nextEpisodeId}
@@ -533,7 +568,7 @@ const Viewer = () => {
                 setCommentState={setCommentState}
               />
             )} */}
-            {!noticeState && (
+            {!noticeState && !commentState && (
               <ViewerSideMenu
                 onEpisodeListClick={handleOpenEpisode}
                 onSettingClick={handleOpenSetting}
@@ -542,7 +577,7 @@ const Viewer = () => {
               />
             )}
           </div>
-          {showNav && !noticeState && (
+          {showNav && !noticeState && !commentState && (
             <ViewerBottomNav
               showNav={showNav}
               handleNavigateNextChap={handleNavigateNextChap}

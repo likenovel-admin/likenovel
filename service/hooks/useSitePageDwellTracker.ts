@@ -8,13 +8,13 @@ import {
   getNextKstMidnightDelayMs,
   resumeSitePageDwellVisibleWindow,
 } from "@/utils/sitePageDwellTiming";
+import {
+  createSiteAnalyticsEventId,
+  getSiteAnalyticsAccessToken,
+  getSiteAnalyticsIdentity,
+} from "@/utils/siteAnalyticsIdentity";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
-
-const VISITOR_ID_KEY = "ln_site_pv_visitor_id";
-const SESSION_ID_KEY = "ln_site_pv_session_id";
-let memoryVisitorId: string | null = null;
-let memorySessionId: string | null = null;
 
 type ActiveDwellPage = {
   pathname: string;
@@ -24,79 +24,6 @@ type ActiveDwellPage = {
   visibleStartedAt: number | null;
   accumulatedMs: number;
 };
-
-function randomId(prefix: string): string {
-  const uuid =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  return `${prefix}_${uuid}`;
-}
-
-function randomEventId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  const randomPart = Math.random().toString(16).slice(2).padEnd(12, "0").slice(0, 12);
-  return `00000000-0000-4000-8000-${randomPart}`;
-}
-
-function safeGetStorageItem(storage: Storage | null, key: string): string | null {
-  if (!storage) {
-    return null;
-  }
-  try {
-    return storage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function safeSetStorageItem(storage: Storage | null, key: string, value: string) {
-  if (!storage) {
-    return;
-  }
-  try {
-    storage.setItem(key, value);
-  } catch {
-    // Dwell logging must not depend on storage availability.
-  }
-}
-
-function getBrowserStorage(kind: "local" | "session"): Storage | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  return kind === "local" ? window.localStorage : window.sessionStorage;
-}
-
-function getOrCreateLocalId(
-  storage: Storage | null,
-  key: string,
-  prefix: string,
-  memoryValue: string | null,
-  setMemoryValue: (value: string) => void
-): string {
-  const existing = safeGetStorageItem(storage, key);
-  if (existing) {
-    setMemoryValue(existing);
-    return existing;
-  }
-  if (memoryValue) {
-    return memoryValue;
-  }
-  const next = randomId(prefix);
-  setMemoryValue(next);
-  safeSetStorageItem(storage, key, next);
-  return next;
-}
-
-function getAccessToken(): string | null {
-  return (
-    safeGetStorageItem(getBrowserStorage("local"), "access_token") ||
-    safeGetStorageItem(getBrowserStorage("session"), "access_token")
-  );
-}
 
 function getVisibleStartedAt(now: number): number | null {
   if (typeof document === "undefined") {
@@ -124,7 +51,7 @@ export function useSitePageDwellTracker() {
         pathname: current.pathname,
         visitorId: current.visitorId,
         sessionId: current.sessionId,
-        eventId: randomEventId(),
+        eventId: createSiteAnalyticsEventId(),
         occurredAt: new Date(current.startedAt).toISOString(),
         activeMs,
       });
@@ -140,7 +67,7 @@ export function useSitePageDwellTracker() {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
-      const accessToken = getAccessToken();
+      const accessToken = getSiteAnalyticsAccessToken();
       if (accessToken) {
         headers.Authorization = `Bearer ${accessToken}`;
       }
@@ -171,24 +98,8 @@ export function useSitePageDwellTracker() {
       }
 
       const now = Date.now();
-      const visitorId = getOrCreateLocalId(
-        getBrowserStorage("local"),
-        VISITOR_ID_KEY,
-        "pv",
-        memoryVisitorId,
-        (value) => {
-          memoryVisitorId = value;
-        }
-      );
-      const sessionId = getOrCreateLocalId(
-        getBrowserStorage("session"),
-        SESSION_ID_KEY,
-        "pvs",
-        memorySessionId,
-        (value) => {
-          memorySessionId = value;
-        }
-      );
+      const { visitorId, browserSessionId: sessionId } =
+        getSiteAnalyticsIdentity();
 
       activePageRef.current = {
         pathname,

@@ -5,6 +5,21 @@ import LastPage from "@/components/viewer/LastPage";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import useAuthStore from "@/store/authStore";
 import useViewStore from "@/store/viewerStore";
+import {
+  clearReaderFunnelViewerSession,
+  getReaderFunnelActiveMs,
+  isReaderFunnelEpisodeComplete,
+  pauseReaderFunnelActiveWindow,
+  postReaderFunnelEventBestEffort,
+  registerReaderFunnelViewerSession,
+  resolveReaderFunnelLane,
+  resumeReaderFunnelActiveWindow,
+  type ReaderFunnelLane,
+} from "@/utils/readerFunnelSignal";
+import {
+  createSiteAnalyticsEventId,
+  getSiteAnalyticsIdentity,
+} from "@/utils/siteAnalyticsIdentity";
 import type { Contents, Rendition } from "epubjs";
 import type React from "react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -75,6 +90,7 @@ interface Props {
   showNav: boolean;
   setShowNav: React.Dispatch<React.SetStateAction<boolean>>;
   suppressViewerClickTick?: number;
+  readerPaused?: boolean;
   handleCommentState: () => void;
   currentEpisodeId?: number;
   productId?: number;
@@ -91,6 +107,7 @@ const EpubViewer = ({
   showNav,
   setShowNav,
   suppressViewerClickTick = 0,
+  readerPaused = false,
   currentEpisodeId,
   productId,
   nextEpisodeId,
@@ -106,6 +123,8 @@ const EpubViewer = ({
   const [iconColor, setIconColor] = useState("var(--foreground-rgb)");
   const [progress, setProgress] = useState(0);
   const [epubReady, setEpubReady] = useState(false);
+  const [readerFunnelLane, setReaderFunnelLane] =
+    useState<ReaderFunnelLane | null>(null);
   const resolvedCoverImagePath = (coverImagePath || DEFAULT_PRODUCT_IMAGE).trim();
 
   const renditionRef = useRef<any>(null);
@@ -130,7 +149,10 @@ const EpubViewer = ({
   const coverPreloadImageRef = useRef<HTMLImageElement | null>(null);
 
   const device = useMediaDevice();
-  const { isAuthenticated } = useAuthStore((s) => ({ isAuthenticated: s.isAuthenticated }));
+  const { isAuthInitialized, isAuthenticated } = useAuthStore((s) => ({
+    isAuthInitialized: s.isAuthInitialized,
+    isAuthenticated: s.isAuthenticated,
+  }));
 
   // Track when the LastPage host DOM node has been created
   // This is used to re-run the touch binding effect when the host actually exists.
@@ -140,23 +162,150 @@ const EpubViewer = ({
 
   const { mutate: postSignalEvent } = usePostAiSignalEvent();
 
-  const sessionIdRef = useRef(
-    typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
-  );
+  const sessionIdRef = useRef(createSiteAnalyticsEventId());
   const activeSecondsRef = useRef(0);
   const progressRef = useRef(0);
   const episodeViewFiredRef = useRef(false);
   const episodeEndFiredRef = useRef(false);
   const latestReachedFiredRef = useRef(false);
   const lastExitTimeRef = useRef(0);
+  const readerStartEventIdRef = useRef(createSiteAnalyticsEventId());
+  const readerCompleteEventIdRef = useRef(createSiteAnalyticsEventId());
+  const readerExitEventIdRef = useRef(createSiteAnalyticsEventId());
+  const readerCompleteFiredRef = useRef(false);
+  const readerActiveTimingRef = useRef({
+    accumulatedMs: 0,
+    visibleStartedAt: null as number | null,
+  });
+  const readerPausedRef = useRef(readerPaused);
 
   useEffect(() => { progressRef.current = progress; }, [progress]);
 
+  useEffect(() => {
+    readerPausedRef.current = readerPaused;
+    const now = Date.now();
+    if (readerPaused) {
+      pauseReaderFunnelActiveWindow(readerActiveTimingRef.current, now);
+    } else if (document.visibilityState === "visible") {
+      resumeReaderFunnelActiveWindow(readerActiveTimingRef.current, now);
+    }
+  }, [readerPaused]);
+
+  useEffect(() => {
+    if (
+      !epubReady ||
+      !isAuthInitialized ||
+      readerFunnelLane ||
+      !productId ||
+      !currentEpisodeId
+    ) {
+      return;
+    }
+    setReaderFunnelLane(resolveReaderFunnelLane(isAuthenticated));
+  }, [
+    currentEpisodeId,
+    epubReady,
+    isAuthInitialized,
+    isAuthenticated,
+    productId,
+    readerFunnelLane,
+  ]);
+
+  useEffect(() => {
+    if (
+      !readerFunnelLane ||
+      !productId ||
+      !currentEpisodeId
+    ) {
+      return;
+    }
+
+    const identity = getSiteAnalyticsIdentity();
+    const viewerSessionId = sessionIdRef.current;
+    const now = Date.now();
+    readerActiveTimingRef.current = {
+      accumulatedMs: 0,
+      visibleStartedAt:
+        document.visibilityState === "visible" && !readerPausedRef.current
+          ? now
+          : null,
+    };
+    registerReaderFunnelViewerSession({
+      episodeId: currentEpisodeId,
+      viewerSessionId,
+      lane: readerFunnelLane,
+      ...identity,
+    });
+
+    if (readerFunnelLane === "guest") {
+      postReaderFunnelEventBestEffort({
+        eventId: readerStartEventIdRef.current,
+        occurredAt: new Date(now).toISOString(),
+        ...identity,
+        viewerSessionId,
+        productId,
+        episodeId: currentEpisodeId,
+        eventType: "episode_start",
+        activeMs: 0,
+        progressRatio: 0,
+      });
+    }
+
+    const handleVisibilityChange = () => {
+      const visibilityNow = Date.now();
+      if (document.visibilityState === "hidden") {
+        pauseReaderFunnelActiveWindow(
+          readerActiveTimingRef.current,
+          visibilityNow
+        );
+        sendGuestExit();
+        return;
+      }
+      if (!readerPausedRef.current) {
+        resumeReaderFunnelActiveWindow(
+          readerActiveTimingRef.current,
+          visibilityNow
+        );
+      }
+    };
+    const sendGuestExit = () => {
+      if (readerFunnelLane !== "guest") return;
+      postReaderFunnelEventBestEffort({
+        eventId: readerExitEventIdRef.current,
+        occurredAt: new Date().toISOString(),
+        ...identity,
+        viewerSessionId,
+        productId,
+        episodeId: currentEpisodeId,
+        eventType: "episode_exit",
+        activeMs: getReaderFunnelActiveMs(
+          readerActiveTimingRef.current,
+          Date.now()
+        ),
+        progressRatio: Math.min(Math.max(progressRef.current / 100, 0), 1),
+      });
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", sendGuestExit);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", sendGuestExit);
+      sendGuestExit();
+      clearReaderFunnelViewerSession(
+        currentEpisodeId,
+        viewerSessionId
+      );
+    };
+  }, [
+    currentEpisodeId,
+    productId,
+    readerFunnelLane,
+  ]);
+
   // Active reading time — only counts while epub is ready and tab is visible
   useEffect(() => {
-    if (!epubReady) return;
+    if (!epubReady || readerPaused) return;
 
     let timer: NodeJS.Timeout | null = setInterval(() => { activeSecondsRef.current += 1; }, 1000);
 
@@ -173,7 +322,7 @@ const EpubViewer = ({
       if (timer) clearInterval(timer);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [epubReady]);
+  }, [epubReady, readerPaused]);
 
   useEffect(() => {
     if (!epubReady || !isScroll || !settings.hideImageCover) return;
@@ -248,31 +397,59 @@ const EpubViewer = ({
 
   // 1) episode_view — fire once when epub loads
   useEffect(() => {
-    if (epubReady && productId && isAuthenticated && !episodeViewFiredRef.current) {
+    if (epubReady && productId && readerFunnelLane === "member" && !episodeViewFiredRef.current) {
       episodeViewFiredRef.current = true;
       postSignalEvent(buildSignalBody("episode_view"));
     }
-  }, [epubReady, productId, isAuthenticated, buildSignalBody, postSignalEvent]);
+  }, [epubReady, productId, readerFunnelLane, buildSignalBody, postSignalEvent]);
 
   // 2) episode_end — fire once when progress >= 95%
   useEffect(() => {
-    if (progress >= 95 && productId && isAuthenticated && !episodeEndFiredRef.current) {
+    if (progress >= 95 && productId && readerFunnelLane === "member" && !episodeEndFiredRef.current) {
       episodeEndFiredRef.current = true;
       postSignalEvent(buildSignalBody("episode_end"));
     }
-  }, [progress, productId, isAuthenticated, buildSignalBody, postSignalEvent]);
+  }, [progress, productId, readerFunnelLane, buildSignalBody, postSignalEvent]);
+
+  useEffect(() => {
+    if (
+      !isReaderFunnelEpisodeComplete(progress) ||
+      !productId ||
+      !currentEpisodeId ||
+      readerFunnelLane !== "guest" ||
+      readerCompleteFiredRef.current
+    ) {
+      return;
+    }
+    readerCompleteFiredRef.current = true;
+    const identity = getSiteAnalyticsIdentity();
+    postReaderFunnelEventBestEffort({
+      eventId: readerCompleteEventIdRef.current,
+      occurredAt: new Date().toISOString(),
+      ...identity,
+      viewerSessionId: sessionIdRef.current,
+      productId,
+      episodeId: currentEpisodeId,
+      eventType: "episode_complete",
+      activeMs: getReaderFunnelActiveMs(
+        readerActiveTimingRef.current,
+        Date.now()
+      ),
+      progressRatio: Math.min(Math.max(progress / 100, 0), 1),
+    });
+  }, [currentEpisodeId, productId, progress, readerFunnelLane]);
 
   // 3) latest_episode_reached — 최신화 열람 도달 신호 (완독 의미 아님, 최신화를 열었다는 사실)
   useEffect(() => {
-    if (epubReady && productId && isAuthenticated && nextEpisodeId === 0 && !latestReachedFiredRef.current) {
+    if (epubReady && productId && readerFunnelLane === "member" && nextEpisodeId === 0 && !latestReachedFiredRef.current) {
       latestReachedFiredRef.current = true;
       postSignalEvent(buildSignalBody("latest_episode_reached"));
     }
-  }, [epubReady, productId, isAuthenticated, nextEpisodeId, buildSignalBody, postSignalEvent]);
+  }, [epubReady, productId, readerFunnelLane, nextEpisodeId, buildSignalBody, postSignalEvent]);
 
   // 4) Exit progress — capture progress_ratio on page leave
   useEffect(() => {
-    if (!productId || !isAuthenticated) return;
+    if (!productId || readerFunnelLane !== "member") return;
 
     const sendExitEvent = () => {
       const now = Date.now();
@@ -299,19 +476,20 @@ const EpubViewer = ({
     };
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") sendExitEvent();
+      if (document.visibilityState === "hidden") {
+        sendExitEvent();
+      }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("beforeunload", sendExitEvent);
+    window.addEventListener("pagehide", sendExitEvent);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("beforeunload", sendExitEvent);
-      // SPA navigation (router.push) triggers unmount without visibilitychange/beforeunload
+      window.removeEventListener("pagehide", sendExitEvent);
       sendExitEvent();
     };
-  }, [productId, buildSignalBody]);
+  }, [productId, readerFunnelLane, buildSignalBody]);
 
   // ========================= RESIZE (SCROLLED) =========================
 

@@ -8,6 +8,10 @@ import {
   type GuestReadProgressRecord,
   type GuestReadProgressState,
 } from "./guestReadProgressState.ts";
+import {
+  GUEST_FREE_EPISODE_LIMIT,
+  isGuestEpisodeLoginRequired,
+} from "./guestEpisodeAccess.ts";
 
 const now = Date.UTC(2026, 4, 20, 10, 0, 0);
 
@@ -97,3 +101,37 @@ const buildState = (
     GUEST_READ_PROGRESS_MAX_ITEMS
   );
 }
+
+assert.equal(GUEST_FREE_EPISODE_LIMIT, 25);
+assert.equal(
+  isGuestEpisodeLoginRequired({
+    isAuthenticated: false,
+    episodePriceType: "free",
+    episodeNo: 25,
+  }),
+  false
+);
+assert.equal(
+  isGuestEpisodeLoginRequired({
+    isAuthenticated: false,
+    episodePriceType: "free",
+    episodeNo: 26,
+  }),
+  true
+);
+assert.equal(
+  isGuestEpisodeLoginRequired({
+    isAuthenticated: false,
+    episodePriceType: "paid",
+    episodeNo: 25,
+  }),
+  true
+);
+assert.equal(
+  isGuestEpisodeLoginRequired({
+    isAuthenticated: true,
+    episodePriceType: "paid",
+    episodeNo: 26,
+  }),
+  false
+);

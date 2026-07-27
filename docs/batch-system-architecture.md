@@ -145,10 +145,10 @@
 | `partner_report_daily_batch.sql` | daily | `tb_batch_daily_*_summary`, `tb_user`, `tb_product_trend_index`, `tb_cms_product_evaluation` | `tb_ptn_product_episode_sales`, `tb_ptn_ticket_usage`, `tb_ptn_sponsorship_recodes`, `tb_ptn_income_recodes`, `tb_ptn_product_statistics`, `tb_ptn_product_episode_statistics`, `tb_ptn_product_discovery_statistics`, `tb_ptn_*_temp_summary` | 회차매출/환불, 이용권 사용, 후원/기타수익, 발굴지표, 월정산용 temp 합산 | O/부분 (delete 후 재생성) |
 | `statistics_aggregation_daily_batch.sql` | daily | `tb_site_statistics_log`, `tb_payment_statistics_log` | `tb_site_statistics`, `tb_payment_statistics`, `tb_payment_statistics_by_user` | 방문자, PV, login, DAU, MAU, 결제/코인사용/후원/광고 매출 | O (전일 delete 후 upsert) |
 | `ai_signal_daily_batch.sql` | daily | `tb_user_ai_signal_event`, `tb_ai_signal_retention_policy` | `tb_user_ai_signal_event_daily`, `tb_user_ai_signal_event_weekly`, 오래된 원천이벤트 purge | `event_count`, `sum_active_seconds`, `avg_scroll_depth`, `avg_progress_ratio`, `latest_episode_reached_count`, `revisit_24h_count`, `retention_days` | O (upsert + 정책 purge) |
-| `ai_product_detail_funnel_daily_batch.sql` | daily | site/page/product detail logs | `tb_product_detail_funnel_daily` | 작품상세 진입/전환 퍼널 | O |
+| `ai_product_detail_funnel_daily_batch.sql` | daily | 회원 AI 신호 + 게스트 page/viewer 원천 | `tb_product_detail_funnel_daily` | 작품상세 진입/전환 퍼널, guest 부분합, `metric_version` | O (대상일 staging 후 재작성) |
 | `ai_engagement_metrics_daily_batch.sql` | daily | user/product engagement logs | `tb_product_engagement_metrics` | 빈지율/이탈/재방문/읽기속도 | O |
-| `ai_product_episode_dropoff_daily_batch.sql` | daily | 회차 열람/다음화 신호 | `tb_product_episode_dropoff_daily` | 회차별 이탈/다음화 흐름 | O |
-| `author_product_entry_daily_batch.sql` | daily | 작가홈/작품 진입 로그 | `tb_author_product_entry_daily` | 작가 작품 진입 통계 | O |
+| `ai_product_episode_dropoff_daily_batch.sql` | daily | 회원 AI 신호 + 게스트 viewer 원천 | `tb_product_episode_dropoff_daily` | 회차별 이탈/다음화 흐름, guest 부분합, `metric_version` | O (대상일 staging 후 재작성) |
+| `author_product_entry_daily_batch.sql` | daily | 작품상세 page view 원천 | `tb_author_product_entry_daily`, 오래된 `tb_site_reader_funnel_event` purge | 작가 작품 진입 통계, guest 부분합, `metric_version`, reader raw 120일 보관 | O |
 | `main_rule_slot_snapshot_batch.sql` | 4/day | 메인 규칙 구좌 후보 | `tb_main_rule_slot_snapshot` | 구좌별 후보 스냅샷 | O |
 | `ai_dna_extract_daily_batch.sh` | daily | 작품/회차/AI 메타 대상 | `tb_product_ai_metadata` 등 | AI DNA 추출/갱신 | 부분 |
 | `episode_state_transition_minute_batch.sql` | minute | 회차 예약/상태 조건 | `tb_product_episode`, `tb_product` | 회차 상태 전환 | O |
@@ -173,6 +173,7 @@
 - `ai_taste_hourly_batch`:
   - `last_processed_date` 워터마크 사용
   - 동시실행 방어: `/tmp/ai-taste-hourly-batch.lock` + `tb_cms_batch_job_process` row lock
+
 - `ai_signal_daily_batch`:
   - 동시실행 방어: `/tmp/ai-signal-daily-batch.lock`
   - `tb_cms_batch_job_process` 상태 갱신은 최신 row 1건(id)만 갱신
@@ -180,13 +181,21 @@
   - purge는 쉘에서 5000건 청크 삭제
   - purge 성공 후에만 정책/상태 업데이트
 
-### 7.3 수동 오케스트레이터
+### 7.3 작가 유입·이탈 audience v2
+
+- 게스트 회차 이벤트는 추천 원장과 분리된 `tb_site_reader_funnel_event`에 저장한다.
+- `audience_type_at_start`는 viewer의 `episode_start`를 기준으로 고정한다. 로그인 전환 뒤 도착한 exit/complete도 같은 start 세션에 귀속한다.
+- v2 시작일은 클라이언트 `occurred_at`이 아니라 첫 게스트 start의 서버 수신일 다음 날이다. 이전 v1 구간은 guest/member 분할 불가인 `legacy_mixed`로 취급한다.
+- v2 mart의 기존 count는 회원+게스트 전체, `guest_*`는 검산 가능한 부분합이다. 회원 부분합은 API에서 `전체 - guest`로만 파생한다.
+- 세 mart는 target date staging 후 `DELETE → INSERT`하며, schema 105·106 전체 적용 확인 전에는 producer와 v2 batch를 열지 않는다.
+
+### 7.4 수동 오케스트레이터
 
 - `safe_batch_run.sh`는 local/운영 검증용 래퍼
 - mode: `hourly|daily|weekly|monthly|all`
 - 기본값은 AI soft-fail, 엄격 모드는 `--ai-strict`
 
-### 7.4 AI 취향 점수 미처리 수동 재처리
+### 7.5 AI 취향 점수 미처리 수동 재처리
 
 - 자동 시간배치(`ai_taste_hourly_batch.sh`)와 별도로, 관리자가 미처리 이벤트 ID 범위만 수동 재반영할 수 있다.
 - 스크립트: `ai_taste_manual_replay_batch.sh`

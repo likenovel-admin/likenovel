@@ -77,6 +77,16 @@ export interface IAuthorProductInflowDropoffSourceGroup {
   login_user_count: number;
   reader_session_count: number;
   detail_exit_session_count: number;
+  guest_detail_view_count?: number;
+  guest_detail_session_count?: number;
+  guest_detail_visitor_count?: number;
+  guest_reader_session_count?: number;
+  guest_detail_exit_session_count?: number;
+  member_detail_view_count?: number;
+  member_detail_session_count?: number;
+  member_detail_visitor_count?: number;
+  member_reader_session_count?: number;
+  member_detail_exit_session_count?: number;
   read_conversion_rate: number | null;
   detail_exit_rate: number | null;
 }
@@ -88,6 +98,13 @@ export interface IAuthorProductInflowDropoffEpisodeRow {
   episode_title: string | null;
   read_start_count: number;
   episode_dropoff_count: number;
+  near_complete_count?: number;
+  guest_read_start_count?: number;
+  guest_episode_dropoff_count?: number;
+  guest_near_complete_count?: number;
+  member_read_start_count?: number;
+  member_episode_dropoff_count?: number;
+  member_near_complete_count?: number;
   episode_dropoff_rate: number;
 }
 
@@ -95,6 +112,10 @@ export interface IAuthorProductInflowDropoffResponse {
   product_id: number | null;
   start_date: string;
   end_date: string;
+  requested_start_date?: string;
+  effective_start_date?: string;
+  measurement_basis?: "legacy_mixed" | "guest_inclusive";
+  metric_version?: number;
   source_groups: IAuthorProductInflowDropoffSourceGroup[];
   episode_dropoffs: IAuthorProductInflowDropoffEpisodeRow[];
 }

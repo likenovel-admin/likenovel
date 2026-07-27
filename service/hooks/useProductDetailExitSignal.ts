@@ -10,6 +10,14 @@ import {
   isLastProductDetailExitCandidateSent,
   peekLastProductDetailExitCandidate,
 } from "@/utils/funnelRouteTracker";
+import {
+  getReaderFunnelDestinationGroup,
+  postReaderFunnelEventBestEffort,
+} from "@/utils/readerFunnelSignal";
+import {
+  createSiteAnalyticsEventId,
+  getSiteAnalyticsIdentity,
+} from "@/utils/siteAnalyticsIdentity";
 import { logViewerTrace } from "@/utils/viewerTrace";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
@@ -19,12 +27,17 @@ export const useProductDetailExitSignal = () => {
   const searchParams = useSearchParams();
   const searchKey = searchParams.toString();
   const { mutate: postAiSignalEvent } = usePostAiSignalEvent();
-  const { user, isAuthenticated, accessToken } = useAuthStore((state) => ({
+  const { user, isAuthInitialized, isAuthenticated, accessToken } = useAuthStore((state) => ({
     user: state.user,
+    isAuthInitialized: state.isAuthInitialized,
     isAuthenticated: state.isAuthenticated,
     accessToken: state.accessToken,
   }));
   const attemptedCandidateKeyRef = useRef<string | null>(null);
+  const guestCandidateEventRef = useRef<{
+    candidateKey: string;
+    eventId: string;
+  } | null>(null);
 
   const flushExitCandidate = useCallback(() => {
     const candidate = peekLastProductDetailExitCandidate();
@@ -35,8 +48,7 @@ export const useProductDetailExitSignal = () => {
       return;
     }
 
-    const canUseUserScope = !!accessToken && !!user?.userId && isAuthenticated;
-    if (!canUseUserScope) {
+    if (!isAuthInitialized) {
       logViewerTrace("product-detail-exit", "skip-no-user-scope", {
         candidate,
       });
@@ -50,6 +62,42 @@ export const useProductDetailExitSignal = () => {
       attemptedCandidateKeyRef.current = candidateKey;
       logViewerTrace("product-detail-exit", "skip-already-sent", {
         candidateKey,
+        candidate,
+      });
+      return;
+    }
+
+    if (!isAuthenticated) {
+      const identity = getSiteAnalyticsIdentity();
+      const eventId =
+        guestCandidateEventRef.current?.candidateKey === candidateKey
+          ? guestCandidateEventRef.current.eventId
+          : createSiteAnalyticsEventId();
+      guestCandidateEventRef.current = { candidateKey, eventId };
+      postReaderFunnelEventBestEffort({
+        eventId,
+        occurredAt: new Date(candidate.evaluatedAt).toISOString(),
+        ...identity,
+        productId: candidate.sourceProductId,
+        eventType: "product_detail_exit",
+        activeMs: Math.max(
+          0,
+          Math.round((candidate.activeSeconds || 0) * 1000)
+        ),
+        destinationGroup: getReaderFunnelDestinationGroup(candidate),
+      });
+      completeLastProductDetailExitCandidate(candidate);
+      attemptedCandidateKeyRef.current = candidateKey;
+      logViewerTrace("product-detail-exit", "post-success", {
+        candidateKey,
+        lane: "guest",
+      });
+      return;
+    }
+
+    const canUseUserScope = !!accessToken && !!user?.userId;
+    if (!canUseUserScope) {
+      logViewerTrace("product-detail-exit", "skip-no-user-scope", {
         candidate,
       });
       return;
@@ -98,7 +146,14 @@ export const useProductDetailExitSignal = () => {
         },
       }
     );
-  }, [accessToken, isAuthenticated, pathname, postAiSignalEvent, user?.userId]);
+  }, [
+    accessToken,
+    isAuthInitialized,
+    isAuthenticated,
+    pathname,
+    postAiSignalEvent,
+    user?.userId,
+  ]);
 
   useEffect(() => {
     flushExitCandidate();
