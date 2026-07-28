@@ -12,8 +12,7 @@ import MainHeader from "../common/MainHeader";
 import SquareBadge from "../common/SquareBadge";
 import {
   filterLatestUpdateProducts,
-  LATEST_UPDATE_GENRE_TABS,
-  type LatestUpdateGenre,
+  getLatestUpdateGenreTabs,
 } from "./latestUpdate";
 
 interface Props {
@@ -22,7 +21,11 @@ interface Props {
 
 const LatestUpdate = ({ products }: Props) => {
   const router = useRouter();
-  const [activeGenre, setActiveGenre] = useState<LatestUpdateGenre>("전체");
+  const [activeGenre, setActiveGenre] = useState("전체");
+  const availableGenreTabs = useMemo(
+    () => getLatestUpdateGenreTabs(products),
+    [products]
+  );
   const visibleProducts = useMemo(
     () => filterLatestUpdateProducts(products, activeGenre),
     [activeGenre, products]
@@ -41,7 +44,7 @@ const LatestUpdate = ({ products }: Props) => {
   return (
     <section data-home-section="latest-update" className="relative w-full">
       <MainHeader
-        headerText="오늘 업뎃 무료"
+        headerText="연재 업데이트"
         hasMoreButton
         compactMobileMore
         moreButtonOnClick={() => router.push("/product/free/normal")}
@@ -49,11 +52,11 @@ const LatestUpdate = ({ products }: Props) => {
 
       <div className="mt-10pxr overflow-x-auto px-16pxr scroll-hidden md:mt-16pxr md:px-0">
         <div
-          className="flex w-max min-w-full gap-8pxr pb-16pxr lg:justify-between lg:gap-0"
+          className="flex w-max gap-8pxr pb-16pxr"
           role="group"
           aria-label="최신 업데이트 장르"
         >
-          {LATEST_UPDATE_GENRE_TABS.map((genre) => {
+          {availableGenreTabs.map((genre) => {
             const isActive = activeGenre === genre;
             return (
               <button

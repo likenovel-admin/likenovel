@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  LATEST_UPDATE_GENRE_TABS,
   LATEST_UPDATE_MAX_ITEMS,
   filterLatestUpdateProducts,
+  getLatestUpdateGenreTabs,
 } from "./latestUpdate.ts";
 
 const products = [
@@ -19,21 +19,30 @@ const products = [
   })),
 ];
 
-test("문피아 최신 무료 웹소설과 같은 장르 탭 순서를 사용한다", () => {
-  assert.deepEqual(LATEST_UPDATE_GENRE_TABS, [
+test("무료 업데이트 작품에 실제 존재하는 장르 탭만 첫 등장 순서로 보여준다", () => {
+  const genreProducts = [
+    {
+      productId: 100,
+      genre: ["판타지", "공포·미스테리"],
+      priceType: "free" as const,
+    },
+    {
+      productId: 101,
+      genre: ["현대판타지", "판타지"],
+      priceType: "free" as const,
+    },
+    {
+      productId: 102,
+      genre: ["로맨스"],
+      priceType: "paid" as const,
+    },
+  ];
+
+  assert.deepEqual(getLatestUpdateGenreTabs(genreProducts), [
     "전체",
-    "현대판타지",
     "판타지",
-    "무협",
-    "대체역사",
-    "스포츠",
-    "퓨전",
-    "드라마",
-    "전쟁·밀리터리",
-    "로맨스",
-    "게임",
-    "SF",
-    "기타",
+    "공포·미스테리",
+    "현대판타지",
   ]);
 });
 
@@ -109,11 +118,11 @@ test("선택한 장르가 포함된 작품만 원래 순서대로 보여준다",
   );
 });
 
-test("기타 탭은 전용 탭 장르가 하나도 없는 작품만 보여준다", () => {
+test("선택한 실제 장르가 포함된 작품만 보여준다", () => {
   assert.deepEqual(
-    filterLatestUpdateProducts(products, "기타").map(
+    filterLatestUpdateProducts(products, "공포·미스테리").map(
       (product) => product.productId
     ),
-    [2, 4]
+    [2]
   );
 });

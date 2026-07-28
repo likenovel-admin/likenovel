@@ -5,13 +5,18 @@ const source = readFileSync(new URL("./LatestUpdate.tsx", import.meta.url), "utf
 
 assert.match(
   source,
-  /headerText="오늘 업뎃 무료"/,
-  "LatestUpdate should use the short LikeNovel section title"
+  /headerText="연재 업데이트"/,
+  "LatestUpdate should use the requested section title"
 );
 assert.match(
   source,
-  /LATEST_UPDATE_GENRE_TABS\.map/,
-  "LatestUpdate should render every genre tab"
+  /availableGenreTabs\.map/,
+  "LatestUpdate should render only genres available in the current free products"
+);
+assert.doesNotMatch(
+  source,
+  /lg:justify-between|lg:gap-0|min-w-full/,
+  "LatestUpdate should keep genre chips compact instead of distributing them across the row"
 );
 assert.match(
   source,
