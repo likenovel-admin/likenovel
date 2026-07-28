@@ -41,7 +41,7 @@ const LatestUpdate = ({ products }: Props) => {
   return (
     <section data-home-section="latest-update" className="relative w-full">
       <MainHeader
-        headerText="장르별 최신 업데이트 작품"
+        headerText="오늘 업뎃 무료"
         hasMoreButton
         compactMobileMore
         moreButtonOnClick={() => router.push("/product/free/normal")}
@@ -81,9 +81,9 @@ const LatestUpdate = ({ products }: Props) => {
               <li
                 key={product.productId}
                 className={`min-w-0 border-b border-light-gray-300 ${
-                  index >= 14
+                  index >= 6
                     ? "hidden lg:block"
-                    : index >= 7
+                    : index >= 3
                       ? "hidden md:block"
                       : ""
                 }`}

@@ -5,8 +5,8 @@ const source = readFileSync(new URL("./LatestUpdate.tsx", import.meta.url), "utf
 
 assert.match(
   source,
-  /headerText="장르별 최신 업데이트 작품"/,
-  "LatestUpdate should use the adapted Munpia section title"
+  /headerText="오늘 업뎃 무료"/,
+  "LatestUpdate should use the short LikeNovel section title"
 );
 assert.match(
   source,
@@ -35,8 +35,8 @@ assert.match(
 );
 assert.match(
   source,
-  /index >= 14[\s\S]*"hidden lg:block"[\s\S]*index >= 7[\s\S]*"hidden md:block"/,
-  "LatestUpdate should keep seven visible rows at mobile, tablet, and desktop widths"
+  /index >= 6[\s\S]*"hidden lg:block"[\s\S]*index >= 3[\s\S]*"hidden md:block"/,
+  "LatestUpdate should keep three visible rows at mobile, tablet, and desktop widths"
 );
 assert.match(
   source,
