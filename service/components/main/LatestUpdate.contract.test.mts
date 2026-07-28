@@ -15,7 +15,7 @@ assert.match(
 );
 assert.doesNotMatch(
   source,
-  /lg:justify-between|lg:gap-0|min-w-full/,
+  /className="flex w-max[^"]*(?:lg:justify-between|lg:gap-0|min-w-full)/,
   "LatestUpdate should keep genre chips compact instead of distributing them across the row"
 );
 assert.match(
@@ -35,13 +35,48 @@ assert.match(
 );
 assert.match(
   source,
-  /visibleProducts\.map\(\(product, index\) =>/,
-  "LatestUpdate should derive responsive visibility from each product position"
+  /mobilePages\.map\(\(page, pageIndex\) =>/,
+  "LatestUpdate should render mobile products in swipeable three-item pages"
 );
 assert.match(
   source,
-  /index >= 6[\s\S]*"hidden lg:block"[\s\S]*index >= 3[\s\S]*"hidden md:block"/,
-  "LatestUpdate should keep three visible rows at mobile, tablet, and desktop widths"
+  /snap-x[^"]*snap-mandatory[^"]*overflow-x-auto/,
+  "LatestUpdate mobile pages should use native horizontal scroll snapping"
+);
+assert.match(
+  source,
+  /onScroll=\{handleMobileScroll\}/,
+  "LatestUpdate should synchronize the paging indicator with native swipes"
+);
+assert.match(
+  source,
+  /currentPage === pageIndex[\s\S]*"w-\[28px\] bg-\[#0255d9\]"[\s\S]*"w-\[10px\] bg-gray-300"/,
+  "LatestUpdate should reuse the main banner carousel paging indicator"
+);
+assert.match(
+  source,
+  /setActiveGenre\(genre\);[\s\S]*goToPage\(0\);/,
+  "LatestUpdate should return to the first mobile page when the genre changes"
+);
+assert.match(
+  source,
+  /aria-hidden=\{pageIndex !== currentPage\}/,
+  "LatestUpdate should hide offscreen mobile pages from assistive technology"
+);
+assert.match(
+  source,
+  /tabIndex=\{isFocusable \? undefined : -1\}/,
+  "LatestUpdate should remove offscreen product buttons from keyboard navigation"
+);
+assert.match(
+  source,
+  /visibleProducts\.map\(\(product\) =>[\s\S]*renderProductItem\(product, true\)/,
+  "LatestUpdate should keep desktop product buttons keyboard-focusable"
+);
+assert.doesNotMatch(
+  source,
+  /setInterval/,
+  "LatestUpdate product pages should move only by user action"
 );
 assert.match(
   source,

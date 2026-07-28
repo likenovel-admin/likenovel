@@ -1,4 +1,5 @@
 export const LATEST_UPDATE_MAX_ITEMS = 9;
+export const LATEST_UPDATE_MOBILE_PAGE_SIZE = 3;
 
 interface GenreProduct {
   genre?: string[];
@@ -37,3 +38,20 @@ export const filterLatestUpdateProducts = <T extends GenreProduct>(
 
   return filteredProducts.slice(0, LATEST_UPDATE_MAX_ITEMS);
 };
+
+export const paginateLatestUpdateProducts = <T>(products: T[]) =>
+  Array.from(
+    {
+      length: Math.ceil(products.length / LATEST_UPDATE_MOBILE_PAGE_SIZE),
+    },
+    (_, pageIndex) => {
+      const pageStart = pageIndex * LATEST_UPDATE_MOBILE_PAGE_SIZE;
+      return products.slice(
+        pageStart,
+        pageStart + LATEST_UPDATE_MOBILE_PAGE_SIZE
+      );
+    }
+  );
+
+export const clampLatestUpdatePage = (pageIndex: number, pageCount: number) =>
+  Math.min(Math.max(pageIndex, 0), Math.max(pageCount - 1, 0));
