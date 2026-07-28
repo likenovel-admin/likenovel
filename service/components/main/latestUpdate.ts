@@ -16,7 +16,7 @@ export const LATEST_UPDATE_GENRE_TABS = [
 
 export type LatestUpdateGenre = (typeof LATEST_UPDATE_GENRE_TABS)[number];
 
-export const LATEST_UPDATE_MAX_ITEMS = 21;
+export const LATEST_UPDATE_MAX_ITEMS = 9;
 
 const DEDICATED_GENRES = new Set<string>(
   LATEST_UPDATE_GENRE_TABS.slice(1, -1)

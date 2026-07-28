@@ -37,7 +37,8 @@ test("문피아 최신 무료 웹소설과 같은 장르 탭 순서를 사용한
   ]);
 });
 
-test("전체 탭은 최신순을 보존하며 21개까지만 보여준다", () => {
+test("전체 탭은 최신순을 보존하며 PC 3줄인 9개까지만 보여준다", () => {
+  assert.equal(LATEST_UPDATE_MAX_ITEMS, 9);
   assert.deepEqual(
     filterLatestUpdateProducts(products, "전체").map(
       (product) => product.productId
@@ -45,6 +46,36 @@ test("전체 탭은 최신순을 보존하며 21개까지만 보여준다", () =
     products
       .slice(0, LATEST_UPDATE_MAX_ITEMS)
       .map((product) => product.productId)
+  );
+});
+
+test("무료 일반연재와 무료 자유연재를 모두 보여준다", () => {
+  const mixedProductTypes = [
+    {
+      productId: 1001,
+      genre: ["판타지"],
+      priceType: "free" as const,
+      productType: "normal" as const,
+    },
+    {
+      productId: 1002,
+      genre: ["판타지"],
+      priceType: "free" as const,
+      productType: "free" as const,
+    },
+    {
+      productId: 1003,
+      genre: ["판타지"],
+      priceType: "paid" as const,
+      productType: "normal" as const,
+    },
+  ];
+
+  assert.deepEqual(
+    filterLatestUpdateProducts(mixedProductTypes, "전체").map(
+      (product) => product.productId
+    ),
+    [1001, 1002]
   );
 });
 
