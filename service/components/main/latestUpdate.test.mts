@@ -3,8 +3,11 @@ import test from "node:test";
 
 import {
   LATEST_UPDATE_MAX_ITEMS,
+  LATEST_UPDATE_MOBILE_PAGE_SIZE,
+  clampLatestUpdatePage,
   filterLatestUpdateProducts,
   getLatestUpdateGenreTabs,
+  paginateLatestUpdateProducts,
 } from "./latestUpdate.ts";
 
 const products = [
@@ -125,4 +128,26 @@ test("선택한 실제 장르가 포함된 작품만 보여준다", () => {
     ),
     [2]
   );
+});
+
+test("모바일 작품 목록은 3개 단위 페이지로 나눈다", () => {
+  assert.equal(LATEST_UPDATE_MOBILE_PAGE_SIZE, 3);
+  assert.deepEqual(
+    paginateLatestUpdateProducts(products.slice(0, 7)).map((page) =>
+      page.map((product) => product.productId)
+    ),
+    [
+      [1, 2, 3],
+      [4, 5, 6],
+      [7],
+    ]
+  );
+});
+
+test("모바일 작품 수가 줄면 현재 페이지를 마지막 유효 페이지로 보정한다", () => {
+  assert.equal(clampLatestUpdatePage(2, 1), 0);
+  assert.equal(clampLatestUpdatePage(2, 2), 1);
+  assert.equal(clampLatestUpdatePage(1, 3), 1);
+  assert.equal(clampLatestUpdatePage(-1, 3), 0);
+  assert.equal(clampLatestUpdatePage(1, 0), 0);
 });
