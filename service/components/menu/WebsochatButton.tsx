@@ -3,6 +3,7 @@ interface WebsochatButtonProps {
   onClick?: () => void;
   className?: string;
   variant?: "solid" | "subtle";
+  pending?: boolean;
 }
 
 const WebsochatButton = ({
@@ -10,17 +11,25 @@ const WebsochatButton = ({
   onClick,
   className = "",
   variant = "solid",
+  pending = false,
 }: WebsochatButtonProps) => {
   const variantClassName =
-    variant === "subtle"
+    pending
+      ? "border border-light-gray-400 bg-light-gray-100 text-dark-gray-400 cursor-not-allowed"
+      : variant === "subtle"
       ? "border border-primary-100 bg-white text-primary-100 hover:bg-light-gray-100 hover:text-primary-200"
       : "border-0 bg-primary-100 text-white hover:bg-primary-200";
-  const iconClassName = variant === "subtle" ? "text-primary-100" : "text-white";
+  const iconClassName = pending
+    ? "text-dark-gray-400"
+    : variant === "subtle"
+      ? "text-primary-100"
+      : "text-white";
 
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-disabled={pending}
       className={`inline-flex shrink-0 items-center justify-center gap-7pxr whitespace-nowrap rounded-[999px] font-semibold leading-none tracking-[0] transition-colors ${variantClassName} ${className}`}
       aria-label={label}
     >

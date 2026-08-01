@@ -3,11 +3,16 @@ import { instance } from "../../axios";
 import {
   ISelectMyEvaluationResponse,
   ISelectViewerPathResponse,
+  ISelectViewerWebsochatReadinessResponse,
   IUseSelectEpisodesResponse,
 } from "./dto";
 import { ISelectEpisodeResponse } from "../author/episode/dto";
 import useAuthStore from "@/store/authStore";
 import type { AxiosRequestConfigWithAuthBypass } from "../../axios";
+import {
+  getViewerWebsochatReadinessRefetchInterval,
+  WEBSOCHAT_READINESS_REFETCH_INTERVAL_MS,
+} from "@/utils/websochatLaunch";
 
 export const useSelectEpisodes = (
   productId: number,
@@ -78,6 +83,49 @@ export const useSelectViewerPath = (episodeId: number) => {
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+  });
+};
+
+export const useSelectViewerWebsochatReadiness = (
+  episodeId: number,
+  enabled: boolean
+) => {
+  const { user, accessToken, isAuthenticated } = useAuthStore((state) => ({
+    user: state.user,
+    accessToken: state.accessToken,
+    isAuthenticated: state.isAuthenticated,
+  }));
+  const viewerCacheIdentity =
+    isAuthenticated && user?.userId
+      ? `user:${user.userId}`
+      : accessToken
+        ? "auth"
+        : "guest";
+
+  return useQuery<ISelectViewerWebsochatReadinessResponse>({
+    queryKey: ["selectViewerWebsochatReadiness", episodeId, viewerCacheIdentity],
+    queryFn: async () => {
+      const config: AxiosRequestConfigWithAuthBypass = {
+        skipAuthRedirectOn401: true,
+      };
+      const response = await instance.get(
+        `/v1/query/episodes/${episodeId}/websochat-readiness`,
+        config
+      );
+      return response.data;
+    },
+    enabled: enabled && !!episodeId,
+    throwOnError: false,
+    retry: 1,
+    refetchInterval: (query) => {
+      if (!enabled) return false;
+      const readiness = query.state.data?.data;
+      return readiness
+        ? getViewerWebsochatReadinessRefetchInterval(readiness)
+        : WEBSOCHAT_READINESS_REFETCH_INTERVAL_MS;
+    },
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: "always",
   });
 };
 

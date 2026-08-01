@@ -258,6 +258,19 @@ export interface IWebsochatStarterGuideSource {
   readEpisodeTitle?: string | null;
 }
 
+export type ViewerWebsochatButtonState = "hidden" | "pending" | "enabled";
+export type ViewerWebsochatClickOutcome = "noop" | "modal" | "launch";
+export const WEBSOCHAT_READINESS_REFETCH_INTERVAL_MS = 60_000;
+
+export interface IViewerWebsochatReadinessSource {
+  websochatEligible?: boolean;
+  websochatSupported?: boolean;
+  websochatContextStatus?: string | null;
+  websochatPublishedLatestEpisodeNo?: number | null;
+  episodeNo?: number | null;
+  websochatSyncedLatestEpisodeNo?: number | null;
+}
+
 export interface IWebsochatMiniPreviewState {
   completedSendCount: number;
   dayKey: string;
@@ -266,6 +279,102 @@ export interface IWebsochatMiniPreviewState {
 
 const normalizeWebsochatEpisodeNo = (value?: number | null) =>
   Math.max(Number(value || 0), 0);
+
+export const resolveViewerWebsochatButtonState = (
+  source: IViewerWebsochatReadinessSource
+): ViewerWebsochatButtonState => {
+  const episodeNo = normalizeWebsochatEpisodeNo(source.episodeNo);
+  if (!episodeNo) return "hidden";
+
+  const isSupported =
+    source.websochatSupported ??
+    (source.websochatContextStatus === "ready" &&
+      normalizeWebsochatEpisodeNo(source.websochatPublishedLatestEpisodeNo) > 0);
+  if (!isSupported || source.websochatContextStatus === "disabled") {
+    return "hidden";
+  }
+
+  if (
+    episodeNo >
+    normalizeWebsochatEpisodeNo(source.websochatSyncedLatestEpisodeNo)
+  ) {
+    return "pending";
+  }
+  return source.websochatEligible ? "enabled" : "hidden";
+};
+
+export interface IWebsochatAssetRequestSignalContext {
+  productId: number;
+  episodeId: number;
+  episodeNo: number;
+}
+
+export const buildWebsochatAssetRequestSignalBody = (
+  context: IWebsochatAssetRequestSignalContext
+) => ({
+  product_id: context.productId,
+  episode_id: context.episodeId,
+  event_type: "websochat_asset_request",
+  event_payload: {
+    episode_no: context.episodeNo,
+  },
+});
+
+export const postWebsochatAssetRequestBestEffort = (
+  context: IWebsochatAssetRequestSignalContext
+) => {
+  if (typeof window === "undefined") return;
+  try {
+    const accessToken =
+      window.localStorage.getItem("access_token") ||
+      window.sessionStorage.getItem("access_token");
+    if (!accessToken) return;
+
+    void fetch("/api/v1/command/ai/signal-events", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(buildWebsochatAssetRequestSignalBody(context)),
+      keepalive: true,
+      credentials: "include",
+    })
+      .then((response) => {
+        if (!response.ok) {
+          console.error("[websochatLaunch] asset request signal failed", {
+            status: response.status,
+            productId: context.productId,
+            episodeId: context.episodeId,
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("[websochatLaunch] asset request signal failed", error);
+      });
+  } catch (error) {
+    console.error("[websochatLaunch] asset request signal failed", error);
+  }
+};
+
+export const resolveViewerWebsochatClickOutcome = (
+  state: ViewerWebsochatButtonState
+): ViewerWebsochatClickOutcome => {
+  if (state === "pending") return "modal";
+  if (state === "enabled") return "launch";
+  return "noop";
+};
+
+export const shouldPollViewerWebsochatReadiness = (
+  source: IViewerWebsochatReadinessSource = {}
+) => resolveViewerWebsochatButtonState(source) === "pending";
+
+export const getViewerWebsochatReadinessRefetchInterval = (
+  source: IViewerWebsochatReadinessSource = {}
+) =>
+  shouldPollViewerWebsochatReadiness(source)
+    ? WEBSOCHAT_READINESS_REFETCH_INTERVAL_MS
+    : false;
 
 const formatWebsochatProductTitle = (productTitle?: string | null) => {
   const normalizedTitle = String(productTitle || "").trim();
