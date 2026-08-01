@@ -133,6 +133,10 @@ const episodeQuerySource = readFileSync(
   new URL("../api/query/episode/index.ts", import.meta.url),
   "utf8"
 );
+const websochatButtonSource = readFileSync(
+  new URL("../../components/menu/WebsochatButton.tsx", import.meta.url),
+  "utf8"
+);
 
 assert.match(
   source,
@@ -157,6 +161,11 @@ assert.match(
 assert.match(
   episodeQuerySource,
   /useSelectViewerWebsochatReadiness[\s\S]*websochat-readiness[\s\S]*refetchInterval/
+);
+assert.doesNotMatch(
+  websochatButtonSource,
+  /aria-disabled=\{pending\}/,
+  "Pending viewer chat must stay clickable so it can open the readiness modal"
 );
 assert.doesNotMatch(
   episodeQuerySource,
