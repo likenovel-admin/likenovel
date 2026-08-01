@@ -29,7 +29,6 @@ const WebsochatButton = ({
     <button
       type="button"
       onClick={onClick}
-      aria-disabled={pending}
       className={`inline-flex shrink-0 items-center justify-center gap-7pxr whitespace-nowrap rounded-[999px] font-semibold leading-none tracking-[0] transition-colors ${variantClassName} ${className}`}
       aria-label={label}
     >
