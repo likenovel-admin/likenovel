@@ -2,6 +2,7 @@ import BookmarkButton from "@/components/common/BookmarkButton";
 import LikeButton from "@/components/menu/LikeButton";
 import WebsochatButton from "@/components/menu/WebsochatButton";
 import useViewStore from "@/store/viewerStore";
+import type { ViewerWebsochatButtonState } from "@/utils/websochatLaunch";
 import Image from "next/image";
 import ArrowLeft from "/public/images/arrow-left-medium.svg";
 import ArrowRight from "/public/images/arrow-right-medium.svg";
@@ -17,6 +18,7 @@ interface Props {
   likedYN?: "Y" | "N";
   handleCommentState?: () => void;
   showWebsochatButton?: boolean;
+  websochatButtonState?: ViewerWebsochatButtonState;
   handleWebsochatClick?: () => void;
 }
 
@@ -32,11 +34,16 @@ const ViewerBottomNav = ({
   likedYN,
   handleCommentState,
   showWebsochatButton,
+  websochatButtonState,
   handleWebsochatClick,
 }: Props) => {
   const { settings } = useViewStore((state) => ({
     settings: state.settings,
   }));
+  const shouldShowWebsochatButton = websochatButtonState
+    ? websochatButtonState !== "hidden"
+    : !!showWebsochatButton;
+  const isWebsochatPending = websochatButtonState === "pending";
   return (
     <div
       className={`flex fixed bottom-0 left-0 z-50 w-full h-[calc(60px+env(safe-area-inset-bottom))] items-center justify-between px-[16px] pb-[env(safe-area-inset-bottom)] md:h-[60px] md:px-[120px] md:pb-0 ${
@@ -85,10 +92,11 @@ const ViewerBottomNav = ({
                 bookmarkStyle="h-[21px] w-[15px] text-dark-gray-500 hover:text-dark-gray-600"
                 activeBookmarkStyle="h-[21px] w-[15px]"
               />
-              {showWebsochatButton && (
+              {shouldShowWebsochatButton && (
                 <WebsochatButton
                   label="웹소챗"
                   onClick={handleWebsochatClick}
+                  pending={isWebsochatPending}
                   variant="subtle"
                   className="ml-3pxr h-34pxr min-w-[82px] px-10pxr text-13pxr [&>svg]:h-15pxr [&>svg]:w-15pxr min-[390px]:ml-5pxr min-[390px]:min-w-[88px]"
                 />
@@ -129,10 +137,11 @@ const ViewerBottomNav = ({
               <span className="text-15pxr">이전화</span>
             </div>
           </button>
-          {showWebsochatButton && (
+          {shouldShowWebsochatButton && (
             <WebsochatButton
               label="이번 회차로 웹소챗"
               onClick={handleWebsochatClick}
+              pending={isWebsochatPending}
               variant="subtle"
               className="hidden h-40pxr min-w-[172px] px-22pxr text-15pxr md:inline-flex"
             />

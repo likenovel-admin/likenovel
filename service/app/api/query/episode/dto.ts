@@ -77,10 +77,23 @@ export interface ISelectViewerPathResponse {
       hours: number;
     } | null;
     productPriceType?: "free" | "paid" | null;
+    websochatSupported?: boolean;
     websochatContextStatus?: string | null;
     websochatPublishedLatestEpisodeNo?: number | null;
     websochatSyncedLatestEpisodeNo?: number | null;
     websochatEligible?: boolean;
+  };
+}
+
+export interface ISelectViewerWebsochatReadinessResponse {
+  data: {
+    product_id: number;
+    episodeNo: number;
+    websochatSupported: boolean;
+    websochatContextStatus: string | null;
+    websochatPublishedLatestEpisodeNo: number;
+    websochatSyncedLatestEpisodeNo: number;
+    websochatEligible: boolean;
   };
 }
 

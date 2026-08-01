@@ -152,6 +152,27 @@ selects env by runtime directory:
 - Deep monitoring warns only for foundation mismatches inside the active collector
   policy. Mismatches outside the cohort/grandfather/AI-consent policy remain visible
   as an informational count.
+- Story context credit priority is enforced per OpenRouter request. DNA and AI
+  reader/core recommendation work use the base reserve; chat assets below the
+  `min(public episodes, 50)` target leave an additional `$1` headroom, while
+  assets beyond that target leave `$2`.
+- Candidate order is recent seven-day `websochat_asset_request` whose requested
+  episode is still unprepared, then titles below the 50-episode target with
+  fewer prepared assets first, then titles that already met the target. The
+  target uses the first 50 public episodes by ordered rank, not
+  `episode_no <= 50`. A request event is demand metadata only, must pass
+  server-side pending/consent checks, is deduplicated per user/product/episode
+  for seven days, and must not become an AI taste factor.
+- `tb_story_agent_context_product.ready_episode_count` is maintained as the
+  latest contiguous prepared public episode number, not a raw summary-row count.
+- Websochat foundation selection includes every open, ongoing, AI-consented
+  title. Character scene/RP expansion remains guarded by the existing
+  character-chat cohort policy.
+- Story context exit code `75` means `deferred_budget`. Preflight and mid-run
+  reserve exhaustion both propagate to that result. The batch wrapper reports it
+  as `deferred`, not `failed`; non-reserve provider and processing errors keep
+  their existing failure/no-progress semantics. Existing active chat assets stay
+  readable.
 - Batch docs must be refreshed whenever cron timing, lock behavior, max parallel,
   cost gates, runtime paths, or output tables change.
 

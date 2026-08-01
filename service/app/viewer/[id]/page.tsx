@@ -1,6 +1,9 @@
 "use client";
 import { useGetProductNoticeDetail } from "@/app/api/query/author/episode";
-import { useSelectViewerPath } from "@/app/api/query/episode";
+import {
+  useSelectViewerPath,
+  useSelectViewerWebsochatReadiness,
+} from "@/app/api/query/episode";
 import Modal from "@/components/common/Modal";
 import Spinner from "@/components/common/Spinner";
 import ViewerBottomNav from "@/components/menu/ViewerBottomNav";
@@ -13,6 +16,7 @@ import SettingModal from "@/components/viewer/SettingModal";
 import { TYPE_MODAL } from "@/constants/common";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useAuthStore from "@/store/authStore";
+import useConfirmStore from "@/store/confirmStore";
 import useModalStore from "@/store/modalStore";
 import useToastStore from "@/store/toastStore";
 import { syncProductDetailTransitionDecision } from "@/utils/funnelRouteTracker";
@@ -46,7 +50,12 @@ import {
   shouldOpenViewerPurchaseModal,
 } from "@/utils/viewerPurchaseResume";
 import { buildViewerPath } from "@/utils/viewerPath";
-import { savePendingWebsochatLaunch } from "@/utils/websochatLaunch";
+import {
+  postWebsochatAssetRequestBestEffort,
+  resolveViewerWebsochatButtonState,
+  resolveViewerWebsochatClickOutcome,
+  savePendingWebsochatLaunch,
+} from "@/utils/websochatLaunch";
 import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -66,6 +75,7 @@ const Viewer = () => {
 
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { setConfirm } = useConfirmStore();
   const { setModal, setTypeModal } = useModalStore();
   const { setToast } = useToastStore();
   const { withLoginRequired } = useAuthWrapper();
@@ -101,6 +111,18 @@ const Viewer = () => {
     isNoticeViewer
   );
   const episodeData = data?.data;
+  const initialWebsochatButtonState = resolveViewerWebsochatButtonState(
+    episodeData || {}
+  );
+  const { data: websochatReadinessResponse } =
+    useSelectViewerWebsochatReadiness(
+      viewerEpisodeId,
+      initialWebsochatButtonState === "pending"
+    );
+  const websochatReadiness = websochatReadinessResponse?.data;
+  const websochatButtonState = resolveViewerWebsochatButtonState(
+    websochatReadiness || episodeData || {}
+  );
   const viewerErrorStatus = axios.isAxiosError(viewerError)
     ? viewerError.response?.status
     : undefined;
@@ -416,11 +438,35 @@ const Viewer = () => {
   };
 
   const handleOpenWebsochat = useCallback(() => {
+    const clickOutcome = resolveViewerWebsochatClickOutcome(
+      websochatButtonState
+    );
+    if (clickOutcome === "noop") return;
+    if (clickOutcome === "modal") {
+      const episode = data?.data;
+      if (episode?.product_id && episode.episodeNo && episodeId) {
+        postWebsochatAssetRequestBestEffort({
+          productId: episode.product_id,
+          episodeId,
+          episodeNo: episode.episodeNo,
+        });
+      }
+      setConfirm({
+        content: "아직 웹소챗/주인공챗이 준비되지 않았어요.",
+        confirmText: "확인",
+      });
+      return;
+    }
+
     const episode = data?.data;
-    if (!episode?.websochatEligible || !episode.episodeNo) return;
+    const websochatEligible =
+      websochatReadiness?.websochatEligible ?? episode?.websochatEligible;
+    if (!episode || !websochatEligible || !episode.episodeNo) return;
 
     const publishedLatestEpisodeNo =
-      episode.websochatPublishedLatestEpisodeNo || episode.episodeNo;
+      websochatReadiness?.websochatPublishedLatestEpisodeNo ||
+      episode.websochatPublishedLatestEpisodeNo ||
+      episode.episodeNo;
 
     savePendingWebsochatLaunch({
       productId: episode.product_id,
@@ -429,8 +475,14 @@ const Viewer = () => {
       priceType: episode.priceType || null,
       latestEpisodeNo: publishedLatestEpisodeNo,
       publishedLatestEpisodeNo,
-      syncedLatestEpisodeNo: episode.websochatSyncedLatestEpisodeNo || null,
-      contextStatus: episode.websochatContextStatus || null,
+      syncedLatestEpisodeNo:
+        websochatReadiness?.websochatSyncedLatestEpisodeNo ||
+        episode.websochatSyncedLatestEpisodeNo ||
+        null,
+      contextStatus:
+        websochatReadiness?.websochatContextStatus ||
+        episode.websochatContextStatus ||
+        null,
       readEpisodeNo: episode.episodeNo,
       readEpisodeTitle: episode.episodeTitle || null,
       launchSource: "viewer_bottom_nav",
@@ -442,7 +494,14 @@ const Viewer = () => {
       },
     });
     router.push("/websochat");
-  }, [data?.data, router]);
+  }, [
+    data?.data,
+    episodeId,
+    router,
+    setConfirm,
+    websochatButtonState,
+    websochatReadiness,
+  ]);
 
   const handleLoginFromUnavailableViewer = useCallback(() => {
     const currentPath = window.location.pathname + window.location.search;
@@ -662,7 +721,8 @@ const Viewer = () => {
               bookmarkYn={data?.data.bookmarkYn}
               likedYN={data?.data.liked}
               handleCommentState={handleCommentState}
-              showWebsochatButton={!!data?.data?.websochatEligible}
+              showWebsochatButton={websochatButtonState !== "hidden"}
+              websochatButtonState={websochatButtonState}
               handleWebsochatClick={handleOpenWebsochat}
             />
           )}
