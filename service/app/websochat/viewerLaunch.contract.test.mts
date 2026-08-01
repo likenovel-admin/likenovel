@@ -152,7 +152,7 @@ assert.match(
 );
 assert.match(
   viewerSource,
-  /if \(clickOutcome === "modal"\) \{[\s\S]*postWebsochatAssetRequestBestEffort\([\s\S]*content: "아직 웹소챗\/주인공챗이 준비되지 않았어요\."[\s\S]*confirmText: "확인"[\s\S]*return;/
+  /if \(clickOutcome === "modal"\) \{[\s\S]*postWebsochatAssetRequestBestEffort\([\s\S]*content: "아직 웹소챗\/주인공챗이 준비되지 않았어요\."[\s\S]*confirmText: "확인"[\s\S]*buttonCount: 1[\s\S]*return;/
 );
 assert.match(
   viewerSource,
