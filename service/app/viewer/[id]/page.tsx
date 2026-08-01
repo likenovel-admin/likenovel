@@ -454,6 +454,7 @@ const Viewer = () => {
       setConfirm({
         content: "아직 웹소챗/주인공챗이 준비되지 않았어요.",
         confirmText: "확인",
+        buttonCount: 1,
       });
       return;
     }
