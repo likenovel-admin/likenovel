@@ -511,6 +511,11 @@ const EpisodeRoundItem = ({
 
   const isScheduledRelease = episode.openYn === "N" && episode.publishReserveDate;
   const isSelectable = episode.openYn !== "Y";
+  const episodeDateLabel = isScheduledRelease
+    ? "예약중"
+    : episode.openYn === "Y"
+    ? `${formatDate(episode.publishReserveDate || episode.createdDate)}(공개일)`
+    : `${formatDate(episode.createdDate)}(등록일)`;
 
   return (
     <div
@@ -596,7 +601,7 @@ const EpisodeRoundItem = ({
           <div>
             <div className="flex gap-3 items-center">
               <span className="text-11pxr text-gray-500">
-                {formatDate(episode.createdDate)}
+                {episodeDateLabel}
               </span>
               <span className="text-gray-300 text-12pxr"> | </span>
               <div className="text-dark-gray-300 text-13pxr flex gap-1 items-center">
