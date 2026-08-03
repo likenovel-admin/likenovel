@@ -526,6 +526,7 @@ installer_remote="$fixture_root/installer-origin.git"
 installer_primary="$fixture_root/installer-primary"
 installer_linked="$fixture_root/installer-linked"
 installer_backend="$fixture_root/installer-backend"
+installer_active_hooks="$fixture_root/installer-active-hooks"
 
 git init --bare --initial-branch=main "$installer_remote" >/dev/null
 git init --initial-branch=main "$installer_backend" >/dev/null
@@ -576,15 +577,64 @@ git -C "$installer_primary" worktree add \
 git -C "$installer_primary" switch --detach "$installer_legacy_sha" >/dev/null
 
 installer_hooks_dir="$(
-  git -C "$installer_linked" rev-parse --path-format=absolute --git-path hooks
+  printf '%s/hooks\n' "$(
+    git -C "$installer_linked" \
+      rev-parse --path-format=absolute --git-common-dir
+  )"
 )"
 primary_hooks_dir="$(
-  git -C "$installer_primary" rev-parse --path-format=absolute --git-path hooks
+  printf '%s/hooks\n' "$(
+    git -C "$installer_primary" \
+      rev-parse --path-format=absolute --git-common-dir
+  )"
 )"
 if [[ "$installer_hooks_dir" != "$primary_hooks_dir" ]]; then
   echo "ERROR: linked and primary worktrees resolved different hooks dirs" >&2
   exit 1
 fi
+mkdir -p "$installer_hooks_dir" "$installer_active_hooks"
+git -C "$installer_primary" config core.hooksPath .githooks
+expect_fail \
+  "installer rejects relative core.hooksPath" \
+  "relative core.hooksPath is unsupported" \
+  run_installer_at "$installer_linked"
+git -C "$installer_primary" config core.hooksPath "$installer_active_hooks"
+
+resolved_active_hooks="$(
+  git -C "$installer_linked" \
+    rev-parse --path-format=absolute --git-path hooks
+)"
+if [[ "$resolved_active_hooks" != "$installer_active_hooks" ]]; then
+  echo "ERROR: custom core.hooksPath fixture was not active" >&2
+  exit 1
+fi
+if [[ "$resolved_active_hooks" == "$installer_hooks_dir" ]]; then
+  echo "ERROR: active and common hook dirs must differ in this fixture" >&2
+  exit 1
+fi
+
+active_pre_commit_marker="$fixture_root/active-pre-commit-ran"
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  "touch '$active_pre_commit_marker'" \
+  >"$installer_active_hooks/pre-commit"
+chmod +x "$installer_active_hooks/pre-commit"
+active_pre_commit_checksum_before="$(
+  sha256sum "$installer_active_hooks/pre-commit"
+)"
+
+legacy_active_pre_push="$fixture_root/legacy-active-pre-push"
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  '' \
+  'set -euo pipefail' \
+  '' \
+  'repo_root="$(git rev-parse --show-toplevel)"' \
+  'exec bash "$repo_root/devtools/git-pre-push-safety-check.sh" "$@"' \
+  >"$legacy_active_pre_push"
+cp "$legacy_active_pre_push" "$installer_active_hooks/pre-push"
+chmod +x "$installer_active_hooks/pre-push"
+
 legacy_pre_push="$fixture_root/legacy-pre-push"
 printf '%s\n' \
   '#!/usr/bin/env bash' \
@@ -609,8 +659,30 @@ cmp -s \
 grep -Fq \
   'exec bash devtools/git-pre-commit-safety-check.sh "$@"' \
   "$installer_hooks_dir/pre-commit"
+grep -Fqx \
+  '# LikeNovel managed pre-push dispatcher' \
+  "$installer_active_hooks/pre-push"
+cmp -s \
+  "$legacy_active_pre_push" \
+  "$installer_active_hooks/pre-push.likenovel-backup"
+active_pre_commit_checksum_after="$(
+  sha256sum "$installer_active_hooks/pre-commit"
+)"
+if [[ "$active_pre_commit_checksum_before" != \
+  "$active_pre_commit_checksum_after" ]]; then
+  echo "ERROR: installer changed the external pre-commit guard" >&2
+  exit 1
+fi
+git -C "$installer_primary" hook run pre-commit
+if [[ ! -e "$active_pre_commit_marker" ]]; then
+  echo "ERROR: external pre-commit guard did not remain active" >&2
+  exit 1
+fi
 backup_checksum_before="$(
   sha256sum "$installer_hooks_dir/pre-push.likenovel-backup"
+)"
+active_backup_checksum_before="$(
+  sha256sum "$installer_active_hooks/pre-push.likenovel-backup"
 )"
 expect_pass \
   "installer is idempotent" \
@@ -620,6 +692,14 @@ backup_checksum_after="$(
 )"
 if [[ "$backup_checksum_before" != "$backup_checksum_after" ]]; then
   echo "ERROR: idempotent install rewrote the rollback backup" >&2
+  exit 1
+fi
+active_backup_checksum_after="$(
+  sha256sum "$installer_active_hooks/pre-push.likenovel-backup"
+)"
+if [[ "$active_backup_checksum_before" != \
+  "$active_backup_checksum_after" ]]; then
+  echo "ERROR: idempotent install rewrote the dispatcher backup" >&2
   exit 1
 fi
 
@@ -633,6 +713,29 @@ expect_pass \
   "actual primary dry-run uses shared self-contained hook" \
   git -C "$installer_primary" push --dry-run \
   origin "$installer_outgoing:refs/heads/main"
+expect_fail \
+  "actual dispatcher preserves protected deletion stdin" \
+  "protected branch deletion is forbidden: refs/heads/main" \
+  git -C "$installer_primary" push --dry-run \
+  origin ":refs/heads/main"
+
+chmod -x "$installer_hooks_dir/pre-push"
+expect_fail \
+  "dispatcher blocks non-executable managed hook" \
+  "managed common pre-push hook is missing or not executable" \
+  git -C "$installer_primary" push --dry-run \
+  origin "$installer_outgoing:refs/heads/main"
+chmod +x "$installer_hooks_dir/pre-push"
+
+managed_pre_push_backup="$fixture_root/managed-pre-push"
+cp -p "$installer_hooks_dir/pre-push" "$managed_pre_push_backup"
+printf '%s\n' '# tampered body' >>"$installer_hooks_dir/pre-push"
+expect_fail \
+  "dispatcher blocks tampered managed hook" \
+  "managed common pre-push hook integrity check failed" \
+  git -C "$installer_primary" push --dry-run \
+  origin "$installer_outgoing:refs/heads/main"
+cp -p "$managed_pre_push_backup" "$installer_hooks_dir/pre-push"
 
 printf '%s\n' \
   '#!/usr/bin/env bash' \
@@ -658,5 +761,38 @@ expect_fail \
 grep -Fqx \
   'echo marker-shaped custom hook' \
   "$installer_hooks_dir/pre-push"
+
+cp -p "$managed_pre_push_backup" "$installer_hooks_dir/pre-push"
+printf '%s\n' '# installer preflight source drift' \
+  >>"$installer_linked/devtools/git-pre-push-safety-check.sh"
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'echo active custom hook' \
+  >"$installer_active_hooks/pre-push"
+chmod +x "$installer_active_hooks/pre-push"
+common_pre_commit_checksum_before="$(
+  sha256sum "$installer_hooks_dir/pre-commit"
+)"
+common_pre_push_checksum_before="$(
+  sha256sum "$installer_hooks_dir/pre-push"
+)"
+expect_fail \
+  "installer preflights unknown active hook before common mutation" \
+  "existing active pre-push hook differs" \
+  run_installer_at "$installer_linked"
+grep -Fqx 'echo active custom hook' "$installer_active_hooks/pre-push"
+common_pre_commit_checksum_after="$(
+  sha256sum "$installer_hooks_dir/pre-commit"
+)"
+common_pre_push_checksum_after="$(
+  sha256sum "$installer_hooks_dir/pre-push"
+)"
+if [[ "$common_pre_commit_checksum_before" != \
+  "$common_pre_commit_checksum_after" || \
+  "$common_pre_push_checksum_before" != \
+  "$common_pre_push_checksum_after" ]]; then
+  echo "ERROR: failed active-hook preflight mutated common hooks" >&2
+  exit 1
+fi
 
 echo "git hook tests passed."
