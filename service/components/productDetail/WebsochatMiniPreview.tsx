@@ -49,6 +49,8 @@ type PreviewMessage = Pick<
 };
 
 const MINI_PREVIEW_MESSAGE_LIMIT = 2;
+const MINI_PREVIEW_SESSION_ERROR_MESSAGE =
+  "웹소챗 세션을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.";
 
 interface Props {
   productId: number;
@@ -57,6 +59,8 @@ interface Props {
   coverImagePath?: string | null;
   priceType?: string | null;
   adultYn?: "Y" | "N" | null;
+  accountReadEpisodeTo?: number | null;
+  isReadScopeReady: boolean;
   publishedLatestEpisodeNo?: number | null;
   syncedLatestEpisodeNo?: number | null;
   contextStatus?: string | null;
@@ -75,6 +79,8 @@ export default function WebsochatMiniPreview({
   authorNickname,
   coverImagePath,
   adultYn,
+  accountReadEpisodeTo,
+  isReadScopeReady,
   publishedLatestEpisodeNo,
   syncedLatestEpisodeNo,
   contextStatus,
@@ -108,6 +114,12 @@ export default function WebsochatMiniPreview({
   const hasInput = inputValue.trim().length > 0;
   const currentGhost = WEBSOCHAT_GHOST_QUESTIONS[ghostIndex];
   const idleGuideMessage = buildWebsochatIdleGuideMessage(productTitle);
+  const normalizedAccountReadEpisodeTo =
+    typeof accountReadEpisodeTo === "number" &&
+    Number.isInteger(accountReadEpisodeTo) &&
+    accountReadEpisodeTo > 0
+      ? accountReadEpisodeTo
+      : null;
 
   useEffect(() => {
     if (hasInput) return;
@@ -166,7 +178,7 @@ export default function WebsochatMiniPreview({
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (hasInput) return;
+    if (!isReadScopeReady || hasInput) return;
     if (event.key === "Tab" || event.key === "ArrowRight") {
       event.preventDefault();
       acceptGhost();
@@ -219,7 +231,7 @@ export default function WebsochatMiniPreview({
       setErrorMessage(
         error instanceof Error && error.message
           ? error.message
-          : "웹소챗 세션을 만들지 못했습니다. 잠시 후 다시 시도해 주세요."
+          : MINI_PREVIEW_SESSION_ERROR_MESSAGE
       );
     }
   };
@@ -244,12 +256,16 @@ export default function WebsochatMiniPreview({
   };
 
   const ensurePreviewSession = async () => {
+    if (!isReadScopeReady) {
+      throw new Error(MINI_PREVIEW_SESSION_ERROR_MESSAGE);
+    }
     if (sessionId) return sessionId;
     const guestKey = resolveGuestKey();
     const created = await createSession({
       product_id: productId,
       guest_key: guestKey || undefined,
       adult_yn: adultYn === "Y" ? "Y" : "N",
+      account_read_episode_to: normalizedAccountReadEpisodeTo,
     });
     const nextSessionId = created.data.sessionId;
     setSessionId(nextSessionId);
@@ -303,7 +319,7 @@ export default function WebsochatMiniPreview({
       active_character: null,
       game_mode: null,
       game_read_episode_to: null,
-      account_read_episode_to: null,
+      account_read_episode_to: normalizedAccountReadEpisodeTo,
     };
 
     try {
@@ -394,6 +410,7 @@ export default function WebsochatMiniPreview({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!isReadScopeReady) return;
     const trimmed = normalizeMiniPreviewContent(inputValue);
     if (!trimmed) return;
     if (isSending) return;
@@ -499,7 +516,7 @@ export default function WebsochatMiniPreview({
                 className="w-full bg-transparent px-2pxr py-8pxr text-12pxr leading-[1.5] tracking-[-2%] text-black-100 outline-none"
                 aria-label="웹소챗 질문 입력"
                 aria-busy={isSending}
-                readOnly={isSending}
+                readOnly={isSending || !isReadScopeReady}
               />
               {!hasInput ? (
                 <span
@@ -519,7 +536,7 @@ export default function WebsochatMiniPreview({
                   ? "웹소챗에서 계속하기"
                   : "미니 웹소챗 메시지 전송"
               }
-              disabled={!hasInput || isSending}
+              disabled={!isReadScopeReady || !hasInput || isSending}
               className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full bg-primary-100 text-white transition-colors hover:bg-primary-100/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <svg

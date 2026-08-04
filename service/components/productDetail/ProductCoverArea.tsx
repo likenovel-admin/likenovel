@@ -54,6 +54,7 @@ interface Props {
   evaluations: Partial<IEvaluation>;
   episodeId?: number;
   latestEpisodeNo?: number;
+  isWebsochatReadScopeReady: boolean;
   latestEpisodeTitle?: string;
   episodeCount?: number;
   firstEpisodeId?: number;
@@ -75,6 +76,7 @@ const ProductCoverArea = ({
   evaluations,
   episodeId,
   latestEpisodeNo,
+  isWebsochatReadScopeReady,
   latestEpisodeTitle,
   episodeCount,
   firstEpisodeId,
@@ -789,6 +791,8 @@ const ProductCoverArea = ({
                         coverImagePath={coverImagePath}
                         priceType={data.priceType}
                         adultYn={data.adultYn}
+                        accountReadEpisodeTo={latestEpisodeNo ?? null}
+                        isReadScopeReady={isWebsochatReadScopeReady}
                         publishedLatestEpisodeNo={data.latestEpisodeNo}
                         syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
                         contextStatus={websochatContextStatus}
@@ -867,6 +871,8 @@ const ProductCoverArea = ({
               coverImagePath={coverImagePath}
               priceType={data.priceType}
               adultYn={data.adultYn}
+              accountReadEpisodeTo={latestEpisodeNo ?? null}
+              isReadScopeReady={isWebsochatReadScopeReady}
               publishedLatestEpisodeNo={data.latestEpisodeNo}
               syncedLatestEpisodeNo={data.syncedLatestEpisodeNo}
               contextStatus={websochatContextStatus}

@@ -116,6 +116,21 @@ Read scope is:
 min(user requested/read episode, highest contiguous server-authorized episode, synced latest episode)
 ```
 
+Backend authorization and sync clamps are the final hard ceiling. Persistent
+scope authority comes only from structured account, viewer, or session progress.
+Free-form episode mentions may narrow the current turn's topic and evidence
+ceiling only when structured scope is already known; they never create or
+change persistent scope.
+
+Only a whole-line exact `N화` input is a text scope command. It may initialize
+an unknown scope or strictly narrow a known scope. An equal or higher request is
+a no-op and preserves the existing structured provenance. When scope is unknown,
+arbitrary free-form text, titles, wishes, completion claims, and nested game
+state fail closed and cannot establish or override scope.
+
+At the end of every message, a final fresh authorization check re-clamps both
+stored scope and all episode references in the response.
+
 Server-authorized episodes are open episodes that are free, owned, or under an
 unexpired rental in `tb_user_productbook`. Non-contiguous purchases do not extend
 the scope past the first missing/unauthorized episode, because current
