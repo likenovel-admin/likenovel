@@ -91,6 +91,7 @@ export default function ProductDetailClient({
     isAuthInitialized && !!accessToken && !!user?.userId && isAuthenticated;
   const isUserScopePending =
     isAuthInitialized && !!accessToken && isAuthenticated && !user?.userId;
+  const isAuthIdentitySettled = isAuthInitialized && !isUserScopePending;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useMemo(
@@ -141,6 +142,8 @@ export default function ProductDetailClient({
   ] = useState(false);
   const [guestReadProgress, setGuestReadProgressState] =
     useState<GuestReadProgressRecord | null>(null);
+  const [guestReadProgressReadyProductId, setGuestReadProgressReadyProductId] =
+    useState<number | null>(null);
   const productDetailCacheIdentity = !isAuthInitialized || isUserScopePending
     ? "auth-pending"
     : canUseUserScope
@@ -212,7 +215,7 @@ export default function ProductDetailClient({
     canUseUserScope && shouldLoadSecondaryProductDetailData
   );
 
-  const { data: episodes } = useSelectEpisodes(
+  const { data: episodes, isSuccess: isEpisodesSuccess } = useSelectEpisodes(
     productId,
     canUseUserScope ? user?.userId || null : null,
     1,
@@ -234,13 +237,15 @@ export default function ProductDetailClient({
     }, [episodes]);
 
   useEffect(() => {
-    if (canUseUserScope || !productId) {
+    if (!isAuthIdentitySettled || canUseUserScope || !productId) {
       setGuestReadProgressState(null);
+      setGuestReadProgressReadyProductId(null);
       return;
     }
 
     const refreshGuestReadProgress = () => {
       setGuestReadProgressState(getGuestReadProgress(productId));
+      setGuestReadProgressReadyProductId(productId);
     };
 
     refreshGuestReadProgress();
@@ -251,7 +256,15 @@ export default function ProductDetailClient({
       window.removeEventListener("pageshow", refreshGuestReadProgress);
       window.removeEventListener("focus", refreshGuestReadProgress);
     };
-  }, [canUseUserScope, productId]);
+  }, [canUseUserScope, isAuthIdentitySettled, productId]);
+
+  const hasRefreshedGuestReadProgress =
+    guestReadProgressReadyProductId === productId;
+  const isWebsochatReadScopeReady =
+    isAuthIdentitySettled &&
+    (canUseUserScope
+      ? isEpisodesSuccess
+      : hasRefreshedGuestReadProgress);
 
   const effectiveEpisodeId =
     !canUseUserScope && guestReadProgress ? guestReadProgress.episodeId : episodeId;
@@ -879,6 +892,7 @@ export default function ProductDetailClient({
             evaluations={mergeKeysEvaluation(evaluationData as IEvaluation)}
             episodeId={effectiveEpisodeId}
             latestEpisodeNo={effectiveLatestEpisodeNo}
+            isWebsochatReadScopeReady={isWebsochatReadScopeReady}
             latestEpisodeTitle={effectiveLatestEpisodeTitle}
             episodeCount={displayEpisodeCount}
             firstEpisodeId={firstEpisodeId}
