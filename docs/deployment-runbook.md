@@ -53,8 +53,8 @@ Legacy Windows path: `C:\Users\Hongsan\Downloads\likenovel` (참고용)
 - root repo에만 push하면 backend 배포 워크플로는 실행되지 않는다.
 - backend dev/prod 배포는 먼저 `likenovel-backend-deploy` 스킬의 Start Lock과 Actions Gate를 적용한다.
 - GitHub Actions가 push 후 60초 안에 matching run/check-suite를 만들지 않거나 `workflow_dispatch`가 HTTP 5xx를 반환하면 재시도 1회까지만 한다. 이후는 `GitHub Actions orchestration failure`로 보고 AWS CLI CodeDeploy fallback을 사용한다.
-- backend prod는 GitHub Actions/CodeDeploy 성공만으로 완료 판정하지 않는다. 운영 WAS의 systemd MainPID, `gunicorn.pid`, `10.0.100.110:3010` listener, `/health`, AI-reader worker fresh log, prod venv dependency, 필요한 migration의 실DB schema readback까지 통과해야 root prod 배포로 넘어간다.
-- CodeDeploy 후 새 route나 migration이 보이지 않으면 root prod 배포를 중단한다. stale gunicorn/stale venv/pending migration을 먼저 해결하고, 수동 보정이 들어가면 `강제발동`으로 기록한다.
+- backend prod는 GitHub Actions/CodeDeploy 성공만으로 완료 판정하지 않는다. 운영 WAS의 systemd MainPID, `gunicorn.pid`, `10.0.100.110:3010` listener, `/health`, AI-reader worker fresh log, prod venv dependency, 필요한 migration의 실DB schema readback까지 통과해야 완료다.
+- CodeDeploy 후 새 route나 migration이 보이지 않으면 backend 배포를 완료로 보고하지 않는다. stale gunicorn/stale venv/pending migration을 먼저 해결하고, 수동 보정이 들어가면 `강제발동`으로 기록한다.
 
 ## 2.1 Backend 배포 공통 게이트
 
@@ -70,6 +70,11 @@ git merge-base --is-ancestor origin/main origin/dev; echo main_to_dev=$?
 git merge-base --is-ancestor origin/dev origin/prod; echo dev_to_prod=$?
 git remote -v
 ```
+
+`main_to_dev`와 `dev_to_prod`는 환경 차이를 읽는 진단값이다. root와 backend의
+`dev`/`prod`는 각각 독립적인 배포 ledger이므로 0이 아니어도 그 자체로 배포를
+막거나 다른 환경 branch를 merge하지 않는다. target remote tip을 fast-forward하는
+exact commit만 통합한다.
 
 Actions 확인:
 
@@ -123,7 +128,8 @@ Root pre-push hook은 위 명령의 outgoing ref와 commit object를 검사한�
 checkout의 staged index, physical submodule HEAD, dirty working tree는 전송
 대상이 아니므로 push blocker로 사용하지 않는다. 대신 `main`/`dev`/`prod`
 push는 remote 이름이 정확히 `origin`일 때만 허용하고, 삭제와 non-fast-forward,
-환경 ancestry 위반을 차단한다. 검증 직전에 root/backend의 `origin/*`
+gitlink remote reachability 및 pointer 비후퇴를 차단한다. 환경 ancestry 불일치는
+독립 환경 ledger의 진단용 `WARNING`으로만 출력한다. 검증 직전에 root/backend의 `origin/*`
 remote-tracking ref를 prune하므로 삭제된 원격 branch를 도달성 근거로 쓰지 않는다.
 검증 범위는 각 outgoing ref의 최종 commit과 그 push diff이며, 범위 안의 모든
 중간 commit을 별도 재검사하지 않는다. Feature branch의
@@ -154,7 +160,9 @@ git -C likenovel-service-api/likenovel-service-api merge-base --is-ancestor <poi
 
 의도된 pointer push일 때만 해당 명령 1회에 한해
 `ALLOW_SUBMODULE_POINTER_PUSH=1`을 붙인다. 이 flag는 의도 확인만 생략하며,
-backend remote 도달성과 pointer 비후퇴 검사는 우회하지 않는다.
+backend remote 도달성과 pointer 비후퇴 검사는 우회하지 않는다. backend-only
+배포에서는 이 flag나 root pointer 변경을 사용하지 않는다. root 코드가 특정 backend
+snapshot을 실제로 요구하는 동일 deploy unit에서만 pointer 변경을 포함한다.
 
 ## 2.3 Deploy Merge Conflict Stop Rules
 
@@ -162,10 +170,8 @@ dev/prod 반영 중 conflict resolution은 배포를 위한 최소 정합화만 
 
 - 코드 conflict: 이미 검증한 feature diff와 target branch diff를 읽고, 새 동작을 만들지 않는다.
 - 문서 conflict: 배포 중에 새 blended 문서를 작성하지 않는다. add/add 또는 의미 병합이 필요하면 중단하고 사용자에게 선택지를 보고한다.
-- submodule conflict:
-  - root dev는 backend `origin/dev` SHA를 가리킨다.
-  - root prod는 backend prod workflow 완료 후 다시 fetch한 backend `origin/prod` SHA를 가리킨다.
-  - backend prod workflow가 `version update` 커밋을 만들면 그 최신 SHA가 root prod pointer의 기준이다.
+- backend-only 배포에서 submodule conflict가 보이면 target root branch의 기존 pointer를 유지한다. backend target tip으로 자동 정렬하지 않는다.
+- root 코드가 특정 backend snapshot을 실제로 요구하면 backend-only 배포와 분리된 root deploy unit으로 만들고, root-owned 변경과 함께 API 계약을 검증한다.
 
 이 규칙을 어기면 배포 성공 여부와 무관하게 `부분 조치`로 보고하고, 새로 작성한 conflict resolution 내용을 별도 review 대상으로 분리한다.
 
@@ -389,10 +395,9 @@ docker compose up -d --remove-orphans
 - 워크플로: `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions.yml`
 
 워크플로 동작:
-1. `poetry version patch` (자동 버전 증가)
-2. `poetry build`
-3. `pyproject.toml` 자동 commit/push
-4. CodeDeploy 실행
+1. build workspace에서만 `poetry version patch` 실행
+2. 배포 계약 테스트와 `poetry build`
+3. Git write 없이 CodeDeploy 실행
    - Application: `ln-dep`
    - Deployment Group: `ln-dep-grp-back`
    - S3 Bucket: `ln-s3`
@@ -404,8 +409,8 @@ docker compose up -d --remove-orphans
 - prod runtime 확인은 public `/docs`만 보지 말고 `verify_backend_prod_deploy.sh`와 changed file/behavior readback을 같이 본다.
 
 주의:
-- prod backend 워크플로는 자동으로 버전 커밋을 추가 생성한다.
-- prod workflow가 만든 version bump 커밋이 있으면 root submodule pointer는 그 최신 backend prod SHA로 align한다. dev bridge SHA로 내리면 downgrade다.
+- prod backend workflow의 version patch는 runner workspace에서만 유효하며 `pyproject.toml`을 commit/push하지 않는다.
+- backend 배포 완료는 backend `origin/prod`와 runtime hard gate로 판정한다. root submodule pointer 정렬은 완료 조건이 아니다.
 
 ## 6.3 Story Context 배치 모니터링
 웹소챗 story context 적재 상태는 `tb_story_agent_context_product.ready_episode_count`만 보면 오판하기 쉽다.

@@ -1,8 +1,8 @@
 # Deployment And Batch
 
 > Status: CURRENT GUIDE
-> Last verified: 2026-07-25
-> Code readback: 2026-07-25
+> Last verified: 2026-08-07
+> Code readback: 2026-08-07
 > Rule: do not execute deploy, DB, cron, or batch operations from this summary.
 > Open the linked runbook/source files and read back the live target first.
 
@@ -57,9 +57,10 @@ Backend prod completion requires readback beyond Actions/CodeDeploy success:
 - AI reader worker fresh cycle when backend prod deploy is involved
 - prod monitor quick check
 
-Prod backend workflow can create an automatic version bump commit. Root submodule
-pointer alignment must use that latest backend prod SHA, not an older dev bridge
-SHA.
+Root and backend `dev`/`prod` branches are independent deployment ledgers. Backend
+completion is proved by the backend target ref and runtime hard gate; a
+backend-only deploy must not create a root gitlink alignment commit. The prod
+workflow keeps `poetry version patch` ephemeral and does not commit or push it.
 
 ## DB Channels
 

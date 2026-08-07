@@ -127,6 +127,7 @@ docker compose up -d --build cms       # http://localhost:3002
 - Root pre-push의 push 내용 판단 기준은 현재 checkout/index/submodule working tree가 아니라 pre-push stdin의 outgoing ref와 commit SHA다. 단, 현재 worktree에 진행 중인 merge/rebase/cherry-pick이 있으면 push를 차단한다.
 - Codex-owned clean integration worktree에서 exact commit을 만들고 검증했다면, 같은 worktree에서 `git push origin <sha>:dev` 또는 `git push origin <sha>:prod`처럼 exact ref로 push할 수 있다. 다른 agent/user-owned worktree는 이 허용 범위에 포함되지 않는다.
 - Root `main`/`dev`/`prod` push는 remote 이름이 정확히 `origin`일 때만 허용하며, 삭제와 branch non-fast-forward push는 금지한다. 검증 전에 root/backend `origin/*` remote-tracking ref를 prune하고, 의도된 submodule pointer push도 backend target branch 도달성과 기존 pointer 대비 비후퇴 조건을 통과해야 한다.
+- root와 backend의 `dev`/`prod`는 각각 독립적인 환경 배포 ledger다. 환경 간 ancestry는 진단용 warning이며 배포 불변식이 아니다. 각 target branch의 기존 remote tip을 fast-forward하는지만 강제한다.
 - worktree에서 만든 unrelated change는 staging하지 않는다.
 - submodule pointer 변경은 `git diff --submodule=log` readback 후에만 stage한다.
 - root 로컬 작업은 정상 흐름이지만 submodule drift는 commit/push 전에 차단한다. 새 checkout 또는 hook이 의심되면 `bash devtools/install-git-hooks.sh`를 실행한다. Installer는 shared hooks dir에 checkout과 독립적인 self-contained pre-push를 설치하며, 기존 LikeNovel legacy/managed hook을 교체할 때 `pre-push.likenovel-backup`을 1회 보존한다. 알 수 없는 custom hook은 덮어쓰지 않는다.
@@ -140,7 +141,7 @@ git diff --submodule=log -- likenovel-service-api/likenovel-service-api
 git -C likenovel-service-api/likenovel-service-api status --short --branch
 ```
 
-- backend 변경이 운영에 같이 나가야 하면 backend repo에 먼저 commit/push하고 root repo에서 배포된 backend SHA로 pointer를 align한다.
+- backend-only 배포는 backend repo의 target ref와 runtime readback으로 닫으며, 배포된 backend SHA를 따라가는 root gitlink 대응 커밋을 만들지 않는다. root gitlink는 root 코드가 특정 backend snapshot을 실제로 요구하는 같은 deploy unit에서만 변경한다.
 - parent repo가 submodule remote에 없는 SHA를 가리키게 하지 않는다.
 - 로컬 `main`/`dev`/`prod`에서 직접 통합 merge를 만들지 않는다. 필요하면 `origin/<target>` 기준 integration branch에서 작업한다.
 - `dev`/`prod`는 작업 브랜치가 아니라 배포 환경 브랜치다.
@@ -150,12 +151,10 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
 ## 6.1) Deploy Merge Conflict Stop Rules
 
 - dev/prod 반영 중 conflict가 나면 "새 설계/새 문서 내용"을 즉석에서 쓰지 않는다.
-- conflict resolution은 이미 리뷰된 한쪽 내용 선택, submodule pointer align, 단순 중복 제거처럼 기계적으로 설명 가능한 최소 조치만 한다.
+- conflict resolution은 이미 리뷰된 한쪽 내용 선택, target root의 기존 submodule pointer 유지, 단순 중복 제거처럼 기계적으로 설명 가능한 최소 조치만 한다.
 - 문서 add/add conflict가 semantic merge를 요구하면 배포 중에 새 blended 문서를 만들지 말고 멈춰서 사용자에게 선택지를 보고한다.
-- submodule conflict는 target 환경에 맞는 remote SHA만 사용한다.
-  - dev root pointer: backend `origin/dev`
-  - prod root pointer: backend workflow 완료 후 다시 fetch한 backend `origin/prod`
-- backend prod workflow가 `version update` 커밋을 만든 경우, root prod pointer는 그 최신 backend `origin/prod` SHA로 맞춘다. 중간 merge SHA나 backend dev SHA를 넣으면 downgrade다.
+- backend-only 배포 중 submodule conflict가 보이면 root target의 기존 pointer를 유지한다. root 코드 변경이 특정 backend snapshot을 함께 요구하는 경우에만 별도 root deploy unit으로 검증하고 pointer를 변경한다.
+- backend-only 배포에서는 `ALLOW_SUBMODULE_POINTER_PUSH=1`을 사용하거나 root gitlink 변경을 만들지 않는다.
 
 ## 7) Deployment And Runtime Gates
 
