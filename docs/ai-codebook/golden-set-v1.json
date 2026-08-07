@@ -1,0 +1,7052 @@
+{
+  "version": "dna-lifecycle-v1",
+  "scope": {
+    "axis": "타",
+    "labels": [
+      "회귀",
+      "빙의",
+      "환생",
+      "귀환자"
+    ],
+    "episode_window": [
+      1,
+      2,
+      3
+    ]
+  },
+  "selection_policy": {
+    "positive": "parsed identity/hook + high split + matching identity/hook + formula frame when available",
+    "negative": "ordinary + high split + non-transfer hook + ordinary formula frame",
+    "review_only": "lifecycle identity without all automatic-positive predicates"
+  },
+  "gates": {
+    "expected_work_count": 201,
+    "require_complete": true,
+    "required_used_episodes": 3,
+    "forbidden_violations_max": 0,
+    "strict_violations_max": 0,
+    "label_cardinality_violations_max": 0,
+    "require_single_actual_profile": true,
+    "require_baseline_compatibility": true,
+    "no_recall_regression": true,
+    "target_labels": [
+      "타/회귀",
+      "타/빙의",
+      "타/환생",
+      "타/귀환자"
+    ],
+    "require_target_improvement_when_possible": true
+  },
+  "summary": {
+    "automatic_works": 201,
+    "positive_works": 133,
+    "negative_works": 68,
+    "review_only_works": 36,
+    "positive_by_label": {
+      "귀환자": 9,
+      "빙의": 26,
+      "환생": 36,
+      "회귀": 62
+    }
+  },
+  "works": [
+    {
+      "case_id": "dna-lifecycle:3d315d36d518ee9c",
+      "title": "1000년 만에 귀환한 검신 1~250完[염비]",
+      "source_file": "1000년 만에 귀환한 검신 1~250完[염비].txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:376c0417aa4923e7",
+      "title": "18세기 런던에 결혼정보회사를 차렸다 1~217完@담하이데",
+      "source_file": "18세기 런던에 결혼정보회사를 차렸다 1~217完@담하이데.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f6faec6ee348b595",
+      "title": "1953 맨손 재벌(1~418)",
+      "source_file": "1953 맨손 재벌(1~418).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:e6a2f3b37b9d28ae",
+      "title": "1년차 만렙 매니저 1-1514(연재중)@현신",
+      "source_file": "1년차 만렙 매니저 1-1514(연재중)@현신.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:a3fbacdbabb84e84",
+      "title": "2레벨로 회귀한 무신(1~721)",
+      "source_file": "2레벨로 회귀한 무신(1~721).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:865c0dbbd20ddfd9",
+      "title": "2회차 환관이 남성을 되찾음 1-282 完, 후기 포함[노빠꾸맨]",
+      "source_file": "2회차 환관이 남성을 되찾음 1-282 完, 후기 포함[노빠꾸맨].txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:7564c4cb82367dbe",
+      "title": "A.I 닥터(1~1513)",
+      "source_file": "A.I 닥터(1~1513).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:d5564f0e9db2c253",
+      "title": "AI 경찰(1~135)",
+      "source_file": "AI 경찰(1~135).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:d805a9c78129dfa3",
+      "title": "가이드북으로 꿀빠는 플레이어 1~304完@짬킹",
+      "source_file": "가이드북으로 꿀빠는 플레이어 1~304完@짬킹.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:4ba708a6a17b1a0d",
+      "title": "강속구로 인생 역전！ 182 完",
+      "source_file": "강속구로 인생 역전！ 182 完.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_PROFESSIONAL_SELF",
+        "formula_identity_frames": [
+          "ID_PROFESSIONAL_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:0b855fe918897920",
+      "title": "검사의 사건파일 1~200完@달빛물든",
+      "source_file": "검사의 사건파일 1~200完@달빛물든.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:2d164a357b3d9a35",
+      "title": "검술 고인물의 게임방송(1~431)",
+      "source_file": "검술 고인물의 게임방송(1~431).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:b0c461ddb521bfbf",
+      "title": "검신급 공무원 회귀 1~346(연재중)@자리",
+      "source_file": "검신급 공무원 회귀 1~346(연재중)@자리.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:1b094957894f5bc8",
+      "title": "게임 속 폭군이 되었다 1~334 完@류승현",
+      "source_file": "게임 속 폭군이 되었다 1~334 完@류승현.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f8a0d14ade6ecd53",
+      "title": "경력직 회귀자는 멸망이 싫다 0-279 完",
+      "source_file": "경력직 회귀자는 멸망이 싫다 0-279 完.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:a01d0faa05a10f83",
+      "title": "경험치 10만배로 초월급 헌터가 되었다 1~295完",
+      "source_file": "경험치 10만배로 초월급 헌터가 되었다 1~295完.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:bc3790d06be7739e",
+      "title": "고졸 변호사가 경력을 숨김 1~350完@24도",
+      "source_file": "고졸 변호사가 경력을 숨김 1~350完@24도.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:b32c1813b6aa0737",
+      "title": "곤륜마협(1~569)",
+      "source_file": "곤륜마협(1~569).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:02b28c8e7ba316c9",
+      "title": "공작가에는 미친개가 산다 1~258(미)",
+      "source_file": "공작가에는 미친개가 산다 1~258(미).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:eada15450b4735c7",
+      "title": "괴존강림 1~525 完@해경",
+      "source_file": "괴존강림 1~525 完@해경.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:76833311ecf554c2",
+      "title": "구룡전기 1-627 완결@시류라",
+      "source_file": "구룡전기 1-627 완결@시류라.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:4f5072a513f6eafb",
+      "title": "국대 은퇴 후 포텐 폭발 1~225完@형우",
+      "source_file": "국대 은퇴 후 포텐 폭발 1~225完@형우.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:84926463ebcc5750",
+      "title": "국세청 망나니 1-500完외전포함@동면거북이",
+      "source_file": "국세청 망나니 1-500完외전포함@동면거북이.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_PROFESSIONAL_SELF",
+        "formula_identity_frames": [
+          "ID_PROFESSIONAL_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:1062dbd4b1d42224",
+      "title": "국정원 요원 천재배우로 환생(1~605)",
+      "source_file": "국정원 요원 천재배우로 환생(1~605).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:80251fc42cc79378",
+      "title": "귀농 후 먼치킨(1~288)",
+      "source_file": "귀농 후 먼치킨(1~288).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:3f98d0de6e635578",
+      "title": "귀환 첫날 아포칼립스가 열렸다(1~508)",
+      "source_file": "귀환 첫날 아포칼립스가 열렸다(1~508).txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_RETURNED_SAME_SELF",
+        "formula_identity_frames": [
+          "ID_RETURNED_SAME_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "귀환자"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f2ef85045a045f52",
+      "title": "귀환자의 S급 사용 설명서 1-282 完",
+      "source_file": "귀환자의 S급 사용 설명서 1-282 完.txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_RETURNED_SAME_SELF",
+        "formula_identity_frames": [
+          "ID_RETURNED_SAME_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "귀환자"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:a9bc3f892f9e77f1",
+      "title": "그 중식당엔 무언가 특별한게 있다 1-200 完",
+      "source_file": "그 중식당엔 무언가 특별한게 있다 1-200 完.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:fb632e3f815839d4",
+      "title": "금수저 투자백서(1~296)",
+      "source_file": "금수저 투자백서(1~296).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:d77efd5be781c563",
+      "title": "기자인데요, 망돌 좀 내려주세요 1-212 完",
+      "source_file": "기자인데요, 망돌 좀 내려주세요 1-212 完.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 1,
+        "formula_framed_windows": 1
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:0e768cc5025f178d",
+      "title": "나 혼자 부활한다 1~344完@한소",
+      "source_file": "나 혼자 부활한다 1~344完@한소.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:6061bc500ba45d14",
+      "title": "나 혼자 총알 무한 1-409 完@아말하",
+      "source_file": "나 혼자 총알 무한 1-409 完@아말하.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:0c8f2a8c6ff412b5",
+      "title": "나 홀로 이세계 플레이어 1-371 完",
+      "source_file": "나 홀로 이세계 플레이어 1-371 完.txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_RETURNED_SAME_SELF",
+        "formula_identity_frames": [
+          "ID_RETURNED_SAME_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "귀환자"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:dda7fe3118eec5e8",
+      "title": "나는 이렇게 무림 최강이 되었다 1-250 完",
+      "source_file": "나는 이렇게 무림 최강이 되었다 1-250 完.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:5cedec5e42314965",
+      "title": "나의 파멸을 바라는 그대들에게 00157 完",
+      "source_file": "나의 파멸을 바라는 그대들에게 00157 完.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:9fceed88b42713a5",
+      "title": "난향연 001-396 完",
+      "source_file": "난향연 001-396 完.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:3a6808ad4b71d53d",
+      "title": "남궁세가 손녀딸의 귀환 1~260(연재중)@The eun",
+      "source_file": "남궁세가 손녀딸의 귀환 1~260(연재중)@The eun.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:2c6306a518a652cd",
+      "title": "남궁세가 천재 외손자 1-738(연재중)@신랑",
+      "source_file": "남궁세가 천재 외손자 1-738(연재중)@신랑.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "생존",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:4d9b08a3dd86e63e",
+      "title": "남궁세가에서 시작하는 무신생활 176 完",
+      "source_file": "남궁세가에서 시작하는 무신생활 176 完.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:e6c5cf5d3259dbda",
+      "title": "내 일기가 SSS급 보상템 1-308 完@민가오",
+      "source_file": "내 일기가 SSS급 보상템 1-308 完@민가오.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:5e8d4eb9949447ba",
+      "title": "내 집에 영약 광산이 열렸다 1-125完@대박난작가",
+      "source_file": "내 집에 영약 광산이 열렸다 1-125完@대박난작가.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 1,
+        "formula_framed_windows": 1
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:0d48972de08f4cf4",
+      "title": "내게 아카데미는 지옥이다 1~253完외포",
+      "source_file": "내게 아카데미는 지옥이다 1~253完외포.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:7ad9efd5411b4d96",
+      "title": "너희들은 변호됐다(1~641)",
+      "source_file": "너희들은 변호됐다(1~641).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:340f4136fc74a7e2",
+      "title": "뉴비가 너무 강함 1~200完@일등복권",
+      "source_file": "뉴비가 너무 강함 1~200完@일등복권.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:a26485135eb90493",
+      "title": "능력 있는 한의사가 다 고침(1~465)",
+      "source_file": "능력 있는 한의사가 다 고침(1~465).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_PROFESSIONAL_SELF",
+        "formula_identity_frames": [
+          "ID_PROFESSIONAL_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:e53261338c1db374",
+      "title": "능력을 숨긴 천재 아이돌 1-413 본편完@늘문",
+      "source_file": "능력을 숨긴 천재 아이돌 1-413 본편完@늘문.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:b99e8d53fef57a41",
+      "title": "당문전 1~421 (미)",
+      "source_file": "당문전 1~421 (미).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:b53e6290522df7b9",
+      "title": "대뜸 착각당했다 괴물 천재배우로 1-480完@장탄",
+      "source_file": "대뜸 착각당했다 괴물 천재배우로 1-480完@장탄.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:6820f1da8cbb6a23",
+      "title": "대한제일검의 게임 스트리밍(1~318)",
+      "source_file": "대한제일검의 게임 스트리밍(1~318).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:15a5b39852c3f98d",
+      "title": "돈 쓸어담는 연금술사 1-162화 완결",
+      "source_file": "돈 쓸어담는 연금술사 1-162화 완결.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:e727c4dff123cc20",
+      "title": "돈지랄 네크로맨서(1~251)",
+      "source_file": "돈지랄 네크로맨서(1~251).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:8e95cff39aa469e6",
+      "title": "두 번 사는 소드마스터(1~244)",
+      "source_file": "두 번 사는 소드마스터(1~244).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:b10d53d853257cd6",
+      "title": "디펜스 게임의 폭군이 되었다(1~825)",
+      "source_file": "디펜스 게임의 폭군이 되었다(1~825).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f1478c32217a892b",
+      "title": "랭킹 1위를 영혼까지 털어버림 1~231完술푸레나무",
+      "source_file": "랭킹 1위를 영혼까지 털어버림 1~231完술푸레나무.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "생존",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:662933aa2a64da67",
+      "title": "러스트[RUST] 1-1086(연재중)@글라딘",
+      "source_file": "러스트[RUST] 1-1086(연재중)@글라딘.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_PROFESSIONAL_SELF",
+        "formula_identity_frames": [
+          "ID_PROFESSIONAL_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:67922e88c437c759",
+      "title": "로또 1등도 출근합니다(1~325)",
+      "source_file": "로또 1등도 출근합니다(1~325).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "기타",
+        "formula_identity_frame": "ID_PROFESSIONAL_SELF",
+        "formula_identity_frames": [
+          "ID_PROFESSIONAL_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:890d2859c8e5aae5",
+      "title": "록스피릿블루스 1~247完경우",
+      "source_file": "록스피릿블루스 1~247完경우.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:9b4af9e3fb0ecc08",
+      "title": "마법학교 마법사로 살아가는 법(1~1299)",
+      "source_file": "마법학교 마법사로 살아가는 법(1~1299).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:c8f74ad28b1b26c3",
+      "title": "마왕 딸이 밥을 잘한다 1-205화 완결[외전포함]",
+      "source_file": "마왕 딸이 밥을 잘한다 1-205화 완결[외전포함].txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_RETURNED_SAME_SELF",
+        "formula_identity_frames": [
+          "ID_RETURNED_SAME_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "귀환자"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:ad1cbcfb16ae3fe6",
+      "title": "마운드 위의 절대자 001-201 完",
+      "source_file": "마운드 위의 절대자 001-201 完.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "게임/아바타",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:231ffc59b645d2de",
+      "title": "마운드의 괴물(1~188)",
+      "source_file": "마운드의 괴물(1~188).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:1c2b5d5c95942283",
+      "title": "말단 사원이 너무 유능함(1~821)",
+      "source_file": "말단 사원이 너무 유능함(1~821).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:b234b70a12075aba",
+      "title": "망나니 PD 아이돌로 살아남기 1-487 完@문찐",
+      "source_file": "망나니 PD 아이돌로 살아남기 1-487 完@문찐.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 3,
+        "formula_framed_windows": 3
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:573262d78c8ab13a",
+      "title": "망나니 천재 작곡가 회귀하다 1~482본편完외전10화@글승이",
+      "source_file": "망나니 천재 작곡가 회귀하다 1~482본편完외전10화@글승이.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:24471389b2af411d",
+      "title": "망돌 1군 만들기 프로젝트 1~528(연재중)@당가약과",
+      "source_file": "망돌 1군 만들기 프로젝트 1~528(연재중)@당가약과.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:335d493ce77ec4df",
+      "title": "망황기 1~1310完@주홍지",
+      "source_file": "망황기 1~1310完@주홍지.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_RETURNED_SAME_SELF",
+        "formula_identity_frames": [
+          "ID_RETURNED_SAME_SELF"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:d8326e6ccaaf4c49",
+      "title": "멸망급 데스나이트가 회귀함(1~352)",
+      "source_file": "멸망급 데스나이트가 회귀함(1~352).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:6a557f4242913231",
+      "title": "멸망한 가문의 회귀자(1~500)",
+      "source_file": "멸망한 가문의 회귀자(1~500).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:93e4be8851c40f66",
+      "title": "멸망한 세계의 4급 인간(1~397)",
+      "source_file": "멸망한 세계의 4급 인간(1~397).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:dcb14abb07cc01af",
+      "title": "멸망한 세계의 취사병(1~471)",
+      "source_file": "멸망한 세계의 취사병(1~471).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:fbae96523f348ecd",
+      "title": "무관력 만렙 축구 천재가 회귀함(1~226)",
+      "source_file": "무관력 만렙 축구 천재가 회귀함(1~226).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:308c3f80780cf897",
+      "title": "무성진천 001-260 完",
+      "source_file": "무성진천 001-260 完.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:207af6844c849801",
+      "title": "무신의 막내제자가 되었다 1~371(연재중)@낙하산",
+      "source_file": "무신의 막내제자가 되었다 1~371(연재중)@낙하산.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:cb35e675ce2f0c02",
+      "title": "문과라도 안 죄송한 이세계로 감(1~489)",
+      "source_file": "문과라도 안 죄송한 이세계로 감(1~489).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:2ffe8cbf3c33fad8",
+      "title": "미국 깡촌의 천재 작가(1~414)",
+      "source_file": "미국 깡촌의 천재 작가(1~414).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f6516a01744e6d70",
+      "title": "미궁 속 천재공학자 1-520(연재중)@병장개미",
+      "source_file": "미궁 속 천재공학자 1-520(연재중)@병장개미.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:d083b9345398ec72",
+      "title": "미래를 보는 재벌가 데릴사위 1~204完@차강",
+      "source_file": "미래를 보는 재벌가 데릴사위 1~204完@차강.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "관계파열",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 1,
+        "formula_framed_windows": 1
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:be8551a7d299af3f",
+      "title": "미래를 보는 투자자 1~522完외전포함@박성호",
+      "source_file": "미래를 보는 투자자 1~522完외전포함@박성호.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:a16aac6f32fcc749",
+      "title": "미친 빌런이 정신을 되찾음 1~425完@김현우",
+      "source_file": "미친 빌런이 정신을 되찾음 1~425完@김현우.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:ac4fd65dbd182c2f",
+      "title": "미친 용병이 안 죽음 175 完",
+      "source_file": "미친 용병이 안 죽음 175 完.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "생존",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:0285ad7e6856866d",
+      "title": "방구석 조물주(1~254)",
+      "source_file": "방구석 조물주(1~254).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:6c69a0c856561add",
+      "title": "방출당한 투수가 금강불괴로 돌아옴(1~172)",
+      "source_file": "방출당한 투수가 금강불괴로 돌아옴(1~172).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:74d0fe6587aa7410",
+      "title": "방출되고 재능폭발(1~437)",
+      "source_file": "방출되고 재능폭발(1~437).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:3ea44b24694fa250",
+      "title": "방치된 자동 사냥 게임의 흑막님(1~203)",
+      "source_file": "방치된 자동 사냥 게임의 흑막님(1~203).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:cac42e1e67c4b0cd",
+      "title": "범상한 변호사의 아공간(1~190)",
+      "source_file": "범상한 변호사의 아공간(1~190).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "기타",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:43aae2b9d308ffdc",
+      "title": "변경백 서자는 황제였다(1~977)",
+      "source_file": "변경백 서자는 황제였다(1~977).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:b021b3d72a7399f6",
+      "title": "변신 능력이 생긴 헌터에 대하여 001-265 完 @K",
+      "source_file": "변신 능력이 생긴 헌터에 대하여 001-265 完 @K.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:cfa0a33e4f842075",
+      "title": "별을 품은 소드마스터(1~283)",
+      "source_file": "별을 품은 소드마스터(1~283).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "생존",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:5632e51c6459d7a4",
+      "title": "불탄 사막의 모래술사(1~416)",
+      "source_file": "불탄 사막의 모래술사(1~416).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:34c844e296564c7c",
+      "title": "블랙기업조선 0-1230 完@국뽕",
+      "source_file": "블랙기업조선 0-1230 完@국뽕.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": null,
+        "formula_identity_frames": [],
+        "formula_usable_windows": 0,
+        "formula_framed_windows": 0
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:100dab729482e646",
+      "title": "빌보드 1위로 시작하는 작곡생활 165 完 @K",
+      "source_file": "빌보드 1위로 시작하는 작곡생활 165 完 @K.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "계약",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:de0a47a49b89f1e4",
+      "title": "빌어먹을 환생(1~313)",
+      "source_file": "빌어먹을 환생(1~313).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:cd1b8d70dd26af05",
+      "title": "뽑기로 강해진 SSS급 헌터 1-299완",
+      "source_file": "뽑기로 강해진 SSS급 헌터 1-299완.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:d497542341d0b6b7",
+      "title": "사천당가의 검신급 소가주가 되었다(1~321)",
+      "source_file": "사천당가의 검신급 소가주가 되었다(1~321).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:2daaa9fcca003b62",
+      "title": "살인마의 인터뷰 1~273完@경우",
+      "source_file": "살인마의 인터뷰 1~273完@경우.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_PROFESSIONAL_SELF",
+        "formula_identity_frames": [
+          "ID_PROFESSIONAL_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:824d07ffb1e0df94",
+      "title": "삼국지 - 흑산적 두령네 천재 아들 1-300 完 @K",
+      "source_file": "삼국지 - 흑산적 두령네 천재 아들 1-300 完 @K.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:fa16833291dd6f04",
+      "title": "삼국지 맹달전 001-335 完 @K",
+      "source_file": "삼국지 맹달전 001-335 完 @K.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 10,
+        "formula_framed_windows": 10
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:42bada79dcd769b5",
+      "title": "삼류 야구 선수가 잘 던짐 1-218 完",
+      "source_file": "삼류 야구 선수가 잘 던짐 1-218 完.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_PROFESSIONAL_SELF",
+        "formula_identity_frames": [
+          "ID_PROFESSIONAL_SELF",
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:843b5e19d71416a8",
+      "title": "삼류무가 천하제일인(1~300)",
+      "source_file": "삼류무가 천하제일인(1~300).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:138a3aa427fcd1d0",
+      "title": "상냥한 아이돌 리더가 되기 위한 조건(1~201)",
+      "source_file": "상냥한 아이돌 리더가 되기 위한 조건(1~201).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:71e8ab629cea8fc3",
+      "title": "서포터가 다 해먹음 1-608(연재중)@주급무랑",
+      "source_file": "서포터가 다 해먹음 1-608(연재중)@주급무랑.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_TRANSPOSED_GAME_BODY",
+        "formula_identity_frames": [
+          "ID_TRANSPOSED_GAME_BODY"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:6a253398fd33db92",
+      "title": "설혼귀향록 1-200 完 @K",
+      "source_file": "설혼귀향록 1-200 完 @K.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:0623beb5174e1529",
+      "title": "세계대전 참전군인으로 살아남기(1~161)",
+      "source_file": "세계대전 참전군인으로 살아남기(1~161).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:dd7173196ae3d761",
+      "title": "세계수 하숙집에 어서오세요 001-272 完",
+      "source_file": "세계수 하숙집에 어서오세요 001-272 完.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:c9e1a60a6a60c5b0",
+      "title": "솔로 엔딩 후 헌터가 되었다 完",
+      "source_file": "솔로 엔딩 후 헌터가 되었다 完.txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_RETURNED_SAME_SELF",
+        "formula_identity_frames": [
+          "ID_RETURNED_SAME_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "귀환자"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:04bd49c26b0a2240",
+      "title": "슈팅 궤적이 다 보임(1~312)",
+      "source_file": "슈팅 궤적이 다 보임(1~312).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:05d35692b56b3c90",
+      "title": "스킬 무한의 만능 제작자 181화 완결",
+      "source_file": "스킬 무한의 만능 제작자 181화 완결.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:c9122910a0698c01",
+      "title": "스타 피디로 사는 법 1-250 完 @K",
+      "source_file": "스타 피디로 사는 법 1-250 完 @K.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:4bf26713da845127",
+      "title": "스탯업에는 던전 요리 1-275 완",
+      "source_file": "스탯업에는 던전 요리 1-275 완.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "계약",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:3f572cbb9cc1eee6",
+      "title": "시한부 천재 암흑기사 1~139(미)",
+      "source_file": "시한부 천재 암흑기사 1~139(미).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:1fdda9319c140f1a",
+      "title": "신검환생록 1~552完@윤민호",
+      "source_file": "신검환생록 1~552完@윤민호.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:bd9b2307d7d51b5d",
+      "title": "신마경천기 1~216完@일황",
+      "source_file": "신마경천기 1~216完@일황.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f3c1fc89bd05b449",
+      "title": "신마대제(1~896)",
+      "source_file": "신마대제(1~896).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "생존",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:99251d691b35b7d0",
+      "title": "신이 내린 장사 천재(1~278)",
+      "source_file": "신이 내린 장사 천재(1~278).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:6530879fd4a9f056",
+      "title": "신인인데 천만배우 1~361 完외포",
+      "source_file": "신인인데 천만배우 1~361 完외포.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f4063d0b1c15e4ea",
+      "title": "실전무제(1~200)",
+      "source_file": "실전무제(1~200).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "생존",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:fe6cd2e0de6114ff",
+      "title": "십만년만에 깨어난 함장님 1~397完@티타펠꼬망",
+      "source_file": "십만년만에 깨어난 함장님 1~397完@티타펠꼬망.txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_RETURNED_SAME_SELF",
+        "formula_identity_frames": [
+          "ID_RETURNED_SAME_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "귀환자"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:7b55445788441baa",
+      "title": "십전살수 오십호(1~576)",
+      "source_file": "십전살수 오십호(1~576).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:9e9d4b2fd64a5170",
+      "title": "쓰레기 먹는 대마법사 1-250 完",
+      "source_file": "쓰레기 먹는 대마법사 1-250 完.txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_RETURNED_SAME_SELF",
+        "formula_identity_frames": [
+          "ID_RETURNED_SAME_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "귀환자"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:0973ed460bdfb7df",
+      "title": "아카데미 편의점으로 힐링 할게요(1~1041)",
+      "source_file": "아카데미 편의점으로 힐링 할게요(1~1041).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_TRANSPOSED_GAME_BODY",
+        "formula_identity_frames": [
+          "ID_TRANSPOSED_GAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:eff40279c068dab6",
+      "title": "아포칼립스에 집을 숨김 1~490(연재중)@로드워리어",
+      "source_file": "아포칼립스에 집을 숨김 1~490(연재중)@로드워리어.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "생존",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:75c492e8d4cc8b42",
+      "title": "악당 가족이 독립을 반대한다 1~217(연재중)@이흰,파",
+      "source_file": "악당 가족이 독립을 반대한다 1~217(연재중)@이흰,파.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:c55972224bc88c66",
+      "title": "악당은 살고싶다(1~362)",
+      "source_file": "악당은 살고싶다(1~362).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY",
+          "ID_PROFESSIONAL_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:c750063f810e52ed",
+      "title": "악마 잡는 천재 마법사(1~216)",
+      "source_file": "악마 잡는 천재 마법사(1~216).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:70c9939431a61256",
+      "title": "암흑명가 천재 망나니가 되었다 1-410화 완결",
+      "source_file": "암흑명가 천재 망나니가 되었다 1-410화 완결.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:8f191d00b59f9d45",
+      "title": "야구단 신입이 너무 잘함(1~566)",
+      "source_file": "야구단 신입이 너무 잘함(1~566).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "기타",
+        "formula_identity_frame": "ID_PROFESSIONAL_SELF",
+        "formula_identity_frames": [
+          "ID_PROFESSIONAL_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:33651043aec26ee4",
+      "title": "야산에 묻혀버렸더니 1~175完@소수림",
+      "source_file": "야산에 묻혀버렸더니 1~175完@소수림.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:fb353e3306f224ad",
+      "title": "약 파는 황태자 1~614完@문경백",
+      "source_file": "약 파는 황태자 1~614完@문경백.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:ab8f8b1124d15572",
+      "title": "엑스트라가 너무 강함 1~1068(연재중)@김재한",
+      "source_file": "엑스트라가 너무 강함 1~1068(연재중)@김재한.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:c24cbf10d633dab6",
+      "title": "여행 유튜버가 된 언어 천재(1~187)",
+      "source_file": "여행 유튜버가 된 언어 천재(1~187).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "계약",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:80f7a4cf53647a1b",
+      "title": "역대급 올마스터의 회귀(1~297)",
+      "source_file": "역대급 올마스터의 회귀(1~297).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:5a911d68cc5fac09",
+      "title": "연기하면 딴세상(1~276)",
+      "source_file": "연기하면 딴세상(1~276).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:87985f09294f61a5",
+      "title": "영단 먹고 예지를 얻다 1~204完",
+      "source_file": "영단 먹고 예지를 얻다 1~204完.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:6300ecd8c813a012",
+      "title": "예고의 미술 천재가 되었다(1~262)",
+      "source_file": "예고의 미술 천재가 되었다(1~262).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:c99d2733005b77df",
+      "title": "오늘만 사는 기사(1~457)",
+      "source_file": "오늘만 사는 기사(1~457).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:ca75e4178f965064",
+      "title": "완벽한 실눈 악역을 연기하다 1~300完@봄가을",
+      "source_file": "완벽한 실눈 악역을 연기하다 1~300完@봄가을.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 3,
+        "formula_framed_windows": 3
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f762cd1de1e65e3d",
+      "title": "용사파티 대마법사의 환생 1~280完",
+      "source_file": "용사파티 대마법사의 환생 1~280完.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_RETURNED_SAME_SELF",
+        "formula_identity_frames": [
+          "ID_RETURNED_SAME_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:7e397e3b9f41ed61",
+      "title": "월령검제(1~545)",
+      "source_file": "월령검제(1~545).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:7c75614d1ddea8e1",
+      "title": "웰컴 투 NBA 1-272",
+      "source_file": "웰컴 투 NBA 1-272.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f0a65bc1a4dc34df",
+      "title": "위씨세가 마신공자(1~201)",
+      "source_file": "위씨세가 마신공자(1~201).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:1280c078caaae6ca",
+      "title": "유토피아 0-300 完",
+      "source_file": "유토피아 0-300 完.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:3f1984e641b6d06c",
+      "title": "은퇴 코더가 빅테크를 사버림(1~231)",
+      "source_file": "은퇴 코더가 빅테크를 사버림(1~231).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f0f6a86fd9003e0d",
+      "title": "은해상단 막내아들 394 연재중[향란]",
+      "source_file": "은해상단 막내아들 394 연재중[향란].txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:dd649ddade8272bd",
+      "title": "음악 천재가 금수저를 숨김 1~221完",
+      "source_file": "음악 천재가 금수저를 숨김 1~221完.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_RETURNED_SAME_SELF",
+        "formula_identity_frames": [
+          "ID_RETURNED_SAME_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:59929a101062703e",
+      "title": "음악천재의 힐링 라이프(1~222)",
+      "source_file": "음악천재의 힐링 라이프(1~222).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "생존",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f2862db03c86e7ab",
+      "title": "의선명가 천재막내(1~218)",
+      "source_file": "의선명가 천재막내(1~218).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:c45d87495e3b236d",
+      "title": "이번 생은 우주대스타 1-1275",
+      "source_file": "이번 생은 우주대스타 1-1275.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f15521362527cc88",
+      "title": "이혼 후 귀농했더니 손만 대면 터짐(1~162)",
+      "source_file": "이혼 후 귀농했더니 손만 대면 터짐(1~162).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "은퇴",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f2bac108219f6639",
+      "title": "인생 2회차 아이돌의 럭키플랜(1~532)",
+      "source_file": "인생 2회차 아이돌의 럭키플랜(1~532).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:1801cb8a90b76abf",
+      "title": "일검천하(1~174)",
+      "source_file": "일검천하(1~174).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "임무",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:7cd9c94484c461dd",
+      "title": "일월무신 1-273 미완 [무협, 인재]",
+      "source_file": "일월무신 1-273 미완 [무협, 인재].txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:bcbd3d2ab1ec4548",
+      "title": "일타강사 백사부(1~672)",
+      "source_file": "일타강사 백사부(1~672).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:06ce5fc0ed61c480",
+      "title": "장남은 축구가 간절하다 1~401完@네딸아빠",
+      "source_file": "장남은 축구가 간절하다 1~401完@네딸아빠.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:9c105e3f685ebff1",
+      "title": "재벌은 1968부터(1~202)",
+      "source_file": "재벌은 1968부터(1~202).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:3d39cc03803888d3",
+      "title": "재벌집 만렙 아들(1~416)",
+      "source_file": "재벌집 만렙 아들(1~416).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:0147af62e23af1c2",
+      "title": "재벌집 망나니가 구단주를 잘함 1~187(미)",
+      "source_file": "재벌집 망나니가 구단주를 잘함 1~187(미).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "계약",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:0b902be4e851f6a4",
+      "title": "저승식당 1~1050完외전포함@형상준",
+      "source_file": "저승식당 1~1050完외전포함@형상준.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "계약",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:17e19c764a366d7c",
+      "title": "전생에 검술천재였다(1~174)",
+      "source_file": "전생에 검술천재였다(1~174).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:81735ea64cef6e6a",
+      "title": "전설급 영웅은 아카데미 우등생 1-759(연재중)@예로나",
+      "source_file": "전설급 영웅은 아카데미 우등생 1-759(연재중)@예로나.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": null,
+        "formula_identity_frames": [],
+        "formula_usable_windows": 0,
+        "formula_framed_windows": 0
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:03fc4d8a5884d7a3",
+      "title": "전지적 투자 시점(1~295)",
+      "source_file": "전지적 투자 시점(1~295).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:d434c95beecd6b09",
+      "title": "전직용병 재벌서자(1~305)",
+      "source_file": "전직용병 재벌서자(1~305).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:0db6ad1c56ca4a3f",
+      "title": "절대 실패하지 않는 아이돌의 기술 1~440 完외포",
+      "source_file": "절대 실패하지 않는 아이돌의 기술 1~440 完외포.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "각성",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:509b856b32953a9e",
+      "title": "절대검감(1~356)",
+      "source_file": "절대검감(1~356).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:e749802fabc400bf",
+      "title": "절대회귀(1~424)",
+      "source_file": "절대회귀(1~424).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:0a9902724b65256c",
+      "title": "조선왕자가 미국갔다 안 돌아옴(1~392)",
+      "source_file": "조선왕자가 미국갔다 안 돌아옴(1~392).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:351f9a37dcf464eb",
+      "title": "죽은 신의 성기사(1~429)",
+      "source_file": "죽은 신의 성기사(1~429).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:8a635b2b02b73a83",
+      "title": "쥐뿔도 없는 회귀(1~427)",
+      "source_file": "쥐뿔도 없는 회귀(1~427).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:d16f4227be23e4b1",
+      "title": "즉사기 들고 게임 속으로(1~189)",
+      "source_file": "즉사기 들고 게임 속으로(1~189).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:fdb9f58b287c66c9",
+      "title": "창업군주는 흑막이 되었다(1~207)",
+      "source_file": "창업군주는 흑막이 되었다(1~207).txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_RETURNED_SAME_SELF",
+        "formula_identity_frames": [
+          "ID_RETURNED_SAME_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "귀환자"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:ec86577cc8419ecc",
+      "title": "천검기협 001-425 完",
+      "source_file": "천검기협 001-425 完.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:1a60e279269dc82a",
+      "title": "천마는 평범하게 살 수 없다(1~615)",
+      "source_file": "천마는 평범하게 살 수 없다(1~615).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:d2a28b0c3d04c724",
+      "title": "천마하라고 누가 칼들고 협박함(1~466)",
+      "source_file": "천마하라고 누가 칼들고 협박함(1~466).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:b9856d955f6b276f",
+      "title": "천재 요리사의 환생(1~250)",
+      "source_file": "천재 요리사의 환생(1~250).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:5556b6d438b7951f",
+      "title": "첩자의 마교생활(1~350)",
+      "source_file": "첩자의 마교생활(1~350).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "임무",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:999c823753cc856d",
+      "title": "초심 잃은 아이돌을 위한 회귀 백서(1~552)",
+      "source_file": "초심 잃은 아이돌을 위한 회귀 백서(1~552).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:fce0c40314592b42",
+      "title": "케이팝 씹어먹는 천재 작곡가(1~200)",
+      "source_file": "케이팝 씹어먹는 천재 작곡가(1~200).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:7fb0070f1c9ebe07",
+      "title": "크툴루 게임 속 천재 마법사가 되었다(1~739)",
+      "source_file": "크툴루 게임 속 천재 마법사가 되었다(1~739).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_TRANSPOSED_GAME_BODY",
+        "formula_identity_frames": [
+          "ID_TRANSPOSED_GAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:1bbafa85bb18a4f5",
+      "title": "탑아이돌의 막내 멤버가 되었다(1~392)",
+      "source_file": "탑아이돌의 막내 멤버가 되었다(1~392).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f21534eae39cd28b",
+      "title": "탑에 갇혀 고인물(1~856)",
+      "source_file": "탑에 갇혀 고인물(1~856).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "생존",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:16708da8229c9107",
+      "title": "태고신왕 1-255",
+      "source_file": "태고신왕 1-255.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:a73795eee3d1b6f5",
+      "title": "파공검제(1~508)",
+      "source_file": "파공검제(1~508).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": null,
+        "formula_identity_frames": [],
+        "formula_usable_windows": 0,
+        "formula_framed_windows": 0
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:d39e5f63d23d1a02",
+      "title": "하북팽가 검술천재(1~841)",
+      "source_file": "하북팽가 검술천재(1~841).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:1a17b6893d7347fa",
+      "title": "한의사, 무림에서 돌아왔습니다(1~263)",
+      "source_file": "한의사, 무림에서 돌아왔습니다(1~263).txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_RETURNED_SAME_SELF",
+        "formula_identity_frames": [
+          "ID_RETURNED_SAME_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "귀환자"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:4cd0733b908d73c6",
+      "title": "혁명가, 세상을 박살 내다 1-220화 완결",
+      "source_file": "혁명가, 세상을 박살 내다 1-220화 완결.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:dfed1e8ac2f77589",
+      "title": "현질무신(1~170)",
+      "source_file": "현질무신(1~170).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:20c9b8690dc411d8",
+      "title": "현질해서 톱스타 完텍",
+      "source_file": "현질해서 톱스타 完텍.txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "게임/아바타",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:f9f3f8efcdf96cf4",
+      "title": "화산천마(1~786)",
+      "source_file": "화산천마(1~786).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "빙의"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:dfbcbe5049a23201",
+      "title": "화학천재의 비밀 투자 공식(1~171)",
+      "source_file": "화학천재의 비밀 투자 공식(1~171).txt",
+      "source_evidence": {
+        "identity_mode": "ordinary",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "forbidden": {
+        "타": [
+          "회귀",
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:dfcdc142b68c84d5",
+      "title": "환생빨로 축구천재 1-225 完",
+      "source_file": "환생빨로 축구천재 1-225 完.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 1,
+        "formula_framed_windows": 1
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:442c641acbd8e111",
+      "title": "환생자의 스트리밍(1~342)",
+      "source_file": "환생자의 스트리밍(1~342).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:77bdded0c34699ff",
+      "title": "환생천마(1~304)",
+      "source_file": "환생천마(1~304).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:7aa60378fb6ccc41",
+      "title": "환생한 암살자는 검술 천재(1~1115)",
+      "source_file": "환생한 암살자는 검술 천재(1~1115).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "환생"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:ab61a6546605314b",
+      "title": "회귀수선전(回歸修仙傳)(1~487)",
+      "source_file": "회귀수선전(回歸修仙傳)(1~487).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:6feea6c314da1924",
+      "title": "회귀자의 메모장(1~326)",
+      "source_file": "회귀자의 메모장(1~326).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:d8d54f539796b877",
+      "title": "회귀자의 성공 투자법(1~658)",
+      "source_file": "회귀자의 성공 투자법(1~658).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:de0927a9823b6f70",
+      "title": "회귀한 용병은 다 계획이 있다(1~269)",
+      "source_file": "회귀한 용병은 다 계획이 있다(1~269).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:a76f6e2710d21376",
+      "title": "회귀한 천재 플레이어의 신화급 무기창조(1~504)",
+      "source_file": "회귀한 천재 플레이어의 신화급 무기창조(1~504).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:a6108a0be9f54881",
+      "title": "회귀한 천재 헌터의 슬기로운 청소생활(1~366)",
+      "source_file": "회귀한 천재 헌터의 슬기로운 청소생활(1~366).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:22518452a60ce35d",
+      "title": "회귀한 필드의 독재자(1~305)",
+      "source_file": "회귀한 필드의 독재자(1~305).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:a70837e141b14300",
+      "title": "후회 안 하는 프로듀서(1~825)",
+      "source_file": "후회 안 하는 프로듀서(1~825).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    },
+    {
+      "case_id": "dna-lifecycle:3b5ac003681b2ae7",
+      "title": "흑백무제(1~1395)",
+      "source_file": "흑백무제(1~1395).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "expected": {
+        "타": [
+          "회귀"
+        ]
+      },
+      "max_scoped_labels": {
+        "타": {
+          "labels": [
+            "회귀",
+            "빙의",
+            "환생",
+            "귀환자"
+          ],
+          "max": 2
+        }
+      },
+      "forbidden": {
+        "타": [
+          "빙의",
+          "환생",
+          "귀환자"
+        ]
+      }
+    }
+  ],
+  "review_cases": [
+    {
+      "case_id": "dna-lifecycle:594c8ce36c6b674f",
+      "title": "-99레벨 대마법사(1~287)",
+      "source_file": "-99레벨 대마법사(1~287).txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:d0cb6b60c8d4da59",
+      "title": "게임 속 기사로 살아가기 1~222完@게살피자",
+      "source_file": "게임 속 기사로 살아가기 1~222完@게살피자.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": null,
+        "formula_identity_frames": [],
+        "formula_usable_windows": 0,
+        "formula_framed_windows": 0
+      },
+      "review_reasons": [
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:8fbc2daa28bfc616",
+      "title": "게임 속 바바리안으로 살아남기(1~740)",
+      "source_file": "게임 속 바바리안으로 살아남기(1~740).txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "전이/이세계",
+        "formula_identity_frame": "ID_TRANSPOSED_GAME_BODY",
+        "formula_identity_frames": [
+          "ID_TRANSPOSED_GAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "opening_hook_mismatch",
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:cbe9e62c643a93d9",
+      "title": "나 혼자 정품유저 1-200 完",
+      "source_file": "나 혼자 정품유저 1-200 完.txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:3ab0b66e1d500502",
+      "title": "나의 필트오버 기술은 훨씬 앞서 있다 120 @K",
+      "source_file": "나의 필트오버 기술은 훨씬 앞서 있다 120 @K.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "전이/이세계",
+        "formula_identity_frame": "ID_SAME_BODY_CONTINUITY",
+        "formula_identity_frames": [
+          "ID_SAME_BODY_CONTINUITY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "opening_hook_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:14f1f5e447ec0abc",
+      "title": "남궁세가 제천대성 1~365(연재중)@밀렵",
+      "source_file": "남궁세가 제천대성 1~365(연재중)@밀렵.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "전이/이세계",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "split_confidence_not_high",
+        "opening_hook_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:1517f88680c0c7df",
+      "title": "너희가 무(武)를 아느냐 1-327 完",
+      "source_file": "너희가 무(武)를 아느냐 1-327 完.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "split_confidence_not_high"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:60979cd31a43e4e1",
+      "title": "다크 판타지 속 성기사 1~193完",
+      "source_file": "다크 판타지 속 성기사 1~193完.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "전이/이세계",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "opening_hook_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:98e53b9c4ef81d94",
+      "title": "데뷔 못하면 죽는병 걸림 1~644完백덕수",
+      "source_file": "데뷔 못하면 죽는병 걸림 1~644完백덕수.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:7ea54f5653a0ea65",
+      "title": "록스타 어게인(1~187)",
+      "source_file": "록스타 어게인(1~187).txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:5fe71ad9e3c04f76",
+      "title": "마신, 귀환하다 1-261 (완)",
+      "source_file": "마신, 귀환하다 1-261 (완).txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_RETURNED_SAME_SELF",
+        "formula_identity_frames": [
+          "ID_RETURNED_SAME_SELF"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "split_confidence_not_high"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:a64173ba5e34e377",
+      "title": "마왕은 학원에 간다(1~703)",
+      "source_file": "마왕은 학원에 간다(1~703).txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:4e521d38fb75d1c4",
+      "title": "마왕인데 용사가 너무 많음 1~273 完@미립",
+      "source_file": "마왕인데 용사가 너무 많음 1~273 完@미립.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "split_confidence_not_high"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:d1f639b10c8bfbd5",
+      "title": "말단병사에서 군주까지 001-314(완)외전",
+      "source_file": "말단병사에서 군주까지 001-314(완)외전.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": null,
+        "formula_identity_frames": [],
+        "formula_usable_windows": 0,
+        "formula_framed_windows": 0
+      },
+      "review_reasons": [
+        "split_confidence_not_high",
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:d800240757c6ef32",
+      "title": "멸망한 세상의 포식 천재(1~189)",
+      "source_file": "멸망한 세상의 포식 천재(1~189).txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "전이/이세계",
+        "formula_identity_frame": "ID_TRANSPOSED_GAME_BODY",
+        "formula_identity_frames": [
+          "ID_TRANSPOSED_GAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "opening_hook_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:23c1914aacb13239",
+      "title": "무한전생 망나니 1~263 完@광악",
+      "source_file": "무한전생 망나니 1~263 完@광악.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "opening_hook_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:aca50c7fd74fd809",
+      "title": "무협개국 만급신공 1-434 @K",
+      "source_file": "무협개국 만급신공 1-434 @K.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": null,
+        "formula_identity_frames": [],
+        "formula_usable_windows": 0,
+        "formula_framed_windows": 0
+      },
+      "review_reasons": [
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:59d0e6c897845790",
+      "title": "반로환동인 줄 알았다 1-225 完 새글",
+      "source_file": "반로환동인 줄 알았다 1-225 完 새글.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "split_confidence_not_high"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:d8f643be415fcc15",
+      "title": "북부 대공의 미친 데릴사위 1~151(연재중)@곰돌이는",
+      "source_file": "북부 대공의 미친 데릴사위 1~151(연재중)@곰돌이는.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "split_confidence_not_high",
+        "opening_hook_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:1d7f38f23836ab97",
+      "title": "사천당가 침술명의가 되었다 1-200 完 @K",
+      "source_file": "사천당가 침술명의가 되었다 1-200 完 @K.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "split_confidence_not_high"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:28a58635d3472181",
+      "title": "삼국지 - 유비의 아들은 조용히 살고 싶다. 1-233 完",
+      "source_file": "삼국지 - 유비의 아들은 조용히 살고 싶다. 1-233 完.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "review_reasons": [
+        "split_confidence_not_high"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:1320e58b58063e7b",
+      "title": "삼왕의 제자 1~525完",
+      "source_file": "삼왕의 제자 1~525完.txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": null,
+        "formula_identity_frames": [],
+        "formula_usable_windows": 0,
+        "formula_framed_windows": 0
+      },
+      "review_reasons": [
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:5b3e93457615080e",
+      "title": "선생님 파이어볼이 이상해요 1-262 完 @K",
+      "source_file": "선생님 파이어볼이 이상해요 1-262 完 @K.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 1,
+        "formula_framed_windows": 1
+      },
+      "review_reasons": [
+        "opening_hook_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:57b26898af84efa3",
+      "title": "성황의 아이들 1-268",
+      "source_file": "성황의 아이들 1-268.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": null,
+        "formula_identity_frames": [],
+        "formula_usable_windows": 0,
+        "formula_framed_windows": 0
+      },
+      "review_reasons": [
+        "split_confidence_not_high",
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:5737b30486e0b222",
+      "title": "세계는 넓고 할 일은 많지만 서자였다 1-177 [완]",
+      "source_file": "세계는 넓고 할 일은 많지만 서자였다 1-177 [완].txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": null,
+        "formula_identity_frames": [],
+        "formula_usable_windows": 0,
+        "formula_framed_windows": 0
+      },
+      "review_reasons": [
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:6ab3bb01aaf3b572",
+      "title": "아카데미의 천재 칼잡이 1-517 完 후기@서관도",
+      "source_file": "아카데미의 천재 칼잡이 1-517 完 후기@서관도.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 2,
+        "formula_framed_windows": 2
+      },
+      "review_reasons": [
+        "split_confidence_not_high"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:2ee99ebb672e717d",
+      "title": "악惡의 등교 1~203完@산천",
+      "source_file": "악惡의 등교 1~203完@산천.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "split_confidence_not_high"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:e6355b882854539c",
+      "title": "왕의 힘으로 회귀한다 001~585 1부完@안소설",
+      "source_file": "왕의 힘으로 회귀한다 001~585 1부完@안소설.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": null,
+        "formula_identity_frames": [],
+        "formula_usable_windows": 0,
+        "formula_framed_windows": 0
+      },
+      "review_reasons": [
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:61f2204ef8c68e0f",
+      "title": "의원, 다시 살다 1-1313 (미)@태선",
+      "source_file": "의원, 다시 살다 1-1313 (미)@태선.txt",
+      "source_evidence": {
+        "identity_mode": "possession_host_body",
+        "opening_hook_type": "빙의",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "split_confidence_not_high"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:55bbc29768284123",
+      "title": "재능만렙 플레이어 1~690完",
+      "source_file": "재능만렙 플레이어 1~690完.txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:61872a98f16d9449",
+      "title": "재벌가 복덩이 1~250完@정주행",
+      "source_file": "재벌가 복덩이 1~250完@정주행.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "환생",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "split_confidence_not_high"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:aca33698ae496e3b",
+      "title": "재벌총수가 대통령으로 회귀함 1967 1-225完@물연필",
+      "source_file": "재벌총수가 대통령으로 회귀함 1967 1-225完@물연필.txt",
+      "source_evidence": {
+        "identity_mode": "regression_same_body",
+        "opening_hook_type": "회귀",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "split_confidence_not_high",
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:a18f043e245467ef",
+      "title": "제국 경비대의 망나니 소드마스터 1~105(연재중)@사탕꽃",
+      "source_file": "제국 경비대의 망나니 소드마스터 1~105(연재중)@사탕꽃.txt",
+      "source_evidence": {
+        "identity_mode": "reincarnation_new_body",
+        "opening_hook_type": "위기",
+        "formula_identity_frame": "ID_POSSESSED_HOST_BODY",
+        "formula_identity_frames": [
+          "ID_POSSESSED_HOST_BODY"
+        ],
+        "formula_usable_windows": 9,
+        "formula_framed_windows": 9
+      },
+      "review_reasons": [
+        "opening_hook_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:2d3669ada001902c",
+      "title": "제암진천경(1~699)",
+      "source_file": "제암진천경(1~699).txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:8c349c89b9b0fbb5",
+      "title": "현재 멸망 n 진행중 1-275 完",
+      "source_file": "현재 멸망 n 진행중 1-275 完.txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "전이/이세계",
+        "formula_identity_frame": "ID_SYSTEM_AWAKENED_SELF",
+        "formula_identity_frames": [
+          "ID_SYSTEM_AWAKENED_SELF"
+        ],
+        "formula_usable_windows": 11,
+        "formula_framed_windows": 11
+      },
+      "review_reasons": [
+        "opening_hook_mismatch",
+        "formula_identity_mismatch"
+      ]
+    },
+    {
+      "case_id": "dna-lifecycle:0204cac79bd6bd8c",
+      "title": "혈귀귀환(1~316)",
+      "source_file": "혈귀귀환(1~316).txt",
+      "source_evidence": {
+        "identity_mode": "returnee",
+        "opening_hook_type": "귀환",
+        "formula_identity_frame": "ID_REGRESSED_SAME_BODY",
+        "formula_identity_frames": [
+          "ID_REGRESSED_SAME_BODY"
+        ],
+        "formula_usable_windows": 12,
+        "formula_framed_windows": 12
+      },
+      "review_reasons": [
+        "formula_identity_mismatch"
+      ]
+    }
+  ]
+}
