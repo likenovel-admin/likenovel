@@ -12,7 +12,10 @@ import {
   IGetAiProductMetadataParams,
   IPutAiProductMetadataRequest,
 } from "@/api/aiProductMetadata/dto";
-import AiMetadataTable from "@/app/products/ai-metadata/DataTable";
+import AiMetadataTable, {
+  formatAnalysisStatus,
+  formatStoryContextProgress,
+} from "@/app/products/ai-metadata/DataTable";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import PaginationControls from "@/components/common/PaginationControls";
 import { Button } from "@/components/ui/button";
@@ -346,7 +349,7 @@ export default function AiMetadataPage() {
                 <SelectItem value="all">상태 전체</SelectItem>
                 <SelectItem value="missing">미생성</SelectItem>
                 <SelectItem value="pending">대기</SelectItem>
-                <SelectItem value="success">성공</SelectItem>
+                <SelectItem value="success">DNA 성공</SelectItem>
                 <SelectItem value="failed">실패</SelectItem>
               </SelectContent>
             </Select>
@@ -410,6 +413,19 @@ export default function AiMetadataPage() {
               작품 ID: {selectedProductId || "-"} / 7축 태그를 우선 수정하고, 필요한 경우 아래 보조 필드를 조정하세요.
             </DialogDescription>
           </DialogHeader>
+
+          {detailData?.data ? (
+            <div className="grid grid-cols-2 gap-3 rounded-lg border bg-gray-50 p-3 text-sm">
+              <div>
+                <span className="font-medium">DNA 분석 상태:</span>{" "}
+                {formatAnalysisStatus(detailData.data)}
+              </div>
+              <div>
+                <span className="font-medium">회차요약 적재:</span>{" "}
+                {formatStoryContextProgress(detailData.data)}
+              </div>
+            </div>
+          ) : null}
 
           <div className="rounded-lg border bg-gray-50 p-3">
             <h4 className="text-sm font-semibold mb-2">7축 태그 (권장)</h4>

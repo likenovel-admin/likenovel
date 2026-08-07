@@ -4,6 +4,15 @@ export interface IAiProductMetadataItem {
   author_name: string | null;
   price_type: string | null;
   analysis_status: "missing" | "pending" | "success" | "failed";
+  story_context_status:
+    | "missing"
+    | "pending"
+    | "processing"
+    | "ready"
+    | "failed"
+    | "disabled";
+  story_ready_episode_no: number;
+  story_total_episode_count: number;
   analysis_attempt_count: number;
   exclude_from_recommend_yn: "Y" | "N";
   analysis_error_message: string | null;
@@ -58,6 +67,15 @@ export interface IAiProductMetadataDetail {
   taste_tags: string[] | string | null;
   raw_analysis: unknown;
   analysis_status: "missing" | "pending" | "success" | "failed";
+  story_context_status:
+    | "missing"
+    | "pending"
+    | "processing"
+    | "ready"
+    | "failed"
+    | "disabled";
+  story_ready_episode_no: number;
+  story_total_episode_count: number;
   analysis_attempt_count: number;
   analysis_error_message: string | null;
   exclude_from_recommend_yn: "Y" | "N";

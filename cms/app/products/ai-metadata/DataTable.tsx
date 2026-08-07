@@ -13,11 +13,52 @@ interface Props {
   onToggleExclude: (productId: number, currentValue: "Y" | "N") => void;
 }
 
-const statusLabel: Record<IAiProductMetadataItem["analysis_status"], string> = {
+export const statusLabel: Record<IAiProductMetadataItem["analysis_status"], string> = {
   missing: "미생성",
   pending: "대기",
-  success: "성공",
+  success: "DNA 성공",
   failed: "실패",
+};
+
+const storyStatusLabel: Record<IAiProductMetadataItem["story_context_status"], string> = {
+  missing: "미수집",
+  pending: "대기",
+  processing: "진행중",
+  ready: "완료",
+  failed: "실패",
+  disabled: "비활성",
+};
+
+type AiMetadataProgress = Pick<
+  IAiProductMetadataItem,
+  | "analysis_status"
+  | "story_context_status"
+  | "story_ready_episode_no"
+  | "story_total_episode_count"
+>;
+
+const isStoryContextComplete = (row: AiMetadataProgress) =>
+  row.story_total_episode_count > 0 &&
+  row.story_ready_episode_no >= row.story_total_episode_count;
+
+export const formatAnalysisStatus = (row: AiMetadataProgress) => {
+  const dnaStatus = statusLabel[row.analysis_status] || row.analysis_status;
+  if (row.analysis_status !== "success") return dnaStatus;
+  return `${dnaStatus} · 요약 ${isStoryContextComplete(row) ? "완료" : "미완료"}`;
+};
+
+export const formatStoryContextProgress = (row: AiMetadataProgress) => {
+  const readyEpisodeNo = Number(row.story_ready_episode_no || 0);
+  const totalEpisodeCount = Number(row.story_total_episode_count || 0);
+  if (readyEpisodeNo <= 0 && totalEpisodeCount <= 0) {
+    return storyStatusLabel[row.story_context_status] || row.story_context_status;
+  }
+  const progressStatus = isStoryContextComplete(row)
+    ? "완료"
+    : row.story_context_status === "failed" || row.story_context_status === "disabled"
+      ? storyStatusLabel[row.story_context_status]
+      : "진행중";
+  return `${readyEpisodeNo}화까지 / 전체 ${totalEpisodeCount}화 · ${progressStatus}`;
 };
 
 export default function AiMetadataTable({
@@ -34,8 +75,14 @@ export default function AiMetadataTable({
     {
       header: "분석 상태",
       key: "analysis_status",
-      render: (value: IAiProductMetadataItem["analysis_status"]) =>
-        statusLabel[value] || value,
+      render: (_value: IAiProductMetadataItem["analysis_status"], row: IAiProductMetadataItem) =>
+        formatAnalysisStatus(row),
+    },
+    {
+      header: "회차요약",
+      key: "story_context_status",
+      render: (_value: IAiProductMetadataItem["story_context_status"], row: IAiProductMetadataItem) =>
+        formatStoryContextProgress(row),
     },
     { header: "시도 횟수", key: "analysis_attempt_count" },
     {
