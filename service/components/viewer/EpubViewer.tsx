@@ -20,6 +20,11 @@ import {
   createSiteAnalyticsEventId,
   getSiteAnalyticsIdentity,
 } from "@/utils/siteAnalyticsIdentity";
+import {
+  resolveViewerAppearance,
+  VIEWER_DESKTOP_PAGINATED_WIDTHS,
+  VIEWER_MOBILE_PAGINATED_WIDTHS,
+} from "@/utils/viewerAppearance";
 import type { Contents, Rendition } from "epubjs";
 import type React from "react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -28,32 +33,10 @@ import { ReactReader, ReactReaderStyle } from "react-reader";
 import ArrowLeft from "/public/images/arrow-left.svg";
 import ArrowRight from "/public/images/arrow-right.svg";
 
-const fontSizeMap = [
-  "11px",
-  "12.5px",
-  "14px",
-  "15.5px",
-  "17px",
-  "18.5px",
-  "20px",
-  "21.5px",
-  "23px",
-  "24.5px",
-];
-
-const letterSpacingMap = ["0px", "1px", "2px", "3px", "4px"];
-const lineHeightMap = ["1.45em", "1.7em", "1.95em", "2.2em", "2.45em"];
 const BROKEN_IMAGE_SRC_SENTINELS = new Set(["none", "null", "undefined"]);
 const COVER_IMAGE_SELECTORS =
   'img[src*="cover"], img[alt*="cover"], img[alt*="표지"], img[class*="cover"], .cover-image, .titlepage img, .frontcover img';
 const SLOW_CONNECTION_TYPES = new Set(["slow-2g", "2g"]);
-
-const themeColors: Record<string, string> = {
-  light: "#f9f8f8",
-  dark: "#292C32",
-  green: "#C7D5C4",
-  blue: "#C3CAD2",
-};
 
 interface ArrowIconProps {
   direction: "left" | "right";
@@ -514,17 +497,10 @@ const EpubViewer = ({
     []
   );
 
-  const marginSizeMap = useMemo(() => {
-    if (device === "mobile") {
-      return ["100%", "95%", "90%", "85%", "80%"];
-    } else {
-      return ["95%", "85%", "73%", "69%", "65%"];
-    }
-  }, [device]);
-  const desktopScrolledMaxWidthMap = useMemo(
-    () => ["1000px", "920px", "840px", "760px", "680px"],
-    []
-  );
+  const marginSizeMap =
+    device === "mobile"
+      ? VIEWER_MOBILE_PAGINATED_WIDTHS
+      : VIEWER_DESKTOP_PAGINATED_WIDTHS;
 
   const epubOptions = useMemo(
     () =>
@@ -634,15 +610,13 @@ const EpubViewer = ({
     }
   }, [isAtStart, settings.theme]);
 
-  const bgColor = useMemo(
-    () => themeColors[settings.theme] || "#f9f8f8",
-    [settings.theme]
+  const viewerAppearance = useMemo(
+    () => resolveViewerAppearance(settings),
+    [settings]
   );
+  const bgColor = viewerAppearance.backgroundColor;
   const bgColorRef = useRef(bgColor);
-  const contentTextColor = useMemo(
-    () => (settings.theme === "dark" ? "#E4E4E4" : "#111317"),
-    [settings.theme]
-  );
+  const contentTextColor = viewerAppearance.textColor;
   const contentTextColorRef = useRef(contentTextColor);
 
   useEffect(() => {
@@ -1001,52 +975,24 @@ const EpubViewer = ({
       const currentSettings = settingsRef.current;
       const currentBgColor = bgColorRef.current;
       const currentContentTextColor = contentTextColorRef.current;
+      const currentAppearance = resolveViewerAppearance(currentSettings);
 
-      switch (currentSettings.fontFamily) {
-        case "고딕": {
-          themes.override("font-family", "Pretendard");
-          break;
-        }
-        case "명조체": {
-          themes.override("font-family", "NanumMyeongjo");
-          break;
-        }
-        case "마루부리": {
-          themes.override("font-family", "MaruBuri");
-          break;
-        }
-        case "조선궁서": {
-          themes.override("font-family", "JoseonPalace");
-          break;
-        }
-        case "나눔고딕": {
-          themes.override("font-family", "NanumGothic");
-          break;
-        }
-        case "본고딕": {
-          themes.override("font-family", "NotoSansKR");
-          break;
-        }
-        case "KoPub돋움": {
-          themes.override("font-family", "KoPubDotum");
-          break;
-        }
-      }
+      themes.override("font-family", currentAppearance.fontFamily);
 
       themes.override("background-color", currentBgColor);
       themes.override("color", currentContentTextColor);
 
-      const fontSize = fontSizeMap[currentSettings.fontSize - 1];
+      const fontSize = currentAppearance.fontSize;
       if (fontSize) {
         themes.override("font-size", fontSize);
       }
 
-      const letterSpacing = letterSpacingMap[currentSettings.letterSpacing - 1];
+      const letterSpacing = currentAppearance.letterSpacing;
       if (letterSpacing) {
         themes.override("letter-spacing", letterSpacing);
       }
 
-      const lineHeight = lineHeightMap[currentSettings.lineHeight - 1];
+      const lineHeight = currentAppearance.lineHeight;
       rendition.themes.default({
         p: {
           ...(lineHeight ? { "line-height": `${lineHeight} !important` } : {}),
@@ -1115,9 +1061,7 @@ const EpubViewer = ({
           doc.body.style.setProperty("max-width", mobileMaxW, "important");
           doc.body.style.setProperty("margin", "0 auto", "important");
         } else if (isScroll && device !== "mobile") {
-          const maxWidth =
-            desktopScrolledMaxWidthMap[currentSettings.marginSize - 1] ||
-            desktopScrolledMaxWidthMap[1];
+          const maxWidth = currentAppearance.desktopScrolledMaxWidth;
           doc.body.style.setProperty("max-width", maxWidth, "important");
           doc.body.style.setProperty("margin", "0 auto", "important");
         } else {
@@ -1166,7 +1110,7 @@ const EpubViewer = ({
         });
       });
     },
-    [marginSizeMap, isScroll, device, desktopScrolledMaxWidthMap, lockContentSelection]
+    [marginSizeMap, isScroll, device, lockContentSelection]
   );
 
   useEffect(() => {

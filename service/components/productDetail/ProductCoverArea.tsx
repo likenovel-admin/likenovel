@@ -20,6 +20,7 @@ import {
 } from "@/utils/getLatestEpisodeDate";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
 import { getUpdateFrequency } from "@/utils/getUpdateFrequency";
+import { isVerticallyOverflowing } from "@/utils/verticalOverflow";
 import {
   findPreviousNonMatchingPath,
   logNavigationHistory,
@@ -69,6 +70,20 @@ const formatPaidOpenDate = (value?: string | null) => {
   return match ? `${match[1]}.${match[2]}.${match[3]}` : "";
 };
 
+const normalizeSynopsisText = (synopsis?: string | null) =>
+  (synopsis ?? "")
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\r\n/g, "\n");
+
+const renderSynopsisText = (text: string) =>
+  text.split("\n").map((line, index, lines) => (
+    <React.Fragment key={index}>
+      {line}
+      {index < lines.length - 1 && <br />}
+    </React.Fragment>
+  ));
+
 const ProductCoverArea = ({
   data,
   isSuccess,
@@ -100,6 +115,7 @@ const ProductCoverArea = ({
   const [isInterestTooltipOpen, setIsInterestTooltipOpen] = useState(false);
   const extraMenuRef = useRef<HTMLDivElement | null>(null);
   const synopsisRef = useRef<HTMLDivElement | null>(null);
+  const synopsisContentRef = useRef<HTMLParagraphElement | null>(null);
   const interestTooltipRef = useRef<HTMLButtonElement | null>(null);
   const interestTooltipMessage =
     "무료작품을 최근 3일 내 1회차 이상 읽으면 관심 상태가 유지됩니다.";
@@ -108,6 +124,7 @@ const ProductCoverArea = ({
     data?.properties?.latestEpisodeDate || ""
   );
   const displayEpisodeCount = episodeCount ?? data?.totalOpenEpisodeCount ?? 0;
+  const synopsisText = normalizeSynopsisText(data?.synopsis);
   const paidOpenDateLabel =
     data?.priceType === "paid" ? formatPaidOpenDate(data?.paidOpenDate) : "";
 
@@ -315,9 +332,42 @@ const ProductCoverArea = ({
 
 
   useEffect(() => {
-    if (data?.synopsis) {
-      setShowReadMore(data.synopsis.length > 98);
+    const synopsisElement = synopsisContentRef.current;
+    if (!data?.trendindex || !synopsisElement) {
+      setShowReadMore(false);
+      return;
     }
+    if (isSynopsisOpen) return;
+
+    let cancelled = false;
+    const updateReadMoreVisibility = () => {
+      if (!cancelled) {
+        const hasOverflow = isVerticallyOverflowing(synopsisElement);
+        setShowReadMore(hasOverflow);
+        if (!hasOverflow) {
+          setIsSynopsisOpen(false);
+        }
+      }
+    };
+    const frameId = window.requestAnimationFrame(updateReadMoreVisibility);
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(updateReadMoreVisibility);
+
+    resizeObserver?.observe(synopsisElement);
+    window.addEventListener("resize", updateReadMoreVisibility);
+    document.fonts?.ready.then(updateReadMoreVisibility);
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frameId);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updateReadMoreVisibility);
+    };
+  }, [data?.synopsis, data?.trendindex, isSynopsisOpen]);
+
+  useEffect(() => {
 
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -325,12 +375,6 @@ const ProductCoverArea = ({
         !extraMenuRef.current.contains(event.target as Node)
       ) {
         setIsExtraOpen(false);
-      }
-      if (
-        synopsisRef.current &&
-        !synopsisRef.current.contains(event.target as Node)
-      ) {
-        setIsSynopsisOpen(false);
       }
       if (
         interestTooltipRef.current &&
@@ -343,7 +387,7 @@ const ProductCoverArea = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [data?.synopsis]);
+  }, []);
 
   const renderInterestTooltipIcon = (src: string, alt: string) => {
     return (
@@ -629,61 +673,40 @@ const ProductCoverArea = ({
                     </div>
                   )}
                   <div
-                    className={`relative max-w-[530px] mt-10pxr`}
+                    className="relative w-full max-w-[530px] mt-10pxr"
                     ref={synopsisRef}
                   >
-                    <span
-                      className={`${data.trendindex ? "line-clamp-2" : ""}`}
+                    <p
+                      id={`product-synopsis-${data.productId}`}
+                      ref={synopsisContentRef}
+                      className={`${data.trendindex && !isSynopsisOpen ? "line-clamp-4 md:line-clamp-5" : ""} text-14pxr md:text-15pxr text-dark-gray-400 mb-4pxr`}
                     >
-                      {data?.synopsis
-                        ?.split("\\n")
-                        .map((paragraph: any, index: number) => (
-                          <p
-                            key={index}
-                            className="text-14pxr md:text-15pxr text-dark-gray-400 mb-4pxr"
-                          >
-                            {paragraph}
-                          </p>
-                        ))}
-                    </span>
+                      {renderSynopsisText(synopsisText)}
+                    </p>
                     {showReadMore && data.trendindex && (
-                      <div className="absolute right-0 flex items-center gap-5pxr mt-2pxr">
-                        <button
-                          className="text-14pxr"
-                          onClick={() => setIsSynopsisOpen(!isSynopsisOpen)}
-                        >
-                          더보기
-                        </button>
-                        <ArrowDown className="w-[10px] h-[10px] text-dark-gray-300" />
-                      </div>
-                    )}
-                    {isSynopsisOpen && (
-                      <div className="absolute top-[99px] left-[-10px] inset-0 z-50 flex items-center justify-center w-[105%] md:w-[110%]">
-                        <div className="relative bg-white border border-light-gray-200 rounded-[10px] shadow-sm">
-                          <div className="relative p-4 w-[100%] h-[200px] overflow-auto">
-                            <div className="text-14pxr md:text-15pxr text-dark-gray-400">
-                              {data.synopsis
-                                ?.split("\\n")
-                                .map((paragraph: any, index: number) => (
-                                  <p key={index} className="mb-4pxr">
-                                    {paragraph}
-                                  </p>
-                                ))}
-                            </div>
-                          </div>
-                          <div className="flex w-full justify-end items-center gap-5pxr h-[30px] py-5pxr pr-10pxr border border-t-light-gray-200 border-b-0 border-l-0 border-r-0 bg-[#FAFAFA] rounded-b-[10px]">
-                            <button
-                              className="text-14pxr"
-                              onClick={() => setIsSynopsisOpen(!isSynopsisOpen)}
-                            >
-                              접기
-                            </button>
-                            <ArrowDown
-                              className={`w-[10px] h-[10px] text-dark-gray-300 rotate-180`}
-                            />
-                          </div>
-                        </div>
-                      </div>
+                      <button
+                        type="button"
+                        aria-expanded={isSynopsisOpen}
+                        aria-controls={`product-synopsis-${data.productId}`}
+                        className="mt-4pxr flex min-h-[44px] w-full items-center justify-center gap-6pxr text-14pxr font-medium text-dark-gray-400"
+                        onClick={() => {
+                          const nextOpen = !isSynopsisOpen;
+                          setIsSynopsisOpen(nextOpen);
+                          if (!nextOpen) {
+                            window.requestAnimationFrame(() => {
+                              synopsisRef.current?.scrollIntoView({
+                                block: "nearest",
+                              });
+                            });
+                          }
+                        }}
+                      >
+                        <span>{isSynopsisOpen ? "접기" : "더보기"}</span>
+                        <ArrowDown
+                          aria-hidden="true"
+                          className={`h-[10px] w-[10px] text-dark-gray-300 ${isSynopsisOpen ? "rotate-180" : ""}`}
+                        />
+                      </button>
                     )}
                   </div>
                 </div>

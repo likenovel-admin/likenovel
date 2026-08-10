@@ -13,18 +13,22 @@ import {
   ISelectNoticeResponse,
 } from "@/app/api/query/author/episode/dto";
 import useToastStore from "@/store/toastStore";
+import useViewStore from "@/store/viewerStore";
+import { hasRenderableEpisodePreviewContent } from "@/utils/episodePreviewDocument";
 import { normalizeViewerContentHtml } from "@/utils/normalizeViewerContentHtml";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm, FieldErrors } from "react-hook-form";
 import Checkbox from "../common/CheckBox";
+import Button from "../common/Button";
 import Editor from "../common/Editor";
 import DatePicker from "../form/datepicker";
 import Input from "../form/input";
 import TextArea from "../form/textarea";
 import BottomButton from "./BottomButton";
+import EpisodePreviewDialog from "./EpisodePreviewDialog";
 dayjs.extend(utc);
 
 export interface IMakeEpisodeForm {
@@ -85,7 +89,12 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
     isUpdateEpisodePending ||
     isUpdateNoticePending;
   const { setToast } = useToastStore();
+  const viewerSettings = useViewStore((state) => state.settings);
   const router = useRouter();
+  const [previewSnapshot, setPreviewSnapshot] = useState<{
+    title: string;
+    contentHtml: string;
+  } | null>(null);
 
   const methods = useForm<IMakeEpisodeForm>({
     defaultValues: async () => {
@@ -142,8 +151,25 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
   useEffect(() => {
     if (categoryValue === "notice") {
       setValue("authorComment", "");
+      setPreviewSnapshot(null);
     }
   }, [categoryValue, setValue]);
+
+  const handleOpenPreview = () => {
+    const contentHtml = normalizeViewerContentHtml(getValues("content"));
+    if (!hasRenderableEpisodePreviewContent(contentHtml)) {
+      setToast({
+        message: "미리볼 본문을 입력해주세요.",
+        type: "error",
+      });
+      return;
+    }
+
+    setPreviewSnapshot({
+      title: getValues("title"),
+      contentHtml,
+    });
+  };
 
   useEffect(() => {
     if (isEpisodeOpenValue === "Y" && hasPublishEpisodeDateValue === "Y") {
@@ -537,8 +563,9 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
     }
   };
 
-  const labelClassName =
-    "text-13pxr md:text-16pxr text-dark-gray-500 font-semibold mb-10pxr";
+  const labelBaseClassName =
+    "text-13pxr md:text-16pxr text-dark-gray-500 font-semibold";
+  const labelClassName = `${labelBaseClassName} mb-10pxr`;
   const requiredLabelClassName = `${labelClassName} after:content-['*'] after:text-red-100`;
   const inputTextClassName =
     "text-14pxr md:text-16pxr h-40pxr md:h-44pxr text-dark-gray-500 placeholder:text-dark-gray-100 w-[100%] pl-9pxr pr-11pxr";
@@ -585,9 +612,24 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
                 </span>
               }
             />
-            <label className={requiredLabelClassName + " mb-[-20px]"}>
-              내용
-            </label>
+            <div className="mb-[-20px] flex items-center justify-between">
+              <label
+                className={`${labelBaseClassName} after:content-['*'] after:text-red-100`}
+              >
+                내용
+              </label>
+              {categoryValue === "episode" && (
+                <Button
+                  type="button"
+                  variant="blueBorder"
+                  size="sm"
+                  className="!h-[44px]"
+                  onClick={handleOpenPreview}
+                >
+                  미리보기
+                </Button>
+              )}
+            </div>
             <Controller
               name="content"
               control={control}
@@ -748,6 +790,14 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
           />
         )}
       </form>
+      {previewSnapshot && (
+        <EpisodePreviewDialog
+          title={previewSnapshot.title}
+          contentHtml={previewSnapshot.contentHtml}
+          settings={viewerSettings}
+          onClose={() => setPreviewSnapshot(null)}
+        />
+      )}
     </FormProvider>
   );
 };
