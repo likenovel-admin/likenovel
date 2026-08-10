@@ -237,8 +237,8 @@ assert.match(
 );
 assert.match(
   productCoverAreaSource,
-  /\{displayEpisodeCount\}화[\s\S]*getUpdateFrequency\([\s\S]*data\.properties\?\.updateFrequency \|\| ""[\s\S]*<\/div>\s*\{paidOpenDateLabel && \([\s\S]*유료전환일:/,
-  "ProductCoverArea should render the paid conversion date on the line after total episodes and update frequency"
+  /className="flex w-full flex-wrap items-center gap-x-8pxr gap-y-2pxr md:gap-x-12pxr"[\s\S]*\{displayEpisodeCount\}화[\s\S]*getUpdateFrequency\([\s\S]*data\.properties\?\.updateFrequency \|\| ""[\s\S]*paidOpenDateLabel && \([\s\S]*유료전환일:/,
+  "ProductCoverArea should render public metadata in one left-aligned wrapping row"
 );
 assert.doesNotMatch(
   productCoverAreaSource,

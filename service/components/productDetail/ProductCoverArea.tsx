@@ -528,7 +528,7 @@ const ProductCoverArea = ({
                   )}
                 </div>
                 <div
-                  className={`flex flex-col items-center md:items-start gap-4pxr md:gap-10pxr w-full mt-30pxr ${
+                  className={`flex flex-col items-start gap-4pxr md:gap-10pxr w-full mt-30pxr ${
                     hasHeaderBadges ? "md:mt-0" : "md:mt-20pxr"
                   }`}
                 >
@@ -538,48 +538,56 @@ const ProductCoverArea = ({
                     )}
                     <ProductStateBadge product={data} badgeSize="header" />
                   </div>
-                  <span className="text-21pxr md:text-25pxr lg:text-30pxr font-semibold md:leading-[29px] lg:leading-[35px]">
+                  <span className="w-full text-left text-21pxr md:text-25pxr lg:text-30pxr font-semibold md:leading-[29px] lg:leading-[35px]">
                     {data.title}
                   </span>
-                  <div className="flex flex-col items-center md:items-start gap-2pxr md:gap-6pxr">
-                    <div className="flex flex-wrap gap-5pxr md:gap-12pxr items-center">
+                  <div className="flex w-full flex-col items-start gap-2pxr md:gap-6pxr">
+                    <div className="flex w-full flex-wrap items-center gap-x-8pxr gap-y-2pxr md:gap-x-12pxr">
                       <UserNickname
                         product={data as any}
                         userNickname={data.authorNickname || ""}
                         hasGle
                       />
                       {latestEpisodeDateLabel && (
-                        <>
-                          <div className="w-[1px] h-[10px] border border-l-light-gray-500 border-r-0 border-t-0 border-b-0" />
+                        <span className="flex shrink-0 items-center gap-8pxr md:gap-12pxr">
+                          <span className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full" />
                           <span className="text-13pxr md:text-15pxr text-dark-gray-500">
                             {latestEpisodeDateLabel}
                           </span>
+                        </span>
+                      )}
+                      {data.trendindex && data.properties && (
+                        <>
+                          <span className="flex shrink-0 items-center gap-8pxr md:gap-12pxr">
+                            <span className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full" />
+                          <span className="text-13pxr md:text-15pxr text-dark-gray-500">
+                            {/* 총 {data.trendindex?.hasEpisodeCount}화 */}총{" "}
+                            {displayEpisodeCount}화
+                          </span>
+                          </span>
+                          <span className="flex shrink-0 items-center gap-8pxr md:gap-12pxr">
+                            <span className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full" />
+                            <span className="text-13pxr md:text-15pxr text-dark-gray-500">
+                              {getUpdateFrequency(
+                                data.properties?.updateFrequency || ""
+                              )}
+                            </span>
+                          </span>
+                          {paidOpenDateLabel && (
+                            <span className="flex shrink-0 items-center gap-8pxr md:gap-12pxr">
+                              <span className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full" />
+                              <span className="text-13pxr md:text-15pxr text-dark-gray-500">
+                                유료전환일: {paidOpenDateLabel}
+                              </span>
+                            </span>
+                          )}
                         </>
                       )}
                     </div>
                     {data.trendindex && data.properties && (
                       <>
-                        <div className="flex items-center flex-wrap">
-                          <span className="text-13pxr md:text-15pxr text-dark-gray-500">
-                            {/* 총 {data.trendindex?.hasEpisodeCount}화 */}총{" "}
-                            {displayEpisodeCount}화
-                          </span>
-                          <div className="w-3pxr h-3pxr bg-dark-gray-100 rounded-full mx-2" />
-                          <span className="text-13pxr md:text-15pxr text-dark-gray-500">
-                            {getUpdateFrequency(
-                              data.properties?.updateFrequency || ""
-                            )}
-                          </span>
-                        </div>
-                        {paidOpenDateLabel && (
-                          <div className="flex items-center">
-                            <span className="text-13pxr md:text-15pxr text-dark-gray-500">
-                              유료전환일: {paidOpenDateLabel}
-                            </span>
-                          </div>
-                        )}
                         {user && (isAdminCPEditor || isAuthor) ? (
-                          <div className="flex items-center justify-center md:justify-start gap-10pxr flex-wrap">
+                          <div className="flex items-center justify-start gap-10pxr flex-wrap">
                             <div>
                               <span className="text-13pxr md:text-14pxr text-dark-gray-200">
                                 CP조회수

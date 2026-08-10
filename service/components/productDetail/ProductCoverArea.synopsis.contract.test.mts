@@ -34,6 +34,37 @@ assert.equal(
   "소개문은 접힘/펼침 상태에서 같은 본문 노드를 재사용해야 한다"
 );
 
+assert.match(
+  source,
+  /className=\{`flex flex-col items-start gap-4pxr md:gap-10pxr w-full/,
+  "모바일 작품 헤더는 제목과 같은 왼쪽 정렬축을 사용해야 한다"
+);
+
+const publicMetadataStart = source.indexOf(
+  'className="flex w-full flex-wrap items-center gap-x-8pxr gap-y-2pxr md:gap-x-12pxr"'
+);
+const publicMetadataEnd = source.indexOf(
+  "{user && (isAdminCPEditor || isAuthor) ? (",
+  publicMetadataStart
+);
+const publicMetadata = source.slice(publicMetadataStart, publicMetadataEnd);
+
+assert.ok(
+  publicMetadataStart >= 0 && publicMetadataEnd > publicMetadataStart,
+  "작가·날짜·회차·연재·유료전환 정보는 하나의 수평 줄바꿈 행이어야 한다"
+);
+assert.ok(
+  publicMetadata.indexOf("<UserNickname") <
+    publicMetadata.indexOf("latestEpisodeDateLabel") &&
+    publicMetadata.indexOf("latestEpisodeDateLabel") <
+      publicMetadata.indexOf("displayEpisodeCount") &&
+    publicMetadata.indexOf("displayEpisodeCount") <
+      publicMetadata.indexOf("getUpdateFrequency") &&
+    publicMetadata.indexOf("getUpdateFrequency") <
+      publicMetadata.indexOf("paidOpenDateLabel"),
+  "공개 작품 정보는 작가·최근일·회차·연재·유료전환 순서를 유지해야 한다"
+);
+
 const desktopActionsStart = source.indexOf(
   'className={`hidden md:grid gap-8pxr'
 );
