@@ -675,7 +675,7 @@ const ProductCoverArea = ({
                     </div>
                   )}
                   <div
-                    className="relative w-full max-w-[530px]"
+                    className="relative w-full max-w-[530px] mt-6pxr"
                     ref={synopsisRef}
                   >
                     <p

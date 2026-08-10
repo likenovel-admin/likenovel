@@ -16,6 +16,11 @@ assert.doesNotMatch(
   source,
   /relative w-full max-w-\[530px\] mt-10pxr/
 );
+assert.match(
+  source,
+  /relative w-full max-w-\[530px\] mt-6pxr/,
+  "소개문은 작품 정보와 과하게 붙거나 벌어지지 않도록 6px 추가 여백을 사용해야 한다"
+);
 assert.match(source, /min-h-\[44px\]/);
 assert.match(source, /w-full/);
 assert.match(source, /\{isSynopsisOpen \? "접기" : "더보기"\}/);
