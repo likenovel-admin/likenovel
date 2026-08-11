@@ -257,23 +257,23 @@ assert.match(
 );
 assert.match(
   productCoverAreaSource,
-  /className=\{\`relative w-full max-w-\[530px\] mt-10pxr`\}/,
-  "Product detail synopsis wrapper should keep a stable width after preserving line breaks"
+  /className="relative w-full max-w-\[530px\] mt-6pxr"/,
+  "Product detail synopsis wrapper should keep the reviewed width and spacing"
 );
 assert.match(
   productCoverAreaSource,
-  /<p\s+className=\{\`\$\{data\.trendindex \? "line-clamp-2" : ""\} text-14pxr md:text-15pxr text-dark-gray-400 mb-4pxr`\}[\s\S]*renderSynopsisText\(synopsisText\)/,
-  "Product detail folded synopsis should keep the original single text block layout"
+  /id=\{\`product-synopsis-\$\{data\.productId\}`\}[\s\S]*ref=\{synopsisContentRef\}[\s\S]*data\.trendindex && !isSynopsisOpen[\s\S]*renderSynopsisText\(synopsisText\)/,
+  "Product detail synopsis should reuse one responsive clamped content node"
 );
 assert.match(
   productCoverAreaSource,
-  /<p className="text-14pxr md:text-15pxr text-dark-gray-400">[\s\S]*renderSynopsisText\(synopsisText\)/,
-  "Product detail expanded synopsis should keep a single text block while rendering line breaks"
+  /\{isSynopsisOpen \? "접기" : "더보기"\}/,
+  "Product detail synopsis should expose readable expand and collapse controls"
 );
-assert.match(
+assert.doesNotMatch(
   productCoverAreaSource,
-  /<div className="relative w-full bg-white border border-light-gray-200 rounded-\[10px\] shadow-sm">/,
-  "Product detail expanded synopsis popup should keep the intended full-width layout"
+  /top-\[99px\]|h-\[200px\]|overflow-auto/,
+  "Product detail synopsis should not restore the legacy fixed-height popup"
 );
 assert.doesNotMatch(
   productCoverAreaSource,
