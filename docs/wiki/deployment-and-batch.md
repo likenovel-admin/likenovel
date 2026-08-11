@@ -61,9 +61,10 @@ AI reader lock 복구와 배포 직후 fresh-log 판정의 실행 기준은
 `docs/deployment-runbook.md` 6.2를 따른다. daemon은 MySQL `1205`/`1213`만
 재시도하며 `--once`와 다른 DB 오류는 실패를 유지한다.
 
-Prod backend workflow can create an automatic version bump commit. Root submodule
-pointer alignment must use that latest backend prod SHA, not an older dev bridge
-SHA.
+Root and backend `dev`/`prod` branches are independent deployment ledgers. Backend
+completion is proved by the backend target ref and runtime hard gate; a
+backend-only deploy must not create a root gitlink alignment commit. The prod
+workflow keeps `poetry version patch` ephemeral and does not commit or push it.
 
 ## DB Channels
 
