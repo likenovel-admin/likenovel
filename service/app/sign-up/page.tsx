@@ -235,22 +235,29 @@ const SignUp = () => {
               </button>
             </div>
           </div>
-          <div className="mt-40pxr w-full">
-            <SocialLoginButton
-              provider={"naver"}
-              isSignIn={false}
-              isAgreeToAD={watch("agree.agreeToAD")}
-              onBeforeRedirect={() => {
-                if (typeof window !== "undefined") {
-                  sessionStorage.setItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY, "Y");
-                }
-              }}
-              disabled={isSubmitDisabled}
-            />
+          <div className="mt-32pxr w-full">
+            <Button
+              variant="secondary"
+              size="xl"
+              type="submit"
+              className="h-[48px] w-full"
+            >
+              <span className="text-16pxr font-semibold">
+                이메일로 가입하기
+              </span>
+            </Button>
           </div>
-          <div className="flex justify-center items-center mt-20pxr">
+          <div className="mt-18pxr flex w-full items-center gap-12pxr">
+            <div className="h-px flex-1 bg-light-gray-500" />
+            <span className="text-13pxr text-dark-gray-400">
+              SNS로 계속하기
+            </span>
+            <div className="h-px flex-1 bg-light-gray-500" />
+          </div>
+          <div className="mt-18pxr flex w-full flex-col gap-10pxr">
             <SocialLoginButton
               provider={"kakao"}
+              fullWidth
               isSignIn={false}
               isAgreeToAD={watch("agree.agreeToAD")}
               onBeforeRedirect={() => {
@@ -260,9 +267,21 @@ const SignUp = () => {
               }}
               disabled={isSubmitDisabled}
             />
-            <div className="h-[12px] border border-l-light-gray-500 border-t-0 border-b-0 border-r-0" />
+            <SocialLoginButton
+              provider={"naver"}
+              fullWidth
+              isSignIn={false}
+              isAgreeToAD={watch("agree.agreeToAD")}
+              onBeforeRedirect={() => {
+                if (typeof window !== "undefined") {
+                  sessionStorage.setItem(SOCIAL_SIGNUP_PENDING_SESSION_KEY, "Y");
+                }
+              }}
+              disabled={isSubmitDisabled}
+            />
             <SocialLoginButton
               provider={"google"}
+              fullWidth
               isSignIn={false}
               disabled={isSubmitDisabled}
               onGoogleClick={() => {
@@ -273,39 +292,8 @@ const SignUp = () => {
                 );
               }}
             />
-            {/* <div className="h-[12px] border border-l-light-gray-500 border-t-0 border-b-0 border-r-0" /> */}
-            {/* <SocialLoginButton
-              provider={"apple"}
-              isSignIn={false}
-              onAppleClick={() => {
-                router.push(
-                  `/sign-up/social?provider=apple&agreeToAD=${watch(
-                    "agree.agreeToAD"
-                  )}`
-                );
-              }}
-            /> */}
           </div>
-          <div className="flex w-full justify-center items-center gap-20pxr mt-20pxr">
-            <div className="w-full border border-t-light-gray-500 border-b-0 border-l-0 border-r-0" />
-            <span className="min-w-[30px] text-13pxr text-center text-dark-gray-400">
-              또는
-            </span>
-            <div className="w-full border border-t-light-gray-500 border-b-0 border-l-0 border-r-0" />
-          </div>
-          <div className="w-full mt-20pxr">
-            <Button
-              variant="secondary"
-              size="xl"
-              type="submit"
-              className="w-full h-[46px]"
-            >
-              <span className="text-16pxr font-semibold">
-                이메일로 가입하기
-              </span>
-            </Button>
-          </div>
-          <div className={`flex items-center mt-30pxr`}>
+          <div className="mt-24pxr flex items-center">
             <span className="text-11pxr md:text-14pxr">
               이미 라이크노벨 회원이라면?
             </span>

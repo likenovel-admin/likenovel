@@ -13,7 +13,7 @@ import {
 } from "@/utils/localStorage";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import Button from "../common/Button";
 import Checkbox from "../common/CheckBox";
@@ -61,18 +61,6 @@ const Login = ({ pageType, setIsOpen }: Props) => {
   const [recentLoginType, setRecentLoginType] = useState<
     "" | ISocialLoginProvider
   >("");
-
-  const recentLoginLocation = useMemo(() => {
-    if (recentLoginType === "naver") {
-      return "left-[2px]";
-    } else if (recentLoginType === "kakao") {
-      return "left-[70px]";
-    } else if (recentLoginType === "google") {
-      return "left-[135px]";
-    } else if (recentLoginType === "apple") {
-      return "right-[5px]";
-    }
-  }, [recentLoginType]);
 
   const validateEmail = (email: string) => {
     if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
@@ -239,7 +227,7 @@ const Login = ({ pageType, setIsOpen }: Props) => {
     <div
       className={`relative w-full flex flex-col items-center ${
         pageType === "modal"
-          ? "px-24pxr md:px-32pxr py-20pxr"
+          ? "px-24pxr pb-16pxr pt-0 md:px-32pxr"
           : "h-screen justify-center md:justify-start min-w-[300px] max-w-[700px] px-16pxr md:px-90pxr"
       }`}
     >
@@ -255,7 +243,7 @@ const Login = ({ pageType, setIsOpen }: Props) => {
       )}
       <button
         className={`flex justify-center items-end gap-12pxr ${
-          pageType === "modal" ? "mb-32pxr mt-8pxr" : "mb-50pxr mt-20pxr"
+          pageType === "modal" ? "mb-18pxr" : "mb-50pxr mt-20pxr"
         }`}
         onClick={() => {
           setIsOpen?.(false);
@@ -276,10 +264,13 @@ const Login = ({ pageType, setIsOpen }: Props) => {
       >
         <div className="flex flex-col w-full gap-5pxr">
           <Input
-            label="아이디"
+            autoFocus={pageType === "modal"}
+            label="이메일"
             labelStyle="text-14pxr font-semibold"
             gap="gap-8pxr"
-            inputStyle="w-full h-[52px]"
+            inputStyle={
+              pageType === "modal" ? "w-full h-[44px]" : "w-full h-[52px]"
+            }
             placeholder="이메일 주소를 입력하세요"
             maxLength={100}
             {...register("email", {
@@ -293,7 +284,9 @@ const Login = ({ pageType, setIsOpen }: Props) => {
             label="비밀번호"
             labelStyle="text-14pxr font-semibold"
             gap="gap-8pxr"
-            inputStyle="w-full h-[52px]"
+            inputStyle={
+              pageType === "modal" ? "w-full h-[44px]" : "w-full h-[52px]"
+            }
             placeholder="비밀번호를 입력하세요"
             {...register("password", { required: true })}
           />
@@ -333,20 +326,20 @@ const Login = ({ pageType, setIsOpen }: Props) => {
         {isValidAll === false && (
           <div className="mt-10pxr">
             <ErrorSpan spanStyle="text-14pxr ml-5pxr">
-              아이디와 비밀번호를 확인해주세요.
+              이메일 또는 비밀번호를 확인해주세요.
             </ErrorSpan>
           </div>
         )}
 
         <div
           className={`w-full ${
-            pageType === "modal" ? "mt-24pxr" : "mt-37pxr"
+            pageType === "modal" ? "mt-18pxr" : "mt-37pxr"
           }`}
         >
           <Button
             size="xl"
             type="submit"
-            className="w-full h-[50px]"
+            className={pageType === "modal" ? "h-[46px] w-full" : "h-[50px] w-full"}
             isLoading={isPending}
             disabled={isPending}
           >
@@ -357,34 +350,37 @@ const Login = ({ pageType, setIsOpen }: Props) => {
 
       <div
         className={`flex w-full flex-col items-center ${
-          pageType === "modal" ? "mt-32pxr" : "mt-50pxr"
+          pageType === "modal" ? "mt-18pxr" : "mt-40pxr"
         }`}
       >
-        <div className="flex w-full justify-center items-center gap-20pxr">
-          <div className="hidden md:block w-full border border-t-light-gray-500 border-b-0 border-l-0 border-r-0" />
-          <span className="min-w-[148px] text-14pxr text-center">
-            SNS로 간편하게 시작하기
+        <div className="flex w-full items-center gap-12pxr">
+          <div className="h-px flex-1 bg-light-gray-500" />
+          <span className="text-13pxr text-dark-gray-400">
+            SNS로 계속하기
           </span>
-          <div className="hidden md:block w-full border border-t-light-gray-500 border-b-0 border-l-0 border-r-0" />
+          <div className="h-px flex-1 bg-light-gray-500" />
         </div>
 
-        <div className="relative flex justify-center items-end w-[280px] h-[70px] gap-16pxr md:mt-25pxr">
-          <SocialLoginButton
-            provider={"naver"}
-            isRecentSingIn={recentLoginType === "naver"}
-            isKeepSignIn={watch("isKeepSignIn")}
-            onBeforeRedirect={prepareSocialLoginRedirect}
-          />
-
+        <div className="mt-14pxr flex w-full flex-col gap-8pxr">
           <SocialLoginButton
             provider={"kakao"}
+            fullWidth
             isRecentSingIn={recentLoginType === "kakao"}
             isKeepSignIn={watch("isKeepSignIn")}
             onBeforeRedirect={prepareSocialLoginRedirect}
           />
 
           <SocialLoginButton
+            provider={"naver"}
+            fullWidth
+            isRecentSingIn={recentLoginType === "naver"}
+            isKeepSignIn={watch("isKeepSignIn")}
+            onBeforeRedirect={prepareSocialLoginRedirect}
+          />
+
+          <SocialLoginButton
             provider={"google"}
+            fullWidth
             isRecentSingIn={recentLoginType === "google"}
             isKeepSignIn={watch("isKeepSignIn")}
             onBeforeRedirect={prepareSocialLoginRedirect}
@@ -393,33 +389,13 @@ const Login = ({ pageType, setIsOpen }: Props) => {
             }}
           />
 
-          {/* <div onPointerDown={() => saveRecentSignInType("apple" as ISocialLoginProvider)}>
-            <SocialLoginButton
-              provider={"apple"}
-              isKeepSignIn={watch("isKeepSignIn")}
-              onAppleClick={() => {
-                onAppleLogin();
-              }}
-            />
-          </div> */}
-
-          {/* {recentLoginType !== "likenovel" && recentLoginType !== "" && (
-            <div
-              className={`absolute top-[-5px]  ${recentLoginLocation || ""}`}
-            >
-              <div className="relative inline-block px-2 py-1 text-12pxr text-white bg-primary-100 rounded-full animate-bounce">
-                최근 로그인
-                <div className="absolute bottom-[-4px] left-1/2 w-2 h-2 bg-primary-100 rotate-45"></div>
-              </div>
-            </div>
-          )} */}
         </div>
       </div>
 
       <div
         className={`flex items-center ${
           pageType === "modal"
-            ? "mt-24pxr flex-col gap-4pxr min-[360px]:flex-row min-[360px]:gap-0"
+            ? "mt-18pxr flex-col gap-4pxr min-[360px]:flex-row min-[360px]:gap-0"
             : "mt-30pxr"
         }`}
       >
