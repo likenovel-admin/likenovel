@@ -109,26 +109,39 @@ assert.match(
   /agree\.agreeToTerms && agree\.agreeToAge && agree\.agreeToPrivacy/,
   "Only the three required consents should enable signup"
 );
+const submitDisabledBlock = signupSource.match(
+  /const isSubmitDisabled = useMemo\(\(\) => \{[\s\S]*?\}, \[[\s\S]*?\]\);/
+)?.[0];
+assert.ok(submitDisabledBlock, "Signup disabled calculation must exist");
+assert.doesNotMatch(
+  submitDisabledBlock,
+  /agreeToAD/,
+  "Optional advertising consent must not disable signup"
+);
+
+const getSocialButtonBlock = (source: string, provider: string) => {
+  const block = source.match(
+    new RegExp(
+      `<SocialLoginButton\\s+[\\s\\S]*?provider=\\{\"${provider}\"\\}[\\s\\S]*?\\s/>`
+    )
+  )?.[0];
+  assert.ok(block, `Missing ${provider} social button`);
+  return block;
+};
 
 for (const source of [loginSource, signupSource]) {
   assertOrdered(source, 'provider={"kakao"}', 'provider={"naver"}', "Kakao first");
   assertOrdered(source, 'provider={"naver"}', 'provider={"google"}', "Google last");
 
   for (const provider of ["kakao", "naver", "google"]) {
-    assert.match(
-      source,
-      new RegExp(`provider=\\{\"${provider}\"\\}[\\s\\S]*?fullWidth`),
-      `${provider} must remain full width`
-    );
+    assert.match(getSocialButtonBlock(source, provider), /\sfullWidth(?:\s|\n)/);
   }
 }
 
 for (const provider of ["kakao", "naver", "google"]) {
   assert.match(
-    loginSource,
-    new RegExp(
-      `provider=\\{\"${provider}\"\\}[\\s\\S]*?isRecentSingIn=\\{recentLoginType === \"${provider}\"\\}`
-    ),
+    getSocialButtonBlock(loginSource, provider),
+    new RegExp(`isRecentSingIn=\\{recentLoginType === \"${provider}\"\\}`),
     `${provider} recent-login badge must stay on its own button`
   );
 }
