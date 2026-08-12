@@ -1,6 +1,7 @@
 "use client";
 import FloatingDock from "@/components/common/FloatingDock";
 import Spinner from "@/components/common/Spinner";
+import AuthorStartCta from "@/components/main/AuthorStartCta";
 import BottomBanner from "@/components/main/BottomBanner";
 import BottomProducts from "@/components/main/BottomProducts";
 import Carousel from "@/components/main/Carousel";
@@ -389,6 +390,7 @@ export default function HomePageClient() {
           </div>
         )}
       </div>
+      <AuthorStartCta />
       <OnboardingModal
         isOpen={showOnboarding}
         onClose={handleCloseOnboarding}
