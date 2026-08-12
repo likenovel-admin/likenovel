@@ -51,6 +51,13 @@ assert.match(modalSource, /document\.body\.style\.overflow = previousOverflow/);
 assert.match(modalSource, /event\.key === "Escape"/);
 assert.match(modalSource, /role="dialog"/);
 assert.match(modalSource, /aria-modal="true"/);
+assert.match(modalSource, /useRef<HTMLDivElement>\(null\)/);
+assert.match(modalSource, /document\.activeElement instanceof HTMLElement/);
+assert.doesNotMatch(modalSource, /\[isOpen, searchParams\]/);
+assert.match(modalSource, /event\.key !== "Tab"/);
+assert.match(modalSource, /dialog\.querySelectorAll<HTMLElement>/);
+assert.match(modalSource, /previouslyFocusedElementRef\.current/);
+assert.match(modalSource, /previouslyFocusedElement\.focus\(\)/);
 assert.doesNotMatch(modalSource, /addEventListener\("wheel"/);
 
 assert.match(
@@ -92,11 +99,38 @@ assertOrdered(
   'provider={"kakao"}',
   "Email signup must appear before social signup"
 );
+assert.match(
+  signupSource,
+  /type="submit"[\s\S]*?disabled=\{isSubmitDisabled\}[\s\S]*?이메일로 가입하기/,
+  "Email signup must preserve required-consent disabled semantics"
+);
+assert.match(
+  signupSource,
+  /agree\.agreeToTerms && agree\.agreeToAge && agree\.agreeToPrivacy/,
+  "Only the three required consents should enable signup"
+);
 
 for (const source of [loginSource, signupSource]) {
   assertOrdered(source, 'provider={"kakao"}', 'provider={"naver"}', "Kakao first");
   assertOrdered(source, 'provider={"naver"}', 'provider={"google"}', "Google last");
-  assert.match(source, /fullWidth/g);
+
+  for (const provider of ["kakao", "naver", "google"]) {
+    assert.match(
+      source,
+      new RegExp(`provider=\\{\"${provider}\"\\}[\\s\\S]*?fullWidth`),
+      `${provider} must remain full width`
+    );
+  }
+}
+
+for (const provider of ["kakao", "naver", "google"]) {
+  assert.match(
+    loginSource,
+    new RegExp(
+      `provider=\\{\"${provider}\"\\}[\\s\\S]*?isRecentSingIn=\\{recentLoginType === \"${provider}\"\\}`
+    ),
+    `${provider} recent-login badge must stay on its own button`
+  );
 }
 
 assert.match(socialButtonSource, /fullWidth\?: boolean/);

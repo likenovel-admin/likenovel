@@ -240,6 +240,7 @@ const SignUp = () => {
               variant="secondary"
               size="xl"
               type="submit"
+              disabled={isSubmitDisabled}
               className="h-[48px] w-full"
             >
               <span className="text-16pxr font-semibold">
