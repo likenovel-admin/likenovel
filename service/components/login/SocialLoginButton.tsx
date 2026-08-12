@@ -14,6 +14,7 @@ interface Props {
   onAppleClick?: () => void;
   onBeforeRedirect?: () => void;
   disabled?: boolean;
+  fullWidth?: boolean;
 }
 
 const SocialLoginButton = ({
@@ -27,6 +28,7 @@ const SocialLoginButton = ({
   onAppleClick,
   onBeforeRedirect,
   disabled = false,
+  fullWidth = false,
 }: Props) => {
   const naverLogin = (isKeepSignIn: boolean) => {
     const { state, redirectUri } = getStateAndReDirectUri(
@@ -78,7 +80,19 @@ const SocialLoginButton = ({
   const googleButtonStyle = "bg-light-gray-100 text-black hover:bg-gray-200";
   const appleButtonStyle = "bg-black text-white hover:bg-gray-700";
 
+  const providerButtonStyle = (provider: ISocialLoginProvider) => {
+    if (provider === "kakao") return kakaoButtonStyle;
+    if (provider === "naver") return naverButtonStyle;
+    if (provider === "google") {
+      return "border border-light-gray-400 bg-white text-black hover:bg-light-gray-100";
+    }
+    return appleButtonStyle;
+  };
+
   const buttonStyle = (provider: ISocialLoginProvider, isSignIn: boolean) => {
+    if (fullWidth) {
+      return `h-[44px] w-full text-15pxr ${providerButtonStyle(provider)}`;
+    }
     if (isSignIn) {
       if (provider === "kakao") {
         return signInButtonStyle + " " + kakaoButtonStyle;
@@ -130,11 +144,34 @@ const SocialLoginButton = ({
       }`}
     >
       {isRecentSingIn && (
-        <div className="absolute w-[73px] h-[29px] top-[-22px] left-[59%] translate-x-[-50%]">
+        <div className="absolute right-10pxr top-1/2 h-[29px] w-[73px] -translate-y-1/2">
           <RecentSignInTypeBubble>최근 로그인</RecentSignInTypeBubble>
         </div>
       )}
-      {isSignIn ? (
+      {fullWidth ? (
+        <div className="flex items-center gap-10pxr">
+          <Image
+            src={socialIcons()}
+            alt=""
+            className={
+              provider === "naver"
+                ? "h-[18px] w-[18px]"
+                : "h-[22px] w-[22px]"
+            }
+            width={22}
+            height={22}
+          />
+          <span className="font-semibold">
+            {provider === "kakao"
+              ? "카카오톡으로 계속하기"
+              : provider === "naver"
+              ? "네이버로 계속하기"
+              : provider === "google"
+              ? "구글로 계속하기"
+              : "애플로 계속하기"}
+          </span>
+        </div>
+      ) : isSignIn ? (
         <Image
           src={socialIcons()}
           alt={provider}
