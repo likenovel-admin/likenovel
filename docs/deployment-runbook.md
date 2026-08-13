@@ -166,7 +166,52 @@ backend remote 도달성과 pointer 비후퇴 검사는 우회하지 않는다. 
 배포에서는 이 flag나 root pointer 변경을 사용하지 않는다. root 코드가 특정 backend
 snapshot을 실제로 요구하는 동일 deploy unit에서만 pointer 변경을 포함한다.
 
-## 2.3 Deploy Merge Conflict Stop Rules
+## 2.3 Root web 배포 후 primary 동기화 hard gate
+
+`service`/`partner`/`cms` DEV 또는 PROD 배포는 Actions, image digest, public
+endpoint, browser 검증이 성공해도 끝나지 않는다. 마지막 배포가 끝난 뒤 Codex
+primary checkout `/home/hongsan/work/likenovel`을 canonical local code로 정렬한다.
+clean integration worktree는 이 검증을 대신하지 않는다.
+
+```bash
+cd /home/hongsan/work/likenovel
+git -c fetch.recurseSubmodules=false fetch origin --quiet --prune --no-recurse-submodules
+
+PRIMARY_SHA="$(git rev-parse HEAD)"
+DEV_SHA="$(git rev-parse origin/dev)"
+ROOT_DIRTY="$(git status --porcelain)"
+ROOT_GITLINK="$(git rev-parse HEAD:likenovel-service-api/likenovel-service-api)"
+SUBMODULE_SHA="$(git -C likenovel-service-api/likenovel-service-api rev-parse HEAD)"
+SUBMODULE_DIRTY="$(git -C likenovel-service-api/likenovel-service-api status --porcelain)"
+
+test "$PRIMARY_SHA" = "$DEV_SHA"
+test -z "$ROOT_DIRTY"
+test "$SUBMODULE_SHA" = "$ROOT_GITLINK"
+test -z "$SUBMODULE_DIRTY"
+
+printf 'primary=%s origin/dev=%s root=clean submodule=aligned\n' \
+  "$PRIMARY_SHA" "$DEV_SHA"
+```
+
+추가 검증:
+
+- 이번 배포 핵심 파일은 `git rev-parse HEAD:<path>`와
+  `git rev-parse origin/dev:<path>` blob을 비교한다.
+- `package.json` 또는 lockfile 변경 시 해당 workspace에서 immutable install 후
+  관련 test/build를 실행하고 tracked file 무변경을 확인한다.
+- PROD 변경이 DEV에 없으면 명시적 prod-only hotfix가 아닌 한 exact 변경을 DEV에
+  동기화한 뒤 primary를 다시 `origin/dev`에 맞춘다.
+- primary가 dirty하면 사후 임의 stash/reset/덮어쓰기를 하지 않는다. 배포 전에
+  owner와 보존 경로를 확정했어야 하며, 보존 증거 없이 정렬할 수 없으면 중단한다.
+- 명시적 prod-only hotfix 또는 primary sync 실패 시에는
+  `배포 성공, 로컬 동기화 미완료`라고 보고하고 `배포 완료`라고 말하지 않는다.
+- backend-only 배포는 이 절을 적용하지 않고 backend target ref와 2.1 runtime hard
+  gate로 닫는다.
+
+위 명령의 마지막 한 줄을 실제 readback으로 남기기 전에는 root web 배포를 완료로
+판정하지 않고 다음 배포 작업으로 넘어가지 않는다.
+
+## 2.4 Deploy Merge Conflict Stop Rules
 
 dev/prod 반영 중 conflict resolution은 배포를 위한 최소 정합화만 허용한다.
 
@@ -177,7 +222,7 @@ dev/prod 반영 중 conflict resolution은 배포를 위한 최소 정합화만 
 
 이 규칙을 어기면 배포 성공 여부와 무관하게 `부분 조치`로 보고하고, 새로 작성한 conflict resolution 내용을 별도 review 대상으로 분리한다.
 
-## 2.4 Root Gitlink Dependency Boundary
+## 2.5 Root Gitlink Dependency Boundary
 
 Backend-only 배포는 backend target ref와 runtime hard gate로 끝낸다. 배포된
 backend SHA를 따라가는 root gitlink 대응 커밋을 만들지 않으며 target root branch의

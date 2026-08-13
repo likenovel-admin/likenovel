@@ -166,6 +166,16 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
 
 - 배포/DB/cron/batch/account/billing/CMS mutation은 최소 `Tier 2`로 본다.
 - prod 영향이 있으면 `prod impact: yes/possible`을 명시한다.
+- root web(`service`/`partner`/`cms`) DEV 또는 PROD 배포는 Actions와 runtime 검증만으로 완료가 아니다. 마지막 remote fetch 뒤 Codex primary checkout `/home/hongsan/work/likenovel`까지 아래 post-deploy sync hard gate를 통과해야만 `배포 완료`라고 말한다.
+  - primary `HEAD == origin/dev`
+  - primary root `git status --porcelain`이 비어 있음
+  - backend submodule working-tree `HEAD == primary HEAD`가 기록한 gitlink이고 submodule `git status --porcelain`이 비어 있음
+  - 이번 배포의 핵심 변경 파일 blob이 primary와 `origin/dev`에서 일치함
+  - `package.json` 또는 lockfile이 바뀌었으면 immutable install 뒤 관련 test/build가 통과하고 tracked file이 변하지 않음
+- PROD에만 있는 변경이 발견되면 사용자가 명시적으로 prod-only hotfix를 요구한 경우를 제외하고, exact 변경을 DEV에 먼저 정렬한 뒤 primary를 `origin/dev`에 맞춘다. 명시적 prod-only hotfix는 예외 상태를 숨기지 말고 `배포 성공, 로컬 동기화 미완료`로 보고하며 일반적인 `배포 완료` 표현을 쓰지 않는다.
+- integration worktree가 clean하거나 해당 worktree HEAD가 remote target과 같다는 사실은 primary sync 증거가 아니다. dirty primary를 사후에 임의 stash/reset/덮어쓰기하지 말고, 배포 전에 owner와 보존 경로를 확정한다. 보존이 불완전하거나 primary sync가 실패하면 그 자리에서 중단하고 다음 배포 작업으로 넘어가지 않는다.
+- root web 배포 완료 보고에는 실제 readback 값으로 반드시 `primary=<SHA> origin/dev=<SHA> root=clean submodule=aligned` 한 줄을 포함한다. 이 줄을 증명하지 못하면 완료가 아니다.
+- backend-only 배포에는 위 root-primary hard gate를 적용하지 않고, 아래 backend runtime hard gate와 backend target ref로 닫는다.
 - backend prod 배포 완료는 Actions/CodeDeploy/`/health` 단독으로 말하지 않는다.
 - backend prod 완료 기준:
   - CodeDeploy success
