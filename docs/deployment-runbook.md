@@ -552,9 +552,9 @@ PRODUCT_IDS=1102,1106 INTERVAL_SEC=30 ITERATIONS=20 /home/hongsan/work/likenovel
 ```
 
 Story context 비용 가드:
-- 코드 우선순위는 `DNA·AI reader/추천 핵심 데이터 > 50화 이내 채팅 자산 > 50화를 채운 작품의 추가 채팅 자산`이다. 공통 reserve와 in-flight buffer가 기본 3달러일 때 storyctx는 각각 1달러/2달러 headroom을 추가로 남긴다.
-- 작품별 채팅 자산 목표는 `min(공개 회차 수, 50)`이다. 회차 번호 자체가 아니라 공개 회차 정렬 순번의 앞 50개를 세므로 번호 gap이 있어도 목표가 어긋나지 않는다. 최근 7일 `websochat_asset_request` 중 요청 회차가 아직 준비되지 않은 작품을 먼저 보고, 그다음 목표 미달 작품을 준비 자산 수 오름차순으로 처리한다. 목표를 채운 작품은 후순위다. `ready_episode_count`는 단순 row 수가 아니라 앞선 공개 회차에 요약 누락이 없는 최신 연속 준비 회차 번호다.
-- 웹소챗 foundation 대상은 AI 콘텐츠 동의가 켜진 공개 연재작 전체다. 캐릭터 scene/RP 확장은 기존 character-chat cohort 조건을 계속 적용한다.
+- 코드 우선순위는 `DNA·AI reader/추천 핵심 데이터 > 30화 이내 채팅 자산 > 30화를 채운 작품의 추가 채팅 자산`이다. 공통 reserve와 in-flight buffer가 기본 3달러일 때 storyctx는 각각 1달러/2달러 headroom을 추가로 남긴다.
+- 작품별 주인공챗 자산 목표는 `min(공개 회차 수, 30)`이다. 회차 번호 자체가 아니라 공개 회차 정렬 순번의 앞 30개를 세므로 번호 gap이 있어도 목표가 어긋나지 않는다. 최근 7일 `websochat_asset_request` 중 요청 회차가 아직 준비되지 않은 작품을 먼저 보고, 그다음 목표 미달 작품을 준비 자산 수 오름차순으로 처리한다. 목표를 채운 작품은 후순위다. `ready_episode_count`는 단순 row 수가 아니라 앞선 공개 회차에 웹소챗 요약 누락이 없는 최신 연속 준비 회차 번호다.
+- 웹소챗 foundation 대상은 AI 콘텐츠 동의가 켜진 공개·비블라인드 연재작과 완결작 전체다. 캐릭터 scene/RP 확장은 기존 character-chat cohort 조건과 공개 회차 순번 30화 상한을 계속 적용한다.
 - viewer의 미준비 버튼 클릭은 로그인 사용자에 한해 `tb_user_ai_signal_event.event_type='websochat_asset_request'`로 저장되며 추천 취향 factor에는 반영하지 않는다. 서버는 AI 동의·미준비 상태를 다시 확인하고 동일 사용자/작품/회차 신호를 7일에 한 번으로 제한한다.
 - viewer readiness poll은 조회수·사용량을 올리지 않는 전용 read-only API를 쓰되, 비공개·블라인드 회차 메타데이터는 본 뷰어와 같은 소유자/공개 접근 경계로 차단한다.
 - OpenRouter reserve가 storyctx headroom을 충족하지 못하면 preflight와 실행 중 어느 시점이든 Python은 exit code `75`와 `deferred_budget`을 내고, shell은 이를 `deferred`로 집계한다. 이는 provider lookup 오류나 실제 처리 실패와 구분하며 기존 active 자산/status를 실패로 덮지 않는다.

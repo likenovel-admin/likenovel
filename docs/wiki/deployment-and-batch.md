@@ -171,9 +171,9 @@ selects env by runtime directory:
   for seven days, and must not become an AI taste factor.
 - `tb_story_agent_context_product.ready_episode_count` is maintained as the
   latest contiguous prepared public episode number, not a raw summary-row count.
-- Websochat foundation selection includes every open, ongoing, AI-consented
-  title. Character scene/RP expansion remains guarded by the existing
-  character-chat cohort policy.
+- Websochat foundation selection includes every open, non-blind, AI-consented
+  ongoing or ended title. Character scene/RP expansion remains guarded by the
+  existing character-chat cohort policy and the first 30 public episodes.
 - Story context exit code `75` means `deferred_budget`. Preflight and mid-run
   reserve exhaustion both propagate to that result. The batch wrapper reports it
   as `deferred`, not `failed`; non-reserve provider and processing errors keep
