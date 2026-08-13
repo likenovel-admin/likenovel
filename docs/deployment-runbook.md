@@ -166,6 +166,43 @@ backend remote 도달성과 pointer 비후퇴 검사는 우회하지 않는다. 
 배포에서는 이 flag나 root pointer 변경을 사용하지 않는다. root 코드가 특정 backend
 snapshot을 실제로 요구하는 동일 deploy unit에서만 pointer 변경을 포함한다.
 
+### 2.2.1 Backend-only 배포 후 primary backend 동기화 hard gate
+
+backend DEV/PROD 배포와 runtime hard gate가 끝난 뒤 clean integration worktree를
+primary 동기화 증거로 대신하지 않는다. 명시적 prod-only hotfix가 아닌 한 PROD의
+exact 변경을 DEV에도 먼저 정렬하고, primary backend checkout을 최종
+`origin/dev`로 맞춘다.
+
+```bash
+cd /home/hongsan/work/likenovel
+BACKEND=likenovel-service-api/likenovel-service-api
+
+git -C "$BACKEND" fetch origin --quiet --prune
+test -z "$(git -C "$BACKEND" status --porcelain)"
+test -z "$(git diff --cached --name-only -- "$BACKEND")"
+git -C "$BACKEND" switch --detach origin/dev
+
+BACKEND_PRIMARY_SHA="$(git -C "$BACKEND" rev-parse HEAD)"
+BACKEND_DEV_SHA="$(git -C "$BACKEND" rev-parse origin/dev)"
+test "$BACKEND_PRIMARY_SHA" = "$BACKEND_DEV_SHA"
+test -z "$(git -C "$BACKEND" status --porcelain)"
+test -z "$(git diff --cached --name-only -- "$BACKEND")"
+
+printf 'backend-primary=%s backend-origin/dev=%s backend=clean root-gitlink=preserved\n' \
+  "$BACKEND_PRIMARY_SHA" "$BACKEND_DEV_SHA"
+```
+
+추가 검증:
+
+- 이번 배포 핵심 파일은 primary backend `HEAD:<path>`와 `origin/dev:<path>` blob을 비교한다.
+- outer root의 `HEAD`와 index가 기록한 gitlink는 바꾸지 않는다. backend checkout이
+  gitlink보다 앞서면 root `git status`의 submodule `M`은 예상된 로컬 sync 표시다.
+- 이 `M`을 없애려고 root gitlink를 stage/commit/push하거나 backend를 stale gitlink로
+  reset하지 않는다. root-owned 코드가 해당 backend snapshot을 요구하는 별도 deploy
+  unit에서만 pointer 변경을 수행한다.
+- primary backend sync가 실패하면 `배포 성공, 로컬 동기화 미완료`로 보고하고 다음
+  배포 작업으로 넘어가지 않는다.
+
 ## 2.3 Root web 배포 후 primary 동기화 hard gate
 
 `service`/`partner`/`cms` DEV 또는 PROD 배포는 Actions, image digest, public
@@ -205,8 +242,8 @@ printf 'primary=%s origin/dev=%s root=clean submodule=aligned\n' \
   owner와 보존 경로를 확정했어야 하며, 보존 증거 없이 정렬할 수 없으면 중단한다.
 - 명시적 prod-only hotfix 또는 primary sync 실패 시에는
   `배포 성공, 로컬 동기화 미완료`라고 보고하고 `배포 완료`라고 말하지 않는다.
-- backend-only 배포는 이 절을 적용하지 않고 backend target ref와 2.1 runtime hard
-  gate로 닫는다.
+- backend-only 배포는 이 root web 절 대신 2.2.1의 primary backend sync hard gate와
+  2.1 runtime hard gate를 모두 적용한다.
 
 위 명령의 마지막 한 줄을 실제 readback으로 남기기 전에는 root web 배포를 완료로
 판정하지 않고 다음 배포 작업으로 넘어가지 않는다.

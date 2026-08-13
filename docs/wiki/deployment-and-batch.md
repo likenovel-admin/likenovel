@@ -62,9 +62,14 @@ AI reader lock 복구와 배포 직후 fresh-log 판정의 실행 기준은
 재시도하며 `--once`와 다른 DB 오류는 실패를 유지한다.
 
 Root and backend `dev`/`prod` branches are independent deployment ledgers. Backend
-completion is proved by the backend target ref and runtime hard gate; a
-backend-only deploy must not create a root gitlink alignment commit. The prod
-workflow keeps `poetry version patch` ephemeral and does not commit or push it.
+completion requires the backend target ref, runtime hard gate, and the primary
+backend checkout under `/home/hongsan/work/likenovel` aligned cleanly to backend
+`origin/dev`. A backend-only deploy must not create or stage a root gitlink
+alignment commit; when the preserved root gitlink is older, the outer root
+submodule `M` is the expected local-sync marker. Completion readback is
+`backend-primary=<SHA> backend-origin/dev=<SHA> backend=clean root-gitlink=preserved`.
+The prod workflow keeps `poetry version patch` ephemeral and does not commit or
+push it.
 
 ## DB Channels
 

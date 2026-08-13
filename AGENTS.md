@@ -175,7 +175,8 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
 - PROD에만 있는 변경이 발견되면 사용자가 명시적으로 prod-only hotfix를 요구한 경우를 제외하고, exact 변경을 DEV에 먼저 정렬한 뒤 primary를 `origin/dev`에 맞춘다. 명시적 prod-only hotfix는 예외 상태를 숨기지 말고 `배포 성공, 로컬 동기화 미완료`로 보고하며 일반적인 `배포 완료` 표현을 쓰지 않는다.
 - integration worktree가 clean하거나 해당 worktree HEAD가 remote target과 같다는 사실은 primary sync 증거가 아니다. dirty primary를 사후에 임의 stash/reset/덮어쓰기하지 말고, 배포 전에 owner와 보존 경로를 확정한다. 보존이 불완전하거나 primary sync가 실패하면 그 자리에서 중단하고 다음 배포 작업으로 넘어가지 않는다.
 - root web 배포 완료 보고에는 실제 readback 값으로 반드시 `primary=<SHA> origin/dev=<SHA> root=clean submodule=aligned` 한 줄을 포함한다. 이 줄을 증명하지 못하면 완료가 아니다.
-- backend-only 배포에는 위 root-primary hard gate를 적용하지 않고, 아래 backend runtime hard gate와 backend target ref로 닫는다.
+- backend-only 배포에는 위 root web primary gate 대신 backend-primary sync hard gate를 적용한다. PROD 변경은 명시적 prod-only hotfix가 아닌 한 exact 변경을 DEV에도 먼저 정렬한다. 마지막 backend remote fetch 뒤 primary backend checkout `/home/hongsan/work/likenovel/likenovel-service-api/likenovel-service-api`을 detached `origin/dev`로 맞추고, backend `HEAD == origin/dev`, backend working tree clean, 이번 배포 핵심 파일 blob 일치를 확인해야 한다. outer root gitlink/index는 stage·commit·push하지 않고 기존 값을 보존한다. gitlink가 `origin/dev`와 다르면 outer root의 submodule `M` 표시는 예상된 로컬 sync 상태이며 숨기거나 reset하지 않는다.
+- backend-only 배포 완료 보고에는 실제 readback 값으로 반드시 `backend-primary=<SHA> backend-origin/dev=<SHA> backend=clean root-gitlink=preserved` 한 줄을 포함한다. 이 줄을 증명하지 못하면 `배포 성공, 로컬 동기화 미완료`로 보고하며 다음 배포 작업으로 넘어가지 않는다.
 - backend prod 배포 완료는 Actions/CodeDeploy/`/health` 단독으로 말하지 않는다.
 - backend prod 완료 기준:
   - CodeDeploy success
