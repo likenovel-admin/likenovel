@@ -71,6 +71,18 @@ class AiPipelineBatchesMonitorTest(unittest.TestCase):
         self.assertIn("character_chat_*.log", self.check_script)
         self.assertIn('"active rows on visible ongoing products" 1', self.check_script)
 
+    def test_story_foundation_mismatch_caps_character_signals_at_thirty_public_episodes(self) -> None:
+        self.assertIn("ROW_NUMBER() OVER", self.check_script)
+        self.assertIn("public_episode_rank <= 30", self.check_script)
+        self.assertIn(
+            "s.summary_type='episode_summary' AND collected_episode.scope_key IS NOT NULL",
+            self.check_script,
+        )
+        self.assertIn(
+            "s.summary_type='episode_character_signals' AND collected_episode.scope_key IS NOT NULL",
+            self.check_script,
+        )
+
     def test_dna_signal_and_taste_result_tables_are_covered(self) -> None:
         for table_name in (
             "tb_product_ai_metadata",
