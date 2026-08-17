@@ -258,7 +258,24 @@ WHERE cp.context_status='failed'
   AND p.open_yn='Y'
   AND p.blind_yn='N';
 
-WITH foundation_mismatches AS (
+WITH ranked_public_episodes AS (
+  SELECT public_episode.product_id,
+         public_episode.episode_id,
+         ROW_NUMBER() OVER (
+           PARTITION BY public_episode.product_id
+           ORDER BY public_episode.episode_no ASC, public_episode.episode_id ASC
+         ) AS public_episode_rank
+  FROM tb_product_episode public_episode
+  WHERE public_episode.use_yn = 'Y'
+    AND public_episode.open_yn = 'Y'
+),
+collected_episode_scopes AS (
+  SELECT ranked_episode.product_id,
+         CONCAT('episode:', ranked_episode.episode_id) AS scope_key
+  FROM ranked_public_episodes ranked_episode
+  WHERE ranked_episode.public_episode_rank <= 30
+),
+foundation_mismatches AS (
   SELECT p.product_id,
          CASE
            WHEN COALESCE(p.ai_content_service_enabled_yn, 'N') = 'Y'
@@ -283,8 +300,8 @@ WITH foundation_mismatches AS (
            THEN 1
            ELSE 0
          END AS actionable,
-         COUNT(DISTINCT CASE WHEN s.summary_type='episode_summary' THEN s.scope_key END) AS episode_summary_count,
-         COUNT(DISTINCT CASE WHEN s.summary_type='episode_character_signals' THEN s.scope_key END) AS signal_count,
+         COUNT(DISTINCT CASE WHEN s.summary_type='episode_summary' AND collected_episode.scope_key IS NOT NULL THEN s.scope_key END) AS episode_summary_count,
+         COUNT(DISTINCT CASE WHEN s.summary_type='episode_character_signals' AND collected_episode.scope_key IS NOT NULL THEN s.scope_key END) AS signal_count,
          COUNT(DISTINCT CASE WHEN s.summary_type='character_inventory' THEN s.scope_key END) AS inventory_count,
          COUNT(DISTINCT CASE WHEN s.summary_type='character_inventory_v3' THEN s.scope_key END) AS inventory_v3_count
   FROM tb_product p
@@ -293,6 +310,9 @@ WITH foundation_mismatches AS (
   LEFT JOIN tb_story_agent_context_summary s
     ON s.product_id=p.product_id
    AND s.is_active='Y'
+  LEFT JOIN collected_episode_scopes collected_episode
+    ON collected_episode.product_id=s.product_id
+   AND collected_episode.scope_key=s.scope_key
   WHERE p.price_type IN ('free','paid')
     AND p.status_code='ongoing'
     AND p.open_yn='Y'
