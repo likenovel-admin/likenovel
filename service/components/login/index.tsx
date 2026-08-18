@@ -310,16 +310,30 @@ const Login = ({ pageType, setIsOpen }: Props) => {
                 />
               )}
             />
-            <button
-              className="flex items-center gap-9pxr"
-              type="button"
-              onClick={() => {
-                window.location.href = "/find-id";
-              }}
-            >
-              <span className="text-14pxr">아이디 찾기/비밀번호 재설정</span>
-              <ArrowRight className="w-[12px] h-[12px]" />
-            </button>
+            <div className="flex items-center gap-8pxr">
+              <button
+                className="text-14pxr"
+                type="button"
+                onClick={() => {
+                  window.location.href = "/find-id";
+                }}
+              >
+                아이디 찾기
+              </button>
+              <span aria-hidden="true" className="text-14pxr text-dark-gray-100">
+                |
+              </span>
+              <button
+                className="flex items-center gap-9pxr"
+                type="button"
+                onClick={() => {
+                  window.location.href = "/find-password";
+                }}
+              >
+                <span className="text-14pxr">비밀번호 재설정</span>
+                <ArrowRight className="w-[12px] h-[12px]" />
+              </button>
+            </div>
           </div>
         </div>
 

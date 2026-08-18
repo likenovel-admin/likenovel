@@ -159,12 +159,12 @@ export default function Page() {
         </button>
 
         <p className="mt-[30px] flex gap-[17px] justify-center text-sm text-[#111317] tracking-[-0.02em]">
-          아직도 라이크노벨 회원이 아니세요?
+          비밀번호를 잊으셨나요?
           <a
             href="/find-password"
             className="font-medium underline underline-offset-2"
           >
-            회원가입
+            비밀번호 찾기
           </a>
         </p>
       </div>
