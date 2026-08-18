@@ -149,11 +149,11 @@ export default function Page() {
       type="button"
       onClick={handleEmailReset}
       disabled={sendResetEmail.isPending}
-      className="text-sm text-[#4D5159] underline underline-offset-2 hover:opacity-80 disabled:opacity-50"
+      className="w-full h-[54px] rounded-[10px] border border-[#111317] bg-white px-4 py-3 text-base font-semibold tracking-[-2%] text-[#111317] hover:bg-[#F9FAFB] disabled:opacity-50"
     >
       {sendResetEmail.isPending
         ? "발송 중..."
-        : "혹시 본인인증이 안된 상태라면?"}
+        : "가입 이메일로 재설정 링크 받기"}
     </button>
   );
 

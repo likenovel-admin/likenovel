@@ -315,7 +315,7 @@ const UpdateMyInfoPassword = () => {
         <input type="hidden" id="integrity_value" name="integrity_value" />
       </form>
 
-      <div className="w-full mt-7 gap-2 hidden md:flex">
+      <div className="w-full mt-7 gap-2 flex flex-col md:flex-row">
         {userInfo?.data?.identityYn === "N" && (
           <Button
             type="button"

@@ -20,6 +20,18 @@ const signupSource = readFileSync(
   `${serviceRoot}/app/sign-up/page.tsx`,
   "utf8"
 );
+const findIdSource = readFileSync(
+  `${serviceRoot}/app/find-id/page.tsx`,
+  "utf8"
+);
+const findPasswordSource = readFileSync(
+  `${serviceRoot}/app/find-password/page.tsx`,
+  "utf8"
+);
+const updateMyInfoPasswordSource = readFileSync(
+  `${serviceRoot}/components/mypage/UpdateMyInfoPassword.tsx`,
+  "utf8"
+);
 
 const assertOrdered = (
   source: string,
@@ -87,6 +99,37 @@ assert.doesNotMatch(loginSource, /max-h\[700px\]/);
 assert.match(loginSource, /autoFocus=\{pageType === "modal"\}/);
 assert.match(loginSource, /label="이메일"/);
 assert.match(loginSource, /이메일 또는 비밀번호를 확인해주세요/);
+assert.match(
+  loginSource,
+  /아이디 찾기[\s\S]*window\.location\.href = "\/find-password";[\s\S]*비밀번호 재설정/,
+  "Login should expose separate ID lookup and password reset actions"
+);
+assert.doesNotMatch(loginSource, /아이디 찾기\/비밀번호 재설정/);
+assert.match(findIdSource, /비밀번호를 잊으셨나요\?/);
+assert.match(
+  findIdSource,
+  /href="\/find-password"[\s\S]*비밀번호 찾기/,
+  "ID lookup should point to password reset with the correct label"
+);
+assert.match(
+  findPasswordSource,
+  /onClick=\{handleEmailReset\}[\s\S]*가입 이메일로 재설정 링크 받기/,
+  "Password reset should expose the email recovery action as a button"
+);
+assert.equal(
+  findPasswordSource.match(/<EmailResetLink \/>/g)?.length,
+  2,
+  "Email recovery should be visible on desktop and mobile"
+);
+assert.match(
+  updateMyInfoPasswordSource,
+  /className="w-full mt-7 gap-2 flex flex-col md:flex-row"[\s\S]*type="submit"/,
+  "Password change submit action should remain visible on mobile"
+);
+assert.doesNotMatch(
+  updateMyInfoPasswordSource,
+  /className="w-full mt-7 gap-2 hidden md:flex"/
+);
 assertOrdered(
   loginSource,
   "<form",
