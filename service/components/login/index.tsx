@@ -357,7 +357,7 @@ const Login = ({ pageType, setIsOpen }: Props) => {
             isLoading={isPending}
             disabled={isPending}
           >
-            로그인
+            이메일로 로그인
           </Button>
         </div>
       </form>
