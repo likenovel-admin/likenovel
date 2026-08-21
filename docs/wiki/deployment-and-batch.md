@@ -91,9 +91,11 @@ explicit user decision.
 Before a local or staging check uses that channel, run
 `bash devtools/dev-rds.sh work-start`. The command is restricted to
 `likenovel-dev`, starts it when needed, and renews a one-hour lease. The
-DEV-only `.github/workflows/dev-rds.yml` reconciles expired leases on a nominal
-five-minute schedule. Re-run `work-start` for checks lasting more than one hour; do not use
-this path for PROD. The SSH tunnel remains a separate user-owned process.
+DEV-only `ln-was` systemd timer reconciles expired leases every five minutes;
+`.github/workflows/dev-rds.yml` remains a best-effort backup because GitHub
+scheduled runs can be delayed. Re-run `work-start` for checks lasting more than
+one hour; do not use this path for PROD. The SSH tunnel remains a separate
+user-owned process.
 
 ## Batch And Cron Paths
 

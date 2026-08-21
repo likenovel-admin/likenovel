@@ -702,13 +702,28 @@ bash devtools/dev-rds.sh work-start
 
 - `work-start`는 DB가 정지 상태면 시작하고, 마지막 실행 시점부터 1시간 임대를 기록한다.
 - 1시간을 넘겨 검증할 때는 `work-start`를 다시 실행해 임대를 갱신한다.
-- `.github/workflows/dev-rds.yml`은 명목상 5분마다 만료 여부를 확인하고 만료된 DEV DB를 정지한다. GitHub 예약 실행은 지연될 수 있으므로 1시간은 임대 만료 시각이며 실제 정지 완료 시각의 hard SLA가 아니다.
+- `ln-was`의 `likenovel-dev-rds-reconcile.timer`가 5분마다 `devtools/dev-rds-reconcile.py`를 실행해 만료된 DEV DB를 정지한다. GitHub 예약 실행 지연과 무관한 primary reconcile 경로다.
+- `.github/workflows/dev-rds.yml`도 명목상 5분마다 같은 임대를 확인하는 보조 경로로 유지한다. GitHub 예약 실행은 지연될 수 있으므로 이 경로만으로 정지 시각을 판정하지 않는다.
 - 예약 workflow는 AWS 자격증명을 설정하기 전에 fake-AWS 계약 테스트를 통과해야 한다. 임대 태그가 없거나 숫자가 아니면 DB는 정지하지 않되 workflow를 실패 처리한다.
 - 스테이징 웹 배포는 이미지 빌드가 모두 성공한 뒤 실제 배포 직전에 임대를 시작한다.
 - `down`은 다른 로컬 검증을 끊을 수 있으므로 자동 실행하지 않고, 즉시 종료가 확실히 필요할 때만 수동으로 사용한다.
 - 이 스크립트는 대상이 정확히 `likenovel-dev`가 아니면 실패하며 PROD DB에는 사용하지 않는다.
 - SSH 터널과 로컬 Docker는 별도 수명주기다. `work-start`가 터널이나 컨테이너를 대신 생성하지 않는다.
 - GitHub Actions principal `github-actions-likenovel`에는 exact DEV DB ARN의 `DescribeDBInstances`, `ListTagsForResource`, `AddTagsToResource`, `StartDBInstance`, `StopDBInstance`만 허용한다. `AddTagsToResource`는 `likenovel-dev-work-until-epoch` 키로 제한하고 PROD ARN은 허용하지 않는다.
+- `ln-was` instance role의 `LikeNovelDevRdsReconcileFromWas` inline policy는 exact DEV DB ARN의 `DescribeDBInstances`, `ListTagsForResource`, `StartDBInstance`, `StopDBInstance`만 허용하고, `ec2:SourceInstanceArn`을 exact `ln-was` instance ARN으로 제한한다. 같은 role을 쓰는 `ln-web`과 PROD DB ARN에는 허용하지 않는다.
+
+Timer source와 runtime path:
+
+```text
+devtools/dev-rds-reconcile.py
+  -> /home/ln-admin/likenovel/dev-rds/dev-rds-reconcile.py
+devtools/systemd/likenovel-dev-rds-reconcile.service
+  -> /etc/systemd/system/likenovel-dev-rds-reconcile.service
+devtools/systemd/likenovel-dev-rds-reconcile.timer
+  -> /etc/systemd/system/likenovel-dev-rds-reconcile.timer
+```
+
+설치 또는 갱신 후에는 `systemctl daemon-reload`, `systemctl enable --now likenovel-dev-rds-reconcile.timer`를 실행하고 `systemctl list-timers`, service journal, DEV RDS 상태를 함께 읽는다. 제거 rollback은 timer disable, 두 unit과 runtime script 삭제, daemon-reload, `LikeNovelDevRdsReconcileFromWas` inline policy 삭제 순서다.
 - 최초 활성화나 GitHub AWS 자격증명 교체 후에는 `Dev RDS lifecycle` workflow를 `status`로 먼저 실행한다. `AccessDenied`가 나오면 웹 이미지를 다시 빌드하지 말고 IAM policy readback과 exact DEV ARN 범위를 먼저 복구한다.
 
 ## 9.2 Local DB 세팅 표준

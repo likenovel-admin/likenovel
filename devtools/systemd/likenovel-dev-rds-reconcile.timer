@@ -1,0 +1,11 @@
+[Unit]
+Description=Reconcile the LikeNovel DEV RDS work lease every five minutes
+
+[Timer]
+OnCalendar=*:0/5
+Persistent=true
+RandomizedDelaySec=0
+Unit=likenovel-dev-rds-reconcile.service
+
+[Install]
+WantedBy=timers.target

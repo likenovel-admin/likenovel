@@ -1,0 +1,9 @@
+[Unit]
+Description=Reconcile the LikeNovel DEV RDS work lease
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ln-admin
+ExecStart=/usr/bin/python3 /home/ln-admin/likenovel/dev-rds/dev-rds-reconcile.py

@@ -36,6 +36,7 @@ jobs:
       - name: Test DEV RDS lifecycle contracts
         run: |
           bash devtools/test-dev-rds.sh
+          python3 devtools/test-dev-rds-reconcile.py
           python3 devtools/test-dev-rds-workflow.py
 
       - name: Configure AWS credentials

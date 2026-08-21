@@ -23,6 +23,7 @@ require('            action="reconcile"')
 require('          bash devtools/dev-rds.sh "$action"')
 require("      - name: Test DEV RDS lifecycle contracts")
 require("          bash devtools/test-dev-rds.sh")
+require("          python3 devtools/test-dev-rds-reconcile.py")
 require("          python3 devtools/test-dev-rds-workflow.py")
 
 test_step = CONTENT.index("      - name: Test DEV RDS lifecycle contracts")
