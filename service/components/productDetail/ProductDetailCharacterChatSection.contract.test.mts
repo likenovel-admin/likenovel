@@ -54,6 +54,11 @@ test("작품 상세 주인공챗 카드는 미리보기 모달을 열고 대화�
   assert.match(sectionSource, /snap-x/);
   assert.match(sectionSource, /md:grid-cols-2/);
   assert.match(sectionSource, /rounded-\[8px\]/);
+  assert.match(
+    sectionSource,
+    /h-\[40px\] min-w-\[100px\][\s\S]*?text-14pxr/,
+    "대화하기는 모바일과 데스크톱에서 일반 CTA 크기를 유지해야 한다"
+  );
   assert.match(sectionSource, /line-clamp-2/);
   assert.doesNotMatch(sectionSource, /block truncate text-12pxr/);
   assert.match(sectionSource, /hasCharacterImage/);

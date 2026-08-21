@@ -228,7 +228,7 @@ export default function ProductDetailCharacterChatSection({
                         aria-label={`${item.characterName}와 바로 대화 시작`}
                         onClick={() => handleDirectStart(item)}
                         disabled={launchingScopeKey !== null}
-                        className="pointer-events-auto relative z-10 shrink-0 rounded-[4px] bg-primary-100 px-8pxr py-4pxr font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100 focus-visible:ring-offset-2 disabled:opacity-60"
+                        className="pointer-events-auto relative z-10 h-[40px] min-w-[100px] shrink-0 rounded-[8px] bg-primary-100 px-[14px] text-14pxr font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100 focus-visible:ring-offset-2 disabled:opacity-60"
                       >
                         {launchingScopeKey === item.characterScopeKey
                           ? "연결 중…"
