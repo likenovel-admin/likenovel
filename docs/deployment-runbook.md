@@ -707,6 +707,8 @@ bash devtools/dev-rds.sh work-start
 - `down`은 다른 로컬 검증을 끊을 수 있으므로 자동 실행하지 않고, 즉시 종료가 확실히 필요할 때만 수동으로 사용한다.
 - 이 스크립트는 대상이 정확히 `likenovel-dev`가 아니면 실패하며 PROD DB에는 사용하지 않는다.
 - SSH 터널과 로컬 Docker는 별도 수명주기다. `work-start`가 터널이나 컨테이너를 대신 생성하지 않는다.
+- GitHub Actions principal `github-actions-likenovel`에는 exact DEV DB ARN의 `DescribeDBInstances`, `ListTagsForResource`, `AddTagsToResource`, `StartDBInstance`, `StopDBInstance`만 허용한다. `AddTagsToResource`는 `likenovel-dev-work-until-epoch` 키로 제한하고 PROD ARN은 허용하지 않는다.
+- 최초 활성화나 GitHub AWS 자격증명 교체 후에는 `Dev RDS lifecycle` workflow를 `status`로 먼저 실행한다. `AccessDenied`가 나오면 웹 이미지를 다시 빌드하지 말고 IAM policy readback과 exact DEV ARN 범위를 먼저 복구한다.
 
 ## 9.2 Local DB 세팅 표준
 대상: 로컬 API 개발/검증
