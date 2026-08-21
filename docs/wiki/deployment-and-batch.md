@@ -16,7 +16,7 @@
 
 Code-readback anchors checked on 2026-07-25:
 
-- Dev backend workflow copies source `run_be.dev.sh` to package `run_be.sh`, waits for CodeDeploy success, then runs `verify_backend_dev_deploy.sh` against the exact deployment ID: `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml`
+- Dev backend workflow renews the exact DEV RDS one-hour lease without restarting an already available DB, then packages CodeDeploy and runs `verify_backend_dev_deploy.sh` against the exact deployment ID: `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml`
 - Dev web compose files currently share Compose project name `docker`; never use `--remove-orphans` across their sequential deploys: `.github/workflows/docker-dev.yml`
 - Prod backend workflow packages `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`, `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/verify_backend_prod_deploy.sh`, `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/init/`, and `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/`, then runs on-host verification: `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions.yml`
 - Dev deploy script syncs batch files to `/home/ln-admin/likenovel/batch-dev` and leaves `/etc/cron.d/likenovel-dev` manual: `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`
@@ -94,7 +94,8 @@ Before a local or staging check uses that channel, run
 DEV-only `ln-was` systemd timer reconciles expired leases every five minutes;
 `.github/workflows/dev-rds.yml` remains a best-effort backup because GitHub
 scheduled runs can be delayed. Re-run `work-start` for checks lasting more than
-one hour; do not use this path for PROD. The SSH tunnel remains a separate
+one hour. The backend DEV workflow renews the same lease before CodeDeploy and
+does not restart a DB that is already available. Do not use this path for PROD. The SSH tunnel remains a separate
 user-owned process.
 
 ## Batch And Cron Paths

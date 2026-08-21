@@ -42,7 +42,7 @@ Legacy Windows path: `C:\Users\Hongsan\Downloads\likenovel` (참고용)
 
 2026-07-25 코드·서버 readback 기준:
 - `.github/workflows/docker-dev.yml` and `.github/workflows/docker-prod.yml` checkout the backend submodule recursively, then run hook, service lint, service utility/contract tests, and CMS contract gates before building frontend Docker images. The prod job runs only for `refs/heads/prod`. Both workflows pull images before recreating containers and verify internal ports plus public URLs after deployment.
-- `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml` packages dev backend CodeDeploy, replaces package `run_be.sh` with source `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`, waits for CodeDeploy, then runs `verify_backend_dev_deploy.sh` on ln-was.
+- `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml` renews the exact DEV RDS one-hour lease after AWS credential setup, starts the DB only when needed, packages dev backend CodeDeploy, waits for CodeDeploy, then runs `verify_backend_dev_deploy.sh` on ln-was.
 - `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions.yml` runs only for `refs/heads/prod`, packages prod backend CodeDeploy, waits for deployment success, then runs `verify_backend_prod_deploy.sh` on ln-was.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh` syncs batch files to `/home/ln-admin/likenovel/batch-dev` but keeps `/etc/cron.d/likenovel-dev` manual.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh` syncs batch files to `/home/ln-admin/likenovel/batch` and guards only selected prod user-crontab lines.
@@ -706,6 +706,7 @@ bash devtools/dev-rds.sh work-start
 - `.github/workflows/dev-rds.yml`도 명목상 5분마다 같은 임대를 확인하는 보조 경로로 유지한다. GitHub 예약 실행은 지연될 수 있으므로 이 경로만으로 정지 시각을 판정하지 않는다.
 - 예약 workflow는 AWS 자격증명을 설정하기 전에 fake-AWS 계약 테스트를 통과해야 한다. 임대 태그가 없거나 숫자가 아니면 DB는 정지하지 않되 workflow를 실패 처리한다.
 - 스테이징 웹 배포는 이미지 빌드가 모두 성공한 뒤 실제 배포 직전에 임대를 시작한다.
+- 스테이징 백엔드 배포는 AWS 자격증명 설정 직후, CodeDeploy 전에 같은 1시간 임대를 갱신한다. DB가 이미 `available`이면 재시작하지 않는다.
 - `down`은 다른 로컬 검증을 끊을 수 있으므로 자동 실행하지 않고, 즉시 종료가 확실히 필요할 때만 수동으로 사용한다.
 - 이 스크립트는 대상이 정확히 `likenovel-dev`가 아니면 실패하며 PROD DB에는 사용하지 않는다.
 - SSH 터널과 로컬 Docker는 별도 수명주기다. `work-start`가 터널이나 컨테이너를 대신 생성하지 않는다.
