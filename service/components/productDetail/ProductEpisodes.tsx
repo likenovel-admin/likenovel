@@ -2,7 +2,7 @@ import { useSelectEpisodes } from "@/app/api/query/episode";
 import { ISelectEpisodeObject } from "@/app/api/query/episode/dto";
 import { useGetAvailableTickets } from "@/app/api/query/product";
 import { useQueryClient } from "@tanstack/react-query";
-import { TYPE_MODAL } from "@/constants/common";
+import { SHOW_PRODUCT_EVALUATION_SURFACE, TYPE_MODAL } from "@/constants/common";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
@@ -480,12 +480,14 @@ const ProductEpisodes = ({
                                 {formatKoreanNumber(episode.countComment)}
                               </span>
                             </div>
-                            <div className="flex items-center gap-3pxr">
-                              <Rating className="w-[14px] h-[14px] text-dark-gray-300" />
-                              <span className="text-11pxr md:text-13pxr text-dark-gray-400">
-                                {formatKoreanNumber(episode.countEvaluation)}
-                              </span>
-                            </div>
+                            {SHOW_PRODUCT_EVALUATION_SURFACE && (
+                              <div className="flex items-center gap-3pxr">
+                                <Rating className="w-[14px] h-[14px] text-dark-gray-300" />
+                                <span className="text-11pxr md:text-13pxr text-dark-gray-400">
+                                  {formatKoreanNumber(episode.countEvaluation)}
+                                </span>
+                              </div>
+                            )}
                           </>
                         )}
                       </div>
