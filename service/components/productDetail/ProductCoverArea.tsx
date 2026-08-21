@@ -717,7 +717,7 @@ const ProductCoverArea = ({
           )}
           {!isLoading && data && (
             <>
-              <div className="flex flex-wrap justify-between items-center gap-8pxr max-w-[770px] mt-25pxr">
+              <div className="flex flex-wrap md:flex-col justify-between md:justify-start items-center md:items-stretch gap-8pxr max-w-[770px] mt-25pxr">
                 <div className="flex flex-wrap max-w-[400px] gap-5pxr mt-14pxr">
                   {data.keywords?.map((keyword: any, index: number) => (
                     <div
@@ -728,7 +728,7 @@ const ProductCoverArea = ({
                     </div>
                   ))}
                 </div>
-                <div className="flex justify-end gap-8pxr flex-wrap">
+                <div className="flex justify-end gap-8pxr flex-wrap md:w-full">
                   <div
                     className={`hidden md:grid gap-8pxr ${
                       shouldShowWebsochatEntryCta

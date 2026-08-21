@@ -88,6 +88,17 @@ assert.ok(
   "PC에서는 채팅 CTA가 첫화 보기 바로 왼쪽에 있어야 한다"
 );
 
+assert.match(
+  source,
+  /flex flex-wrap md:flex-col justify-between md:justify-start items-center md:items-stretch gap-8pxr max-w-\[770px\] mt-25pxr/,
+  "PC에서는 태그 수와 무관하게 CTA가 독립된 행을 사용해야 한다"
+);
+assert.match(
+  source,
+  /flex justify-end gap-8pxr flex-wrap md:w-full/,
+  "PC CTA 행은 작품 정보 영역의 오른쪽에 고정되어야 한다"
+);
+
 const mobileActionsStart = source.indexOf('className={`grid gap-5pxr');
 const mobileActionsEnd = source.indexOf(
   "<WebsochatMiniPreview",
