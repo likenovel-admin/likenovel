@@ -88,6 +88,13 @@ For local backend/batch checks, root `AGENTS.md` treats `host.docker.internal:13
 as the default dev RDS tunnel channel. Switching to Docker MySQL `3806` needs an
 explicit user decision.
 
+Before a local or staging check uses that channel, run
+`bash devtools/dev-rds.sh work-start`. The command is restricted to
+`likenovel-dev`, starts it when needed, and renews a one-hour lease. The
+DEV-only `.github/workflows/dev-rds.yml` reconciles expired leases every 15
+minutes. Re-run `work-start` for checks lasting more than one hour; do not use
+this path for PROD. The SSH tunnel remains a separate user-owned process.
+
 ## Batch And Cron Paths
 
 | Context | Source/template | Runtime path | Cron owner/activation |

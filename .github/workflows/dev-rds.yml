@@ -1,0 +1,53 @@
+name: Dev RDS lifecycle
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "DEV RDS lifecycle action"
+        required: true
+        type: choice
+        default: status
+        options:
+          - status
+          - work-start
+          - reconcile
+          - down
+  schedule:
+    # Scheduled runs can be delayed. Reconcile stops only after lease expiry.
+    - cron: "7,22,37,52 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dev-rds-lifecycle
+  cancel-in-progress: false
+
+jobs:
+  dev-rds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Run DEV RDS lifecycle action
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_ACTION: ${{ inputs.action }}
+        run: |
+          set -euo pipefail
+          action="${INPUT_ACTION:-status}"
+          if [ "$EVENT_NAME" = "schedule" ]; then
+            action="reconcile"
+          fi
+          bash devtools/dev-rds.sh "$action"

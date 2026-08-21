@@ -120,4 +120,30 @@ verify_workflow(
     prod_only=True,
 )
 
+dev_content = (ROOT / ".github" / "workflows" / "docker-dev.yml").read_text(
+    encoding="utf-8"
+)
+prod_content = (ROOT / ".github" / "workflows" / "docker-prod.yml").read_text(
+    encoding="utf-8"
+)
+for command in (
+    "bash devtools/test-dev-rds.sh",
+    "python3 devtools/test-dev-rds-workflow.py",
+):
+    require_before(dev_content, command, "Configure AWS credentials", "docker-dev.yml")
+require_before(
+    dev_content,
+    "Build & Push - cms",
+    "bash devtools/dev-rds.sh work-start",
+    "docker-dev.yml",
+)
+require_before(
+    dev_content,
+    "bash devtools/dev-rds.sh work-start",
+    "Deploy to dev server (ln-web)",
+    "docker-dev.yml",
+)
+if "dev-rds.sh" in prod_content:
+    raise AssertionError("docker-prod.yml: DEV RDS lifecycle must not affect PROD")
+
 print("web deploy workflow contract tests passed")

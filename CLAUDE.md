@@ -32,5 +32,9 @@ Do not use nested legacy `CLAUDE.md` files as the main project runbook.
   current, historical, snapshot, and legacy docs.
 - `likenovel-service-api/likenovel-service-api/CLAUDE.md` is legacy historical
   backend deploy context only. Do not execute commands from it.
+- Before local or staging checks that use the dev RDS, run
+  `bash devtools/dev-rds.sh work-start`. It starts only `likenovel-dev` and
+  renews a one-hour lease; the DEV-only scheduled workflow reconciles expired
+  leases every 15 minutes. Never use this lifecycle path for PROD.
 - Ignored/local-only docs may still be readable in this workspace. Report file
   existence and git tracking separately.

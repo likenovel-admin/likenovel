@@ -691,6 +691,23 @@ docker compose -f /home/ln-admin/likenovel/service/prod.docker-compose.yml up -d
 | Dev API DB | `api.likenovel.dev` 런타임 | `DB_IP=<dev-rds-endpoint>`, `DB_PORT=3306` | `.env.dev` 파일 존재만으로 반영됐다고 보지 않는다 |
 | Prod API DB | `api.likenovel.net` 런타임 | 운영 `.env`/프로세스 env의 `DB_IP`, `DB_PORT=3306` | endpoint 추측 금지, 서버 env readback 필요 |
 
+### 9.1.2 DEV RDS 비용 가드
+
+로컬 또는 스테이징 검증 직전에만 아래 명령으로 `likenovel-dev`를 시작한다.
+
+```bash
+cd /home/hongsan/work/likenovel
+bash devtools/dev-rds.sh work-start
+```
+
+- `work-start`는 DB가 정지 상태면 시작하고, 마지막 실행 시점부터 1시간 임대를 기록한다.
+- 1시간을 넘겨 검증할 때는 `work-start`를 다시 실행해 임대를 갱신한다.
+- `.github/workflows/dev-rds.yml`은 매시 `07, 22, 37, 52분`에 만료 여부를 확인하고 만료된 DEV DB를 정지한다.
+- 스테이징 웹 배포는 이미지 빌드가 모두 성공한 뒤 실제 배포 직전에 임대를 시작한다.
+- `down`은 다른 로컬 검증을 끊을 수 있으므로 자동 실행하지 않고, 즉시 종료가 확실히 필요할 때만 수동으로 사용한다.
+- 이 스크립트는 대상이 정확히 `likenovel-dev`가 아니면 실패하며 PROD DB에는 사용하지 않는다.
+- SSH 터널과 로컬 Docker는 별도 수명주기다. `work-start`가 터널이나 컨테이너를 대신 생성하지 않는다.
+
 ## 9.2 Local DB 세팅 표준
 대상: 로컬 API 개발/검증
 
@@ -734,7 +751,14 @@ docker-compose up -d
 - 이 경우 API 로그에 `Can't connect to MySQL server on '<dev-rds-endpoint>'` 또는 프론트 로그에 proxy `ECONNREFUSED`가 나타난다.
 
 표준 절차:
-1. Git Bash에서 SSH 터널 유지 창을 1개 띄운다.
+1. WSL 저장소에서 DEV RDS 임대를 시작하고 `available` 상태를 확인한다.
+
+```bash
+cd /home/hongsan/work/likenovel
+bash devtools/dev-rds.sh work-start
+```
+
+2. Git Bash에서 SSH 터널 유지 창을 1개 띄운다.
 
 ```bash
 ssh -i "/c/Users/Hongsan/Downloads/ln_kp.pem" -o IdentitiesOnly=yes \
@@ -746,21 +770,21 @@ ssh -i "/c/Users/Hongsan/Downloads/ln_kp.pem" -o IdentitiesOnly=yes \
   ln-admin@10.0.100.110
 ```
 
-2. PowerShell에서 터널 포트를 확인한다.
+3. PowerShell에서 터널 포트를 확인한다.
 
 ```powershell
 Test-NetConnection 127.0.0.1 -Port 13306
 Test-NetConnection 127.0.0.1 -Port 18080
 ```
 
-3. 백엔드 API 컨테이너를 재생성해 런타임 env를 다시 반영한다.
+4. 백엔드 API 컨테이너를 재생성해 런타임 env를 다시 반영한다.
 
 ```powershell
 cd C:\Users\Hongsan\Downloads\likenovel\likenovel-service-api\likenovel-service-api\fastapi_be_server
 docker compose up -d --force-recreate api
 ```
 
-4. 로컬 백엔드 런타임 값(컨테이너 기준)을 아래로 맞춘다.
+5. 로컬 백엔드 런타임 값(컨테이너 기준)을 아래로 맞춘다.
    - `DB_IP=host.docker.internal`
    - `DB_PORT=13306`
    - `KC_DOMAIN=http://host.docker.internal:18080`

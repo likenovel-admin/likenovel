@@ -30,6 +30,11 @@ jobs:
       - name: Test deployment workflow contracts
         run: python3 devtools/test-web-deploy-workflows.py
 
+      - name: Test DEV RDS lifecycle contracts
+        run: |
+          bash devtools/test-dev-rds.sh
+          python3 devtools/test-dev-rds-workflow.py
+
       - name: Test git hooks
         run: bash devtools/test-git-hooks.sh
 
@@ -145,6 +150,9 @@ jobs:
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_CMS }}:dev-latest
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO_CMS }}:dev-${{ github.sha }}
+
+      - name: Start DEV RDS staging lease
+        run: bash devtools/dev-rds.sh work-start
 
       # ---------------------------------------------------------------------
       # Deploy to ln-web (dev containers)
