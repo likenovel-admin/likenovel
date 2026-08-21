@@ -211,7 +211,7 @@ reconcile() {
   deadline="$(read_work_until_epoch)"
   if [ -z "$deadline" ] || [ "$deadline" = "None" ] || [[ ! "$deadline" =~ ^[0-9]+$ ]]; then
     echo "[dev-rds] work lease is missing or malformed; keep $DB_ID available" >&2
-    return
+    return 1
   fi
 
   now="$(now_epoch)"

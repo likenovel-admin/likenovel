@@ -702,7 +702,8 @@ bash devtools/dev-rds.sh work-start
 
 - `work-start`는 DB가 정지 상태면 시작하고, 마지막 실행 시점부터 1시간 임대를 기록한다.
 - 1시간을 넘겨 검증할 때는 `work-start`를 다시 실행해 임대를 갱신한다.
-- `.github/workflows/dev-rds.yml`은 매시 `07, 22, 37, 52분`에 만료 여부를 확인하고 만료된 DEV DB를 정지한다.
+- `.github/workflows/dev-rds.yml`은 명목상 5분마다 만료 여부를 확인하고 만료된 DEV DB를 정지한다. GitHub 예약 실행은 지연될 수 있으므로 1시간은 임대 만료 시각이며 실제 정지 완료 시각의 hard SLA가 아니다.
+- 예약 workflow는 AWS 자격증명을 설정하기 전에 fake-AWS 계약 테스트를 통과해야 한다. 임대 태그가 없거나 숫자가 아니면 DB는 정지하지 않되 workflow를 실패 처리한다.
 - 스테이징 웹 배포는 이미지 빌드가 모두 성공한 뒤 실제 배포 직전에 임대를 시작한다.
 - `down`은 다른 로컬 검증을 끊을 수 있으므로 자동 실행하지 않고, 즉시 종료가 확실히 필요할 때만 수동으로 사용한다.
 - 이 스크립트는 대상이 정확히 `likenovel-dev`가 아니면 실패하며 PROD DB에는 사용하지 않는다.

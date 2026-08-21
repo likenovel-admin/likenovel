@@ -190,13 +190,19 @@ fi
 
 reset_calls
 rm -f "$STATE_DIR/tag"
-run_script reconcile >/dev/null
+if run_script reconcile >/dev/null; then
+  echo "[FAIL] missing lease must fail loudly" >&2
+  exit 1
+fi
 assert_eq available "$(cat "$STATE_DIR/status")" "reconcile fails safe when the lease is missing"
 assert_not_called stop-db-instance "missing lease never stops the DB"
 
 reset_calls
 printf '%s\n' not-a-time > "$STATE_DIR/tag"
-run_script reconcile >/dev/null
+if run_script reconcile >/dev/null; then
+  echo "[FAIL] malformed lease must fail loudly" >&2
+  exit 1
+fi
 assert_eq available "$(cat "$STATE_DIR/status")" "reconcile fails safe for a malformed lease"
 assert_not_called stop-db-instance "malformed lease never stops the DB"
 

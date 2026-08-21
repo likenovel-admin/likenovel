@@ -35,6 +35,6 @@ Do not use nested legacy `CLAUDE.md` files as the main project runbook.
 - Before local or staging checks that use the dev RDS, run
   `bash devtools/dev-rds.sh work-start`. It starts only `likenovel-dev` and
   renews a one-hour lease; the DEV-only scheduled workflow reconciles expired
-  leases every 15 minutes. Never use this lifecycle path for PROD.
+  leases every 5 minutes. Never use this lifecycle path for PROD.
 - Ignored/local-only docs may still be readable in this workspace. Report file
   existence and git tracking separately.
