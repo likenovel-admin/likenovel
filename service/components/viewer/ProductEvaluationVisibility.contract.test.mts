@@ -53,8 +53,8 @@ for (const [label, source] of [
 
 assert.match(
   productEpisodesSource,
-  /<Rating className="w-\[14px\] h-\[14px\] text-dark-gray-300" \/>[\s\S]*?formatKoreanNumber\(episode\.countEvaluation\)/,
-  "user product episode list evaluation count is outside the requested hidden area and must stay unchanged"
+  /SHOW_PRODUCT_EVALUATION_SURFACE && \([\s\S]*?<Rating className="w-\[14px\] h-\[14px\] text-dark-gray-300" \/>[\s\S]*?formatKoreanNumber\(episode\.countEvaluation\)/,
+  "user product episode list must gate evaluation counts"
 );
 assert.match(
   productCoverSource,
