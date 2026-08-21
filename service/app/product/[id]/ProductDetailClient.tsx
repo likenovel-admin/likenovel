@@ -18,6 +18,7 @@ import AiLibrarianDetailCard from "@/components/aiLibrarian/AiLibrarianDetailCar
 import MobileProducts from "@/components/common/MobileProducts";
 import Tab from "@/components/common/Tab";
 import ProductCoverArea from "@/components/productDetail/ProductCoverArea";
+import ProductDetailCharacterChatSection from "@/components/productDetail/ProductDetailCharacterChatSection";
 import ProductDetailWrapper from "@/components/productDetail/ProductDetailWrapper";
 import ProductEpisodes from "@/components/productDetail/ProductEpisodes";
 import SameAuthorProducts from "@/components/productDetail/SameAuthorProducts";
@@ -901,6 +902,12 @@ export default function ProductDetailClient({
             backFallbackPath={productDetailBackFallbackPath}
           />
         </div>
+        <ProductDetailCharacterChatSection
+          productId={productId}
+          adultYn={adultYn}
+          cacheIdentity={productDetailCacheIdentity}
+          enabled={isAuthIdentitySettled}
+        />
         {productData && (isAiBriefLoading || aiLibrarianCopy) && (
           <div
             ref={aiLibrarianRef}
