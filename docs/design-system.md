@@ -108,6 +108,7 @@
 - 작은 버튼: `rounded-[6px]`
 - Pill: `rounded-[100px]`
 - CTA: `rounded-[14px]`
+- 작품 상세의 데스크톱 CTA는 태그 수와 무관하게 별도 행에서 오른쪽 정렬하며, 모바일은 채팅과 첫회/이어보기 CTA의 2열 배치를 유지한다.
 
 #### 구분선
 - 얇은: `border-light-gray-500`
