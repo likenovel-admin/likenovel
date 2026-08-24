@@ -461,14 +461,51 @@ const ProductListCard = ({
                 <div className="flex gap-10pxr">
                   <ProductStateBadge product={data} hasFreeOrPaidBadge />
                 </div>
-                {hasInterestBadge && (
-                  <InterestBadge
-                    product={data}
-                    width={16}
-                    height={21}
-                    style="md:hidden mt-[-4px] ml-10pxr"
-                  />
-                )}
+                <div className="flex shrink-0 items-center gap-7pxr">
+                  {hasInterestBadge && (
+                    <InterestBadge
+                      product={data}
+                      width={16}
+                      height={21}
+                      style="md:hidden"
+                    />
+                  )}
+                  {!isAuthorPage && (
+                    <>
+                      {data.trendindex && data.properties && (
+                        <button
+                          className={`flex items-center justify-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
+                            isMobileStatsOpen ? "bg-black-100" : "bg-white"
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsMobileStatsOpen((prev) => !prev);
+                          }}
+                          aria-label={
+                            isMobileStatsOpen ? "통계 접기" : "통계 펼치기"
+                          }
+                        >
+                          <span
+                            className={`text-12pxr font-semibold leading-none ${
+                              isMobileStatsOpen
+                                ? "text-white"
+                                : "text-dark-gray-300"
+                            }`}
+                          >
+                            i
+                          </span>
+                        </button>
+                      )}
+                      <BookmarkButton
+                        productId={data.productId}
+                        bookmarkYn={data.properties?.bookmarkYn || "N"}
+                        buttonStyle="flex items-center justify-center w-[32px] h-[35px]"
+                        bookmarkStyle="w-[16px] h-[19px] text-dark-gray-200 hover:text-dark-gray-500"
+                        activeBookmarkStyle="w-[16px] h-[19px]"
+                      />
+                    </>
+                  )}
+                </div>
               </div>
               <Link
                 className="text-14pxr font-semibold"
@@ -893,37 +930,8 @@ const ProductListCard = ({
         </div>
         {!isAuthorPage && (
           <>
-            <div className="absolute bottom-[17px] right-[11px] md:hidden flex items-center gap-7pxr">
-              {data.trendindex && data.properties && (
-                <button
-                  className={`flex items-center justify-center w-[20px] h-[20px] rounded-full border border-light-gray-600 ${
-                    isMobileStatsOpen ? "bg-black-100" : "bg-white"
-                  }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsMobileStatsOpen((prev) => !prev);
-                  }}
-                  aria-label={isMobileStatsOpen ? "통계 접기" : "통계 펼치기"}
-                >
-                  <span
-                    className={`text-12pxr font-semibold leading-none ${
-                      isMobileStatsOpen ? "text-white" : "text-dark-gray-300"
-                    }`}
-                  >
-                    i
-                  </span>
-                </button>
-              )}
-              <BookmarkButton
-                productId={data.productId}
-                bookmarkYn={data.properties?.bookmarkYn || "N"}
-                buttonStyle="flex items-center justify-center w-[32px] h-[35px]"
-                bookmarkStyle="w-[16px] h-[19px] text-dark-gray-200 hover:text-dark-gray-500"
-                activeBookmarkStyle="w-[16px] h-[19px]"
-              />
-            </div>
             {data.trendindex && data.properties && isMobileStatsOpen && (
-              <div className="absolute bottom-[52px] right-[10px] md:hidden z-10 min-w-[190px] rounded-[10px] bg-white border border-light-gray-500 p-10pxr">
+              <div className="absolute top-[52px] right-[10px] md:hidden z-10 min-w-[190px] rounded-[10px] bg-white border border-light-gray-500 p-10pxr">
                 {(isCPAdmin || isProductAuthor) && (
                   <div className="flex justify-between gap-16pxr">
                     <span className="text-11pxr text-dark-gray-300">
