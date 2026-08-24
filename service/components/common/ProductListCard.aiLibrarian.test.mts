@@ -20,10 +20,11 @@ assert.match(source, /previewLines=\{aiLibrarianCopy\.previewLines\}/);
 assert.match(source, /onAskMore=\{handleAskAiLibrarianMore\}/);
 assert.match(source, /className="hidden md:block"/);
 assert.match(source, /className="md:hidden px-\[16px\]"/);
-assert.match(
+assert.doesNotMatch(
   source,
   /absolute bottom-\[17px\] right-\[11px\] md:hidden flex items-center gap-7pxr/
 );
+assert.match(source, /className="flex shrink-0 items-center gap-7pxr"/);
 assert.match(
   source,
   /buttonStyle="flex items-center justify-center w-\[32px\] h-\[35px\]"/
