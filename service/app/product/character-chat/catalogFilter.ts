@@ -48,13 +48,14 @@ export const resolveCharacterChatCatalogScope = (
     : "all";
 
 export const pinHomeCharacterSlots = <
-  T extends { characterSlotId: number },
+  T extends { productId: number; characterScopeKey: string },
 >(homeItems: readonly T[], catalogItems: readonly T[]): T[] => {
-  const seenCharacterSlotIds = new Set<number>();
+  const seenCharacters = new Set<string>();
 
   return [...homeItems, ...catalogItems].filter((item) => {
-    if (seenCharacterSlotIds.has(item.characterSlotId)) return false;
-    seenCharacterSlotIds.add(item.characterSlotId);
+    const characterKey = `${item.productId}:${item.characterScopeKey}`;
+    if (seenCharacters.has(characterKey)) return false;
+    seenCharacters.add(characterKey);
     return true;
   });
 };
