@@ -120,6 +120,11 @@ selects env by runtime directory:
   `/home/ln-admin/likenovel/api-dev/.venv/bin/python` in dev so deployed `app`
   modules are importable. The system Python fallback is only for the container
   layout where that API virtualenv path does not exist.
+- AI DNA 배치와 관리자 재분석은 `open_yn='Y' AND use_yn='Y'`인 공개 회차를
+  `episode_no`, `episode_id` 순으로 판단한다. 공개 회차가 3개 이상이고 첫 공개
+  회차 본문이 500자 이상일 때만 수집하며, 공개 회차가 없으면 수집하지 않는다.
+  갱신 기준도 회차 번호 10이 아니라 같은 정렬의 열 번째 공개 회차다. 관리자
+  재분석 결과의 AI 사서 intro·points·chips는 DNA와 함께 저장한다.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/episode_state_transition_minute_batch.sh`
   needs `EPISODE_STATE_TRANSITION_BATCH_ENABLE=1` in cron.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/free_episode_campaign_expire_batch.sh`

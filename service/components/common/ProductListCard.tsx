@@ -28,6 +28,7 @@ import {
   setPendingProductDetailEntrySource,
 } from "@/utils/productPath";
 import { openAiLibrarianPanel } from "@/utils/aiLibrarianPanel";
+import { buildListSynopsisPreview } from "@/utils/listSynopsis";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -103,6 +104,10 @@ const ProductListCard = ({
         ? buildAiLibrarianCopy(data, aiLibrarianBrief)
         : null,
     [data, aiLibrarianBrief]
+  );
+  const listSynopsis = useMemo(
+    () => buildListSynopsisPreview(data.synopsis),
+    [data.synopsis]
   );
   const shouldShowAiLibrarianPreview =
     enableAiLibrarianPreview &&
@@ -561,6 +566,11 @@ const ProductListCard = ({
                 </span>
               )}
             </div>
+            {!isAuthorPage && !!listSynopsis && (
+              <p className="mt-6pxr line-clamp-2 text-12pxr md:text-14pxr leading-[18px] md:leading-[20px] text-dark-gray-400">
+                {listSynopsis}
+              </p>
+            )}
             <div>
               {isAuthorPage && data.contract ? (
                 <>
