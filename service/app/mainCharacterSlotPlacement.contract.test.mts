@@ -72,7 +72,7 @@ assert.match(
 );
 assert.match(
   characterSlotSource,
-  /const handleMoreClick = \(\) => \{[\s\S]*prefetchCharacterCatalog\(\);[\s\S]*router\.push\("\/product\/character-chat"\)/,
+  /const handleMoreClick = \(\) => \{[\s\S]*prefetchCharacterCatalog\(\);[\s\S]*router\.push\("\/product\/character-chat\?from=home"\)/,
   "The more action should reuse an in-flight catalog request without delaying navigation"
 );
 assert.match(

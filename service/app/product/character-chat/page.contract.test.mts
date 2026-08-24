@@ -7,6 +7,7 @@ import {
   parseCharacterChatCatalogRole,
   parseCharacterChatCatalogScope,
   parseCharacterChatCatalogSort,
+  pinHomeCharacterSlots,
   resolveCharacterChatCatalogScope,
 } from "./catalogFilter.ts";
 import { getCharacterChatRoleMeta } from "../../../utils/characterChatRole.ts";
@@ -22,6 +23,10 @@ const dtoSource = readFileSync(
 );
 const gridSource = readFileSync(
   new URL("../../../components/main/CharacterChatCardGrid.tsx", import.meta.url),
+  "utf8"
+);
+const homeSlotSource = readFileSync(
+  new URL("../../../components/main/CharacterSlot.tsx", import.meta.url),
   "utf8"
 );
 const modalSource = readFileSync(
@@ -135,17 +140,17 @@ assert.match(
 );
 assert.match(
   pageSource,
-  /filteredItems\.slice\(0, visibleItemCount\)/,
-  "The catalog should slice filtered results to the current visible count"
+  /orderedItems\.slice\(0, visibleItemCount\)/,
+  "The catalog should slice the home-pinned results to the current visible count"
 );
 assert.match(
   pageSource,
-  /const displayItems = canShowSlotSeed \? seedVisibleItems : visibleItems;/,
-  "The grid should switch from the viewport-sized seed to the authoritative window"
+  /items=\{visibleItems\}/,
+  "The grid should render the visible window of the home-pinned catalog"
 );
 assert.match(
   pageSource,
-  /<CharacterChatCardGrid[\s\S]*items=\{displayItems\}[\s\S]*priorityItemCount=\{4\}/,
+  /<CharacterChatCardGrid[\s\S]*items=\{visibleItems\}[\s\S]*priorityItemCount=\{4\}/,
   "The catalog should prioritize only its first visible mobile batch"
 );
 assert.match(
@@ -160,33 +165,43 @@ assert.match(
 );
 assert.match(
   pageSource,
-  /const canShowSlotSeed =[\s\S]*data === undefined[\s\S]*isDefaultCatalogView[\s\S]*slotSeedItems\.length > 0;/,
-  "The home seed should stop as soon as authoritative catalog data arrives"
+  /const isHomeEntry = searchParams\.get\("from"\) === "home";/,
+  "Only an explicit home entry should pin the home character slots"
 );
 assert.match(
   pageSource,
-  /slotSeedItems\.slice\(0, catalogPaging\.batchSize\)/,
-  "The seed should fill exactly the viewport-sized first two rows"
+  /const canUseHomeSeed =[\s\S]*isHomeEntry[\s\S]*isDefaultCatalogView[\s\S]*slotSeedItems\.length > 0;/,
+  "The home cards should stay pinned in the unfiltered recommended view"
 );
 assert.match(
   pageSource,
-  /const displayItems = canShowSlotSeed \? seedVisibleItems : visibleItems;[\s\S]*<CharacterChatCardGrid[\s\S]*items=\{displayItems\}[\s\S]*entrySource="character_catalog"/,
-  "The catalog should render cached home slots through the same grid while loading"
+  /pinHomeCharacterSlots\(slotSeedItems, filteredItems\)/,
+  "The authoritative catalog should append after the exact cached home order"
 );
 assert.match(
   pageSource,
-  /const showLoading =[\s\S]*!canShowSlotSeed;/,
+  /const showLoading =[\s\S]*!canUseHomeSeed;/,
   "A usable slot seed should replace the blocking spinner"
 );
 assert.match(
   pageSource,
-  /const showError =[\s\S]*isError && !canShowSlotSeed;/,
+  /const showError =[\s\S]*isError && !canUseHomeSeed;/,
   "A catalog error should not remove still-usable seeded cards"
 );
 assert.match(
   pageSource,
-  /canShowSlotSeed && isError[\s\S]*role="alert"[\s\S]*전체 목록을 불러오지 못했어요/,
+  /canUseHomeSeed && isError[\s\S]*role="alert"[\s\S]*전체 목록을 불러오지 못했어요/,
   "A background catalog failure should remain visible and retryable"
+);
+assert.match(
+  homeSlotSource,
+  /router\.push\("\/product\/character-chat\?from=home"\)/,
+  "The home more button should preserve its entry context"
+);
+assert.equal(
+  pageSource.match(/nextSearchParams\.delete\("from"\)/g)?.length,
+  4,
+  "Changing or resetting a catalog filter should release the pinned home order"
 );
 assert.match(
   gridSource,
@@ -438,7 +453,7 @@ assert.match(
 );
 assert.match(
   pageSource,
-  /!showLoading &&\s*!showError &&\s*filteredItems\.length > 0/,
+  /const showGrid = !showLoading && !showError && orderedItems\.length > 0;/,
   "Loading and error states must not leave stale cards interactive"
 );
 
@@ -793,6 +808,31 @@ assert.deepEqual(
   ).map((item) => item.productId),
   [300, 301, 300],
   "Recommended cards should preserve the backend-owned product spreading rank"
+);
+
+const pinnedHomeItems = pinHomeCharacterSlots(
+  [
+    { characterSlotId: 30, label: "home-first" },
+    { characterSlotId: 10, label: "home-second" },
+    { characterSlotId: 20, label: "home-third" },
+  ],
+  [
+    { characterSlotId: 10, label: "catalog-duplicate" },
+    { characterSlotId: 40, label: "catalog-first-new" },
+    { characterSlotId: 30, label: "catalog-duplicate" },
+    { characterSlotId: 50, label: "catalog-second-new" },
+  ]
+);
+assert.deepEqual(
+  pinnedHomeItems.map((item) => [item.characterSlotId, item.label]),
+  [
+    [30, "home-first"],
+    [10, "home-second"],
+    [20, "home-third"],
+    [40, "catalog-first-new"],
+    [50, "catalog-second-new"],
+  ],
+  "Home cards should remain first in their exact response order and catalog duplicates should be removed"
 );
 
 assert.deepEqual(getCharacterChatRoleMeta("main_protagonist"), {

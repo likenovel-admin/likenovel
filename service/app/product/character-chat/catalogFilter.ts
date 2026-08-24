@@ -47,6 +47,18 @@ export const resolveCharacterChatCatalogScope = (
     ? requestedScope
     : "all";
 
+export const pinHomeCharacterSlots = <
+  T extends { characterSlotId: number },
+>(homeItems: readonly T[], catalogItems: readonly T[]): T[] => {
+  const seenCharacterSlotIds = new Set<number>();
+
+  return [...homeItems, ...catalogItems].filter((item) => {
+    if (seenCharacterSlotIds.has(item.characterSlotId)) return false;
+    seenCharacterSlotIds.add(item.characterSlotId);
+    return true;
+  });
+};
+
 interface CharacterChatCatalogFilterItem {
   characterSlotId: number;
   cardOrder: number;

@@ -80,8 +80,18 @@ for (const modeLabel of ["자동 모드", "수동 선택 모드"]) {
 }
 assert.match(
   pageSource,
-  /const displayMode = configData\?\.data\.displayMode \?\? "auto"/,
-  "CMS should default to automatic mode while loading the persisted config"
+  /isError: isConfigError/,
+  "CMS should distinguish a failed config read from automatic mode"
+);
+assert.doesNotMatch(
+  pageSource,
+  /configData\?\.data\.displayMode \?\? "auto"/,
+  "CMS should not silently present an unreadable config as automatic mode"
+);
+assert.match(
+  pageSource,
+  /if \(isConfigError \|\| !displayMode\) \{[\s\S]*role="alert"[\s\S]*홈 구좌 설정을 불러오지 못했습니다\.[\s\S]*onClick=\{\(\) => void refetchConfig\(\)\}/,
+  "CMS should show a retryable config error instead of rendering an assumed mode"
 );
 assert.match(
   pageSource,
@@ -90,7 +100,7 @@ assert.match(
 );
 assert.match(
   pageSource,
-  /전용 이미지[\s\S]*자산 준비[\s\S]*주인공/,
+  /기본 이미지가 아닌 실제 이미지[\s\S]*자산 준비[\s\S]*주인공/,
   "CMS should expose the automatic recommendation priority to operators"
 );
 assert.match(
