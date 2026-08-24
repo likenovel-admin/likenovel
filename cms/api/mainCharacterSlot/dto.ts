@@ -46,6 +46,18 @@ export interface IGetMainCharacterSlotResponse {
   results: IMainCharacterSlot[];
 }
 
+export type MainCharacterSlotDisplayMode = "auto" | "manual";
+
+export interface IGetMainCharacterSlotConfigResponse {
+  data: {
+    displayMode: MainCharacterSlotDisplayMode;
+  };
+}
+
+export interface IUpdateMainCharacterSlotConfigRequest {
+  display_mode: MainCharacterSlotDisplayMode;
+}
+
 export interface IGetMainCharacterSlotProductParams {
   page: number;
   count_per_page: number;

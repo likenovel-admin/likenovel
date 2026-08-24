@@ -3,16 +3,19 @@
 import {
   useCreateMainCharacterSlot,
   useDeleteMainCharacterSlot,
+  useGetMainCharacterSlotConfig,
   useGetMainCharacterSlotProducts,
   useGetMainCharacterSlotRoster,
   useGetMainCharacterSlots,
   usePublishMainCharacterSlotNow,
+  useUpdateMainCharacterSlotConfig,
   useUpdateMainCharacterSlot,
 } from "@/api/mainCharacterSlot";
 import {
   IMainCharacterSlot,
   IMainCharacterSlotProduct,
   IMainCharacterSlotRequest,
+  MainCharacterSlotDisplayMode,
 } from "@/api/mainCharacterSlot/dto";
 import { useCreateUpload, useUpdateUpload } from "@/api/upload";
 import CharacterImageCropDialog from "./CharacterImageCropDialog";
@@ -121,6 +124,11 @@ export default function Page() {
     page: 1,
     count_per_page: PAGE_SIZE,
   });
+  const {
+    data: configData,
+    isLoading: isLoadingConfig,
+    refetch: refetchConfig,
+  } = useGetMainCharacterSlotConfig();
   const { data: productListData, isFetching: isLoadingProducts } =
     useGetMainCharacterSlotProducts({
       page: productPage,
@@ -132,11 +140,13 @@ export default function Page() {
   const createSlot = useCreateMainCharacterSlot();
   const publishNow = usePublishMainCharacterSlotNow();
   const updateSlot = useUpdateMainCharacterSlot();
+  const updateDisplayMode = useUpdateMainCharacterSlotConfig();
   const deleteSlot = useDeleteMainCharacterSlot();
   const createUpload = useCreateUpload();
   const updateUpload = useUpdateUpload();
 
   const rows = data?.results ?? [];
+  const displayMode = configData?.data.displayMode ?? "auto";
   const publiclyEligibleRows = rows.filter(
     (row) => row.publicEligible && getSlotStatus(row) === "노출중"
   );
@@ -404,7 +414,22 @@ export default function Page() {
     }
   };
 
-  if (isLoading && !data) return <FullPageLoader isLoading />;
+  const handleDisplayModeChange = async (
+    nextMode: MainCharacterSlotDisplayMode,
+  ) => {
+    if (nextMode === displayMode) return;
+    try {
+      await updateDisplayMode.mutateAsync({ display_mode: nextMode });
+      await refetchConfig();
+      showAlert("저장 완료", "홈 주인공챗 노출 모드를 변경했습니다.", "확인");
+    } catch (error) {
+      showAlert("오류", catchErrorMessage(error), "확인");
+    }
+  };
+
+  if ((isLoading && !data) || (isLoadingConfig && !configData)) {
+    return <FullPageLoader isLoading />;
+  }
 
   return (
     <SidebarInset className="bg-sidebar-inset-background">
@@ -417,6 +442,36 @@ export default function Page() {
               등록 모드로 전환
             </Button>
           )}
+        </div>
+
+        <div className="rounded-md border bg-background px-4 py-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <Label htmlFor="main-character-display-mode">홈 구좌 노출 방식</Label>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {displayMode === "auto"
+                  ? "추천순 상위 후보군에서 무작위로 12명을 노출합니다. 전용 이미지 → 자산 준비 → 주인공 순으로 우선합니다."
+                  : "아래 메인 12명 편성의 공개 순서대로 홈에 노출합니다."}
+              </p>
+            </div>
+            <Select
+              value={displayMode}
+              onValueChange={(value) =>
+                void handleDisplayModeChange(
+                  value as MainCharacterSlotDisplayMode,
+                )
+              }
+              disabled={updateDisplayMode.isPending}
+            >
+              <SelectTrigger id="main-character-display-mode" className="w-full md:w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">자동 모드</SelectItem>
+                <SelectItem value="manual">수동 선택 모드</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="border-b">
@@ -453,8 +508,9 @@ export default function Page() {
         <div className="rounded-md border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
           {activeTab === "main" && (
             <>
-              전체 공개 목록 중 서버 공개 조건을 통과한 순서 상위 12명이 홈에
-              노출됩니다. 현재 {mainRows.length}명입니다.
+              {displayMode === "auto"
+                ? `자동 모드에서는 추천순 상위 후보군을 기준으로 홈 요청마다 편성합니다. 아래 ${mainRows.length}명은 수동 선택 모드 전환 시 사용할 예비 편성입니다.`
+                : `전체 공개 목록 중 서버 공개 조건을 통과한 수동 편성 상위 ${mainRows.length}명이 홈에 노출됩니다.`}
             </>
           )}
           {activeTab === "catalog" && (
@@ -775,7 +831,9 @@ export default function Page() {
           <CardHeader>
             <CardTitle>
               {activeTab === "main"
-                ? `홈 노출 ${mainRows.length}/12명`
+                ? displayMode === "auto"
+                  ? `수동 모드 예비 편성 ${mainRows.length}/12명`
+                  : `홈 노출 ${mainRows.length}/12명`
                 : activeTab === "catalog"
                   ? `전체 공개 ${publiclyEligibleRows.length}명`
                   : `검수 필요·예약·종료 ${reviewRows.length}명`}

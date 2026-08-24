@@ -299,8 +299,18 @@ assert.match(
 );
 assert.match(
   dtoSource.slice(catalogDtoStart),
-  /entryEpisodeNo: number;[\s\S]*createdDate: string;[\s\S]*chatQuality: "good" \| "normal";[\s\S]*fullReady: boolean;[\s\S]*readinessCoverageRatio: number;[\s\S]*distinctEpisodeCount: number;[\s\S]*exampleCount: number;[\s\S]*sceneCount: number;[\s\S]*lastViewedEpisodeNo: number \| null;[\s\S]*lastViewedAt: string \| null;/,
+  /entryEpisodeNo: number;[\s\S]*hasCharacterImage: boolean;[\s\S]*createdDate: string;[\s\S]*chatQuality: "good" \| "normal";[\s\S]*fullReady: boolean;[\s\S]*readinessCoverageRatio: number;[\s\S]*distinctEpisodeCount: number;[\s\S]*exampleCount: number;[\s\S]*sceneCount: number;[\s\S]*lastViewedEpisodeNo: number \| null;[\s\S]*lastViewedAt: string \| null;/,
   "Catalog DTOs should expose a required entry episode, registration, asset completeness, and nullable reading progress"
+);
+assert.match(
+  pageSource,
+  /\{ label: "추천순", value: "recommended" \}/,
+  "The catalog should expose the recommendation-order filter"
+);
+assert.match(
+  readFileSync(new URL("./catalogFilter.ts", import.meta.url), "utf8"),
+  /left\.cardOrder - right\.cardOrder/,
+  "Recommended should consume the backend-owned recommendation rank"
 );
 assert.doesNotMatch(
   dtoSource.slice(homeDtoStart, catalogDtoStart),
@@ -438,6 +448,7 @@ const catalogItems = [
     productId: 130,
     characterRole: "major_character",
     cardOrder: 30,
+    hasCharacterImage: false,
     createdDate: "2026-07-20T10:00:00+09:00",
     chatQuality: "normal",
     fullReady: false,
@@ -453,7 +464,8 @@ const catalogItems = [
     characterSlotId: 12,
     productId: 112,
     characterRole: "major_character",
-    cardOrder: 2,
+    cardOrder: 4,
+    hasCharacterImage: false,
     createdDate: "2026-07-22T10:00:00+09:00",
     chatQuality: "normal",
     fullReady: true,
@@ -469,7 +481,8 @@ const catalogItems = [
     characterSlotId: 11,
     productId: 111,
     characterRole: "main_protagonist",
-    cardOrder: 2,
+    cardOrder: 1,
+    hasCharacterImage: true,
     createdDate: "2026-07-22T10:00:00+09:00",
     chatQuality: "normal",
     fullReady: true,
@@ -485,7 +498,8 @@ const catalogItems = [
     characterSlotId: 20,
     productId: 120,
     characterRole: "major_character",
-    cardOrder: 1,
+    cardOrder: 2,
+    hasCharacterImage: true,
     createdDate: "2026-07-23T09:00:00+09:00",
     chatQuality: "normal",
     fullReady: true,
@@ -501,7 +515,8 @@ const catalogItems = [
     characterSlotId: 31,
     productId: 131,
     characterRole: "main_protagonist",
-    cardOrder: 31,
+    cardOrder: 3,
+    hasCharacterImage: false,
     createdDate: "2026-07-21T10:00:00+09:00",
     chatQuality: "normal",
     fullReady: true,
@@ -571,8 +586,8 @@ const recommendedItems = filterCharacterChatCatalog(
 );
 assert.deepEqual(
   recommendedItems.map((item) => item.characterSlotId),
-  [11, 12, 20, 31, 30],
-  "Recommended should ignore CMS card order and use a stable character-slot id tie-break"
+  [11, 20, 31, 12, 30],
+  "Recommended should preserve the backend-owned image, readiness, and protagonist rank"
 );
 const completenessOrderedItems = (
   [
@@ -618,8 +633,8 @@ assert.deepEqual(
     "all",
     "recommended"
   ).map((item) => item.characterSlotId),
-  [1, 2, 3, 4, 5, 6, 8, 7],
-  "Recommended should rank full readiness, quality, coverage, episode diversity, examples, scenes, then stable id"
+  [8, 7, 6, 5, 4, 3, 2, 1],
+  "Recommended should follow the authoritative card order instead of rebuilding recommendation policy in the browser"
 );
 const episodeCountChangedItems = catalogItems.map((item, index) => ({
   ...item,
@@ -661,7 +676,7 @@ const readingItems = filterCharacterChatCatalog(
 );
 assert.deepEqual(
   readingItems.map((item) => item.characterSlotId),
-  [11, 12, 20],
+  [11, 20, 12],
   "Reading scope should retain the selected recommended sort"
 );
 
@@ -716,7 +731,7 @@ assert.deepEqual(
     "major_character",
     "recommended"
   ).map((item) => item.characterSlotId),
-  [12, 20, 30],
+  [20, 12, 30],
   "The role filter should independently retain major characters"
 );
 
@@ -754,16 +769,19 @@ const adjacentProductItems = [
     ...sameQualityDifferentRoles[0],
     characterSlotId: 301,
     productId: 300,
+    cardOrder: 1,
   },
   {
     ...sameQualityDifferentRoles[0],
     characterSlotId: 302,
     productId: 300,
+    cardOrder: 3,
   },
   {
     ...sameQualityDifferentRoles[0],
     characterSlotId: 303,
     productId: 301,
+    cardOrder: 2,
   },
 ];
 assert.deepEqual(
@@ -774,7 +792,7 @@ assert.deepEqual(
     "recommended"
   ).map((item) => item.productId),
   [300, 301, 300],
-  "Recommended cards should spread adjacent characters from the same work inside one quality band"
+  "Recommended cards should preserve the backend-owned product spreading rank"
 );
 
 assert.deepEqual(getCharacterChatRoleMeta("main_protagonist"), {
