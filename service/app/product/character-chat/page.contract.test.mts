@@ -812,27 +812,53 @@ assert.deepEqual(
 
 const pinnedHomeItems = pinHomeCharacterSlots(
   [
-    { characterSlotId: 30, label: "home-first" },
-    { characterSlotId: 10, label: "home-second" },
-    { characterSlotId: 20, label: "home-third" },
+    {
+      characterSlotId: 30,
+      productId: 100,
+      characterScopeKey: "main",
+      label: "home-first",
+    },
+    {
+      characterSlotId: 10,
+      productId: 200,
+      characterScopeKey: "main",
+      label: "home-second",
+    },
   ],
   [
-    { characterSlotId: 10, label: "catalog-duplicate" },
-    { characterSlotId: 40, label: "catalog-first-new" },
-    { characterSlotId: 30, label: "catalog-duplicate" },
-    { characterSlotId: 50, label: "catalog-second-new" },
+    {
+      characterSlotId: 999,
+      productId: 100,
+      characterScopeKey: "main",
+      label: "same-character-different-id",
+    },
+    {
+      characterSlotId: 30,
+      productId: 100,
+      characterScopeKey: "support",
+      label: "same-product-different-character-same-id",
+    },
+    {
+      characterSlotId: 40,
+      productId: 400,
+      characterScopeKey: "main",
+      label: "catalog-new",
+    },
   ]
 );
 assert.deepEqual(
-  pinnedHomeItems.map((item) => [item.characterSlotId, item.label]),
+  pinnedHomeItems.map((item) => [
+    item.characterSlotId,
+    item.productId,
+    item.label,
+  ]),
   [
-    [30, "home-first"],
-    [10, "home-second"],
-    [20, "home-third"],
-    [40, "catalog-first-new"],
-    [50, "catalog-second-new"],
+    [30, 100, "home-first"],
+    [10, 200, "home-second"],
+    [30, 100, "same-product-different-character-same-id"],
+    [40, 400, "catalog-new"],
   ],
-  "Home cards should remain first in their exact response order and catalog duplicates should be removed"
+  "Home cards should stay first while semantic duplicates are removed without dropping unrelated slot IDs"
 );
 
 assert.deepEqual(getCharacterChatRoleMeta("main_protagonist"), {
