@@ -127,6 +127,8 @@ export default function Page() {
   const {
     data: configData,
     isLoading: isLoadingConfig,
+    isFetching: isFetchingConfig,
+    isError: isConfigError,
     refetch: refetchConfig,
   } = useGetMainCharacterSlotConfig();
   const { data: productListData, isFetching: isLoadingProducts } =
@@ -146,7 +148,7 @@ export default function Page() {
   const updateUpload = useUpdateUpload();
 
   const rows = data?.results ?? [];
-  const displayMode = configData?.data.displayMode ?? "auto";
+  const displayMode = configData?.data.displayMode;
   const publiclyEligibleRows = rows.filter(
     (row) => row.publicEligible && getSlotStatus(row) === "노출중"
   );
@@ -431,6 +433,26 @@ export default function Page() {
     return <FullPageLoader isLoading />;
   }
 
+  if (isConfigError || !displayMode) {
+    return (
+      <SidebarInset className="bg-sidebar-inset-background">
+        <PageHeader title="" />
+        <div className="flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 p-5 pt-0">
+          <p role="alert" className="text-sm text-muted-foreground">
+            홈 구좌 설정을 불러오지 못했습니다.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => void refetchConfig()}
+            disabled={isFetchingConfig}
+          >
+            {isFetchingConfig ? "불러오는 중..." : "다시 불러오기"}
+          </Button>
+        </div>
+      </SidebarInset>
+    );
+  }
+
   return (
     <SidebarInset className="bg-sidebar-inset-background">
       <PageHeader title="" />
@@ -450,7 +472,7 @@ export default function Page() {
               <Label htmlFor="main-character-display-mode">홈 구좌 노출 방식</Label>
               <p className="mt-1 text-sm text-muted-foreground">
                 {displayMode === "auto"
-                  ? "추천순 상위 후보군에서 무작위로 12명을 노출합니다. 전용 이미지 → 자산 준비 → 주인공 순으로 우선합니다."
+                  ? "추천순 상위 후보군에서 무작위로 12명을 노출합니다. 기본 이미지가 아닌 실제 이미지 → 자산 준비 → 주인공 순으로 우선합니다."
                   : "아래 메인 12명 편성의 공개 순서대로 홈에 노출합니다."}
               </p>
             </div>

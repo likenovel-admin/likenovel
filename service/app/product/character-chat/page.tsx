@@ -26,6 +26,7 @@ import {
   parseCharacterChatCatalogRole,
   parseCharacterChatCatalogScope,
   parseCharacterChatCatalogSort,
+  pinHomeCharacterSlots,
   resolveCharacterChatCatalogScope,
   type CharacterChatCatalogRole,
   type CharacterChatCatalogScope,
@@ -83,6 +84,7 @@ function CharacterChatCatalogPageContent() {
   );
   const activeRole = parseCharacterChatCatalogRole(searchParams.get("role"));
   const activeSort = parseCharacterChatCatalogSort(searchParams.get("sort"));
+  const isHomeEntry = searchParams.get("from") === "home";
   const canUsePersonalizedScope =
     isAuthInitialized && queryState.productCacheIdentity !== "guest";
   const activeScope = resolveCharacterChatCatalogScope(
@@ -128,6 +130,7 @@ function CharacterChatCatalogPageContent() {
     (scope: CharacterChatCatalogScope) => {
       const nextSearchParams = new URLSearchParams(searchParams.toString());
       nextSearchParams.delete("filter");
+      nextSearchParams.delete("from");
       if (scope === "all") {
         nextSearchParams.delete("scope");
       } else {
@@ -158,6 +161,7 @@ function CharacterChatCatalogPageContent() {
     (sort: CharacterChatCatalogSort) => {
       const nextSearchParams = new URLSearchParams(searchParams.toString());
       nextSearchParams.delete("filter");
+      nextSearchParams.delete("from");
       if (sort === "recommended") {
         nextSearchParams.delete("sort");
       } else {
@@ -177,6 +181,7 @@ function CharacterChatCatalogPageContent() {
     (role: CharacterChatCatalogRole) => {
       const nextSearchParams = new URLSearchParams(searchParams.toString());
       nextSearchParams.delete("filter");
+      nextSearchParams.delete("from");
       if (role === "all") {
         nextSearchParams.delete("role");
       } else {
@@ -195,6 +200,7 @@ function CharacterChatCatalogPageContent() {
   const handleFilterReset = useCallback(() => {
     const nextSearchParams = new URLSearchParams(searchParams.toString());
     nextSearchParams.delete("filter");
+    nextSearchParams.delete("from");
     nextSearchParams.delete("scope");
     nextSearchParams.delete("role");
     const queryString = nextSearchParams.toString();
@@ -244,30 +250,30 @@ function CharacterChatCatalogPageContent() {
       filterCharacterChatCatalog(items, activeScope, activeRole, activeSort),
     [activeRole, activeScope, activeSort, items]
   );
-  const visibleItemCount = catalogPaging.batchSize * visibleBatchCount;
-  const visibleItems = useMemo(
-    () => filteredItems.slice(0, visibleItemCount),
-    [filteredItems, visibleItemCount]
-  );
   const isDefaultCatalogView =
     activeScope === "all" &&
     activeRole === "all" &&
     activeSort === "recommended";
-  const canShowSlotSeed =
-    data === undefined &&
+  const canUseHomeSeed =
+    isHomeEntry &&
     isDefaultCatalogView &&
     slotSeedItems.length > 0;
-  const seedVisibleItems = useMemo(
-    () => slotSeedItems.slice(0, catalogPaging.batchSize),
-    [catalogPaging.batchSize, slotSeedItems]
+  const orderedItems = useMemo(
+    () =>
+      canUseHomeSeed
+        ? pinHomeCharacterSlots(slotSeedItems, filteredItems)
+        : filteredItems,
+    [canUseHomeSeed, filteredItems, slotSeedItems]
   );
-  const displayItems = canShowSlotSeed ? seedVisibleItems : visibleItems;
+  const visibleItemCount = catalogPaging.batchSize * visibleBatchCount;
+  const visibleItems = useMemo(
+    () => orderedItems.slice(0, visibleItemCount),
+    [orderedItems, visibleItemCount]
+  );
   const showLoading =
-    (!queryState.enabled || isLoading) && !canShowSlotSeed;
-  const showError = isError && !canShowSlotSeed;
-  const showGrid =
-    canShowSlotSeed ||
-    (!showLoading && !showError && filteredItems.length > 0);
+    (!queryState.enabled || isLoading) && !canUseHomeSeed;
+  const showError = isError && !canUseHomeSeed;
+  const showGrid = !showLoading && !showError && orderedItems.length > 0;
 
   return (
     <main className="w-full px-16pxr md:px-24pxr lg:px-32pxr">
@@ -384,7 +390,7 @@ function CharacterChatCatalogPageContent() {
         )}
         {!showLoading &&
           !showError &&
-          !canShowSlotSeed &&
+          !canUseHomeSeed &&
           items.length === 0 && (
           <div className="flex min-h-[240px] items-center justify-center text-14pxr text-dark-gray-500">
             지금 대화할 수 있는 캐릭터가 없어요.
@@ -408,19 +414,19 @@ function CharacterChatCatalogPageContent() {
         {showGrid && (
           <>
             <CharacterChatCardGrid
-              items={displayItems}
+              items={visibleItems}
               priorityItemCount={4}
               adultYn={adultYn}
               entrySource="character_catalog"
               imageSizes="(max-width: 767px) 46vw, (max-width: 1023px) 23vw, (max-width: 1279px) 18vw, 170px"
               className="grid grid-cols-2 gap-x-10pxr gap-y-20pxr md:grid-cols-4 md:gap-x-20pxr lg:grid-cols-5 xl:grid-cols-6"
             />
-            {canShowSlotSeed && !isError && (
+            {canUseHomeSeed && data === undefined && !isError && (
               <p role="status" className="sr-only">
                 전체 목록을 불러오는 중입니다.
               </p>
             )}
-            {canShowSlotSeed && isError && (
+            {canUseHomeSeed && isError && (
               <div
                 role="alert"
                 className="mt-24pxr flex items-center justify-center gap-8pxr text-13pxr text-dark-gray-500"
@@ -436,8 +442,7 @@ function CharacterChatCatalogPageContent() {
                 </button>
               </div>
             )}
-            {!canShowSlotSeed &&
-              visibleItems.length < filteredItems.length && (
+            {visibleItems.length < orderedItems.length && (
               <div className="mt-28pxr flex justify-center">
                 <button
                   type="button"

@@ -115,7 +115,7 @@ const CharacterSlot = ({ items, adultYn, cacheIdentity }: Props) => {
 
   const handleMoreClick = () => {
     prefetchCharacterCatalog();
-    router.push("/product/character-chat");
+    router.push("/product/character-chat?from=home");
   };
 
   if (list.length === 0) return null;
