@@ -1,3 +1,4 @@
+import re
 import subprocess
 import sys
 import unittest
@@ -37,6 +38,27 @@ class AiPipelineBatchesMonitorTest(unittest.TestCase):
         self.assertIn("emit_log STORYCTX storyctx 90", self.check_script)
         self.assertIn("tb_cms_batch_job_process", self.check_script)
         self.assertIn(r"\[DONE\]\s*성공:\s*(\d+),\s*실패:\s*(\d+)", self.check_script)
+
+    def test_storyctx_completion_parser_accepts_current_and_legacy_field_order(self) -> None:
+        pattern_match = re.search(
+            r'STORYCTX_COMPLETION_RE\s*=\s*re\.compile\(r"([^"]+)"\)',
+            self.check_script,
+        )
+        self.assertIsNotNone(pattern_match)
+        pattern = re.compile(pattern_match.group(1))
+
+        for line in (
+            "build_story_agent_context_batch completed ready=1 failed=0",
+            "build_story_agent_context_batch completed ready=1 review_required=1 deferred=0 failed=0",
+        ):
+            with self.subTest(line=line):
+                match = pattern.search(line)
+                self.assertIsNotNone(match)
+                self.assertEqual(match.groups(), ("1", "0"))
+
+        self.assertIsNone(
+            pattern.search("build_story_agent_context_batch started ready=1 failed=0")
+        )
 
     def test_story_and_character_pipeline_summary_types_are_covered(self) -> None:
         for summary_type in (

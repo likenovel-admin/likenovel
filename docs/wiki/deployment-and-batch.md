@@ -167,6 +167,14 @@ selects env by runtime directory:
 - Character-asset readiness is observability/consumer-gate state, not a reason to
   rewrite product `context_status` to `failed`. Incomplete characters stay hidden by
   the exact-key readiness gate while the story context remains available.
+- `character_rp_profile` readiness requires a non-empty exact `character_key`,
+  `personality_core`, and all three speech fields: `tone`, `formality`, and
+  `sentence_length`. Public catalog, preview, chat runtime, and story-context repair
+  use this same fail-closed contract.
+- A paid manual character repair can be bounded with repeated
+  `--character-scope-key` values. This option is valid only with
+  `--build-mode delta --apply --repair-character-assets`; it intersects both scene
+  and RP repair scopes and does not broaden the selected `--product-id` set.
 - `--max-delta-episodes 0` means unlimited, not zero work. For a manual no-provider
   reaggregation check, follow the dry-run `plans=0` gate and fingerprint verification
   in `docs/deployment-runbook.md`; do not treat this option as a cost guard.
@@ -223,3 +231,6 @@ as active/risky, not normal.
 Current batch sources use `completed`, `DONE`, `RELEASE_LOCK`, `completed_yn`,
 `[ERROR]`, advisory locks, and MySQL `GET_LOCK`/`RELEASE_LOCK` patterns. Read
 the specific script/SQL before interpreting a log.
+The deep story-context monitor extracts `ready` and `failed` by field label, so
+terminal lines may include `review_required` or `deferred` between them. A latest
+run without a matching terminal line remains `UNKNOWN`.
