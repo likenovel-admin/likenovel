@@ -486,6 +486,8 @@ Story context 비용 가드:
 - 캐릭터 identity 수동 보정은 `scripts/apply_story_agent_identity_review.py`만 사용한다. `--apply`가 없으면 transaction을 rollback하는 dry-run이며, preview의 target scope/display/role/public eligibility를 확인한 뒤 같은 request에만 `--apply`를 추가한다. review는 현재 active signal의 `summary_id`와 `source_hash`에 고정되므로 신호가 바뀐 stale request는 적용하지 않는다.
 - identity review는 기존 RP를 삭제하거나 덮어쓰지 않는다. reviewed target의 exact-key RP가 비어 있으면 delta repair가 legacy alias 자산을 재사용할 수 있지만, reviewed display가 legacy profile의 display/alias와 일치하고 profile/examples가 같은 legacy key를 정확히 가리키며 예시 대사의 회차 근거가 확인될 때만 bridge한다. 회차가 0인 예시는 원문에서 exact text가 단일 회차에만 존재할 때만 episode evidence를 보강한다. 조건이 부족하거나 provider가 없으면 기존 LKG를 유지하고 no-progress로 남긴다.
 - character asset readiness는 `tb_story_agent_context_product.context_status`를 `failed`로 강등하지 않는다. build/DB 오류와 캐릭터 자산 결손을 분리하고, 불완전한 캐릭터는 consumer exact-key/readiness gate에서만 숨기며 audit/monitor에서 관측한다.
+- `character_rp_profile`은 exact `character_key`, 비어 있지 않은 `personality_core`, `speech_style.tone`, `speech_style.formality`, `speech_style.sentence_length`가 모두 있어야 ready다. 공개 catalog/preview, 실제 character-chat runtime, story-context audit/repair가 같은 fail-closed 판정을 사용한다.
+- 유료 provider를 쓰는 수동 캐릭터 복구는 반복 가능한 `--character-scope-key`로 scene/RP 범위를 교집합 제한할 수 있다. 이 옵션은 `--build-mode delta --apply --repair-character-assets` 조합에서만 유효하며, 함께 지정한 `--product-id` 범위를 넓히지 않는다.
 - `--max-delta-episodes 0`은 0건 처리가 아니라 무제한이다. 무비용 수동 재집계 검증에서 provider 차단 용도로 사용하지 않는다. 먼저 이미 완비된 단일 `--episode-no`로 apply 없는 delta dry-run이 `plans=0`인지 확인한 뒤, 동일 scope에 `--apply --reaggregate-character-inventory`를 사용하고 생성 카운터 0과 기존 signal/RP fingerprint 불변을 확인한다.
 - deep monitor의 foundation mismatch는 현재 collector 대상(AI 동의 + 코호트 또는 기존 ready grandfather + disabled 아님)만 WARN으로 집계하고, 정책 밖 mismatch는 별도 정보성 카운트로 남긴다.
 - DeepSeek 모델은 공식 API를 직접 호출하지 않는다. `episode_character_signals`는 OpenRouter의 `STORY_AGENT_CHARACTER_SIGNALS_OPENROUTER_MODEL`을 사용하며 기본값은 `deepseek/deepseek-v4-pro`다. `episode_scene_extraction`도 `STORY_AGENT_SCENE_EXTRACTION_OPENROUTER_MODEL` 기본값 `deepseek/deepseek-v4-pro`로 핵심 장면 2~3개를 추출하고 기본 출력 상한은 5,000토큰이다. AI DNA fallback과 provider health도 `OPENROUTER_API_KEY`/`OPENROUTER_BASE_URL`만 사용한다.
@@ -535,6 +537,7 @@ Story context 비용 가드:
    - `deadlock`
    - `lock wait`
 4. `completed`, `DONE`, `RELEASE_LOCK`, `completed_yn='Y'` 같은 success marker가 마지막 error보다 뒤에 있어도 같은 batch/run window인지 확인한다.
+   - deep monitor의 storyctx terminal parser는 `ready`와 `failed`를 필드명으로 찾으므로 그 사이에 `review_required`, `deferred`가 있어도 완료로 판정한다. 최신 run에 terminal marker가 없으면 `UNKNOWN`을 유지한다.
 5. `processlist`에서 batch query가 60초 이상 active이면 정상 완료가 아니라 active/risky로 보고한다.
 6. `BASH_ENV`나 cron shell 동작을 bash 수동 실행 결과만으로 단정해 batch source를 고치지 않는다. 실제 cron 실행, 로그, DB row/readback을 함께 본다.
 

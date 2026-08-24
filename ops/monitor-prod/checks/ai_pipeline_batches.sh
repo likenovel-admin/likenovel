@@ -63,6 +63,7 @@ from pathlib import Path
 BATCH_DIR = Path("/home/ln-admin/likenovel/batch")
 NOW = dt.datetime.now()
 TIMESTAMP = re.compile(r"\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(?: [A-Z]+)?\]")
+STORYCTX_COMPLETION_RE = re.compile(r"build_story_agent_context_batch completed (?=[^\n]*\bready=(\d+)\b)(?=[^\n]*\bfailed=(\d+)\b)[^\n]*")
 
 
 def safe(value: object) -> str:
@@ -127,7 +128,7 @@ def emit_log(job: str, filename: str, start_regex: str, process_env: str) -> Non
         detail = f"missing {filename}"
     elif block:
         if job == "storyctx":
-            completed = re.findall(r"build_story_agent_context_batch completed ready=(\d+) failed=(\d+)", block)
+            completed = STORYCTX_COMPLETION_RE.findall(block)
             if completed:
                 ready, failed = completed[-1]
                 status = "success" if int(failed) == 0 else "failed"
