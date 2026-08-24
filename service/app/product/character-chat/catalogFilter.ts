@@ -49,15 +49,9 @@ export const resolveCharacterChatCatalogScope = (
 
 interface CharacterChatCatalogFilterItem {
   characterSlotId: number;
-  productId: number;
+  cardOrder: number;
   characterRole: CharacterChatRole;
   createdDate: string;
-  chatQuality: "good" | "normal";
-  fullReady: boolean;
-  readinessCoverageRatio: number;
-  distinctEpisodeCount: number;
-  exampleCount: number;
-  sceneCount: number;
   lastViewedEpisodeNo: number | null;
 }
 
@@ -66,73 +60,14 @@ const parseCreatedDate = (value: string) => {
   return Number.isNaN(timestamp) ? Number.NEGATIVE_INFINITY : timestamp;
 };
 
-const spreadAdjacentProducts = <T extends CharacterChatCatalogFilterItem>(
-  items: T[]
-) => {
-  for (let index = 1; index < items.length; index += 1) {
-    const previousItem = items[index - 1];
-    const currentItem = items[index];
-    if (previousItem.productId !== currentItem.productId) continue;
-
-    let swapIndex = -1;
-    for (
-      let candidateIndex = index + 1;
-      candidateIndex < items.length;
-      candidateIndex += 1
-    ) {
-      const candidate = items[candidateIndex];
-      if (
-        candidate.productId !== previousItem.productId &&
-        candidate.fullReady === currentItem.fullReady &&
-        candidate.chatQuality === currentItem.chatQuality
-      ) {
-        swapIndex = candidateIndex;
-        break;
-      }
-    }
-    if (swapIndex === -1) continue;
-
-    [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
-  }
-
-  return items;
-};
-
 const sortRecommended = <T extends CharacterChatCatalogFilterItem>(
   items: T[]
-) => {
+) =>
   items.sort((left, right) => {
-    if (left.fullReady !== right.fullReady) {
-      return left.fullReady ? -1 : 1;
-    }
-
-    if (left.chatQuality !== right.chatQuality) {
-      return left.chatQuality === "good" ? -1 : 1;
-    }
-
-    const coverageDifference =
-      right.readinessCoverageRatio - left.readinessCoverageRatio;
-    if (coverageDifference !== 0) return coverageDifference;
-
-    const distinctEpisodeDifference =
-      right.distinctEpisodeCount - left.distinctEpisodeCount;
-    if (distinctEpisodeDifference !== 0) return distinctEpisodeDifference;
-
-    const exampleDifference = right.exampleCount - left.exampleCount;
-    if (exampleDifference !== 0) return exampleDifference;
-
-    const sceneDifference = right.sceneCount - left.sceneCount;
-    if (sceneDifference !== 0) return sceneDifference;
-
-    if (left.characterRole !== right.characterRole) {
-      return left.characterRole === "main_protagonist" ? -1 : 1;
-    }
-
+    const recommendationDifference = left.cardOrder - right.cardOrder;
+    if (recommendationDifference !== 0) return recommendationDifference;
     return left.characterSlotId - right.characterSlotId;
   });
-
-  return spreadAdjacentProducts(items);
-};
 
 const sortLatest = <T extends CharacterChatCatalogFilterItem>(items: T[]) =>
   items.sort((left, right) => {

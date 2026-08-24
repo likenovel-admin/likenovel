@@ -2,15 +2,41 @@
 
 import {
   IGetMainCharacterSlotParams,
+  IGetMainCharacterSlotConfigResponse,
   IGetMainCharacterSlotProductParams,
   IGetMainCharacterSlotProductResponse,
   IGetMainCharacterSlotResponse,
   IGetMainCharacterSlotRosterResponse,
   IMainCharacterSlotCommandResponse,
   IMainCharacterSlotRequest,
+  IUpdateMainCharacterSlotConfigRequest,
 } from "@/api/mainCharacterSlot/dto";
 import apiClient from "@/lib/apiClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
+
+export const useGetMainCharacterSlotConfig = () =>
+  useQuery<IGetMainCharacterSlotConfigResponse>({
+    queryKey: ["GetMainCharacterSlotConfig"],
+    queryFn: () =>
+      apiClient.request<IGetMainCharacterSlotConfigResponse>({
+        url: "/v1/query/admins/main-character-slots/config",
+        method: "GET",
+      }),
+  });
+
+export const useUpdateMainCharacterSlotConfig = () =>
+  useMutation<
+    IGetMainCharacterSlotConfigResponse,
+    Error,
+    IUpdateMainCharacterSlotConfigRequest
+  >({
+    mutationFn: (body) =>
+      apiClient.request<IGetMainCharacterSlotConfigResponse>({
+        url: "/v1/command/admins/main-character-slots/config",
+        method: "PUT",
+        body,
+      }),
+  });
 
 export const useGetMainCharacterSlots = (
   params: IGetMainCharacterSlotParams

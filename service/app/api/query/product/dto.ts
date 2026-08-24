@@ -234,6 +234,7 @@ export interface IGetMainCharacterSlotsResponse {
 
 export interface ICharacterChatCatalogItem extends IMainCharacterSlotItem {
   entryEpisodeNo: number;
+  hasCharacterImage: boolean;
   teaserLine?: string | null;
   createdDate: string;
   chatQuality: "good" | "normal";

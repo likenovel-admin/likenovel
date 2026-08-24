@@ -23,6 +23,16 @@ assert.match(
 );
 assert.match(
   apiSource,
+  /url:\s*"\/v1\/query\/admins\/main-character-slots\/config"/,
+  "CMS should load the persisted automatic/manual display mode"
+);
+assert.match(
+  apiSource,
+  /url:\s*"\/v1\/command\/admins\/main-character-slots\/config"/,
+  "CMS should persist display-mode changes through the admin command API"
+);
+assert.match(
+  apiSource,
   /queryParams:\s*params/,
   "CMS should send product search and pagination parameters"
 );
@@ -61,6 +71,28 @@ assert.match(
 for (const tab of ["메인 12명 편성", "전체 공개", "후보 검수"]) {
   assert.match(pageSource, new RegExp(tab), `CMS should expose the ${tab} area`);
 }
+for (const modeLabel of ["자동 모드", "수동 선택 모드"]) {
+  assert.match(
+    pageSource,
+    new RegExp(modeLabel),
+    `CMS should expose the ${modeLabel} option`
+  );
+}
+assert.match(
+  pageSource,
+  /const displayMode = configData\?\.data\.displayMode \?\? "auto"/,
+  "CMS should default to automatic mode while loading the persisted config"
+);
+assert.match(
+  pageSource,
+  /추천순 상위 후보군[\s\S]*무작위로 12명/,
+  "CMS should explain the automatic home-slot behavior"
+);
+assert.match(
+  pageSource,
+  /전용 이미지[\s\S]*자산 준비[\s\S]*주인공/,
+  "CMS should expose the automatic recommendation priority to operators"
+);
 assert.match(
   pageSource,
   /selectedCharacter\?\.chatQuality === "insufficient"/,
