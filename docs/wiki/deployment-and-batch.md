@@ -153,6 +153,12 @@ selects env by runtime directory:
   legacy profile identity, both RP assets belong to the same legacy key, and example
   episode evidence is present or recovered by a unique exact-text match. Otherwise
   keep the existing LKG and report no progress.
+- A reviewed identity whose observations split across clusters, or whose separate
+  reviews converge into one cluster, exits as `review_required` (code `76`) instead
+  of `failed`; the batch must quarantine it from identity-dependent work rather than
+  repeatedly prioritizing it as a failed candidate. For `merge_active_scopes`,
+  `blocked_aliases` may be source-backed by any reviewed member scope while the
+  canonical display remains source-backed by the target scope.
 - Character-asset readiness is observability/consumer-gate state, not a reason to
   rewrite product `context_status` to `failed`. Incomplete characters stay hidden by
   the exact-key readiness gate while the story context remains available.
