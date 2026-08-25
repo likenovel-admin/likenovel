@@ -3,6 +3,11 @@
 import { useGetBanners, useReorderBanners } from "@/api/banner";
 import BannersTable from "@/app/banners/DataTable";
 import SortableBannersTable from "@/app/banners/SortableBannersTable";
+import {
+  canReorderBannerList,
+  getBannerListPagination,
+  getBannerReorderItems,
+} from "@/app/banners/bannerListReorder";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import PaginationControls from "@/components/common/PaginationControls";
 import { Button } from "@/components/ui/button";
@@ -65,6 +70,11 @@ export default function Page() {
     [searchParams]
   );
   const currentQuery = searchParams.toString();
+  const listPagination = getBannerListPagination(
+    filters.position,
+    filters.page,
+    banner_per_page
+  );
 
   const updateFilters = (
     nextFilters: Partial<{
@@ -88,8 +98,7 @@ export default function Page() {
     isLoading: isLoadingData,
     isFetching,
   } = useGetBanners({
-    page: filters.page,
-    count_per_page: banner_per_page,
+    ...listPagination,
     position: filters.position === "all" ? undefined : filters.position,
     sort_by: filters.sortBy,
   });
@@ -99,13 +108,16 @@ export default function Page() {
   // 편집 모드 state
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [draftItems, setDraftItems] = useState<IBanner[]>([]);
+  const reorderSourceItems = useMemo(
+    () => getBannerReorderItems(data?.results ?? []),
+    [data?.results]
+  );
 
-  // 편집 가능 조건: 특정 포지션 선택 + 한 페이지 내에 전부 들어옴
-  const totalCount = data?.total_count ?? 0;
-  const canReorder =
-    filters.position !== "all" &&
-    (data?.results?.length ?? 0) > 1 &&
-    totalCount <= banner_per_page;
+  // 편집 가능 조건: 특정 포지션 선택 + 순서를 바꿀 배너가 2개 이상
+  const canReorder = canReorderBannerList(
+    filters.position,
+    data?.results?.length ?? 0
+  );
 
   // 새로고침/탭닫기 시 경고
   useEffect(() => {
@@ -160,12 +172,12 @@ export default function Page() {
 
   const enterReorderMode = () => {
     if (!canReorder || !data?.results) return;
-    setDraftItems(data.results);
+    setDraftItems(reorderSourceItems);
     setIsReorderMode(true);
   };
 
   const cancelReorder = async () => {
-    const changed = isOrderChanged(data?.results ?? [], draftItems);
+    const changed = isOrderChanged(reorderSourceItems, draftItems);
     if (changed) {
       const res = await confirm({
         title: "순서 변경을 취소하시겠습니까?",
@@ -180,12 +192,12 @@ export default function Page() {
   };
 
   const resetToOriginal = () => {
-    setDraftItems(data?.results ?? []);
+    setDraftItems(reorderSourceItems);
   };
 
   const saveReorder = async () => {
-    if (!data?.results || draftItems.length === 0) return;
-    if (!isOrderChanged(data.results, draftItems)) {
+    if (reorderSourceItems.length === 0 || draftItems.length === 0) return;
+    if (!isOrderChanged(reorderSourceItems, draftItems)) {
       showAlert("알림", "변경된 순서가 없습니다.", "확인");
       return;
     }
@@ -229,7 +241,7 @@ export default function Page() {
     );
   }, [filters.position]);
 
-  const orderChanged = isOrderChanged(data?.results ?? [], draftItems);
+  const orderChanged = isOrderChanged(reorderSourceItems, draftItems);
 
   return (
     <>
@@ -257,7 +269,7 @@ export default function Page() {
                     onClick={enterReorderMode}
                     title={
                       !canReorder
-                        ? "특정 포지션을 선택하고 한 페이지 내에 있을 때만 순서 변경이 가능합니다"
+                        ? "특정 포지션을 선택하고 배너가 2개 이상일 때 순서 변경이 가능합니다"
                         : undefined
                     }
                   >
@@ -372,14 +384,16 @@ export default function Page() {
                   refetch();
                 }}
               />
-              <PaginationControls
-                page={filters.page || 1}
-                setPage={handleChangePage}
-                totalPages={calculatePageCount(
-                  data?.total_count || 0,
-                  banner_per_page
-                )}
-              />
+              {filters.position === "all" && (
+                <PaginationControls
+                  page={filters.page || 1}
+                  setPage={handleChangePage}
+                  totalPages={calculatePageCount(
+                    data?.total_count || 0,
+                    banner_per_page
+                  )}
+                />
+              )}
             </>
           )}
           <FullPageLoader
