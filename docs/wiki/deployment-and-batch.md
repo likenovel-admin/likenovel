@@ -169,7 +169,10 @@ selects env by runtime directory:
 - A paid manual character repair can be bounded with repeated
   `--character-scope-key` values. This option is valid only with
   `--build-mode delta --apply --repair-character-assets`; it intersects both scene
-  and RP repair scopes and does not broaden the selected `--product-id` set.
+  and RP repair scopes and does not broaden the selected `--product-id` set. Add
+  `--refresh-rp` only when an already-ready exact scope must be regenerated from
+  source evidence; the run rolls back if the scope is absent or makes no RP progress.
+  Scheduled delta batches do not enable this forced refresh path.
 - `--max-delta-episodes 0` means unlimited, not zero work. For a manual no-provider
   reaggregation check, follow the dry-run `plans=0` gate and fingerprint verification
   in `docs/deployment-runbook.md`; do not treat this option as a cost guard.
