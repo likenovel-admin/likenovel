@@ -33,6 +33,9 @@ assert.match(formSource, /미리볼 본문을 입력해주세요\./);
 assert.match(formSource, /categoryValue === "episode"/);
 assert.match(formSource, />\s*미리보기\s*<\/Button>/);
 assert.match(formSource, /!h-\[44px\]/);
+assert.match(formSource, /maxLength=\{50\}/);
+assert.match(formSource, /회차명을 입력해주세요 \(최대 50자\)/);
+assert.match(formSource, /\{` \/ 50자`\}/);
 assert.doesNotMatch(
   formSource,
   /handleSubmit\([^)]*preview|preview[^\n]*handleSubmit/i,

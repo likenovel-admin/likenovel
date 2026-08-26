@@ -601,14 +601,14 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
             <Input
               label="제목"
               labelStyle={requiredLabelClassName}
-              maxLength={30}
-              placeholder="회차명을 입력해주세요 (최대 30자)"
+              maxLength={50}
+              placeholder="회차명을 입력해주세요 (최대 50자)"
               inputStyle={inputTextClassName}
               {...register("title", { required: "제목을 입력해주세요." })}
               additionalText={
                 <span className="text-black-100 text-11pxr mr-3">
                   {watch("title")?.length}
-                  <span className="text-dark-gray-100">{` / 30자`}</span>
+                  <span className="text-dark-gray-100">{` / 50자`}</span>
                 </span>
               }
             />
