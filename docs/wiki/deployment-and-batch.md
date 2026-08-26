@@ -159,7 +159,9 @@ selects env by runtime directory:
   generation.
 - Apply operator-authored identity corrections only through
   `scripts/apply_story_agent_identity_review.py`: run without `--apply` first, verify
-  the preview, then apply the same active-signal-pinned request. A reviewed target may
+  the preview, then apply the same request pinned to active character signals from the
+  first 30 public episodes, matching the character-asset collection window. A member
+  with no observation in that window fails closed. A reviewed target may
   bridge legacy RP without a provider call only when the reviewed display matches the
   legacy profile identity, both RP assets belong to the same legacy key, and example
   episode evidence is present or recovered by a unique exact-text match. Otherwise
