@@ -185,7 +185,13 @@ selects env by runtime directory:
   and RP repair scopes and does not broaden the selected `--product-id` set. Add
   `--refresh-rp` only when an already-ready exact scope must be regenerated from
   source evidence; the run rolls back if the scope is absent or makes no RP progress.
-  Scheduled delta batches do not enable this forced refresh path.
+  For an exact requested scope below the public five-scene floor, scene repair counts
+  only public free episodes, excludes already usable public-free scene episodes, and
+  selects only enough eligible evidence episodes to reach five, still bounded by
+  `--max-delta-episodes`. An explicit scope may bypass only the legacy collection-date
+  cohort; consent, public/non-blind product state, and active-scope checks still apply.
+  Unscoped scheduled/regular repair continues to exclude legacy-cohort works, and
+  scheduled delta batches do not enable the forced RP refresh path.
 - `--max-delta-episodes 0` means unlimited, not zero work. For a manual no-provider
   reaggregation check, follow the dry-run `plans=0` gate and fingerprint verification
   in `docs/deployment-runbook.md`; do not treat this option as a cost guard.
