@@ -14,7 +14,12 @@ import {
   useResumePausedAiReaderAgents,
   useRestartAiReaderAgents,
 } from "@/api/aiReader";
-import { IAiReaderBootstrapResponse, IAiReaderResumePausedResponse, IAiReaderTimeBlock } from "@/api/aiReader/dto";
+import {
+  AiReaderActivityScheduleMode,
+  IAiReaderBootstrapResponse,
+  IAiReaderResumePausedResponse,
+  IAiReaderTimeBlock,
+} from "@/api/aiReader/dto";
 import { useGetStatisticAiReaderEngagement } from "@/api/statistic";
 import { IGetStatisticAiReaderEngagementParams } from "@/api/statistic/dto";
 import CommonTable, { Column } from "@/components/common/CommonTable";
@@ -255,6 +260,7 @@ type AiReaderPreset = {
   agentCount: number;
   activeHours: number[];
   dailySessionTarget: number;
+  activityScheduleMode?: AiReaderActivityScheduleMode;
   timeBlocks: AiReaderTimeBlockInput[];
   dailyLlmBudget: number;
   ageGroupRatios: RatioMap;
@@ -517,6 +523,7 @@ type LastDryRun = {
   dailyLlmBudget: number;
   activeHours: number[];
   dailySessionTarget: number;
+  activityScheduleMode: AiReaderActivityScheduleMode;
   timeBlocks: IAiReaderTimeBlock[];
   startImmediately: boolean;
   immediateBatchSize: number;
@@ -544,6 +551,7 @@ type LastResumeDryRun = {
   scheduleEndDate: string;
   activeHours: number[];
   dailySessionTarget: number;
+  activityScheduleMode: AiReaderActivityScheduleMode;
   timeBlocks: IAiReaderTimeBlock[];
   dailyLlmBudget: number;
   startImmediately: boolean;
@@ -575,6 +583,7 @@ export default function Page() {
   const [customPresets, setCustomPresets] = useState<AiReaderPreset[]>([]);
   const [presetNameInput, setPresetNameInput] = useState("");
   const [intensity, setIntensity] = useState<AiReaderIntensity>("MEDIUM");
+  const [activityScheduleMode, setActivityScheduleMode] = useState<AiReaderActivityScheduleMode>("uniform");
   const [timeBlocks, setTimeBlocks] = useState<AiReaderTimeBlockInput[]>(commuteMealEveningBlocks);
   const [activeHoursInput, setActiveHoursInput] = useState(toHoursInput(timeBlocksToHours(commuteMealEveningBlocks)));
   const [dailySessionTargetInput, setDailySessionTargetInput] = useState(String(timeBlockSessionCount(commuteMealEveningBlocks)));
@@ -810,6 +819,7 @@ export default function Page() {
       && lastDryRun.scheduleDurationDays === scheduleDurationDaysValue
       && lastDryRun.dailyLlmBudget === dailyLlmBudgetValue
       && lastDryRun.dailySessionTarget === dailySessionTargetValue
+      && lastDryRun.activityScheduleMode === activityScheduleMode
       && lastDryRun.startImmediately === startImmediately
       && lastDryRun.immediateBatchSize === immediateBatchSizeValue
       && lastDryRun.immediateBatchIntervalMinutes === immediateBatchIntervalValue
@@ -846,6 +856,7 @@ export default function Page() {
       && JSON.stringify(lastResumeDryRun.activeHours) === JSON.stringify(activeHoursValue)
       && JSON.stringify(lastResumeDryRun.timeBlocks) === JSON.stringify(apiTimeBlocks)
       && lastResumeDryRun.dailySessionTarget === dailySessionTargetValue
+      && lastResumeDryRun.activityScheduleMode === activityScheduleMode
       && lastResumeDryRun.dailyLlmBudget === dailyLlmBudgetValue
       && JSON.stringify(lastResumeDryRun.productTypeWeights) === JSON.stringify(productTypeWeightsPayload)
       && JSON.stringify(lastResumeDryRun.freeProductTypeWeights) === JSON.stringify(freeProductTypeWeightsPayload)
@@ -882,7 +893,8 @@ export default function Page() {
   };
 
   const isTimeBlocksSelected = (blocks: AiReaderTimeBlockInput[]) =>
-    JSON.stringify(timeBlocksToApiPayload(blocks)) === JSON.stringify(apiTimeBlocks);
+    activityScheduleMode === "uniform"
+    && JSON.stringify(timeBlocksToApiPayload(blocks)) === JSON.stringify(apiTimeBlocks);
 
   const applyTimeBlocks = (
     blocks: AiReaderTimeBlockInput[],
@@ -898,6 +910,7 @@ export default function Page() {
     setTimeBlocks(nextBlocks);
     setActiveHoursInput(toHoursInput(nextHours));
     setDailySessionTargetInput(String(nextSessionTarget));
+    setActivityScheduleMode("uniform");
     if (dailyLlmBudgetValue < nextSessionTarget) {
       setDailyLlmBudgetInput(String(Math.min(20, nextSessionTarget)));
     }
@@ -913,9 +926,16 @@ export default function Page() {
     setActiveHoursInput(toHoursInput(hours));
     setTimeBlocks(nextBlocks);
     setDailySessionTargetInput(String(options?.dailySessionTarget || timeBlockSessionCount(nextBlocks)));
+    setActivityScheduleMode("uniform");
     setSelectedPresetId("custom");
     resetDryRun();
     resetResumeDryRun();
+  };
+
+  const applyAgeGroupSchedule = () => {
+    applyTimeBlocks(eveningFocusedBlocks);
+    setActivityScheduleMode("age_group");
+    setOperationMessage("연령별 생활패턴 적용됨");
   };
 
   const getActivityScheduleValidationMessage = () => {
@@ -961,6 +981,7 @@ export default function Page() {
     setIntensity(preset.intensity);
     setBootstrapCount(String(preset.agentCount));
     applyTimeBlocks(preset.timeBlocks, { keepPresetSelection: true });
+    setActivityScheduleMode(preset.activityScheduleMode ?? "uniform");
     setDailyLlmBudgetInput(String(preset.dailyLlmBudget));
     setAgeGroupRatios({ ...preset.ageGroupRatios });
     setGenderRatios({ ...preset.genderRatios });
@@ -1005,6 +1026,7 @@ export default function Page() {
         agentCount: bootstrapCountValue,
         activeHours,
         dailySessionTarget: dailySessionTargetValue,
+        activityScheduleMode,
         timeBlocks: normalizedTimeBlocks,
         dailyLlmBudget: dailyLlmBudgetValue,
         ageGroupRatios: { ...ageGroupRatios },
@@ -1176,6 +1198,7 @@ export default function Page() {
         daily_llm_budget: dailyLlmBudgetValue,
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
+        activity_schedule_mode: activityScheduleMode,
         time_blocks: apiTimeBlocks,
         product_type_weights: productTypeWeightsPayload,
         free_product_type_weights: freeProductTypeWeightsPayload,
@@ -1205,6 +1228,7 @@ export default function Page() {
           dailyLlmBudget: dailyLlmBudgetValue,
           activeHours,
           dailySessionTarget: dailySessionTargetValue,
+          activityScheduleMode,
           timeBlocks: apiTimeBlocks,
           startImmediately,
           immediateBatchSize: immediateBatchSizeValue,
@@ -1298,6 +1322,7 @@ export default function Page() {
       immediate_batch_interval_minutes: immediateBatchIntervalValue,
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
+      activity_schedule_mode: activityScheduleMode,
       time_blocks: apiTimeBlocks,
       product_type_weights: productTypeWeightsPayload,
       free_product_type_weights: freeProductTypeWeightsPayload,
@@ -1313,6 +1338,7 @@ export default function Page() {
       scheduleEndDate: dryRunResult.schedule_end_date || scheduleEndDateInput,
       activeHours,
       dailySessionTarget: dailySessionTargetValue,
+      activityScheduleMode,
       timeBlocks: apiTimeBlocks,
       dailyLlmBudget: dailyLlmBudgetValue,
       startImmediately,
@@ -1361,6 +1387,7 @@ export default function Page() {
       immediate_schedule_start_at: dryRunResult.immediate_schedule_start_at || undefined,
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
+      activity_schedule_mode: activityScheduleMode,
       time_blocks: apiTimeBlocks,
       product_type_weights: productTypeWeightsPayload,
       free_product_type_weights: freeProductTypeWeightsPayload,
@@ -1414,6 +1441,7 @@ export default function Page() {
       immediate_batch_interval_minutes: immediateBatchIntervalValue,
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
+      activity_schedule_mode: activityScheduleMode,
       time_blocks: apiTimeBlocks,
       product_type_weights: productTypeWeightsPayload,
       free_product_type_weights: freeProductTypeWeightsPayload,
@@ -1451,6 +1479,7 @@ export default function Page() {
       immediate_schedule_start_at: dryRunResult.immediate_schedule_start_at || undefined,
       active_hours: activeHours,
       daily_session_target: dailySessionTargetValue,
+      activity_schedule_mode: activityScheduleMode,
       time_blocks: apiTimeBlocks,
       product_type_weights: productTypeWeightsPayload,
       free_product_type_weights: freeProductTypeWeightsPayload,
@@ -1569,6 +1598,7 @@ export default function Page() {
         immediate_batch_interval_minutes: immediateBatchIntervalValue,
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
+        activity_schedule_mode: activityScheduleMode,
         time_blocks: apiTimeBlocks,
         product_type_weights: productTypeWeightsPayload,
         free_product_type_weights: freeProductTypeWeightsPayload,
@@ -1584,6 +1614,7 @@ export default function Page() {
         scheduleEndDate: dryRunResult.schedule_end_date || scheduleEndDateInput,
         activeHours,
         dailySessionTarget: dailySessionTargetValue,
+        activityScheduleMode,
         timeBlocks: apiTimeBlocks,
         dailyLlmBudget: dailyLlmBudgetValue,
         startImmediately,
@@ -1629,6 +1660,7 @@ export default function Page() {
         immediate_schedule_start_at: dryRunResult.immediate_schedule_start_at || undefined,
         active_hours: activeHours,
         daily_session_target: dailySessionTargetValue,
+        activity_schedule_mode: activityScheduleMode,
         time_blocks: apiTimeBlocks,
         product_type_weights: productTypeWeightsPayload,
         free_product_type_weights: freeProductTypeWeightsPayload,
@@ -1696,6 +1728,7 @@ export default function Page() {
         immediate_schedule_start_at: apply ? lastResumeDryRun?.immediateScheduleStartAt || undefined : undefined,
         active_hours: parseHoursInput(activeHoursInput),
         daily_session_target: dailySessionTargetValue,
+        activity_schedule_mode: activityScheduleMode,
         time_blocks: apiTimeBlocks,
         product_type_weights: productTypeWeightsPayload,
         free_product_type_weights: freeProductTypeWeightsPayload,
@@ -1713,6 +1746,7 @@ export default function Page() {
           scheduleEndDate: result.schedule_end_date || scheduleEndDateInput,
           activeHours: parseHoursInput(activeHoursInput),
           dailySessionTarget: dailySessionTargetValue,
+          activityScheduleMode,
           timeBlocks: apiTimeBlocks,
           dailyLlmBudget: dailyLlmBudgetValue,
           startImmediately,
@@ -2618,7 +2652,9 @@ export default function Page() {
                 <div>
                   <div className="text-xs font-medium">매일 반복 활동 시간표</div>
                   <div className="mt-0.5 text-[11px] text-muted-foreground">
-                    {formatTimeBlockSummary(normalizedTimeBlocks)}
+                    {activityScheduleMode === "age_group"
+                      ? "저장된 연령대에 따라 활동 시간을 자동 분산합니다."
+                      : formatTimeBlockSummary(normalizedTimeBlocks)}
                   </div>
                 </div>
                 <Input
@@ -2628,6 +2664,7 @@ export default function Page() {
                     const nextValue = e.target.value;
                     setActiveHoursInput(nextValue);
                     setSelectedPresetId("custom");
+                    setActivityScheduleMode("uniform");
                     try {
                       const nextBlocks = blocksFromSingleHours(parseHoursInput(nextValue));
                       setTimeBlocks(nextBlocks);
@@ -2641,7 +2678,20 @@ export default function Page() {
                   className="w-[220px]"
                 />
               </div>
+              {activityScheduleMode === "age_group" && (
+                <div className="mb-3 rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                  연령별 생활패턴 적용 중 · 아래 시간표를 직접 수정하면 기존 공통 시간표 방식으로 전환됩니다.
+                </div>
+              )}
               <div className="mb-2 flex flex-wrap gap-1.5">
+                <Button
+                  type="button"
+                  variant={activityScheduleMode === "age_group" ? "default" : "outline"}
+                  size="sm"
+                  onClick={applyAgeGroupSchedule}
+                >
+                  연령별 생활패턴
+                </Button>
                 <Button
                   type="button"
                   variant={isTimeBlocksSelected(commuteMealEveningBlocks) ? "default" : "outline"}

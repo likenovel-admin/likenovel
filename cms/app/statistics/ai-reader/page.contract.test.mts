@@ -42,3 +42,34 @@ assert.doesNotMatch(
   /MAX_AI_READER_AGENT_COUNT \} from "\.\/_lib"/,
   "target operations must not read the API page-size helper as the operational max"
 );
+
+assert.match(
+  pageSource,
+  /onClick=\{applyAgeGroupSchedule\}[\s\S]*연령별 생활패턴/,
+  "the age-group lifestyle preset should be available"
+);
+assert.match(
+  pageSource,
+  /activity_schedule_mode: activityScheduleMode/,
+  "AI reader operations should send the selected activity schedule mode"
+);
+assert.match(
+  pageSource,
+  /setActivityScheduleMode\("uniform"\)/,
+  "manual schedule edits should switch back to the existing uniform mode"
+);
+assert.match(
+  pageSource,
+  /activityScheduleMode\?: AiReaderActivityScheduleMode;/,
+  "custom presets should support saving the activity schedule mode"
+);
+assert.match(
+  pageSource,
+  /activityScheduleMode,\s*\n\s*timeBlocks: normalizedTimeBlocks/,
+  "saving a custom preset should retain the selected activity schedule mode"
+);
+assert.match(
+  pageSource,
+  /setActivityScheduleMode\(preset\.activityScheduleMode \?\? "uniform"\)/,
+  "applying a custom preset should restore the mode and keep old presets uniform"
+);
