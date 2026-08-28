@@ -53,6 +53,8 @@ export interface IAiReaderTimeBlock {
   sessions_per_agent?: number;
 }
 
+export type AiReaderActivityScheduleMode = "uniform" | "age_group";
+
 export interface IAiReaderBootstrapRequest {
   email_prefix: string;
   agent_count: number;
@@ -65,6 +67,7 @@ export interface IAiReaderBootstrapRequest {
   daily_llm_budget?: number;
   active_hours?: number[];
   daily_session_target?: number;
+  activity_schedule_mode?: AiReaderActivityScheduleMode;
   time_blocks?: IAiReaderTimeBlock[];
   product_type_weights?: Record<string, number>;
   free_product_type_weights?: Record<string, number>;
@@ -139,6 +142,7 @@ export interface IAiReaderResumePausedRequest {
   immediate_schedule_start_at?: string;
   active_hours?: number[];
   daily_session_target?: number;
+  activity_schedule_mode?: AiReaderActivityScheduleMode;
   time_blocks?: IAiReaderTimeBlock[];
   product_type_weights?: Record<string, number>;
   free_product_type_weights?: Record<string, number>;
