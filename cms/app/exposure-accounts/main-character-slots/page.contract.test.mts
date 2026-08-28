@@ -95,8 +95,13 @@ assert.match(
 );
 assert.match(
   pageSource,
-  /추천순 상위 후보군[\s\S]*무작위로 12명/,
+  /추천순 상위 12명[\s\S]*같은 순서/,
   "CMS should explain the automatic home-slot behavior"
+);
+assert.doesNotMatch(
+  pageSource,
+  /무작위|홈 요청마다 편성/,
+  "CMS should not describe automatic mode as rotating a random pool"
 );
 assert.match(
   pageSource,
