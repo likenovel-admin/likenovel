@@ -17,7 +17,14 @@ import { getHomeQueryState } from "@/utils/homeQueryState";
 import { findPreviousNonMatchingPath } from "@/utils/navigationHistory";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Return from "/public/images/return.svg";
 import {
   filterCharacterChatCatalog,
@@ -67,6 +74,7 @@ function CharacterChatCatalogPageContent() {
   const queryClient = useQueryClient();
   const { user, isAuthenticated, accessToken, isAuthInitialized } = useAuthStore();
   const [visibleBatchCount, setVisibleBatchCount] = useState(1);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [catalogPaging, setCatalogPaging] = useState(() =>
     getCharacterChatCatalogPaging(
       typeof window === "undefined" ? 0 : window.innerWidth
@@ -270,10 +278,34 @@ function CharacterChatCatalogPageContent() {
     () => orderedItems.slice(0, visibleItemCount),
     [orderedItems, visibleItemCount]
   );
+  const hasMoreItems = visibleItems.length < orderedItems.length;
   const showLoading =
     (!queryState.enabled || isLoading) && !canUseHomeSeed;
   const showError = isError && !canUseHomeSeed;
   const showGrid = !showLoading && !showError && orderedItems.length > 0;
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (
+      !target ||
+      !hasMoreItems ||
+      typeof IntersectionObserver === "undefined"
+    ) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        observer.disconnect();
+        setVisibleBatchCount((currentCount) => currentCount + 1);
+      },
+      { rootMargin: "600px 0px", threshold: 0 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMoreItems, visibleItemCount]);
 
   return (
     <main className="w-full px-16pxr md:px-24pxr lg:px-32pxr">
@@ -442,21 +474,9 @@ function CharacterChatCatalogPageContent() {
                 </button>
               </div>
             )}
-            {visibleItems.length < orderedItems.length && (
-              <div className="mt-28pxr flex justify-center">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setVisibleBatchCount(
-                      (currentCount) => currentCount + 1
-                    )
-                  }
-                  className="h-[44px] rounded-[8px] border border-light-gray-400 bg-white px-20pxr text-14pxr font-medium text-black-100 hover:border-dark-gray-300"
-                >
-                  캐릭터 더 보기
-                </button>
-              </div>
-              )}
+            {hasMoreItems && (
+              <div ref={loadMoreRef} aria-hidden="true" className="h-1" />
+            )}
           </>
         )}
       </div>

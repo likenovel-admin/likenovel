@@ -127,7 +127,7 @@ const CharacterChatCardGrid = ({
           const roleMeta = getCharacterChatRoleMeta(item.characterRole);
 
           return (
-            <li key={item.characterSlotId}>
+            <li key={`${item.productId}:${item.characterScopeKey}`}>
               <button
                 type="button"
                 aria-label={`${roleMeta.gridLabel} · ${item.characterName} · ${item.productTitle}`}

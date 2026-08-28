@@ -209,15 +209,35 @@ assert.match(
   "The shared card grid should keep image priority explicitly bounded"
 );
 assert.match(
+  gridSource,
+  /<li key=\{`\$\{item\.productId\}:\$\{item\.characterScopeKey\}`\}>/,
+  "The shared card grid should key characters by their cross-source semantic identity"
+);
+assert.doesNotMatch(
+  gridSource,
+  /<li key=\{item\.characterSlotId\}>/,
+  "A source-specific slot ID must not be used as the merged character key"
+);
+assert.match(
   pageSource,
   /useEffect\(\(\) => \{\s*setVisibleBatchCount\(1\);\s*\}, \[activeRole, activeScope, activeSort\]\)/,
   "Scope, role, and sort changes should reset the catalog to its first two rows"
 );
-assert.match(pageSource, /캐릭터 더 보기/);
+assert.doesNotMatch(pageSource, /캐릭터 더 보기/);
 assert.match(
   pageSource,
-  /setVisibleBatchCount\(\s*\(currentCount\) => currentCount \+ 1\s*\)/,
-  "Each more-button click should reveal one additional two-row batch"
+  /const loadMoreRef = useRef<HTMLDivElement \| null>\(null\);/,
+  "The catalog should own a sentinel for automatic loading"
+);
+assert.match(
+  pageSource,
+  /new IntersectionObserver\([\s\S]*entry\?\.isIntersecting[\s\S]*setVisibleBatchCount\(\(currentCount\) => currentCount \+ 1\)[\s\S]*rootMargin: "600px 0px"/,
+  "Approaching the sentinel should reveal another preloaded two-row batch"
+);
+assert.match(
+  pageSource,
+  /<div ref=\{loadMoreRef\} aria-hidden="true" className="h-1" \/>/,
+  "The catalog should render a non-interactive infinite-scroll sentinel"
 );
 assert.match(
   pageSource,
