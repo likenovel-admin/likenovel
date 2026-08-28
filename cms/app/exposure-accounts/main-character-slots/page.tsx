@@ -472,7 +472,7 @@ export default function Page() {
               <Label htmlFor="main-character-display-mode">홈 구좌 노출 방식</Label>
               <p className="mt-1 text-sm text-muted-foreground">
                 {displayMode === "auto"
-                  ? "추천순 상위 후보군에서 무작위로 12명을 노출합니다. 기본 이미지가 아닌 실제 이미지 → 자산 준비 → 주인공 순으로 우선합니다."
+                  ? "추천순 상위 12명을 전체 목록과 같은 순서로 노출합니다. 기본 이미지가 아닌 실제 이미지 → 자산 준비 → 주인공 순으로 우선합니다."
                   : "아래 메인 12명 편성의 공개 순서대로 홈에 노출합니다."}
               </p>
             </div>
@@ -531,7 +531,7 @@ export default function Page() {
           {activeTab === "main" && (
             <>
               {displayMode === "auto"
-                ? `자동 모드에서는 추천순 상위 후보군을 기준으로 홈 요청마다 편성합니다. 아래 ${mainRows.length}명은 수동 선택 모드 전환 시 사용할 예비 편성입니다.`
+                ? `자동 모드에서는 전체 목록의 추천순 상위 12명을 같은 순서로 홈에 노출합니다. 아래 ${mainRows.length}명은 수동 선택 모드 전환 시 사용할 예비 편성입니다.`
                 : `전체 공개 목록 중 서버 공개 조건을 통과한 수동 편성 상위 ${mainRows.length}명이 홈에 노출됩니다.`}
             </>
           )}
