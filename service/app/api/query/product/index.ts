@@ -12,6 +12,7 @@ import {
   IGetMainCharacterSlotsResponse,
   IGetMainSingleSlotsResponse,
   IGetRecentProductResponse,
+  IGetRisingPicksResponse,
   IPublisherPromotionProductsResponse,
   ISuggestByRecentViewedResponse,
   IUseSelectMainRuleSlotsResponse,
@@ -765,6 +766,26 @@ export const useGetHomeTicker = (
     },
     staleTime: HOME_TICKER_STALE_TIME_MS,
     refetchInterval: HOME_TICKER_STALE_TIME_MS,
+    gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
+    enabled,
+  });
+};
+
+export const useGetRisingPicks = (
+  adult_yn?: string,
+  enabled: boolean = true,
+  cacheIdentity: string = "guest"
+) => {
+  const adultYnParam = adult_yn || "N";
+  return useQuery<IGetRisingPicksResponse>({
+    queryKey: ["getRisingPicks", adultYnParam, cacheIdentity],
+    queryFn: async () => {
+      const response = await instance.get(
+        `/v1/query/products/rising-picks?adult_yn=${adultYnParam}`
+      );
+      return response.data;
+    },
+    staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
     gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
     enabled,
   });

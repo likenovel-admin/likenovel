@@ -11,6 +11,7 @@ import CPPromotion from "@/components/main/CPPromotion";
 import FreeTop from "@/components/main/FreeTop";
 import HomeTicker from "@/components/main/HomeTicker";
 import LatestUpdate from "@/components/main/LatestUpdate";
+import RisingPick from "@/components/main/RisingPick";
 import MiddleBanner from "@/components/main/MiddleBanner";
 import MiddleMenu from "@/components/main/MiddleMenu";
 import PaidTop from "@/components/main/PaidTop";
@@ -27,6 +28,7 @@ import type { IPanel } from "./api/query/banner/dto";
 import {
   useGetDirectRecommend,
   useGetHomeTicker,
+  useGetRisingPicks,
   useGetMainCharacterSlots,
   useGetMainSingleSlots,
   useSelectInterestDropSoonUpdateProducts,
@@ -95,6 +97,11 @@ export default function HomePageClient() {
     adultYn,
     mainProductCacheIdentity,
     homeQueryState.enabled
+  );
+  const { data: risingPicksData } = useGetRisingPicks(
+    adultYn,
+    homeQueryState.enabled,
+    mainProductCacheIdentity
   );
   const { data: interestDropSoonData } =
     useSelectInterestDropSoonUpdateProducts(
@@ -241,6 +248,7 @@ export default function HomePageClient() {
   const hasCpPromotionProducts = cpPromotionProducts.length > 0;
   const latestUpdateProducts = latestUpdateData?.data || [];
   const hasLatestUpdateProducts = latestUpdateProducts.length > 0;
+  const risingPickItems = risingPicksData?.items ?? [];
   const interestDropSoonProducts = interestDropSoonData?.data || [];
   const hasInterestDropSoonProducts =
     canUseInterestDropSoon && interestDropSoonProducts.length > 0;
@@ -287,6 +295,7 @@ export default function HomePageClient() {
               )}
               <div className="flex flex-col mt-30pxr md:mt-80pxr gap-70pxr">
                 <FreeTop data={freeTopProducts} />
+                <RisingPick items={risingPickItems} />
                 {hasLatestUpdateProducts && (
                   <LatestUpdate products={latestUpdateProducts} />
                 )}

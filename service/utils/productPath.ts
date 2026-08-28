@@ -2,6 +2,7 @@ export const PRODUCT_DETAIL_ENTRY_SOURCE = {
   HOME_FREE_TOP: "home_free_top",
   HOME_PAID_TOP: "home_paid_top",
   HOME_TICKER: "home_ticker",
+  HOME_RISING_PICK: "home_rising_pick",
   HOME_RECENTLY_VIEWED: "home_recently_viewed",
   HOME_RECENT_BASED_RECOMMEND: "home_recent_based_recommend",
   AI_TASTE_SECTION: "ai_taste_section",

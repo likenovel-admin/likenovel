@@ -174,6 +174,27 @@ export interface IGetHomeTickerResponse {
   items: IHomeTickerItem[];
 }
 
+export type RisingPickType =
+  | "new_work"
+  | "comeback"
+  | "fresh_episode"
+  | "rising";
+
+export interface IRisingPickItem {
+  productId: number;
+  title: string;
+  authorName: string | null;
+  coverImagePath: string | null;
+  risingType: RisingPickType;
+  comment: string;
+}
+
+export interface IGetRisingPicksResponse {
+  asOf: string;
+  refreshAfterSeconds: number;
+  items: IRisingPickItem[];
+}
+
 export interface IMainSingleSlotItem {
   singleSlotId: number;
   slotKey: string;
