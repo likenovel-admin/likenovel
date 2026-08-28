@@ -23,6 +23,8 @@ interface Props {
   hasMoreButton?: boolean;
   moreButtonOnClick?: () => void;
   hasRankingGuide?: boolean;
+  rankingGuideMessages?: string[];
+  rankingGuideAriaLabel?: string;
   rankingGuideAction?: ReactNode;
   rightAction?: ReactNode;
   mobileTwoRow?: boolean;
@@ -39,6 +41,8 @@ const MainHeader = ({
   hasMoreButton = false,
   moreButtonOnClick,
   hasRankingGuide = false,
+  rankingGuideMessages,
+  rankingGuideAriaLabel = "랭킹 산정 기준 보기",
   rankingGuideAction,
   rightAction,
   mobileTwoRow = false,
@@ -47,6 +51,7 @@ const MainHeader = ({
   const tooltipId = useId();
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const guideRef = useRef<HTMLDivElement | null>(null);
+  const guideMessages = rankingGuideMessages ?? rankingGuideMessage;
 
   useEffect(() => {
     if (!hasRankingGuide) return;
@@ -79,7 +84,7 @@ const MainHeader = ({
         <div ref={guideRef} className="relative flex items-center">
           <button
             type="button"
-            aria-label="랭킹 산정 기준 보기"
+            aria-label={rankingGuideAriaLabel}
             aria-describedby={isGuideOpen ? tooltipId : undefined}
             aria-expanded={isGuideOpen}
             className="flex h-[28px] w-[28px] items-center justify-center"
@@ -109,7 +114,7 @@ const MainHeader = ({
                 mobileTwoRow ? "w-[200px] md:w-[260px]" : "w-[260px]"
               }`}
             >
-              {rankingGuideMessage.map((message) => (
+              {guideMessages.map((message) => (
                 <span key={message} className="block">
                   {message}
                 </span>
