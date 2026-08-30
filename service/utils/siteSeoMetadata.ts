@@ -6,7 +6,8 @@ import {
 } from "./siteSeo.mjs";
 
 export const SITE_NAME = "라이크노벨";
-export const DEFAULT_SITE_DESCRIPTION = "라이크노벨에서 작품을 만나보세요.";
+export const DEFAULT_SITE_DESCRIPTION =
+  "읽는 재미부터 주인공과의 대화까지! 당신이 찾던 웹소설, 라이크노벨.";
 
 export const buildWebsiteStructuredData = () => ({
   "@context": "https://schema.org",

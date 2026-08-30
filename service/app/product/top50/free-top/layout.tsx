@@ -3,7 +3,8 @@ import type { ReactNode } from "react";
 
 export const metadata = buildPageMetadata({
   title: "무료연재 TOP50",
-  description: "라이크노벨 무료연재 인기 작품 TOP50을 확인해 보세요.",
+  description:
+    "지금 독자들이 가장 많이 읽는 웹소설 TOP50. 다음에 읽을 작품을 실시간 랭킹에서 확인해보세요.",
   path: "/product/top50/free-top",
 });
 
