@@ -45,6 +45,10 @@ try {
     template: "%s | 라이크노벨",
   });
   assert.equal(prodRootMetadata.description, DEFAULT_SITE_DESCRIPTION);
+  assert.equal(
+    DEFAULT_SITE_DESCRIPTION,
+    "읽는 재미부터 주인공과의 대화까지! 당신이 찾던 웹소설, 라이크노벨.",
+  );
   assert.equal(prodRootMetadata.metadataBase?.toString(), `${PRODUCTION_SITE_ORIGIN}/`);
   assert.equal(
     prodRootMetadata.alternates,
@@ -205,38 +209,55 @@ try {
       path: "./product/free/normal/layout.tsx",
       canonicalPath: "/product/free/normal",
       title: "무료 일반연재",
+      description:
+        "매일 새 회차가 올라오는 무료 연재 웹소설. 오늘 시작하기 좋은 작품을 만나보세요.",
     },
     {
       path: "./product/paid/layout.tsx",
       canonicalPath: "/product/paid",
       title: "유료연재",
+      description:
+        "몰입을 보장하는 유료연재 웹소설. 완결까지 달릴 작품을 라이크노벨에서 찾아보세요.",
     },
     {
       path: "./product/top50/free-top/layout.tsx",
       canonicalPath: "/product/top50/free-top",
       title: "무료연재 TOP50",
+      description:
+        "지금 독자들이 가장 많이 읽는 웹소설 TOP50. 다음에 읽을 작품을 실시간 랭킹에서 확인해보세요.",
     },
     {
       path: "./product/top50/paid-top/layout.tsx",
       canonicalPath: "/product/top50/paid-top",
       title: "유료연재 TOP50",
+      description:
+        "지금 독자들이 가장 많이 읽는 웹소설 TOP50. 다음에 읽을 작품을 실시간 랭킹에서 확인해보세요.",
     },
     {
       path: "./product/character-chat/layout.tsx",
       canonicalPath: "/product/character-chat",
       title: "주인공챗",
+      description:
+        "읽은 회차까지만 아는 웹소설 주인공과 대화하고 새로운 이야기를 이어가 보세요.",
     },
     {
       path: "./websochat/layout.tsx",
       canonicalPath: "/websochat",
       title: "웹소챗",
+      description:
+        "작품에 대해 묻는 웹소챗부터 주인공과 대화하는 주인공챗까지, 웹소설과 대화를 시작해보세요.",
     },
   ];
 
-  routeLayouts.forEach(({ path, canonicalPath, title }) => {
+  routeLayouts.forEach(({ path, canonicalPath, title, description }) => {
     const source = readFileSync(new URL(path, import.meta.url), "utf8");
+    const compactSource = source.replace(/\s+/g, " ");
     assert.match(source, /buildPageMetadata\(\{/);
     assert.ok(source.includes(`title: "${title}"`));
+    assert.ok(
+      compactSource.includes(`description: "${description}"`),
+      `${path} should declare the agreed search description`,
+    );
     assert.ok(source.includes(`path: "${canonicalPath}"`));
   });
 } finally {

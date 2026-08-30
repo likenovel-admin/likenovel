@@ -3,7 +3,8 @@ import type { ReactNode } from "react";
 
 export const metadata = buildPageMetadata({
   title: "무료 일반연재",
-  description: "라이크노벨의 무료 일반연재 웹소설을 만나보세요.",
+  description:
+    "매일 새 회차가 올라오는 무료 연재 웹소설. 오늘 시작하기 좋은 작품을 만나보세요.",
   path: "/product/free/normal",
 });
 
