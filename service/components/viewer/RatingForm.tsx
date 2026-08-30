@@ -10,13 +10,12 @@ import { EvaluationItems } from "@/components/common/ProductEvaluation";
 import ProductReaction from "@/components/viewer/ProductReaction";
 import { SHOW_PRODUCT_EVALUATION_SURFACE } from "@/constants/common";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
-import useAuthStore from "@/store/authStore";
 import useToastStore from "@/store/toastStore";
 import { IEvaluation } from "@/types";
 import { mergeKeysEvaluation } from "@/utils/common";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { sumTimesEvaluation } from "../../utils/common";
 
 const QUICK_COMMENT_CHIPS = [
@@ -48,7 +47,6 @@ export default function RatingForm({
   commentOpenYn = "Y",
   evaluationOpenYn = "Y",
 }: RatingFormProps) {
-  const { isAuthenticated } = useAuthStore();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string>("");
   const [comment, setComment] = useState<string>("");
@@ -63,7 +61,7 @@ export default function RatingForm({
   const isEvaluationOpen =
     SHOW_PRODUCT_EVALUATION_SURFACE && evaluationOpenYn !== "N";
 
-  const { data: episodeData, refetch } = useSelectViewerPath(episodeId || 0);
+  const { data: episodeData } = useSelectViewerPath(episodeId || 0);
   const { data: episodeEvaluationData, refetch: refetchEvaluation } =
     useSelectEpisodeEvaluation(
       productId || 0,
@@ -86,10 +84,6 @@ export default function RatingForm({
       hasUserEvaluated: episodeData?.data?.evaluationYn === "Y" || submitted,
     };
   }, [episodeEvaluationData, episodeData, submitted]);
-
-  useEffect(() => {
-    refetch();
-  }, [isAuthenticated]);
 
   function toggle(value: string) {
     if (hasUserEvaluated) return;
