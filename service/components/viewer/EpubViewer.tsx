@@ -7,8 +7,10 @@ import useAuthStore from "@/store/authStore";
 import useViewStore from "@/store/viewerStore";
 import {
   createInitialScrolledBodyCoordinator,
+  createInitialScrolledBodyViewAttacher,
   type InitialScrolledBodyAttemptResult,
   type InitialScrolledBodyCoordinator,
+  type InitialScrolledBodyViewAttacher,
 } from "@/utils/initialScrolledBodyCoordinator";
 import {
   clearReaderFunnelViewerSession,
@@ -775,92 +777,102 @@ const EpubViewer = ({
     });
   }, [isScroll, resolvedCoverImagePath]);
 
-  const attemptInitialScrolledBodyAttachment = useCallback(
-    (rendition: Rendition): InitialScrolledBodyAttemptResult => {
-      const book = (rendition as any).book;
-      const manager = (rendition as any).manager;
-      if (!book || !manager?.views) return "waiting";
+  const createInitialScrolledBodyAttachmentAttempt = useCallback(
+    (rendition: Rendition) => {
+      let bodyViewAttacher: InitialScrolledBodyViewAttacher | null = null;
 
-      try {
-        const spine = book.spine;
-        const getSection = (index: number) =>
-          typeof spine?.get === "function"
-            ? spine.get(index)
-            : Array.isArray(spine?.spineItems)
-              ? spine.spineItems[index]
-              : Array.isArray(spine?.items)
-                ? spine.items[index]
-                : null;
-        const firstSection = getSection(0);
-        const firstSpineMarker = [
-          firstSection?.href,
-          firstSection?.canonical,
-          firstSection?.idref,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        if (!firstSpineMarker.includes("cover")) return "complete";
+      return (): InitialScrolledBodyAttemptResult => {
+        const book = (rendition as any).book;
+        const manager = (rendition as any).manager;
+        if (!book || !manager?.views) return "waiting";
 
-        const bodySection = getSection(1);
-        if (!bodySection) return "failed";
+        try {
+          const spine = book.spine;
+          const getSection = (index: number) =>
+            typeof spine?.get === "function"
+              ? spine.get(index)
+              : Array.isArray(spine?.spineItems)
+                ? spine.spineItems[index]
+                : Array.isArray(spine?.items)
+                  ? spine.items[index]
+                  : null;
+          const firstSection = getSection(0);
+          const firstSpineMarker = [
+            firstSection?.href,
+            firstSection?.canonical,
+            firstSection?.idref,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          if (!firstSpineMarker.includes("cover")) return "complete";
 
-        const isMatchingSection = (view: any, section: any) => {
-          const viewSection = view?.section;
-          return (
-            viewSection === section ||
-            (typeof viewSection?.index === "number" &&
-              viewSection.index === section.index) ||
-            (viewSection?.href && viewSection.href === section.href) ||
-            (viewSection?.idref && viewSection.idref === section.idref)
+          const bodySection = getSection(1);
+          if (!bodySection) return "failed";
+
+          const isMatchingSection = (view: any, section: any) => {
+            const viewSection = view?.section;
+            return (
+              viewSection === section ||
+              (typeof viewSection?.index === "number" &&
+                viewSection.index === section.index) ||
+              (viewSection?.href && viewSection.href === section.href) ||
+              (viewSection?.idref && viewSection.idref === section.idref)
+            );
+          };
+          const views = manager.views.all?.() || [];
+          const coverView = views.find((view: any) =>
+            isMatchingSection(view, firstSection)
           );
-        };
-        const views = manager.views.all?.() || [];
-        const coverView = views.find((view: any) =>
-          isMatchingSection(view, firstSection)
-        );
-        const bodyView = views.find((view: any) =>
-          isMatchingSection(view, bodySection)
-        );
 
-        const displayView = (
-          view: any,
-          label: "cover" | "body"
-        ): InitialScrolledBodyAttemptResult => {
-          if (!view) return "failed";
-          if (view.displayed) {
-            view.show?.();
-            return "complete";
+          const displayView = (view: any, label: "cover" | "body") => {
+            if (!view) return;
+            if (view.displayed) {
+              view.show?.();
+              return;
+            }
+            if (typeof view.display !== "function") return;
+
+            void Promise.resolve(view.display(manager.request))
+              .then(() => view.show?.())
+              .catch((error) => {
+                console.warn(`[viewer] initial ${label} display failed`, error);
+              });
+          };
+
+          if (!settingsRef.current.hideImageCover && !coverView) {
+            try {
+              const appendedCover =
+                manager.append(firstSection) || manager.views.last?.();
+              displayView(appendedCover, "cover");
+            } catch (error) {
+              console.warn("[viewer] initial cover attachment failed", error);
+            }
           }
-          if (typeof view.display !== "function") return "failed";
 
-          void Promise.resolve(view.display(manager.request))
-            .then(() => view.show?.())
-            .catch((error) => {
-              console.warn(`[viewer] initial ${label} display failed`, error);
+          if (!bodyViewAttacher) {
+            bodyViewAttacher = createInitialScrolledBodyViewAttacher({
+              findBodyView: () =>
+                (manager.views.all?.() || []).find((view: any) =>
+                  isMatchingSection(view, bodySection)
+                ),
+              appendBodyView: () =>
+                manager.append(bodySection) || manager.views.last?.(),
+              request: manager.request,
+              onDisplayError: (error, attempt) => {
+                console.warn(
+                  `[viewer] initial body display failed (attempt ${attempt})`,
+                  error
+                );
+              },
             });
-          return "started";
-        };
-
-        if (!settingsRef.current.hideImageCover && !coverView) {
-          try {
-            const appendedCover =
-              manager.append(firstSection) || manager.views.last?.();
-            displayView(appendedCover, "cover");
-          } catch (error) {
-            console.warn("[viewer] initial cover attachment failed", error);
           }
+          return bodyViewAttacher.attempt();
+        } catch (error) {
+          console.warn("[viewer] initial body attachment failed", error);
+          return "failed";
         }
-
-        if (bodyView) return displayView(bodyView, "body");
-
-        const appendedBody =
-          manager.append(bodySection) || manager.views.last?.();
-        return displayView(appendedBody, "body");
-      } catch (error) {
-        console.warn("[viewer] initial body attachment failed", error);
-        return "failed";
-      }
+      };
     },
     []
   );
@@ -1490,8 +1502,8 @@ const EpubViewer = ({
                   isScroll && location === 0
                     ? createInitialScrolledBodyCoordinator({
                         waitForBookReady: () => _rendition.book?.ready,
-                        attemptBodyAttachment: () =>
-                          attemptInitialScrolledBodyAttachment(_rendition),
+                        attemptBodyAttachment:
+                          createInitialScrolledBodyAttachmentAttempt(_rendition),
                       })
                     : null;
                 initialScrolledBodyCoordinatorRef.current =
