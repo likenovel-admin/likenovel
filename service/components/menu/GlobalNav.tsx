@@ -136,7 +136,7 @@ const GlobalNav = () => {
                 <Logo alt="likenovel logo" className="w-132pxr h-18pxr" />
               </div>
             </Link>
-            <div className="flex gap-30pxr">
+            <div className="flex items-center gap-30pxr">
               <Link
                 href="/product/top50/free-top"
                 onClick={(event) =>
