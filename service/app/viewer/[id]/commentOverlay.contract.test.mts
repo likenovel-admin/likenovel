@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const pageSource = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const ratingFormSource = readFileSync(
+  new URL("../../../components/viewer/RatingForm.tsx", import.meta.url),
+  "utf8"
+);
 
 assert.doesNotMatch(
   pageSource,
@@ -29,4 +33,10 @@ assert.match(
   pageSource,
   /readerPaused=\{commentState\}/,
   "comment overlay must keep reader activity paused while it is open"
+);
+
+assert.doesNotMatch(
+  ratingFormSource,
+  /const\s+\{\s*data:\s*episodeData,\s*refetch\s*\}\s*=\s*useSelectViewerPath[\s\S]*?useEffect\(\(\)\s*=>\s*\{\s*refetch\(\);\s*\},\s*\[isAuthenticated\]\);/,
+  "mounting the comment form must not force-refetch the viewer path and remount the EPUB reader"
 );
