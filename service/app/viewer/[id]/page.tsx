@@ -662,20 +662,7 @@ const Viewer = () => {
         </div>
       ) : (
         <>
-          {commentState && (
-            <Rating
-              productId={data?.data.product_id || undefined}
-              episodeId={episodeId}
-              commentOpenYn={data?.data.commentOpenYn || "Y"}
-              evaluationOpenYn={data?.data.evaluationOpenYn || "Y"}
-              setModalType={setModalType}
-            />
-          )}
-          <div
-            className={`${commentState ? "hidden" : ""} relative ${
-              showNav ? "" : ""
-            }`}
-          >
+          <div className="relative">
             {epubUrl && (
               <EpubViewer
                 key={`${episodeId}:${epubUrl}`}
@@ -710,6 +697,22 @@ const Viewer = () => {
               />
             )}
           </div>
+          {commentState && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="작품 댓글"
+              className="fixed inset-x-0 top-[68px] bottom-0 z-50 overflow-y-auto overscroll-contain bg-white"
+            >
+              <Rating
+                productId={data?.data.product_id || undefined}
+                episodeId={episodeId}
+                commentOpenYn={data?.data.commentOpenYn || "Y"}
+                evaluationOpenYn={data?.data.evaluationOpenYn || "Y"}
+                setModalType={setModalType}
+              />
+            </div>
+          )}
           {showNav && !noticeState && !commentState && (
             <ViewerBottomNav
               showNav={showNav}
