@@ -66,6 +66,11 @@ const clampSentence = (value: string, maxLength: number) => {
 const stripEllipsisMarks = (value: string) =>
   normalizeText(value).replace(/…/g, "").replace(/\.{2,}/g, "").trim();
 
+const stripLeadingListMarker = (value: string) =>
+  normalizeText(value)
+    .replace(/^(?:[①-⑳]|\(\d+\)|\d+[.)]|[•·-])\s*/, "")
+    .trim();
+
 // 받침 유무에 따라 을/를 선택 (한글 외 문자로 끝나면 병기)
 const withEulReul = (word: string) => {
   const code = word.charCodeAt(word.length - 1);
@@ -154,7 +159,7 @@ const buildBriefCopy = (
       ? `${asMoodPhrase(mood)}를 좋아하면 잘 맞아요.`
       : "초반 갈등과 인물의 방향이 또렷해요."
   }`;
-  const previewLines = buildListPreviewLines({
+  const templatePreviewLines = buildListPreviewLines({
     hook,
     premise,
     protagonistGoal,
@@ -180,6 +185,14 @@ const buildBriefCopy = (
   // LLM이 작성한 사서 카피가 있으면 그대로 사용, 없으면 템플릿 조립 fallback
   const librarianIntro = normalizeText(brief.librarianIntro);
   const librarianPoints = uniqueValues(brief.librarianPoints);
+  const librarianPreviewPoints = uniqueValues(
+    librarianPoints.map(stripLeadingListMarker)
+  );
+  const previewLines = librarianIntro
+    ? [librarianIntro]
+    : librarianPreviewPoints.length > 0
+    ? [librarianPreviewPoints.slice(0, 2).join(" ")]
+    : templatePreviewLines;
 
   return {
     preview: clampSentence(librarianIntro || previewBase, MAX_PREVIEW_LENGTH),

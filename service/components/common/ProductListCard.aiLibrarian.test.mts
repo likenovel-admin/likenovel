@@ -17,6 +17,14 @@ assert.match(source, /handleAskAiLibrarianMore/);
 assert.doesNotMatch(source, /isAuthenticated: false/);
 assert.match(source, /이 작품 어떤 작품인지 알려줘/);
 assert.match(source, /previewLines=\{aiLibrarianCopy\.previewLines\}/);
+assert.equal(
+  [...source.matchAll(/intro=\{aiLibrarianCopy\.intro\}/g)].length,
+  2
+);
+assert.equal(
+  [...source.matchAll(/points=\{aiLibrarianCopy\.points\}/g)].length,
+  2
+);
 assert.match(source, /onAskMore=\{handleAskAiLibrarianMore\}/);
 assert.match(source, /className="hidden md:block"/);
 assert.match(source, /className="md:hidden px-\[16px\]"/);
