@@ -173,6 +173,21 @@ assert.equal(librarianCopy.intro, "사서가 직접 쓴 소개예요.");
 assert.deepEqual(librarianCopy.points, ["포인트 하나예요.", "포인트 둘이에요.", "포인트 셋이에요."]);
 assert.deepEqual(librarianCopy.chips, ["먼치킨", "아카데미", "회귀"]);
 assert.equal(librarianCopy.preview.includes("사서가 직접 쓴 소개예요."), true);
+assert.deepEqual(librarianCopy.previewLines, ["사서가 직접 쓴 소개예요."]);
+
+const librarianPointPreviewCopy = buildAiLibrarianCopy(
+  { productId: 105, title: "포인트 fallback 작품", synopsis: "시놉", genre: ["판타지"], keywords: [] },
+  {
+    productId: 105,
+    hook: "훅 문장.",
+    premise: "전제 문장.",
+    librarianIntro: "",
+    librarianPoints: ["① 첫 번째 포인트예요.", "(2) 두 번째 포인트예요.", "3. 세 번째 포인트예요."],
+  },
+);
+assert.deepEqual(librarianPointPreviewCopy.previewLines, [
+  "첫 번째 포인트예요. 두 번째 포인트예요.",
+]);
 
 // librarian 카피가 없으면 기존 템플릿/머지 fallback
 const librarianFallbackCopy = buildAiLibrarianCopy(
