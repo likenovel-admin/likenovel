@@ -8,6 +8,13 @@ import {
 export const SITE_NAME = "라이크노벨";
 export const DEFAULT_SITE_DESCRIPTION = "라이크노벨에서 작품을 만나보세요.";
 
+export const buildWebsiteStructuredData = () => ({
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  url: getSiteOrigin(),
+});
+
 const getRobotsMetadata = (): Metadata["robots"] =>
   isIndexableProductionSite()
     ? {

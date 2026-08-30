@@ -9,9 +9,11 @@ import {
 } from "../utils/siteSeo.mjs";
 import {
   DEFAULT_SITE_DESCRIPTION,
+  SITE_NAME,
   buildHomeMetadata,
   buildPageMetadata,
   buildRootMetadata,
+  buildWebsiteStructuredData,
 } from "../utils/siteSeoMetadata.ts";
 import robots from "./robots.ts";
 import sitemap from "./sitemap.ts";
@@ -60,6 +62,12 @@ try {
     PRODUCTION_SITE_ORIGIN,
   );
   assert.equal(prodHomeMetadata.openGraph?.url, PRODUCTION_SITE_ORIGIN);
+  assert.deepEqual(buildWebsiteStructuredData(), {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    url: PRODUCTION_SITE_ORIGIN,
+  });
   assert.deepEqual(prodRootMetadata.robots, {
     index: true,
     follow: true,
@@ -107,6 +115,10 @@ try {
     buildHomeMetadata().alternates?.canonical,
     "https://www.likenovel.dev",
   );
+  assert.equal(
+    buildWebsiteStructuredData().url,
+    "https://www.likenovel.dev",
+  );
   assert.deepEqual(await getSearchHeader(), {
     key: "X-Robots-Tag",
     value: "noindex, nofollow, noarchive",
@@ -146,6 +158,47 @@ try {
   );
   assert.doesNotMatch(homePageSource, /^"use client"/);
   assert.match(homePageSource, /buildHomeMetadata\(\)/);
+  assert.match(homePageSource, /buildWebsiteStructuredData\(\)/);
+  assert.match(homePageSource, /type="application\/ld\+json"/);
+  assert.match(homePageSource, /<h1 className="sr-only">\{SITE_NAME\}<\/h1>/);
+
+  const crawlableNavPaths = [
+    "/",
+    "/product/top50/free-top",
+    "/product/free/normal",
+    "/product/paid",
+    "/websochat",
+  ];
+  const navSources = [
+    "../components/menu/GlobalNav.tsx",
+    "../components/menu/MobileGlobalNav.tsx",
+  ].map((path) => readFileSync(new URL(path, import.meta.url), "utf8"));
+
+  for (const navSource of navSources) {
+    const compactNavSource = navSource.replace(/\s+/g, " ");
+    assert.match(navSource, /import Link from "next\/link";/);
+    assert.match(navSource, /const navigateFromLink = \(/);
+    for (const path of crawlableNavPaths) {
+      assert.ok(
+        compactNavSource.includes(`<Link href="${path}"`),
+        `global navigation should expose a crawlable link to ${path}`,
+      );
+    }
+  }
+
+  const tabSource = readFileSync(
+    new URL("../components/common/Tab.tsx", import.meta.url),
+    "utf8",
+  );
+  const top50Source = readFileSync(
+    new URL("../components/top50/Top50Page.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(tabSource, /import Link from "next\/link";/);
+  assert.match(tabSource, /tab\.href/);
+  assert.match(tabSource, /aria-current=\{activeTab === tab\.value \? "page" : undefined\}/);
+  assert.match(top50Source, /href: item\.href/);
+  assert.doesNotMatch(top50Source, /useRouter/);
 
   const routeLayouts = [
     {

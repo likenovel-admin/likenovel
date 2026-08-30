@@ -9,7 +9,6 @@ import Tab from "@/components/common/Tab";
 import ProductArea from "@/components/top50/ProductArea";
 import RankHistoryModal from "@/components/top50/RankHistoryModal";
 import useAuthStore from "@/store/authStore";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const TOP50_TABS: Array<{ label: string; value: TTop50Area; href: string }> = [
@@ -55,7 +54,6 @@ const getKstDateString = () => {
 };
 
 export default function Top50Page({ initialArea }: Props) {
-  const router = useRouter();
   const { isAuthenticated } = useAuthStore();
   const { data, isPending, refetch } = useSelectTop50Products(initialArea);
   const [isRankHistoryOpen, setIsRankHistoryOpen] = useState(false);
@@ -78,15 +76,11 @@ export default function Top50Page({ initialArea }: Props) {
           tabs={TOP50_TABS.map((item) => ({
             label: item.label,
             value: item.value,
+            href: item.href,
           }))}
           style="black"
           activeTab={initialArea}
-          onTabChange={(value) => {
-            const nextTab = TOP50_TABS.find((item) => item.value === value);
-            if (nextTab && nextTab.href) {
-              router.push(nextTab.href);
-            }
-          }}
+          onTabChange={() => undefined}
         />
       </div>
       {isPending ? (

@@ -11,7 +11,9 @@ import {
   requestWebsochatStartChooser,
   saveWebsochatReturnPath,
 } from "@/utils/websochatLaunch";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import type { MouseEvent } from "react";
 import SquareBadge from "../common/SquareBadge";
 import AlarmMenu from "./AlarmMenu";
 import GlobalMenu from "./GlobalMenu";
@@ -50,6 +52,23 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
     router.push(href);
   };
 
+  const navigateFromLink = (
+    event: MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    event.preventDefault();
+    navigate(href);
+  };
+
   const handleLoginNeeded = () => {
     setConfirm({
       content: "이 콘텐츠를 보시려면 로그인이 필요합니다.",
@@ -69,11 +88,10 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
     >
       {isVisible && (
         <div className="flex justify-between mt-28pxr">
-          <button
+          <Link
+            href="/"
             className="flex items-center gap-7pxr"
-            onClick={() => {
-              navigate("/");
-            }}
+            onClick={(event) => navigateFromLink(event, "/")}
           >
             <div className="mb-[8px]">
               <LogoIcon alt="likenovel icon" className="w-20pxr h-24pxr" />
@@ -81,7 +99,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
             <div className="block md:hidden lg:block">
               <Logo alt="likenovel logo" className="w-104pxr h-14pxr" />
             </div>
-          </button>
+          </Link>
           <div className="flex gap-18pxr">
             <button
               className="hover:text-dark-gray-400"
@@ -100,10 +118,11 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
         } `}
       >
         <div className="flex gap-12pxr min-[360px]:gap-20pxr">
-          <button
-            onClick={() => {
-              navigate("/product/top50/free-top");
-            }}
+          <Link
+            href="/product/top50/free-top"
+            onClick={(event) =>
+              navigateFromLink(event, "/product/top50/free-top")
+            }
           >
             <MenuIcon
               menu={
@@ -114,8 +133,13 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
               dotColor="blue"
               isDotActive
             />
-          </button>
-          <button onClick={() => navigate("/product/free/normal")}>
+          </Link>
+          <Link
+            href="/product/free/normal"
+            onClick={(event) =>
+              navigateFromLink(event, "/product/free/normal")
+            }
+          >
             <MenuIcon
               menu={
                 <span className="inline-flex shrink-0 whitespace-nowrap text-14pxr min-[360px]:text-16pxr font-bold hover:text-dark-gray-400 min-w-[30px]">
@@ -124,8 +148,11 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
               }
               dotColor="blue"
             />
-          </button>
-          <button onClick={() => navigate("/product/paid")}>
+          </Link>
+          <Link
+            href="/product/paid"
+            onClick={(event) => navigateFromLink(event, "/product/paid")}
+          >
             <MenuIcon
               menu={
                 <span className="inline-flex shrink-0 whitespace-nowrap text-14pxr min-[360px]:text-16pxr font-bold hover:text-dark-gray-400 min-w-[30px]">
@@ -134,7 +161,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
               }
               dotColor="blue"
             />
-          </button>
+          </Link>
           <button
             onClick={() => {
               if (!user?.userRole) {
@@ -153,7 +180,10 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
               dotColor="blue"
             />
           </button>
-          <button onClick={() => navigate("/websochat")}>
+          <Link
+            href="/websochat"
+            onClick={(event) => navigateFromLink(event, "/websochat")}
+          >
             <MenuIcon
               menu={
                 <span className="inline-flex shrink-0 items-center gap-4pxr whitespace-nowrap text-14pxr min-[360px]:text-16pxr font-bold hover:text-dark-gray-400">
@@ -163,7 +193,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
               }
               dotColor="blue"
             />
-          </button>
+          </Link>
         </div>
         {!isVisible && (
           <div className="flex gap-18pxr">
