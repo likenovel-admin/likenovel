@@ -2,6 +2,7 @@ type CommonSelectItem = {
   label: ReactNode;
   value: ReactText;
   disabled?: boolean;
+  href?: string;
 };
 
 type CommonModalProps = {

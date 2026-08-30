@@ -1,3 +1,4 @@
+import Link from "next/link";
 import React from "react";
 import Check from "/public/images/check.svg";
 
@@ -144,19 +145,32 @@ const Tab: React.FC<TabProps> = ({ tabs, style, activeTab, onTabChange }) => {
     } else {
       return (
         <div className="flex gap-1">
-          {tabs.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => onTabChange(tab.value)}
-              className={`px-[13px] md:px-[22px] py-[7px] md:py-[10px] rounded-full text-13pxr md:text-16pxr font-medium ${
+          {tabs.map((tab) => {
+            const className = `px-[13px] md:px-[22px] py-[7px] md:py-[10px] rounded-full text-13pxr md:text-16pxr font-medium ${
                 style === "black"
                   ? blackStyle(tab.value)
                   : whiteStyle(tab.value)
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+              }`;
+
+            return tab.href ? (
+              <Link
+                key={tab.value}
+                href={tab.href}
+                aria-current={activeTab === tab.value ? "page" : undefined}
+                className={className}
+              >
+                {tab.label}
+              </Link>
+            ) : (
+              <button
+                key={tab.value}
+                onClick={() => onTabChange(tab.value)}
+                className={className}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       );
     }

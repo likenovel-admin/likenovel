@@ -13,8 +13,9 @@ import {
   requestWebsochatStartChooser,
   saveWebsochatReturnPath,
 } from "@/utils/websochatLaunch";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { type MouseEvent, useEffect, useState } from "react";
 import SquareBadge from "../common/SquareBadge";
 import AdultToggle from "./AdultToggle";
 import AlarmMenu from "./AlarmMenu";
@@ -57,6 +58,23 @@ const GlobalNav = () => {
       return;
     }
     router.push(href);
+  };
+
+  const navigateFromLink = (
+    event: MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    event.preventDefault();
+    navigate(href);
   };
 
   const handleLoginNeeded = () => {
@@ -106,9 +124,10 @@ const GlobalNav = () => {
         )} */}
         <div className="w-full max-w-[1120px] mx-auto h-[66px] flex items-center justify-between">
           <div className="flex lg:gap-67pxr md:gap-35pxr">
-            <button
+            <Link
+              href="/"
               className="flex items-center gap-13pxr"
-              onClick={() => navigate("/")}
+              onClick={(event) => navigateFromLink(event, "/")}
             >
               <div className="mb-[16px]">
                 <LogoIcon alt="likenovel icon" className="w-28pxr h-33pxr" />
@@ -116,9 +135,14 @@ const GlobalNav = () => {
               <div className="block md:hidden lg:block">
                 <Logo alt="likenovel logo" className="w-132pxr h-18pxr" />
               </div>
-            </button>
+            </Link>
             <div className="flex gap-30pxr">
-              <button onClick={() => navigate("/product/top50/free-top")}>
+              <Link
+                href="/product/top50/free-top"
+                onClick={(event) =>
+                  navigateFromLink(event, "/product/top50/free-top")
+                }
+              >
                 <MenuIcon
                   menu={
                     <span className="text-20pxr font-bold  hover:text-dark-gray-400">
@@ -128,8 +152,13 @@ const GlobalNav = () => {
                   dotColor="blue"
                   isDotActive
                 />
-              </button>
-              <button onClick={() => navigate("/product/free/normal")}>
+              </Link>
+              <Link
+                href="/product/free/normal"
+                onClick={(event) =>
+                  navigateFromLink(event, "/product/free/normal")
+                }
+              >
                 <MenuIcon
                   menu={
                     <span className="text-20pxr font-bold hover:text-dark-gray-400">
@@ -138,8 +167,11 @@ const GlobalNav = () => {
                   }
                   dotColor="blue"
                 />
-              </button>
-              <button onClick={() => navigate("/product/paid")}>
+              </Link>
+              <Link
+                href="/product/paid"
+                onClick={(event) => navigateFromLink(event, "/product/paid")}
+              >
                 <MenuIcon
                   menu={
                     <span className="text-20pxr font-bold hover:text-dark-gray-400">
@@ -148,7 +180,7 @@ const GlobalNav = () => {
                   }
                   dotColor="blue"
                 />
-              </button>
+              </Link>
               <button
                 onClick={() => {
                   if (!user?.userRole) {
@@ -167,7 +199,10 @@ const GlobalNav = () => {
                   dotColor="blue"
                 />
               </button>
-              <button onClick={() => navigate("/websochat")}>
+              <Link
+                href="/websochat"
+                onClick={(event) => navigateFromLink(event, "/websochat")}
+              >
                 <MenuIcon
                   menu={
                     <span className="inline-flex items-center gap-6pxr text-20pxr font-bold hover:text-dark-gray-400">
@@ -177,7 +212,7 @@ const GlobalNav = () => {
                   }
                   dotColor="blue"
                 />
-              </button>
+              </Link>
             </div>
           </div>
           <div className="flex">
