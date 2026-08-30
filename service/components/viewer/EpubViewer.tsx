@@ -6,6 +6,11 @@ import useMediaDevice from "@/hooks/useMediaDevice";
 import useAuthStore from "@/store/authStore";
 import useViewStore from "@/store/viewerStore";
 import {
+  createInitialScrolledBodyCoordinator,
+  type InitialScrolledBodyAttemptResult,
+  type InitialScrolledBodyCoordinator,
+} from "@/utils/initialScrolledBodyCoordinator";
+import {
   clearReaderFunnelViewerSession,
   getReaderFunnelActiveMs,
   isReaderFunnelEpisodeComplete,
@@ -127,8 +132,8 @@ const EpubViewer = ({
   const lastPageHostRef = useRef<HTMLElement | null>(null);
   const epubReadyTimerRef = useRef<NodeJS.Timeout | null>(null);
   const epubReadyDoneRef = useRef(false);
-  const initialScrolledBodyDisplayDoneRef = useRef(false);
-  const initialScrolledBodyAppendScheduledRef = useRef(false);
+  const initialScrolledBodyCoordinatorRef =
+    useRef<InitialScrolledBodyCoordinator | null>(null);
   const coverPreloadImageRef = useRef<HTMLImageElement | null>(null);
 
   const device = useMediaDevice();
@@ -520,8 +525,6 @@ const EpubViewer = ({
     setShowLastPage(false);
     setEpubReady(false);
     epubReadyDoneRef.current = false;
-    initialScrolledBodyDisplayDoneRef.current = false;
-    initialScrolledBodyAppendScheduledRef.current = false;
     showLastPageRef.current = false;
     lastResizeDimensionsRef.current = { width: 0, height: 0 };
     if (epubReadyTimerRef.current) {
@@ -546,6 +549,8 @@ const EpubViewer = ({
   // Cleanup on unmount / URL change
   useEffect(() => {
     return () => {
+      initialScrolledBodyCoordinatorRef.current?.cancel();
+      initialScrolledBodyCoordinatorRef.current = null;
       if (renditionRef.current) {
         try {
           renditionRef.current.destroy();
@@ -770,32 +775,23 @@ const EpubViewer = ({
     });
   }, [isScroll, resolvedCoverImagePath]);
 
-  const displayInitialScrolledBody = useCallback((rendition: Rendition) => {
-    if (
-      !isScroll ||
-      location !== 0 ||
-      initialScrolledBodyDisplayDoneRef.current ||
-      initialScrolledBodyAppendScheduledRef.current
-    ) {
-      return;
-    }
-
-    initialScrolledBodyAppendScheduledRef.current = true;
-    const appendBodySection = (finalize = false) => {
+  const attemptInitialScrolledBodyAttachment = useCallback(
+    (rendition: Rendition): InitialScrolledBodyAttemptResult => {
       const book = (rendition as any).book;
       const manager = (rendition as any).manager;
-      if (!book || !manager?.views) return false;
+      if (!book || !manager?.views) return "waiting";
 
       try {
-        const spine = book?.spine;
-        const firstSection =
+        const spine = book.spine;
+        const getSection = (index: number) =>
           typeof spine?.get === "function"
-            ? spine.get(0)
+            ? spine.get(index)
             : Array.isArray(spine?.spineItems)
-              ? spine.spineItems[0]
+              ? spine.spineItems[index]
               : Array.isArray(spine?.items)
-                ? spine.items[0]
+                ? spine.items[index]
                 : null;
+        const firstSection = getSection(0);
         const firstSpineMarker = [
           firstSection?.href,
           firstSection?.canonical,
@@ -804,112 +800,70 @@ const EpubViewer = ({
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
-        if (!firstSpineMarker.includes("cover")) {
-          initialScrolledBodyDisplayDoneRef.current = true;
-          return true;
-        }
+        if (!firstSpineMarker.includes("cover")) return "complete";
 
-        const bodySection =
-          typeof spine?.get === "function"
-            ? spine.get(1)
-            : Array.isArray(spine?.spineItems)
-              ? spine.spineItems[1]
-              : Array.isArray(spine?.items)
-                ? spine.items[1]
-                : null;
-        if (!bodySection) return false;
+        const bodySection = getSection(1);
+        if (!bodySection) return "failed";
 
-        const views = manager.views?.all?.() || [];
-        const hasCoverView = views.some((view: any) => {
-          const section = view?.section;
+        const isMatchingSection = (view: any, section: any) => {
+          const viewSection = view?.section;
           return (
-            section === firstSection ||
-            (typeof section?.index === "number" &&
-              section.index === firstSection.index) ||
-            (section?.href && section.href === firstSection.href) ||
-            (section?.idref && section.idref === firstSection.idref)
+            viewSection === section ||
+            (typeof viewSection?.index === "number" &&
+              viewSection.index === section.index) ||
+            (viewSection?.href && viewSection.href === section.href) ||
+            (viewSection?.idref && viewSection.idref === section.idref)
           );
-        });
-        const hasBodyView = views.some((view: any) => {
-          const section = view?.section;
-          return (
-            section === bodySection ||
-            (typeof section?.index === "number" &&
-              section.index === bodySection.index) ||
-            (section?.href && section.href === bodySection.href) ||
-            (section?.idref && section.idref === bodySection.idref)
-          );
-        });
-        if (hasBodyView) {
-          if (finalize) {
-            initialScrolledBodyDisplayDoneRef.current = true;
-          }
-          return true;
-        }
+        };
+        const views = manager.views.all?.() || [];
+        const coverView = views.find((view: any) =>
+          isMatchingSection(view, firstSection)
+        );
+        const bodyView = views.find((view: any) =>
+          isMatchingSection(view, bodySection)
+        );
 
-        const appendSection = (section: any, markDoneOnComplete = false) => {
-          const appendResult = manager.append(section);
-          if (typeof appendResult?.then === "function") {
-            appendResult
-              .then(() => {
-                if (markDoneOnComplete) {
-                  initialScrolledBodyDisplayDoneRef.current = true;
-                }
-              })
-              .catch(() => {
-                initialScrolledBodyDisplayDoneRef.current = false;
-                initialScrolledBodyAppendScheduledRef.current = false;
-              });
-            return true;
+        const displayView = (
+          view: any,
+          label: "cover" | "body"
+        ): InitialScrolledBodyAttemptResult => {
+          if (!view) return "failed";
+          if (view.displayed) {
+            view.show?.();
+            return "complete";
           }
+          if (typeof view.display !== "function") return "failed";
 
-          const appendedView = appendResult || manager.views?.last?.();
-          if (typeof appendedView?.display === "function") {
-            Promise.resolve(appendedView.display(manager.request))
-              .then(() => {
-                appendedView.show?.();
-                if (markDoneOnComplete) {
-                  initialScrolledBodyDisplayDoneRef.current = true;
-                }
-              })
-              .catch(() => {
-                initialScrolledBodyDisplayDoneRef.current = false;
-                initialScrolledBodyAppendScheduledRef.current = false;
-              });
-          } else if (markDoneOnComplete) {
-            initialScrolledBodyDisplayDoneRef.current = true;
-          }
-
-          return true;
+          void Promise.resolve(view.display(manager.request))
+            .then(() => view.show?.())
+            .catch((error) => {
+              console.warn(`[viewer] initial ${label} display failed`, error);
+            });
+          return "started";
         };
 
-        if (!settingsRef.current.hideImageCover && !hasCoverView) {
-          appendSection(firstSection);
+        if (!settingsRef.current.hideImageCover && !coverView) {
+          try {
+            const appendedCover =
+              manager.append(firstSection) || manager.views.last?.();
+            displayView(appendedCover, "cover");
+          } catch (error) {
+            console.warn("[viewer] initial cover attachment failed", error);
+          }
         }
 
-        return appendSection(bodySection, finalize);
-      } catch {
-        return false;
-      }
-    };
+        if (bodyView) return displayView(bodyView, "body");
 
-    Promise.resolve((rendition as any).book?.ready)
-      .then(() => {
-        const delays = [0, 150, 350, 700, 1200, 2000];
-        delays.forEach((delay, index) => {
-          window.setTimeout(() => {
-            if (initialScrolledBodyDisplayDoneRef.current) return;
-            appendBodySection(index === delays.length - 1);
-            if (index === delays.length - 1) {
-              initialScrolledBodyAppendScheduledRef.current = false;
-            }
-          }, delay);
-        });
-      })
-      .catch(() => {
-        initialScrolledBodyAppendScheduledRef.current = false;
-      });
-  }, [isScroll, location]);
+        const appendedBody =
+          manager.append(bodySection) || manager.views.last?.();
+        return displayView(appendedBody, "body");
+      } catch (error) {
+        console.warn("[viewer] initial body attachment failed", error);
+        return "failed";
+      }
+    },
+    []
+  );
 
   const isInitialMobileCoverVisible = useCallback((rendition?: Rendition | null) => {
     if (device !== "mobile" || isScroll) {
@@ -1530,17 +1484,27 @@ const EpubViewer = ({
                 },
               }}
               getRendition={(_rendition) => {
+                initialScrolledBodyCoordinatorRef.current?.cancel();
                 renditionRef.current = _rendition;
-                displayInitialScrolledBody(_rendition);
+                const initialScrolledBodyCoordinator =
+                  isScroll && location === 0
+                    ? createInitialScrolledBodyCoordinator({
+                        waitForBookReady: () => _rendition.book?.ready,
+                        attemptBodyAttachment: () =>
+                          attemptInitialScrolledBodyAttachment(_rendition),
+                      })
+                    : null;
+                initialScrolledBodyCoordinatorRef.current =
+                  initialScrolledBodyCoordinator;
 
                 _rendition.on("rendered", () => {
+                  initialScrolledBodyCoordinator?.onRendered();
                   if (isScroll && wrapperRef.current) {
                     const width = wrapperRef.current.offsetWidth;
                     const height = wrapperRef.current.offsetHeight;
                     debouncedResize(_rendition, width, height);
                     placeHostAtEnd();
                     syncScrolledContainerLayout(false);
-                    displayInitialScrolledBody(_rendition);
                     if (pendingScrollRestoreTopRef.current !== null) {
                       const targetScrollTop = pendingScrollRestoreTopRef.current;
                       requestAnimationFrame(() => {
@@ -1782,6 +1746,8 @@ const EpubViewer = ({
                     setEpubReady(true);
                   }
                 });
+
+                initialScrolledBodyCoordinator?.start();
               }}
             />
           </div>
