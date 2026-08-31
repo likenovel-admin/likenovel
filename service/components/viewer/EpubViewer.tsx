@@ -859,11 +859,16 @@ const EpubViewer = ({
               appendBodyView: () =>
                 manager.append(bodySection) || manager.views.last?.(),
               request: manager.request,
+              enqueueViewTask: (task) => manager.q.enqueue(task),
+              isActive: () => renditionRef.current === rendition,
               onDisplayError: (error, attempt) => {
                 console.warn(
                   `[viewer] initial body display failed (attempt ${attempt})`,
                   error
                 );
+              },
+              onAttachmentError: (error) => {
+                console.warn("[viewer] initial body attachment failed", error);
               },
             });
           }
