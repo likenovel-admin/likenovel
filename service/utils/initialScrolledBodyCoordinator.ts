@@ -32,7 +32,10 @@ interface InitialScrolledBodyViewAttacherOptions {
   findBodyView: () => InitialScrolledBodyView | null | undefined;
   appendBodyView: () => InitialScrolledBodyView | null | undefined;
   request: unknown;
+  enqueueViewTask?: <T>(task: () => Promise<T> | T) => Promise<T>;
+  isActive?: () => boolean;
   onDisplayError?: (error: unknown, attempt: number) => void;
+  onAttachmentError?: (error: unknown) => void;
 }
 
 export interface InitialScrolledBodyViewAttacher {
@@ -43,24 +46,64 @@ export const createInitialScrolledBodyViewAttacher = ({
   findBodyView,
   appendBodyView,
   request,
+  enqueueViewTask = (task) => {
+    try {
+      return Promise.resolve(task());
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  },
+  isActive = () => true,
   onDisplayError,
+  onAttachmentError,
 }: InitialScrolledBodyViewAttacherOptions): InitialScrolledBodyViewAttacher => {
   let ownedView: InitialScrolledBodyView | null = null;
   let ownedCompletion: Promise<unknown> | null = null;
   let displayAttempts = 0;
 
-  const startOwnedDisplay = (
-    view: InitialScrolledBodyView
-  ): InitialScrolledBodyAttemptResult => {
-    if (typeof view.display !== "function" || displayAttempts >= 2) {
-      return "failed";
-    }
-
-    displayAttempts += 1;
+  const startQueuedAttachment = (): InitialScrolledBodyAttemptResult => {
     let completion: Promise<unknown>;
+    const displayAttemptsBeforeTask = displayAttempts;
     try {
-      completion = Promise.resolve(view.display(request)).then(() => {
-        view.show?.();
+      completion = enqueueViewTask(async () => {
+        if (!isActive()) return "failed";
+
+        let bodyView = findBodyView();
+        if (bodyView && bodyView !== ownedView) {
+          if (bodyView.displayed) {
+            bodyView.show?.();
+            return "complete";
+          }
+          return "waiting";
+        }
+
+        if (!bodyView) {
+          if (ownedView) return "failed";
+          bodyView = appendBodyView();
+          if (!bodyView) return "failed";
+          ownedView = bodyView;
+        }
+
+        if (bodyView.displayed) {
+          bodyView.show?.();
+          return "complete";
+        }
+        if (typeof bodyView.display !== "function" || displayAttempts >= 2) {
+          return "failed";
+        }
+
+        const attemptNumber = displayAttempts + 1;
+        displayAttempts = attemptNumber;
+        try {
+          await bodyView.display(request);
+        } catch (error) {
+          onDisplayError?.(error, attemptNumber);
+          throw error;
+        }
+
+        if (!isActive()) return "failed";
+        bodyView.show?.();
+        return "complete";
       });
     } catch (error) {
       completion = Promise.reject(error);
@@ -73,7 +116,9 @@ export const createInitialScrolledBodyViewAttacher = ({
       },
       (error) => {
         if (ownedCompletion === completion) ownedCompletion = null;
-        onDisplayError?.(error, displayAttempts);
+        if (displayAttempts === displayAttemptsBeforeTask) {
+          onAttachmentError?.(error);
+        }
       }
     );
 
@@ -82,6 +127,11 @@ export const createInitialScrolledBodyViewAttacher = ({
 
   return {
     attempt: () => {
+      if (!isActive()) return "failed";
+      if (ownedCompletion) {
+        return { state: "started", completion: ownedCompletion };
+      }
+
       const bodyView = findBodyView();
       if (bodyView) {
         if (bodyView.displayed) {
@@ -89,18 +139,12 @@ export const createInitialScrolledBodyViewAttacher = ({
           return "complete";
         }
         if (bodyView !== ownedView) return "waiting";
-        if (ownedCompletion) {
-          return { state: "started", completion: ownedCompletion };
-        }
-        return startOwnedDisplay(bodyView);
+        if (displayAttempts >= 2) return "failed";
+        return startQueuedAttachment();
       }
 
       if (ownedView) return "failed";
-
-      const appendedView = appendBodyView();
-      if (!appendedView) return "failed";
-      ownedView = appendedView;
-      return startOwnedDisplay(appendedView);
+      return startQueuedAttachment();
     },
   };
 };
@@ -134,9 +178,13 @@ export const createInitialScrolledBodyCoordinator = ({
       displayInFlight = true;
       clearFallback();
       void result.completion.then(
-        () => {
+        (outcome) => {
           if (cancelled) return;
           displayInFlight = false;
+          if (outcome === "waiting") {
+            attempt();
+            return;
+          }
           complete = true;
           clearFallback();
         },

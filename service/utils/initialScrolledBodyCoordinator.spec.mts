@@ -270,3 +270,150 @@ assert.equal(scheduled[0].cancelled, true);
   assert.equal(displayCalls, 2, "a failed recovery must be terminal");
   await Promise.resolve();
 }
+
+{
+  const queuedTasks: Array<() => Promise<unknown> | unknown> = [];
+  let queueRunning = false;
+  const runNextTask = () => {
+    if (queueRunning || queuedTasks.length === 0) return;
+    queueRunning = true;
+    const task = queuedTasks.shift();
+    void Promise.resolve(task?.()).finally(() => {
+      queueRunning = false;
+      runNextTask();
+    });
+  };
+  const enqueueViewTask = <T>(task: () => Promise<T> | T) =>
+    new Promise<T>((resolve, reject) => {
+      queuedTasks.push(() => Promise.resolve(task()).then(resolve, reject));
+      runNextTask();
+    });
+
+  let displayCalls = 0;
+  let resolveDisplay: (() => void) | null = null;
+  let appendedView:
+    | {
+        displayed: boolean;
+        display: () => Promise<void>;
+        show: () => void;
+      }
+    | null = null;
+  const serializedAttacher = createInitialScrolledBodyViewAttacher({
+    findBodyView: () => appendedView,
+    appendBodyView: () => {
+      appendedView = {
+        displayed: false,
+        display: () => {
+          displayCalls += 1;
+          return new Promise<void>((resolve) => {
+            resolveDisplay = () => {
+              if (appendedView) appendedView.displayed = true;
+              resolve();
+            };
+          });
+        },
+        show: () => undefined,
+      };
+      return appendedView;
+    },
+    request: undefined,
+    enqueueViewTask,
+  });
+
+  serializedAttacher.attempt();
+  await Promise.resolve();
+  assert.equal(displayCalls, 1);
+
+  void enqueueViewTask(async () => {
+    if (appendedView && !appendedView.displayed) {
+      await appendedView.display();
+    }
+  });
+  await Promise.resolve();
+  assert.equal(
+    displayCalls,
+    1,
+    "manager work must not enter while the helper-owned display is pending"
+  );
+
+  resolveDisplay?.();
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(displayCalls, 1, "manager update must observe the displayed view");
+}
+
+{
+  let queuedTask: (() => Promise<unknown> | unknown) | null = null;
+  let resolveQueuedTask: ((value: unknown) => void) | null = null;
+  let managerDisplayCalls = 0;
+  let appendCalls = 0;
+  let managerView:
+    | {
+        displayed: boolean;
+        display: () => Promise<void>;
+      }
+    | null = null;
+  const recheckingAttacher = createInitialScrolledBodyViewAttacher({
+    findBodyView: () => managerView,
+    appendBodyView: () => {
+      appendCalls += 1;
+      return null;
+    },
+    request: undefined,
+    enqueueViewTask: (task) => {
+      queuedTask = task;
+      return new Promise((resolve) => {
+        resolveQueuedTask = resolve;
+      });
+    },
+  });
+
+  recheckingAttacher.attempt();
+  managerView = {
+    displayed: false,
+    display: async () => {
+      managerDisplayCalls += 1;
+    },
+  };
+  resolveQueuedTask?.(await queuedTask?.());
+  await Promise.resolve();
+
+  assert.equal(appendCalls, 0, "queued attachment must recheck before append");
+  assert.equal(
+    managerDisplayCalls,
+    0,
+    "queued attachment must not display a manager-created view"
+  );
+}
+
+{
+  const callbacks: ScheduledCallback[] = [];
+  let attempts = 0;
+  const waitingCompletionCoordinator = createInitialScrolledBodyCoordinator({
+    waitForBookReady: async () => undefined,
+    attemptBodyAttachment: () => {
+      attempts += 1;
+      if (attempts === 1) {
+        return { state: "started", completion: Promise.resolve("waiting") };
+      }
+      return "waiting";
+    },
+    schedule: (callback, delayMs) => {
+      callbacks.push({ callback, delayMs, cancelled: false });
+      return callbacks.length as ReturnType<typeof setTimeout>;
+    },
+  });
+
+  waitingCompletionCoordinator.start();
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(attempts, 2);
+  assert.deepEqual(
+    callbacks.map(({ delayMs }) => delayMs),
+    [250],
+    "a queued manager-owned view must fall back to the existing bounded retry"
+  );
+}
