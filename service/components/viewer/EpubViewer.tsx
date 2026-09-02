@@ -1034,9 +1034,12 @@ const EpubViewer = ({
           // 모바일: wrapper는 전체 폭 유지 (LastPage 보호)
           wrapperRef.current.style.removeProperty("width");
           wrapperRef.current.style.removeProperty("maxWidth");
-          // EPUB 영역에만 max-width 적용
-          if (epubArea && !isScroll) {
-            if (isInitialMobileCoverVisible(rendition)) {
+          // EPUB 영역에만 페이지형 max-width 적용
+          if (epubArea) {
+            if (isScroll) {
+              epubArea.style.removeProperty("max-width");
+              epubArea.style.removeProperty("margin");
+            } else if (isInitialMobileCoverVisible(rendition)) {
               epubArea.style.removeProperty("maxWidth");
               epubArea.style.removeProperty("margin");
             } else {
