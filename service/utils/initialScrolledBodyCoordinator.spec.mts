@@ -21,6 +21,12 @@ assert.match(
   "a stale rendition must be rejected before rendered-event side effects"
 );
 
+assert.match(
+  epubViewerSource,
+  /if \(epubArea\) \{\s*if \(isScroll\) \{\s*epubArea\.style\.removeProperty\("max-width"\);\s*epubArea\.style\.removeProperty\("margin"\);/,
+  "returning to scrolled mode must clear paginated mobile width constraints"
+);
+
 type ScheduledCallback = {
   callback: () => void;
   delayMs: number;
