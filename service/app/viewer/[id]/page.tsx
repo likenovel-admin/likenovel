@@ -91,7 +91,6 @@ const Viewer = () => {
   });
   const [showNav, setShowNav] = useState(true);
   const [commentState, setCommentState] = useState(false);
-  const [commentPrefill, setCommentPrefill] = useState("");
   const [lastPageInView, setLastPageInView] = useState(false);
   const [noticeState, setNoticeState] = useState(false);
   const [modalType, setModalType] = useState<
@@ -439,20 +438,16 @@ const Viewer = () => {
   };
 
   const handleCommentState = useCallback(
-    (prefillContent?: string) => {
+    () => {
       if (!commentState) {
         const activeElement = document.activeElement;
         commentTriggerRef.current =
           activeElement instanceof HTMLElement ? activeElement : null;
-        setCommentPrefill(
-          typeof prefillContent === "string" ? prefillContent : ""
-        );
         setShowNav(true);
         setCommentState(true);
         return;
       }
 
-      setCommentPrefill("");
       setCommentState(false);
       const trigger = commentTriggerRef.current;
       requestAnimationFrame(() => {
@@ -829,9 +824,9 @@ const Viewer = () => {
                 <Rating
                   productId={data?.data.product_id || undefined}
                   episodeId={episodeId}
-                  initialComment={commentPrefill}
                   commentOpenYn={data?.data.commentOpenYn || "Y"}
                   evaluationOpenYn={data?.data.evaluationOpenYn || "Y"}
+                  listOnly
                   setModalType={setModalType}
                 />
               </div>

@@ -252,35 +252,20 @@ assert.ok(
   "the comment box must sit below the next-episode entry on the last page"
 );
 
-assert.match(
-  lastPageSource,
-  /handleCommentState:\s*\(prefillContent\?: string\) => void/,
-  "LastPage must preserve the optional quick-comment text"
-);
-assert.match(
-  epubViewerSource,
-  /handleCommentState:\s*\(prefillContent\?: string\) => void/,
-  "EpubViewer must forward the optional quick-comment text without changing its render path"
-);
-assert.match(
+assert.doesNotMatch(
   viewerPageSource,
-  /const \[commentPrefill, setCommentPrefill\] = useState\(""\)/,
-  "the viewer page must own comment prefill state outside the EPUB renderer"
-);
-assert.match(
-  viewerPageSource,
-  /initialComment=\{commentPrefill\}/,
-  "the viewer page must pass the selected quick comment into the existing overlay"
+  /commentPrefill|initialComment=\{/,
+  "the list-only viewer dialog must not retain a second composer prefill path"
 );
 assert.match(
   ratingSource,
-  /initialComment=\{initialComment\}/,
-  "Rating must forward the selected quick comment"
+  /\{!listOnly && \([\s\S]*?<RatingForm/,
+  "the full-comment dialog must be able to omit RatingForm"
 );
 assert.match(
   ratingFormSource,
   /useState<string>\(initialComment\)/,
-  "RatingForm must initialize its existing input from the selected quick comment"
+  "RatingForm must preserve prefill support for non-list-only callers"
 );
 
 // 페이지형 라스트페이지에서 좌측 화살표가 댓글 입력창을 덮으면 안 된다
