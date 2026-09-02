@@ -1576,10 +1576,18 @@ const EpubViewer = ({
       {/* Loading overlay — EPUB 로딩 중 스크롤 밀림 방지 */}
       {isScroll && !epubReady && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-16pxr"
           style={{ backgroundColor: bgColor }}
+          role="status"
+          aria-live="polite"
         >
           <Spinner />
+          <p
+            className="text-14pxr opacity-70"
+            style={{ color: contentTextColor }}
+          >
+            본문을 불러오는 중이에요
+          </p>
         </div>
       )}
 
