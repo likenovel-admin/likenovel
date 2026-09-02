@@ -8,8 +8,10 @@ import useViewStore from "@/store/viewerStore";
 import {
   createInitialScrolledBodyCoordinator,
   createInitialScrolledBodyViewAttacher,
+  createScrolledLastPageViewportTracker,
   createScrolledResizeLocationRestorer,
   getScrolledResizeCfi,
+  resolveScrolledResizeAnchor,
   shouldDeferInitialScrolledLastPageHost,
   type InitialScrolledBodyAttemptResult,
   type InitialScrolledBodyCoordinator,
@@ -1212,20 +1214,37 @@ const EpubViewer = ({
     return r?.manager?.views?.container || r?.manager?.container || null;
   };
 
-  const readVisibleScrolledLastPageViewportTop = useCallback(() => {
-    const rendition = renditionRef.current;
-    const container =
-      rendition?.manager?.views?.container || rendition?.manager?.container;
-    const host = lastPageHostRef.current;
-    if (!container || !host || host.parentElement !== container) return null;
+  const readVisibleScrolledLastPageViewportTop = useCallback(
+    (ownedContainer?: HTMLElement) => {
+      const rendition = renditionRef.current;
+      const container =
+        ownedContainer ||
+        rendition?.manager?.views?.container ||
+        rendition?.manager?.container;
+      const host = lastPageHostRef.current;
+      if (!container || !host || host.parentElement !== container) return null;
 
-    const hostRect = host.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-    const isVisible =
-      hostRect.bottom > containerRect.top &&
-      hostRect.top < containerRect.bottom;
-    return isVisible ? hostRect.top - containerRect.top : null;
-  }, []);
+      const hostRect = host.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const isVisible =
+        hostRect.bottom > containerRect.top &&
+        hostRect.top < containerRect.bottom;
+      return isVisible ? hostRect.top - containerRect.top : null;
+    },
+    []
+  );
+
+  const scrolledLastPageViewportTracker = useMemo(
+    () =>
+      createScrolledLastPageViewportTracker<HTMLElement>({
+        readViewportTop: readVisibleScrolledLastPageViewportTop,
+        isFrozen: () => scrolledResizeAnchorFrozenRef.current,
+        onViewportTopChange: (viewportTop) => {
+          scrolledLastPageViewportTopRef.current = viewportTop;
+        },
+      }),
+    [readVisibleScrolledLastPageViewportTop]
+  );
 
   const syncScrolledContainerLayout = useCallback(
     (preserveViewport: boolean) => {
@@ -1270,6 +1289,7 @@ const EpubViewer = ({
       if (host && host.parentElement === container) {
         host.remove();
       }
+      scrolledLastPageViewportTracker.clear();
       return;
     }
 
@@ -1286,6 +1306,7 @@ const EpubViewer = ({
       host.style.minHeight = "100vh";
       lastPageHostRef.current = host;
       container.appendChild(host);
+      scrolledLastPageViewportTracker.bind(container);
 
       // Notify that host is ready so touch handlers can be attached
       setLastPageHostReady(true);
@@ -1298,36 +1319,27 @@ const EpubViewer = ({
     ) {
       container.appendChild(host);
     }
-  }, [isScroll]);
+    scrolledLastPageViewportTracker.bind(container);
+  }, [isScroll, scrolledLastPageViewportTracker]);
 
   useEffect(() => {
     if (!isScroll || !lastPageHostReady) {
-      if (!scrolledResizeAnchorFrozenRef.current) {
-        scrolledLastPageViewportTopRef.current = null;
-      }
+      scrolledLastPageViewportTracker.clear();
       return;
     }
 
     const container = getScrollContainer();
-    if (!container) return;
+    const host = lastPageHostRef.current;
+    if (!container || !host || host.parentElement !== container) {
+      scrolledLastPageViewportTracker.clear();
+      return;
+    }
 
-    const updateLastPageViewportTop = () => {
-      if (scrolledResizeAnchorFrozenRef.current) return;
-      scrolledLastPageViewportTopRef.current =
-        readVisibleScrolledLastPageViewportTop();
-    };
-
-    updateLastPageViewportTop();
-    container.addEventListener("scroll", updateLastPageViewportTop, {
-      passive: true,
-    });
+    scrolledLastPageViewportTracker.bind(container);
     return () => {
-      container.removeEventListener("scroll", updateLastPageViewportTop);
-      if (!scrolledResizeAnchorFrozenRef.current) {
-        scrolledLastPageViewportTopRef.current = null;
-      }
+      scrolledLastPageViewportTracker.clear();
     };
-  }, [isScroll, lastPageHostReady, readVisibleScrolledLastPageViewportTop]);
+  }, [isScroll, lastPageHostReady, scrolledLastPageViewportTracker]);
 
   const restoreVisibleRendition = useCallback(() => {
     const rendition = renditionRef.current;
@@ -1634,6 +1646,7 @@ const EpubViewer = ({
                 initialScrolledBodyCoordinatorRef.current?.cancel();
                 scrolledResizeLocationRestorerRef.current?.cancel();
                 scrolledResizeLocationRestorerRef.current = null;
+                scrolledLastPageViewportTracker.clear();
                 scrolledLastPageViewportTopRef.current = null;
                 scrolledResizeAnchorFrozenRef.current = false;
                 renditionRef.current = _rendition;
@@ -1772,14 +1785,10 @@ const EpubViewer = ({
                           ? explicitCfi
                           : reportedCfi;
                       const anchor: ScrolledResizeAnchor | null =
-                        lastPageViewportTop !== null
-                          ? {
-                              kind: "last-page",
-                              viewportTop: lastPageViewportTop,
-                            }
-                          : resizeCfi
-                            ? { kind: "cfi", cfi: resizeCfi }
-                            : null;
+                        resolveScrolledResizeAnchor(
+                          lastPageViewportTop,
+                          resizeCfi
+                        );
 
                       if (
                         scrolledResizeLocationRestorer.onResized(anchor)
@@ -1791,6 +1800,8 @@ const EpubViewer = ({
                 }
 
                 _rendition.on("rendered", () => {
+                  if (renditionRef.current !== _rendition) return;
+
                   initialScrolledBodyCoordinator?.onRendered();
                   if (isScroll && wrapperRef.current) {
                     const width = wrapperRef.current.offsetWidth;
@@ -1821,9 +1832,7 @@ const EpubViewer = ({
                         epubReadyTimerRef.current = null;
                         if (renditionRef.current !== _rendition) return;
                         epubReadyWindowElapsedRef.current = true;
-                        if (
-                          !scrolledResizeLocationRestorer?.isBusy()
-                        ) {
+                        if (!scrolledResizeLocationRestorer?.isBusy()) {
                           revealInitialEpub();
                         }
                       }, 800);
