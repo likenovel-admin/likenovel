@@ -60,8 +60,19 @@ const ViewerBottomNav = ({
     >
       {showNav && (
         <>
-          <div className="flex w-full md:hidden items-center justify-between gap-6pxr">
-            <div className="flex shrink-0 items-center gap-1pxr min-[390px]:gap-2pxr">
+          <div className="flex w-full md:hidden items-center justify-between gap-4pxr">
+            <button
+              onClick={handleNavigatePrevChap}
+              disabled={!previousEpisodeId}
+              className="flex h-40pxr shrink-0 items-center justify-center rounded-[6px] px-2pxr text-dark-gray-500 disabled:cursor-not-allowed disabled:opacity-35"
+              aria-label="이전화"
+            >
+              <div className="flex items-center gap-4pxr">
+                <ArrowLeft className="h-[11px] w-[6px] text-black-200" />
+                <span className="text-12pxr leading-none">이전화</span>
+              </div>
+            </button>
+            <div className="flex min-w-0 shrink items-center justify-center gap-1pxr min-[390px]:gap-2pxr">
               <button
                 className="relative flex h-40pxr w-32pxr items-center justify-center"
                 onClick={handleCommentState}
@@ -102,30 +113,17 @@ const ViewerBottomNav = ({
                 />
               )}
             </div>
-            <div className="flex shrink-0 items-center gap-2pxr border-l border-light-gray-500 pl-8pxr min-[390px]:gap-4pxr min-[390px]:pl-10pxr">
-              <button
-                onClick={handleNavigatePrevChap}
-                disabled={!previousEpisodeId}
-                className="flex h-40pxr items-center justify-center rounded-[6px] px-1pxr text-dark-gray-500 disabled:cursor-not-allowed disabled:opacity-35"
-                aria-label="이전화"
-              >
-                <div className="flex items-center gap-4pxr">
-                  <ArrowLeft className="h-[11px] w-[6px] text-black-200" />
-                  <span className="text-12pxr leading-none">이전화</span>
-                </div>
-              </button>
-              <button
-                onClick={handleNavigateNextChap}
-                disabled={!nextEpisodeId}
-                className="flex h-40pxr items-center justify-center rounded-[6px] px-1pxr font-medium text-black-100 disabled:cursor-not-allowed disabled:opacity-35"
-                aria-label="다음화"
-              >
-                <div className="flex items-center gap-4pxr">
-                  <span className="text-12pxr leading-none">다음화</span>
-                  <ArrowRight className="h-[11px] w-[6px] text-black-200" />
-                </div>
-              </button>
-            </div>
+            <button
+              onClick={handleNavigateNextChap}
+              disabled={!nextEpisodeId}
+              className="flex h-40pxr shrink-0 items-center justify-center rounded-[6px] px-2pxr font-medium text-black-100 disabled:cursor-not-allowed disabled:opacity-35"
+              aria-label="다음화"
+            >
+              <div className="flex items-center gap-4pxr">
+                <span className="text-12pxr leading-none">다음화</span>
+                <ArrowRight className="h-[11px] w-[6px] text-black-200" />
+              </div>
+            </button>
           </div>
           <button
             onClick={handleNavigatePrevChap}

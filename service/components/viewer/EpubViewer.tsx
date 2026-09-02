@@ -53,7 +53,11 @@ interface ArrowIconProps {
 
 const ArrowIcon = memo(({ direction, color, onClick }: ArrowIconProps) => {
   return (
-    <button onClick={onClick} className="z-10 py-10">
+    <button
+      aria-label={direction === "left" ? "이전 페이지" : "다음 페이지"}
+      onClick={onClick}
+      className="z-10 py-10"
+    >
       {direction === "left" ? (
         <ArrowLeft
           color={color}
@@ -81,7 +85,8 @@ interface Props {
   setShowNav: React.Dispatch<React.SetStateAction<boolean>>;
   suppressViewerClickTick?: number;
   readerPaused?: boolean;
-  handleCommentState: () => void;
+  handleCommentState: (prefillContent?: string) => void;
+  onLastPageInViewChange?: (inView: boolean) => void;
   currentEpisodeId?: number;
   productId?: number;
   nextEpisodeId?: number;
@@ -102,6 +107,7 @@ const EpubViewer = ({
   productId,
   nextEpisodeId,
   handleCommentState,
+  onLastPageInViewChange,
 }: Props) => {
   const { settings, setSettings } = useViewStore((state) => ({
     settings: state.settings,
@@ -1332,6 +1338,36 @@ const EpubViewer = ({
 
   // ========================= MOBILE SCROLLED: ENABLE DRAG SCROLL ON LastPage =========================
 
+  // Report whether the last page is currently visible so the parent can
+  // hide floating menus that would cover the comment box.
+  useEffect(() => {
+    if (!onLastPageInViewChange) return;
+
+    if (!isScroll) {
+      onLastPageInViewChange(showLastPage);
+      return;
+    }
+
+    const host = lastPageHostRef.current;
+    const container = getScrollContainer();
+    if (!host || !container) {
+      onLastPageInViewChange(false);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        onLastPageInViewChange(entries[0]?.isIntersecting ?? false);
+      },
+      { root: container, threshold: 0 }
+    );
+    observer.observe(host);
+    return () => {
+      observer.disconnect();
+      onLastPageInViewChange(false);
+    };
+  }, [isScroll, showLastPage, lastPageHostReady, onLastPageInViewChange]);
+
   useEffect(() => {
     // Only apply on real mobile devices and scrolled mode
     if (!isScroll || device !== "mobile" || !lastPageHostReady) return;
@@ -1787,7 +1823,9 @@ const EpubViewer = ({
 
           {/* PAGINATED ARROWS */}
           <div
-            className="absolute inset-y-1/2 left-0 right-0 flex justify-between items-center px-4"
+            className={`absolute left-0 right-0 flex justify-between items-center px-4 ${
+              showLastPage ? "top-[24px]" : "inset-y-1/2"
+            }`}
             style={{ display: isScroll ? "none" : "flex" }}
           >
             <ArrowIcon

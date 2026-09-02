@@ -128,7 +128,11 @@ const ViewerNav = ({
             <>
               {commentState ? (
                 <>
-                  <button onClick={handleCommentState}>
+                  <button
+                    type="button"
+                    aria-label="댓글 닫기"
+                    onClick={handleCommentState}
+                  >
                     <Closed className="w-18pxr h-18pxr" />
                   </button>
                 </>

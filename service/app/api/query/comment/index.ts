@@ -57,7 +57,7 @@ export const useSelectCommentByEpisode = (
       return lastPage.data.comments.length === 0 ? undefined : nextPage;
     },
     initialPageParam: 1,
-    enabled: !Number.isNaN(productId) && !Number.isNaN(episodeId),
+    enabled: productId > 0 && episodeId > 0,
   });
 };
 

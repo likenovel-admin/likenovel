@@ -1,5 +1,6 @@
 "use client";
 import { useGetProductNoticeDetail } from "@/app/api/query/author/episode";
+import { useSelectCommentByEpisode } from "@/app/api/query/comment";
 import {
   useSelectViewerPath,
   useSelectViewerWebsochatReadiness,
@@ -90,6 +91,8 @@ const Viewer = () => {
   });
   const [showNav, setShowNav] = useState(true);
   const [commentState, setCommentState] = useState(false);
+  const [commentPrefill, setCommentPrefill] = useState("");
+  const [lastPageInView, setLastPageInView] = useState(false);
   const [noticeState, setNoticeState] = useState(false);
   const [modalType, setModalType] = useState<
     "episode" | "setting" | "rating" | null
@@ -97,6 +100,8 @@ const Viewer = () => {
   const [epubUrl, setEpubUrl] = useState<string | null>(null);
   const [goFirstRequest, setGoFirstRequest] = useState(0);
   const [suppressViewerClickTick, setSuppressViewerClickTick] = useState(0);
+  const commentDialogRef = useRef<HTMLDivElement | null>(null);
+  const commentTriggerRef = useRef<HTMLElement | null>(null);
   const autoOpenedPurchaseEpisodeIdRef = useRef<number | null>(null);
 
   const {
@@ -123,6 +128,16 @@ const Viewer = () => {
   const websochatButtonState = resolveViewerWebsochatButtonState(
     websochatReadiness || episodeData || {}
   );
+  const { data: episodeCommentData } = useSelectCommentByEpisode(
+    episodeData?.product_id || 0,
+    viewerEpisodeId,
+    1,
+    10,
+    "recent"
+  );
+  const liveCommentCount =
+    episodeCommentData?.pages?.[0]?.data?.commentTotalCount ??
+    episodeData?.commentCount;
   const viewerErrorStatus = axios.isAxiosError(viewerError)
     ? viewerError.response?.status
     : undefined;
@@ -422,15 +437,48 @@ const Viewer = () => {
     }
   };
 
-  const handleCommentState = useCallback(() => {
-    setCommentState((prev) => {
-      const next = !prev;
-      if (next) {
+  const handleCommentState = useCallback(
+    (prefillContent?: string) => {
+      if (!commentState) {
+        const activeElement = document.activeElement;
+        commentTriggerRef.current =
+          activeElement instanceof HTMLElement ? activeElement : null;
+        setCommentPrefill(
+          typeof prefillContent === "string" ? prefillContent : ""
+        );
         setShowNav(true);
+        setCommentState(true);
+        return;
       }
-      return next;
+
+      setCommentPrefill("");
+      setCommentState(false);
+      const trigger = commentTriggerRef.current;
+      requestAnimationFrame(() => {
+        if (trigger?.isConnected) {
+          trigger.focus();
+        } else {
+          document
+            .querySelector<HTMLElement>('button[aria-label="댓글"]')
+            ?.focus();
+        }
+        commentTriggerRef.current = null;
+      });
+    },
+    [commentState]
+  );
+
+  useEffect(() => {
+    if (!commentState) return;
+
+    const frame = requestAnimationFrame(() => {
+      const dialog = commentDialogRef.current;
+      if (dialog && !dialog.contains(document.activeElement)) {
+        dialog.focus();
+      }
     });
-  }, []);
+    return () => cancelAnimationFrame(frame);
+  }, [commentState]);
 
   const handleNoticeState = () => {
     setNoticeState(!noticeState);
@@ -626,7 +674,7 @@ const Viewer = () => {
               : data?.data.title || ""
           }
           bingeWatchYn={data?.data.bingeWatchYn || "N"}
-          commentCount={data?.data?.commentCount}
+          commentCount={liveCommentCount}
           isScroll={isScroll}
           commentState={commentState}
           noticeState={noticeState}
@@ -680,6 +728,7 @@ const Viewer = () => {
                 productId={data?.data?.product_id}
                 nextEpisodeId={data?.data?.nextEpisodeId}
                 handleCommentState={handleCommentState}
+                onLastPageInViewChange={setLastPageInView}
               />
             )}
             {/* {isScroll && (
@@ -688,7 +737,7 @@ const Viewer = () => {
                 setCommentState={setCommentState}
               />
             )} */}
-            {!noticeState && !commentState && (
+            {!noticeState && !commentState && !lastPageInView && (
               <ViewerSideMenu
                 onEpisodeListClick={handleOpenEpisode}
                 onSettingClick={handleOpenSetting}
@@ -699,14 +748,17 @@ const Viewer = () => {
           </div>
           {commentState && (
             <div
+              ref={commentDialogRef}
               role="dialog"
               aria-modal="true"
               aria-label="작품 댓글"
+              tabIndex={-1}
               className="fixed inset-x-0 top-[68px] bottom-0 z-50 overflow-y-auto overscroll-contain bg-white"
             >
               <Rating
                 productId={data?.data.product_id || undefined}
                 episodeId={episodeId}
+                initialComment={commentPrefill}
                 commentOpenYn={data?.data.commentOpenYn || "Y"}
                 evaluationOpenYn={data?.data.evaluationOpenYn || "Y"}
                 setModalType={setModalType}
@@ -720,7 +772,7 @@ const Viewer = () => {
               handleNavigatePrevChap={handleNavigatePrevChap}
               previousEpisodeId={data?.data?.previousEpisodeId}
               nextEpisodeId={data?.data?.nextEpisodeId}
-              commentCount={data?.data?.commentCount}
+              commentCount={liveCommentCount}
               productId={data?.data.product_id || Number(productId || 0)}
               bookmarkYn={data?.data.bookmarkYn}
               likedYN={data?.data.liked}

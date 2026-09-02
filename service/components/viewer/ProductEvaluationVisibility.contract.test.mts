@@ -37,10 +37,11 @@ assert.match(
   "viewer comment section wrapper must use compact spacing when evaluation is hidden"
 );
 
-assert.match(
+// 평가 기능은 비노출 상태이므로 라스트페이지 진입 CTA도 평가 문구를 쓰지 않는다
+assert.doesNotMatch(
   reviewCardSource,
-  />평가하기</,
-  "review card CTA text is outside the hidden evaluation area and must stay unchanged"
+  />\s*평가하기\s*</,
+  "the last-page comment entry must not reuse the hidden evaluation label"
 );
 
 for (const [label, source] of [
