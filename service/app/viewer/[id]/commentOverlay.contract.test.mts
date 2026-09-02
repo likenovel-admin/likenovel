@@ -6,6 +6,10 @@ const ratingFormSource = readFileSync(
   new URL("../../../components/viewer/RatingForm.tsx", import.meta.url),
   "utf8"
 );
+const ratingSource = readFileSync(
+  new URL("../../../components/viewer/Rating.tsx", import.meta.url),
+  "utf8"
+);
 const viewerNavSource = readFileSync(
   new URL("../../../components/menu/ViewerNav.tsx", import.meta.url),
   "utf8"
@@ -70,9 +74,27 @@ assert.match(
 );
 
 assert.match(
-  ratingFormSource,
-  /if \(commentOpenYn === "N"\) return;[\s\S]*?commentInputRef\.current\?\.focus\(\)/,
-  "opening comments must focus the enabled comment input even without a quick-comment prefill"
+  pageSource,
+  /if \(dialog && !dialog\.contains\(document\.activeElement\)\) \{[\s\S]*?dialog\.focus\(\)/,
+  "opening the list-only comment dialog must move focus into the dialog"
+);
+
+assert.match(
+  pageSource,
+  /<Rating[\s\S]*?listOnly/,
+  "the viewer full-comment dialog must request list-only rendering"
+);
+
+assert.doesNotMatch(
+  pageSource,
+  /<Rating[\s\S]*?initialComment=/,
+  "the viewer full-comment dialog must not forward a composer prefill"
+);
+
+assert.match(
+  ratingSource,
+  /listOnly[\s\S]*?\{!listOnly && \([\s\S]*?<RatingForm/,
+  "list-only Rating must omit its comment composer"
 );
 
 assert.match(

@@ -10,6 +10,7 @@ interface RatingProps {
   initialComment?: string;
   commentOpenYn?: "Y" | "N";
   evaluationOpenYn?: "Y" | "N";
+  listOnly?: boolean;
   setModalType: Dispatch<
     SetStateAction<"episode" | "setting" | "rating" | null>
   >;
@@ -21,6 +22,7 @@ export default function Rating({
   initialComment = "",
   commentOpenYn = "Y",
   evaluationOpenYn = "Y",
+  listOnly = false,
   setModalType,
 }: RatingProps) {
   const [activeTab, setActiveTab] = useState("recommend");
@@ -45,14 +47,16 @@ export default function Rating({
       }`}
     >
       <div className="w-full md:w-[784px] px-16pxr md:px-0">
-        <RatingForm
-          productId={productId}
-          episodeId={episodeId}
-          initialComment={initialComment}
-          commentTotalCount={commentTotalCount}
-          commentOpenYn={commentOpenYn}
-          evaluationOpenYn={evaluationOpenYn}
-        />
+        {!listOnly && (
+          <RatingForm
+            productId={productId}
+            episodeId={episodeId}
+            initialComment={initialComment}
+            commentTotalCount={commentTotalCount}
+            commentOpenYn={commentOpenYn}
+            evaluationOpenYn={evaluationOpenYn}
+          />
+        )}
         <CommentList
           setModalType={setModalType}
           pageType="episode"
