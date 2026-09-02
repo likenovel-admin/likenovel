@@ -35,6 +35,151 @@ export const getScrolledResizeCfi = (
   return typeof cfi === "string" && cfi.length > 0 ? cfi : null;
 };
 
+export type ScrolledResizeAnchor =
+  | { kind: "cfi"; cfi: string }
+  | { kind: "last-page"; viewportTop: number };
+
+type AnimationFrameHandle = ReturnType<typeof requestAnimationFrame>;
+
+interface ScrolledResizeLocationRestorerOptions {
+  enqueueAfterRenditionWork: () => Promise<unknown> | unknown;
+  waitForStableLayout: () => Promise<unknown> | unknown;
+  restoreAnchor: (
+    anchor: ScrolledResizeAnchor
+  ) => Promise<unknown> | unknown;
+  isActive?: () => boolean;
+  scheduleFrame?: (callback: () => void) => AnimationFrameHandle;
+  cancelFrame?: (handle: AnimationFrameHandle) => void;
+  onRestoreError?: (error: unknown) => void;
+  onIdle?: () => void;
+}
+
+export interface ScrolledResizeLocationRestorer {
+  onResized: (anchor: ScrolledResizeAnchor | null) => boolean;
+  isBusy: () => boolean;
+  cancel: () => void;
+}
+
+const isValidScrolledResizeAnchor = (
+  anchor: ScrolledResizeAnchor | null
+): anchor is ScrolledResizeAnchor =>
+  Boolean(
+    anchor &&
+      ((anchor.kind === "cfi" && anchor.cfi.length > 0) ||
+        (anchor.kind === "last-page" &&
+          Number.isFinite(anchor.viewportTop)))
+  );
+
+export const createScrolledResizeLocationRestorer = ({
+  enqueueAfterRenditionWork,
+  waitForStableLayout,
+  restoreAnchor,
+  isActive = () => true,
+  scheduleFrame = (callback) => globalThis.requestAnimationFrame(callback),
+  cancelFrame = (handle) => globalThis.cancelAnimationFrame(handle),
+  onRestoreError,
+  onIdle,
+}: ScrolledResizeLocationRestorerOptions): ScrolledResizeLocationRestorer => {
+  let cancelled = false;
+  let generation = 0;
+  let anchor: ScrolledResizeAnchor | null = null;
+  let scheduledFrame: AnimationFrameHandle | null = null;
+  let inFlightGeneration: number | null = null;
+
+  const clearFrame = () => {
+    if (scheduledFrame === null) return;
+    cancelFrame(scheduledFrame);
+    scheduledFrame = null;
+  };
+
+  const cancel = () => {
+    cancelled = true;
+    generation += 1;
+    inFlightGeneration = null;
+    anchor = null;
+    clearFrame();
+  };
+
+  const settle = (runGeneration: number, error?: unknown) => {
+    if (inFlightGeneration === runGeneration) {
+      inFlightGeneration = null;
+    }
+    if (
+      cancelled ||
+      runGeneration !== generation
+    ) {
+      return;
+    }
+
+    anchor = null;
+    if (error !== undefined) onRestoreError?.(error);
+    onIdle?.();
+  };
+
+  const isCurrent = (runGeneration: number) =>
+    !cancelled && runGeneration === generation && isActive();
+
+  const startRestore = (
+    runGeneration: number,
+    restoreTarget: ScrolledResizeAnchor
+  ) => {
+    void Promise.resolve()
+      .then(enqueueAfterRenditionWork)
+      .then(async () => {
+        if (!isCurrent(runGeneration)) return false;
+        await waitForStableLayout();
+        return true;
+      })
+      .then(
+        (layoutReady) => {
+          if (!layoutReady || !isCurrent(runGeneration)) return;
+          try {
+            scheduledFrame = scheduleFrame(() => {
+              scheduledFrame = null;
+              if (!isCurrent(runGeneration)) return;
+
+              inFlightGeneration = runGeneration;
+              let restoreResult: Promise<unknown> | unknown;
+              try {
+                restoreResult = restoreAnchor(restoreTarget);
+              } catch (error) {
+                settle(runGeneration, error);
+                return;
+              }
+
+              void Promise.resolve(restoreResult).then(
+                () => settle(runGeneration),
+                (error) => settle(runGeneration, error)
+              );
+            });
+          } catch (error) {
+            settle(runGeneration, error);
+          }
+        },
+        (error) => {
+          if (isCurrent(runGeneration)) settle(runGeneration, error);
+        }
+      );
+  };
+
+  return {
+    onResized: (nextAnchor) => {
+      if (cancelled || !isActive()) return false;
+      if (!anchor) {
+        if (!isValidScrolledResizeAnchor(nextAnchor)) return false;
+        anchor = { ...nextAnchor };
+      }
+
+      generation += 1;
+      clearFrame();
+      startRestore(generation, anchor);
+      return true;
+    },
+    isBusy: () => anchor !== null,
+    cancel,
+  };
+};
+
 interface InitialScrolledSpineSection {
   index?: number;
   href?: string;

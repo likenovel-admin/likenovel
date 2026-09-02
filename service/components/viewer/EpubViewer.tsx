@@ -8,11 +8,14 @@ import useViewStore from "@/store/viewerStore";
 import {
   createInitialScrolledBodyCoordinator,
   createInitialScrolledBodyViewAttacher,
+  createScrolledResizeLocationRestorer,
   getScrolledResizeCfi,
   shouldDeferInitialScrolledLastPageHost,
   type InitialScrolledBodyAttemptResult,
   type InitialScrolledBodyCoordinator,
   type InitialScrolledBodyViewAttacher,
+  type ScrolledResizeAnchor,
+  type ScrolledResizeLocationRestorer,
 } from "@/utils/initialScrolledBodyCoordinator";
 import {
   clearReaderFunnelViewerSession,
@@ -142,8 +145,13 @@ const EpubViewer = ({
   const lastPageHostRef = useRef<HTMLElement | null>(null);
   const epubReadyTimerRef = useRef<NodeJS.Timeout | null>(null);
   const epubReadyDoneRef = useRef(false);
+  const epubReadyWindowElapsedRef = useRef(false);
   const initialScrolledBodyCoordinatorRef =
     useRef<InitialScrolledBodyCoordinator | null>(null);
+  const scrolledResizeLocationRestorerRef =
+    useRef<ScrolledResizeLocationRestorer | null>(null);
+  const scrolledLastPageViewportTopRef = useRef<number | null>(null);
+  const scrolledResizeAnchorFrozenRef = useRef(false);
   const coverPreloadImageRef = useRef<HTMLImageElement | null>(null);
 
   const device = useMediaDevice();
@@ -548,7 +556,10 @@ const EpubViewer = ({
     setShowLastPage(false);
     setEpubReady(false);
     epubReadyDoneRef.current = false;
+    epubReadyWindowElapsedRef.current = false;
     showLastPageRef.current = false;
+    scrolledLastPageViewportTopRef.current = null;
+    scrolledResizeAnchorFrozenRef.current = false;
     lastResizeDimensionsRef.current = { width: 0, height: 0 };
     if (epubReadyTimerRef.current) {
       clearTimeout(epubReadyTimerRef.current);
@@ -567,6 +578,14 @@ const EpubViewer = ({
       );
       lastPageHostRef.current = null;
     }
+
+    return () => {
+      scrolledResizeLocationRestorerRef.current?.cancel();
+      scrolledResizeLocationRestorerRef.current = null;
+      scrolledLastPageViewportTopRef.current = null;
+      scrolledResizeAnchorFrozenRef.current = false;
+      epubReadyWindowElapsedRef.current = false;
+    };
   }, [isScroll]);
 
   // Cleanup on unmount / URL change
@@ -574,6 +593,11 @@ const EpubViewer = ({
     return () => {
       initialScrolledBodyCoordinatorRef.current?.cancel();
       initialScrolledBodyCoordinatorRef.current = null;
+      scrolledResizeLocationRestorerRef.current?.cancel();
+      scrolledResizeLocationRestorerRef.current = null;
+      scrolledLastPageViewportTopRef.current = null;
+      scrolledResizeAnchorFrozenRef.current = false;
+      epubReadyWindowElapsedRef.current = false;
       if (renditionRef.current) {
         try {
           renditionRef.current.destroy();
@@ -1188,6 +1212,21 @@ const EpubViewer = ({
     return r?.manager?.views?.container || r?.manager?.container || null;
   };
 
+  const readVisibleScrolledLastPageViewportTop = useCallback(() => {
+    const rendition = renditionRef.current;
+    const container =
+      rendition?.manager?.views?.container || rendition?.manager?.container;
+    const host = lastPageHostRef.current;
+    if (!container || !host || host.parentElement !== container) return null;
+
+    const hostRect = host.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const isVisible =
+      hostRect.bottom > containerRect.top &&
+      hostRect.top < containerRect.bottom;
+    return isVisible ? hostRect.top - containerRect.top : null;
+  }, []);
+
   const syncScrolledContainerLayout = useCallback(
     (preserveViewport: boolean) => {
       if (!isScroll) return;
@@ -1260,6 +1299,35 @@ const EpubViewer = ({
       container.appendChild(host);
     }
   }, [isScroll]);
+
+  useEffect(() => {
+    if (!isScroll || !lastPageHostReady) {
+      if (!scrolledResizeAnchorFrozenRef.current) {
+        scrolledLastPageViewportTopRef.current = null;
+      }
+      return;
+    }
+
+    const container = getScrollContainer();
+    if (!container) return;
+
+    const updateLastPageViewportTop = () => {
+      if (scrolledResizeAnchorFrozenRef.current) return;
+      scrolledLastPageViewportTopRef.current =
+        readVisibleScrolledLastPageViewportTop();
+    };
+
+    updateLastPageViewportTop();
+    container.addEventListener("scroll", updateLastPageViewportTop, {
+      passive: true,
+    });
+    return () => {
+      container.removeEventListener("scroll", updateLastPageViewportTop);
+      if (!scrolledResizeAnchorFrozenRef.current) {
+        scrolledLastPageViewportTopRef.current = null;
+      }
+    };
+  }, [isScroll, lastPageHostReady, readVisibleScrolledLastPageViewportTop]);
 
   const restoreVisibleRendition = useCallback(() => {
     const rendition = renditionRef.current;
@@ -1564,6 +1632,10 @@ const EpubViewer = ({
               }}
               getRendition={(_rendition) => {
                 initialScrolledBodyCoordinatorRef.current?.cancel();
+                scrolledResizeLocationRestorerRef.current?.cancel();
+                scrolledResizeLocationRestorerRef.current = null;
+                scrolledLastPageViewportTopRef.current = null;
+                scrolledResizeAnchorFrozenRef.current = false;
                 renditionRef.current = _rendition;
                 const initialScrolledBodyCoordinator =
                   isScroll && location === 0
@@ -1575,6 +1647,148 @@ const EpubViewer = ({
                     : null;
                 initialScrolledBodyCoordinatorRef.current =
                   initialScrolledBodyCoordinator;
+
+                const revealInitialEpub = () => {
+                  if (
+                    renditionRef.current !== _rendition ||
+                    epubReadyDoneRef.current
+                  ) {
+                    return;
+                  }
+                  epubReadyWindowElapsedRef.current = false;
+                  epubReadyDoneRef.current = true;
+                  setEpubReady(true);
+                };
+
+                const waitForCurrentFontLayout = async () => {
+                  const waitForFontPass = async () => {
+                    const currentContents = (
+                      _rendition as Rendition & {
+                        manager?: { getContents?: () => Contents[] };
+                      }
+                    ).manager?.getContents?.() || [];
+                    const fontResults = await Promise.allSettled(
+                      currentContents.flatMap((contents) => {
+                        const ready = contents.document?.fonts?.ready;
+                        return ready ? [ready] : [];
+                      })
+                    );
+                    fontResults.forEach((result) => {
+                      if (result.status === "rejected") {
+                        console.warn(
+                          "[viewer] scrolled resize font readiness failed",
+                          result.reason
+                        );
+                      }
+                    });
+                  };
+
+                  await waitForFontPass();
+                  await waitForFontPass();
+                };
+
+                const scrolledResizeLocationRestorer = isScroll
+                  ? createScrolledResizeLocationRestorer({
+                      enqueueAfterRenditionWork: () => {
+                        const queue = (
+                          _rendition as Rendition & {
+                            q?: {
+                              enqueue: (
+                                task: () => unknown
+                              ) => Promise<unknown>;
+                            };
+                          }
+                        ).q;
+                        if (!queue?.enqueue) {
+                          throw new Error(
+                            "epub rendition queue is unavailable during resize"
+                          );
+                        }
+                        return queue.enqueue(() => undefined);
+                      },
+                      waitForStableLayout: waitForCurrentFontLayout,
+                      restoreAnchor: (anchor) => {
+                        if (anchor.kind === "cfi") {
+                          return _rendition.display(anchor.cfi);
+                        }
+
+                        placeHostAtEnd();
+                        const container =
+                          (_rendition as any)?.manager?.views?.container ||
+                          (_rendition as any)?.manager?.container ||
+                          null;
+                        const host = lastPageHostRef.current;
+                        if (
+                          !container ||
+                          !host ||
+                          host.parentElement !== container ||
+                          container.lastElementChild !== host
+                        ) {
+                          throw new Error(
+                            "last-page host is unavailable during resize restore"
+                          );
+                        }
+
+                        const currentRelativeTop =
+                          host.getBoundingClientRect().top -
+                          container.getBoundingClientRect().top;
+                        container.scrollTop +=
+                          currentRelativeTop - anchor.viewportTop;
+                      },
+                      isActive: () =>
+                        renditionRef.current === _rendition && isScroll,
+                      onRestoreError: (error) => {
+                        console.warn(
+                          "[viewer] scrolled resize restore failed",
+                          error
+                        );
+                      },
+                      onIdle: () => {
+                        if (renditionRef.current !== _rendition) return;
+                        scrolledResizeAnchorFrozenRef.current = false;
+                        scrolledLastPageViewportTopRef.current =
+                          readVisibleScrolledLastPageViewportTop();
+                        if (epubReadyWindowElapsedRef.current) {
+                          revealInitialEpub();
+                        }
+                      },
+                    })
+                  : null;
+                scrolledResizeLocationRestorerRef.current =
+                  scrolledResizeLocationRestorer;
+
+                if (scrolledResizeLocationRestorer) {
+                  _rendition.on(
+                    "resized",
+                    (_size: unknown, explicitCfi: unknown) => {
+                      const lastPageViewportTop =
+                        scrolledLastPageViewportTopRef.current;
+                      const reportedCfi = getScrolledResizeCfi(
+                        _rendition.location
+                      );
+                      const resizeCfi =
+                        typeof explicitCfi === "string" &&
+                        explicitCfi.length > 0
+                          ? explicitCfi
+                          : reportedCfi;
+                      const anchor: ScrolledResizeAnchor | null =
+                        lastPageViewportTop !== null
+                          ? {
+                              kind: "last-page",
+                              viewportTop: lastPageViewportTop,
+                            }
+                          : resizeCfi
+                            ? { kind: "cfi", cfi: resizeCfi }
+                            : null;
+
+                      if (
+                        scrolledResizeLocationRestorer.onResized(anchor)
+                      ) {
+                        scrolledResizeAnchorFrozenRef.current = true;
+                      }
+                    }
+                  );
+                }
 
                 _rendition.on("rendered", () => {
                   initialScrolledBodyCoordinator?.onRendered();
@@ -1602,9 +1816,16 @@ const EpubViewer = ({
                       if (epubReadyTimerRef.current) {
                         clearTimeout(epubReadyTimerRef.current);
                       }
+                      epubReadyWindowElapsedRef.current = false;
                       epubReadyTimerRef.current = setTimeout(() => {
-                        epubReadyDoneRef.current = true;
-                        setEpubReady(true);
+                        epubReadyTimerRef.current = null;
+                        if (renditionRef.current !== _rendition) return;
+                        epubReadyWindowElapsedRef.current = true;
+                        if (
+                          !scrolledResizeLocationRestorer?.isBusy()
+                        ) {
+                          revealInitialEpub();
+                        }
                       }, 800);
                     }
                   }
