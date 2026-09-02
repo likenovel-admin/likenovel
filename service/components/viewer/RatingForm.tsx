@@ -8,6 +8,10 @@ import {
 } from "@/app/api/query/episode";
 import { EvaluationItems } from "@/components/common/ProductEvaluation";
 import ProductReaction from "@/components/viewer/ProductReaction";
+import {
+  QUICK_COMMENT_CHIP_CLASS,
+  QUICK_COMMENT_CHIPS,
+} from "@/components/viewer/quickComments";
 import { SHOW_PRODUCT_EVALUATION_SURFACE } from "@/constants/common";
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useToastStore from "@/store/toastStore";
@@ -15,27 +19,13 @@ import { IEvaluation } from "@/types";
 import { mergeKeysEvaluation } from "@/utils/common";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { sumTimesEvaluation } from "../../utils/common";
-
-const QUICK_COMMENT_CHIPS = [
-  "잘 보고 갑니다",
-  "잘 읽었습니다",
-  "잘 봤습니다",
-  "오늘도 잘 봤습니다",
-  "건필하세요",
-  "작가님 화이팅",
-  "응원합니다",
-  "감사합니다",
-  "재밌어요",
-  "다음화 기다립니다",
-];
-const QUICK_COMMENT_CHIP_CLASS =
-  "shrink-0 whitespace-nowrap rounded-full border border-light-gray-400 bg-white px-12pxr py-8pxr text-13pxr font-medium tracking-[-2%] text-dark-gray-500 transition-colors hover:border-primary-100 hover:text-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-100/30";
 
 interface RatingFormProps {
   productId?: number;
   episodeId?: number;
+  initialComment?: string;
   commentTotalCount?: number;
   commentOpenYn?: "Y" | "N";
   evaluationOpenYn?: "Y" | "N";
@@ -43,15 +33,25 @@ interface RatingFormProps {
 export default function RatingForm({
   productId,
   episodeId,
+  initialComment = "",
   commentTotalCount = 0,
   commentOpenYn = "Y",
   evaluationOpenYn = "Y",
 }: RatingFormProps) {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string>("");
-  const [comment, setComment] = useState<string>("");
+  const [comment, setComment] = useState<string>(initialComment);
   const [submitted, setSubmitted] = useState(false);
   const commentInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (commentOpenYn === "N") return;
+
+    const frame = requestAnimationFrame(() => {
+      commentInputRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [commentOpenYn, initialComment]);
 
   const { withAuth } = useAuthWrapper();
   const { setToast } = useToastStore();

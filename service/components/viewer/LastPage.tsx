@@ -7,7 +7,7 @@ import ReviewCard from "@/components/viewer/ReviewCard";
 
 interface LastPageProps {
   currentEpisodeId?: number;
-  handleCommentState: () => void;
+  handleCommentState: (prefillContent?: string) => void;
 }
 
 export default function LastPage({
@@ -19,14 +19,15 @@ export default function LastPage({
     <div className="mt-[28px] mb-[60px] flex flex-col items-center">
       <div className="w-full md:w-[839px] px-16pxr md:px-0">
         <AuthorNote episodeId={currentEpisodeId || 0} />
-        <ReviewCard
-          productId={viewerData?.data?.product_id}
-          episodeId={currentEpisodeId}
-          handleCommentState={handleCommentState}
-        />
         {currentEpisodeId && (
           <NextEpisode currentEpisodeId={currentEpisodeId} />
         )}
+        <ReviewCard
+          productId={viewerData?.data?.product_id}
+          episodeId={currentEpisodeId}
+          commentOpenYn={viewerData?.data?.commentOpenYn}
+          handleCommentState={handleCommentState}
+        />
         <PromoBanner />
         {viewerData?.data?.product_id && (
           <RecommendedProduct productId={viewerData.data.product_id} />

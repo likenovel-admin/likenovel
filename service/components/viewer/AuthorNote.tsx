@@ -63,30 +63,32 @@ export default function AuthorNote({ episodeId }: AuthorNoteProps) {
     // }
   });
 
+  if (!authorComment) return null;
+
   return (
     <section
-      className={`w-full rounded-[20px] border border-line shadow-card p-4 px-[22px] sm:p-5 ${
+      className={`w-full rounded-[20px] border border-line shadow-card px-18pxr py-16pxr md:px-22pxr ${
         isDarkTheme ? "bg-[#2B2F35]" : "bg-transparent"
       }`}
     >
       <div className="relative">
-        <div className="flex items-center gap-[8px]">
+        <div className="flex items-center gap-[6px]">
           <CommentFilled
-            className={`h-6 w-6 ${
+            className={`h-[18px] w-[18px] ${
               isDarkTheme ? "brightness-0 invert" : "text-white/90"
             }`}
           />
           <p
-            className={`text-xl font-semibold leading-[21px] tracking-[-2%] ${
+            className={`text-15pxr font-bold leading-20pxr tracking-[-2%] md:text-16pxr ${
               isDarkTheme ? "text-white" : ""
             }`}
           >
             작가의 한마디
           </p>
         </div>
-        <div className="mt-[11px] flex-1 pl-[28px]">
+        <div className="mt-[8px] flex-1 pl-[24px]">
           <p
-            className={`text-base font-normal leading-[20px] tracking-[-2%] ${
+            className={`text-14pxr font-normal leading-[20px] tracking-[-2%] ${
               isDarkTheme ? "text-white" : "text-[#2C3038]"
             }`}
           >
@@ -104,9 +106,9 @@ export default function AuthorNote({ episodeId }: AuthorNoteProps) {
           aria-label="like"
         >
           {isLiked ? (
-            <ThumbsUpBlue className="w-[27px] h-[22px]" />
+            <ThumbsUpBlue className="w-[22px] h-[18px]" />
           ) : (
-            <ThumbsUp className="w-[27px] h-[22px]" />
+            <ThumbsUp className="w-[22px] h-[18px]" />
           )}
         </button>
       </div>

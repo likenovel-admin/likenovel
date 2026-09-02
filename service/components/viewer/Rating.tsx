@@ -7,6 +7,7 @@ import { Dispatch, SetStateAction, useMemo, useState } from "react";
 interface RatingProps {
   productId?: number;
   episodeId: number;
+  initialComment?: string;
   commentOpenYn?: "Y" | "N";
   evaluationOpenYn?: "Y" | "N";
   setModalType: Dispatch<
@@ -17,6 +18,7 @@ interface RatingProps {
 export default function Rating({
   productId,
   episodeId,
+  initialComment = "",
   commentOpenYn = "Y",
   evaluationOpenYn = "Y",
   setModalType,
@@ -46,6 +48,7 @@ export default function Rating({
         <RatingForm
           productId={productId}
           episodeId={episodeId}
+          initialComment={initialComment}
           commentTotalCount={commentTotalCount}
           commentOpenYn={commentOpenYn}
           evaluationOpenYn={evaluationOpenYn}

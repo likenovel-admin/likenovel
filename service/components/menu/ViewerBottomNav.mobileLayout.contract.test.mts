@@ -37,10 +37,29 @@ assert.match(
   "Desktop Websochat entry must match the mobile toned-down feel"
 );
 
-assert.match(
-  bottomNavSource,
-  /border-l border-light-gray-500/,
-  "Episode navigation must be visually grouped apart from reaction actions"
+const mobileNavStart = bottomNavSource.indexOf(
+  '<div className="flex w-full md:hidden'
+);
+const mobileNavEnd = bottomNavSource.indexOf(
+  'className="hidden disabled:cursor-not-allowed',
+  mobileNavStart
+);
+assert.notEqual(mobileNavStart, -1, "Mobile viewer bottom nav must exist");
+assert.notEqual(mobileNavEnd, -1, "Desktop viewer nav must follow mobile nav");
+
+const mobileNavSource = bottomNavSource.slice(mobileNavStart, mobileNavEnd);
+const previousEpisodeIndex = mobileNavSource.indexOf('aria-label="이전화"');
+const commentActionIndex = mobileNavSource.indexOf('src="/images/comment.svg"');
+const nextEpisodeIndex = mobileNavSource.indexOf('aria-label="다음화"');
+assert.ok(
+  previousEpisodeIndex < commentActionIndex &&
+    commentActionIndex < nextEpisodeIndex,
+  "Mobile episode navigation must flank the centered reaction actions"
+);
+assert.doesNotMatch(
+  mobileNavSource,
+  /border-l/,
+  "The centered reaction actions must not be pushed into an episode-nav group"
 );
 
 assert.match(
