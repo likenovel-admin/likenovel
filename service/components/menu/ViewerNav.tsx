@@ -152,6 +152,8 @@ const ViewerNav = ({
                     {bingeWatchYn === "Y" ? <Run /> : <Road />}
                   </button>
                   <button
+                    type="button"
+                    aria-label="댓글"
                     className="hidden 2md:block relative"
                     onClick={handleCommentState}
                   >
