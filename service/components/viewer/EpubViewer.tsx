@@ -8,6 +8,8 @@ import useViewStore from "@/store/viewerStore";
 import {
   createInitialScrolledBodyCoordinator,
   createInitialScrolledBodyViewAttacher,
+  getScrolledResizeCfi,
+  shouldDeferInitialScrolledLastPageHost,
   type InitialScrolledBodyAttemptResult,
   type InitialScrolledBodyCoordinator,
   type InitialScrolledBodyViewAttacher,
@@ -501,9 +503,22 @@ const EpubViewer = ({
         clearTimeout(resizeTimeoutRef.current);
       }
       resizeTimeoutRef.current = setTimeout(() => {
-        if (rendition && width > 0 && height > 0) {
+        resizeTimeoutRef.current = null;
+        const resizeCfi = getScrolledResizeCfi(rendition?.location);
+        if (
+          renditionRef.current !== rendition ||
+          width <= 0 ||
+          height <= 0 ||
+          !resizeCfi
+        ) {
+          return;
+        }
+
+        try {
+          rendition.resize(width, height, resizeCfi);
           lastResizeDimensionsRef.current = { width, height };
-          rendition.resize(width, height);
+        } catch (error) {
+          console.warn("[viewer] scrolled resize failed", error);
         }
       }, 150);
     },
@@ -1203,10 +1218,21 @@ const EpubViewer = ({
   // Keep LastPage host at the end of the EPUB scroll container
   const placeHostAtEnd = useCallback(() => {
     if (!isScroll) return;
-    const container = getScrollContainer();
+    const rendition = renditionRef.current;
+    const manager = rendition?.manager;
+    const container = manager?.views?.container || manager?.container || null;
     if (!container) return;
 
     let host = lastPageHostRef.current;
+    const views = manager?.views?.all?.() || [];
+    if (
+      shouldDeferInitialScrolledLastPageHost(rendition?.book?.spine, views)
+    ) {
+      if (host && host.parentElement === container) {
+        host.remove();
+      }
+      return;
+    }
 
     if (!host) {
       // Host is created only once here

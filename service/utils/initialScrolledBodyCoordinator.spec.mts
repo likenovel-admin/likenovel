@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import {
   createInitialScrolledBodyCoordinator,
   createInitialScrolledBodyViewAttacher,
+  getScrolledResizeCfi,
+  shouldDeferInitialScrolledLastPageHost,
 } from "./initialScrolledBodyCoordinator.ts";
 
 type ScheduledCallback = {
@@ -13,6 +15,17 @@ type ScheduledCallback = {
 const scheduled: ScheduledCallback[] = [];
 let managerReady = false;
 let attemptCount = 0;
+
+assert.equal(
+  getScrolledResizeCfi(undefined),
+  null,
+  "an app-owned resize must not clear initial views before epub.js reports a location"
+);
+assert.equal(
+  getScrolledResizeCfi({ start: { cfi: "epubcfi(/6/2!/4/1:0)" } }),
+  "epubcfi(/6/2!/4/1:0)",
+  "the reported CFI must be forwarded so epub.js can redisplay after resize"
+);
 
 const coordinator = createInitialScrolledBodyCoordinator({
   waitForBookReady: async () => undefined,
@@ -90,6 +103,59 @@ assert.equal(scheduled[0].cancelled, true);
 
   assert.equal(attempts, 1, "cancelled runs must not perform stale attachment");
   assert.equal(callbacks[0].cancelled, true);
+}
+
+{
+  const coverSection = { index: 0, href: "EPUB/cover.xhtml" };
+  const bodySection = { index: 1, href: "EPUB/content.xhtml" };
+  const spine = {
+    get: (index: number) => [coverSection, bodySection][index],
+  };
+
+  assert.equal(
+    shouldDeferInitialScrolledLastPageHost(spine, [
+      { section: coverSection },
+    ]),
+    true,
+    "a full-height last-page host must not block continuous fill while only the cover view exists"
+  );
+  assert.equal(
+    shouldDeferInitialScrolledLastPageHost(spine, [
+      { section: coverSection },
+      { section: { index: 1, href: "EPUB/content.xhtml" } },
+    ]),
+    false,
+    "the host may be attached as soon as the initial body view exists"
+  );
+  assert.equal(
+    shouldDeferInitialScrolledLastPageHost(
+      {
+        get: (index: number) =>
+          [coverSection, bodySection, { index: 2, href: "EPUB/chapter-2.xhtml" }][
+            index
+          ],
+      },
+      [{ section: { index: 2, href: "EPUB/chapter-2.xhtml" } }]
+    ),
+    false,
+    "a later body section must keep the last-page host available after the initial body view is trimmed"
+  );
+  assert.equal(
+    shouldDeferInitialScrolledLastPageHost(
+      { get: () => ({ index: 0, href: "EPUB/content.xhtml" }) },
+      []
+    ),
+    false,
+    "body-first EPUBs do not need the cover-fill guard"
+  );
+  assert.equal(
+    shouldDeferInitialScrolledLastPageHost(
+      { get: (index: number) => (index === 0 ? coverSection : undefined) },
+      [{ section: coverSection }]
+    ),
+    false,
+    "a cover-only EPUB must not be permanently blocked by a missing body section"
+  );
 }
 
 {
