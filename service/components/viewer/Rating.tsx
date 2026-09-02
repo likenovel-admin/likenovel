@@ -25,7 +25,7 @@ export default function Rating({
   listOnly = false,
   setModalType,
 }: RatingProps) {
-  const [activeTab, setActiveTab] = useState("recommend");
+  const [activeTab, setActiveTab] = useState("recent");
 
   // Only fetch to get comment count, will be used by CommentList too (shared cache)
   const { data: episodeComments } = useSelectCommentByEpisode(

@@ -98,6 +98,12 @@ assert.match(
 );
 
 assert.match(
+  ratingSource,
+  /useState\("recent"\)/,
+  "the full-comment dialog must open on the same recent ordering as the last-page preview"
+);
+
+assert.match(
   viewerNavSource,
   /aria-label="댓글 닫기"/,
   "the icon-only comment close control must expose an accessible name"
