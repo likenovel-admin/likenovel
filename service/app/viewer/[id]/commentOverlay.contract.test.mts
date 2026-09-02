@@ -29,8 +29,8 @@ assert.ok(
 
 assert.match(
   pageSource,
-  /role="dialog"[\s\S]*?aria-modal="true"[\s\S]*?aria-label="작품 댓글"[\s\S]*?fixed inset-x-0 top-\[68px\] bottom-0 z-50 overflow-y-auto overscroll-contain bg-white[\s\S]*?<Rating/,
-  "comment screen must be an independently scrollable overlay below the viewer navigation"
+  /role="dialog"[\s\S]*?aria-modal="true"[\s\S]*?aria-label="작품 댓글"[\s\S]*?fixed inset-0 z-50 bg-white[\s\S]*?\{viewerNavigation\}[\s\S]*?top-\[68px\][\s\S]*?<Rating/,
+  "the semantic comment dialog must contain both its navigation close control and scrollable body"
 );
 
 assert.match(
@@ -43,6 +43,30 @@ assert.match(
   pageSource,
   /commentTriggerRef\.current[\s\S]*?trigger\.focus\(\)/,
   "closing comments must restore focus to the entry control"
+);
+
+assert.match(
+  pageSource,
+  /querySelectorAll<HTMLElement>\([\s\S]*?'button\[aria-label="댓글"\]'[\s\S]*?getClientRects\(\)\.length > 0/,
+  "when an opener remounts, focus restoration must select its visible breakpoint variant"
+);
+
+assert.match(
+  viewerNavSource,
+  /aria-label="댓글"[\s\S]*?onClick=\{handleCommentState\}/,
+  "the desktop icon-only comment opener must expose the same accessible name as mobile"
+);
+
+assert.match(
+  pageSource,
+  /viewerContentRef\.current[\s\S]*?viewerContent\.inert = true[\s\S]*?viewerContent\.inert = false/,
+  "the retained EPUB viewer must become inert only while the comment dialog is open"
+);
+
+assert.match(
+  pageSource,
+  /event\.key === "Escape"[\s\S]*?querySelectorAll<HTMLElement>[\s\S]*?event\.shiftKey/,
+  "the comment dialog must support Escape and contain forward and reverse tab focus"
 );
 
 assert.match(

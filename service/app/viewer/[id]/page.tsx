@@ -102,6 +102,7 @@ const Viewer = () => {
   const [suppressViewerClickTick, setSuppressViewerClickTick] = useState(0);
   const commentDialogRef = useRef<HTMLDivElement | null>(null);
   const commentTriggerRef = useRef<HTMLElement | null>(null);
+  const viewerContentRef = useRef<HTMLDivElement | null>(null);
   const autoOpenedPurchaseEpisodeIdRef = useRef<number | null>(null);
 
   const {
@@ -458,8 +459,12 @@ const Viewer = () => {
         if (trigger?.isConnected) {
           trigger.focus();
         } else {
-          document
-            .querySelector<HTMLElement>('button[aria-label="댓글"]')
+          Array.from(
+            document.querySelectorAll<HTMLElement>(
+              'button[aria-label="댓글"]'
+            )
+          )
+            .find((element) => element.getClientRects().length > 0)
             ?.focus();
         }
         commentTriggerRef.current = null;
@@ -471,14 +476,72 @@ const Viewer = () => {
   useEffect(() => {
     if (!commentState) return;
 
+    const viewerContent = viewerContentRef.current;
+    if (viewerContent) viewerContent.inert = true;
+
     const frame = requestAnimationFrame(() => {
       const dialog = commentDialogRef.current;
       if (dialog && !dialog.contains(document.activeElement)) {
         dialog.focus();
       }
     });
-    return () => cancelAnimationFrame(frame);
-  }, [commentState]);
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const dialog = commentDialogRef.current;
+      if (!dialog) return;
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        handleCommentState();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const focusableElements = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter(
+        (element) =>
+          !element.hasAttribute("hidden") &&
+          element.getAttribute("aria-hidden") !== "true" &&
+          element.getClientRects().length > 0
+      );
+
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (
+        event.shiftKey &&
+        (!dialog.contains(activeElement) ||
+          activeElement === dialog ||
+          activeElement === firstElement)
+      ) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (
+        !event.shiftKey &&
+        (!dialog.contains(activeElement) || activeElement === lastElement)
+      ) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", handleKeyDown);
+      if (viewerContent) viewerContent.inert = false;
+    };
+  }, [commentState, handleCommentState]);
 
   const handleNoticeState = () => {
     setNoticeState(!noticeState);
@@ -652,39 +715,41 @@ const Viewer = () => {
     );
   }
 
+  const viewerNavigation = showNav ? (
+    <ViewerNav
+      productId={
+        isNoticeViewer
+          ? hintedProductId
+          : data?.data?.product_id || hintedProductId
+      }
+      bookmarkYn={data?.data.bookmarkYn || "N"}
+      likedYN={data?.data.liked || "N"}
+      episodeTitle={
+        noticeState && noticeDetailData?.data
+          ? noticeDetailData?.data.title
+          : data?.data.episodeTitle || ""
+      }
+      productTitle={
+        noticeState && noticeDetailData?.data
+          ? productTitle || ""
+          : data?.data.title || ""
+      }
+      bingeWatchYn={data?.data.bingeWatchYn || "N"}
+      commentCount={liveCommentCount}
+      isScroll={isScroll}
+      commentState={commentState}
+      noticeState={noticeState}
+      setIsScroll={setIsScroll}
+      showNav={showNav}
+      handleCommentState={
+        noticeState ? handleNoticeState : handleCommentState
+      }
+    />
+  ) : null;
+
   return (
     <div className="min-h-screen">
-      {showNav && (
-        <ViewerNav
-          productId={
-            isNoticeViewer
-              ? hintedProductId
-              : data?.data?.product_id || hintedProductId
-          }
-          bookmarkYn={data?.data.bookmarkYn || "N"}
-          likedYN={data?.data.liked || "N"}
-          episodeTitle={
-            noticeState && noticeDetailData?.data
-              ? noticeDetailData?.data.title
-              : data?.data.episodeTitle || ""
-          }
-          productTitle={
-            noticeState && noticeDetailData?.data
-              ? productTitle || ""
-              : data?.data.title || ""
-          }
-          bingeWatchYn={data?.data.bingeWatchYn || "N"}
-          commentCount={liveCommentCount}
-          isScroll={isScroll}
-          commentState={commentState}
-          noticeState={noticeState}
-          setIsScroll={setIsScroll}
-          showNav={showNav}
-          handleCommentState={
-            noticeState ? handleNoticeState : handleCommentState
-          }
-        />
-      )}
+      {!commentState && viewerNavigation}
 
       {noticeState && noticeDetailData?.data ? (
         <div className="mt-[109px] mb-[60px] flex flex-col items-center">
@@ -710,7 +775,11 @@ const Viewer = () => {
         </div>
       ) : (
         <>
-          <div className="relative">
+          <div
+            ref={viewerContentRef}
+            aria-hidden={commentState ? true : undefined}
+            className="relative"
+          >
             {epubUrl && (
               <EpubViewer
                 key={`${episodeId}:${epubUrl}`}
@@ -753,16 +822,19 @@ const Viewer = () => {
               aria-modal="true"
               aria-label="작품 댓글"
               tabIndex={-1}
-              className="fixed inset-x-0 top-[68px] bottom-0 z-50 overflow-y-auto overscroll-contain bg-white"
+              className="fixed inset-0 z-50 bg-white"
             >
-              <Rating
-                productId={data?.data.product_id || undefined}
-                episodeId={episodeId}
-                initialComment={commentPrefill}
-                commentOpenYn={data?.data.commentOpenYn || "Y"}
-                evaluationOpenYn={data?.data.evaluationOpenYn || "Y"}
-                setModalType={setModalType}
-              />
+              {viewerNavigation}
+              <div className="absolute inset-x-0 top-[68px] bottom-0 overflow-y-auto overscroll-contain bg-white">
+                <Rating
+                  productId={data?.data.product_id || undefined}
+                  episodeId={episodeId}
+                  initialComment={commentPrefill}
+                  commentOpenYn={data?.data.commentOpenYn || "Y"}
+                  evaluationOpenYn={data?.data.evaluationOpenYn || "Y"}
+                  setModalType={setModalType}
+                />
+              </div>
             </div>
           )}
           {showNav && !noticeState && !commentState && (
