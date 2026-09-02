@@ -39,6 +39,81 @@ export type ScrolledResizeAnchor =
   | { kind: "cfi"; cfi: string }
   | { kind: "last-page"; viewportTop: number };
 
+export const resolveScrolledResizeAnchor = (
+  lastPageViewportTop: number | null,
+  resizeCfi: string | null
+): ScrolledResizeAnchor | null => {
+  if (
+    lastPageViewportTop !== null &&
+    Number.isFinite(lastPageViewportTop)
+  ) {
+    return { kind: "last-page", viewportTop: lastPageViewportTop };
+  }
+  return resizeCfi ? { kind: "cfi", cfi: resizeCfi } : null;
+};
+
+interface ScrolledLastPageScrollContainer {
+  addEventListener(
+    type: "scroll",
+    listener: () => void,
+    options?: { passive?: boolean }
+  ): void;
+  removeEventListener(type: "scroll", listener: () => void): void;
+}
+
+interface ScrolledLastPageViewportTrackerOptions<
+  Container extends ScrolledLastPageScrollContainer,
+> {
+  readViewportTop: (container: Container) => number | null;
+  isFrozen: () => boolean;
+  onViewportTopChange: (viewportTop: number | null) => void;
+}
+
+export interface ScrolledLastPageViewportTracker<
+  Container extends ScrolledLastPageScrollContainer,
+> {
+  bind: (container: Container) => void;
+  clear: () => void;
+}
+
+export const createScrolledLastPageViewportTracker = <
+  Container extends ScrolledLastPageScrollContainer,
+>({
+  readViewportTop,
+  isFrozen,
+  onViewportTopChange,
+}: ScrolledLastPageViewportTrackerOptions<Container>): ScrolledLastPageViewportTracker<Container> => {
+  let boundContainer: Container | null = null;
+
+  const updateViewportTop = () => {
+    if (!boundContainer || isFrozen()) return;
+    onViewportTopChange(readViewportTop(boundContainer));
+  };
+
+  const clear = () => {
+    boundContainer?.removeEventListener("scroll", updateViewportTop);
+    boundContainer = null;
+    onViewportTopChange(null);
+  };
+
+  return {
+    bind: (container) => {
+      if (boundContainer === container) {
+        updateViewportTop();
+        return;
+      }
+
+      boundContainer?.removeEventListener("scroll", updateViewportTop);
+      boundContainer = container;
+      updateViewportTop();
+      container.addEventListener("scroll", updateViewportTop, {
+        passive: true,
+      });
+    },
+    clear,
+  };
+};
+
 type AnimationFrameHandle = ReturnType<typeof requestAnimationFrame>;
 
 interface ScrolledResizeLocationRestorerOptions {

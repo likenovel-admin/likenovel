@@ -1,11 +1,25 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   createInitialScrolledBodyCoordinator,
   createInitialScrolledBodyViewAttacher,
+  createScrolledLastPageViewportTracker,
   createScrolledResizeLocationRestorer,
   getScrolledResizeCfi,
+  resolveScrolledResizeAnchor,
   shouldDeferInitialScrolledLastPageHost,
 } from "./initialScrolledBodyCoordinator.ts";
+
+const epubViewerSource = readFileSync(
+  new URL("../components/viewer/EpubViewer.tsx", import.meta.url),
+  "utf8"
+);
+
+assert.match(
+  epubViewerSource,
+  /_rendition\.on\(\s*"rendered",\s*\(\) => \{\s*if \(renditionRef\.current !== _rendition\) return;/,
+  "a stale rendition must be rejected before rendered-event side effects"
+);
 
 type ScheduledCallback = {
   callback: () => void;
@@ -29,6 +43,96 @@ assert.equal(
   "epubcfi(/6/2!/4/1:0)",
   "the reported CFI must be forwarded so epub.js can redisplay after resize"
 );
+
+{
+  class FakeScrollContainer {
+    private listeners = new Set<() => void>();
+
+    addEventListener(
+      type: "scroll",
+      listener: () => void,
+      _options?: { passive?: boolean }
+    ) {
+      assert.equal(type, "scroll");
+      this.listeners.add(listener);
+    }
+
+    removeEventListener(type: "scroll", listener: () => void) {
+      assert.equal(type, "scroll");
+      this.listeners.delete(listener);
+    }
+
+    dispatchScroll() {
+      this.listeners.forEach((listener) => listener());
+    }
+
+    get listenerCount() {
+      return this.listeners.size;
+    }
+  }
+
+  const containerA = new FakeScrollContainer();
+  const containerB = new FakeScrollContainer();
+  const viewportTops = new Map([
+    [containerA, -80],
+    [containerB, -120],
+  ]);
+  let frozen = false;
+  let cachedViewportTop: number | null = null;
+  const tracker = createScrolledLastPageViewportTracker({
+    readViewportTop: (container) => viewportTops.get(container) ?? null,
+    isFrozen: () => frozen,
+    onViewportTopChange: (viewportTop) => {
+      cachedViewportTop = viewportTop;
+    },
+  });
+
+  tracker.bind(containerA);
+  assert.equal(containerA.listenerCount, 1);
+  assert.equal(cachedViewportTop, -80);
+
+  viewportTops.set(containerA, -90);
+  containerA.dispatchScroll();
+  assert.equal(cachedViewportTop, -90);
+
+  tracker.bind(containerB);
+  assert.equal(containerA.listenerCount, 0);
+  assert.equal(containerB.listenerCount, 1);
+  assert.equal(
+    cachedViewportTop,
+    -120,
+    "rendition replacement must synchronously measure the new container"
+  );
+
+  viewportTops.set(containerA, -30);
+  containerA.dispatchScroll();
+  assert.equal(
+    cachedViewportTop,
+    -120,
+    "the detached rendition must no longer update the current anchor"
+  );
+
+  viewportTops.set(containerB, -135);
+  containerB.dispatchScroll();
+  assert.equal(cachedViewportTop, -135);
+  assert.deepEqual(
+    resolveScrolledResizeAnchor(
+      cachedViewportTop,
+      "epubcfi(/6/4!/4/170/1:30)"
+    ),
+    { kind: "last-page", viewportTop: -135 },
+    "a resize after replacement must prefer the visible last-page anchor"
+  );
+
+  frozen = true;
+  viewportTops.set(containerB, -200);
+  containerB.dispatchScroll();
+  assert.equal(cachedViewportTop, -135, "active restoration must freeze tracking");
+
+  tracker.clear();
+  assert.equal(containerB.listenerCount, 0);
+  assert.equal(cachedViewportTop, null);
+}
 
 const coordinator = createInitialScrolledBodyCoordinator({
   waitForBookReady: async () => undefined,
