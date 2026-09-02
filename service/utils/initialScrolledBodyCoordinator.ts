@@ -22,6 +22,85 @@ export interface InitialScrolledBodyCoordinator {
   cancel: () => void;
 }
 
+interface ScrolledRenditionLocation {
+  start?: {
+    cfi?: unknown;
+  };
+}
+
+export const getScrolledResizeCfi = (
+  location: ScrolledRenditionLocation | null | undefined
+) => {
+  const cfi = location?.start?.cfi;
+  return typeof cfi === "string" && cfi.length > 0 ? cfi : null;
+};
+
+interface InitialScrolledSpineSection {
+  index?: number;
+  href?: string;
+  canonical?: string;
+  idref?: string;
+}
+
+interface InitialScrolledSpine {
+  get?: (index: number) => InitialScrolledSpineSection | null | undefined;
+  spineItems?: InitialScrolledSpineSection[];
+  items?: InitialScrolledSpineSection[];
+}
+
+interface InitialScrolledView {
+  section?: InitialScrolledSpineSection | null;
+}
+
+const getSpineSection = (
+  spine: InitialScrolledSpine | null | undefined,
+  index: number
+) => {
+  if (typeof spine?.get === "function") return spine.get(index);
+  if (Array.isArray(spine?.spineItems)) return spine.spineItems[index];
+  if (Array.isArray(spine?.items)) return spine.items[index];
+  return null;
+};
+
+const isMatchingSection = (
+  view: InitialScrolledView,
+  section: InitialScrolledSpineSection
+) => {
+  const viewSection = view.section;
+  return (
+    viewSection === section ||
+    (typeof viewSection?.index === "number" &&
+      viewSection.index === section.index) ||
+    Boolean(viewSection?.href && viewSection.href === section.href) ||
+    Boolean(viewSection?.idref && viewSection.idref === section.idref)
+  );
+};
+
+export const shouldDeferInitialScrolledLastPageHost = (
+  spine: InitialScrolledSpine | null | undefined,
+  views: InitialScrolledView[]
+) => {
+  const firstSection = getSpineSection(spine, 0);
+  if (!firstSection) return false;
+
+  const firstSpineMarker = [
+    firstSection.href,
+    firstSection.canonical,
+    firstSection.idref,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  if (!firstSpineMarker.includes("cover")) return false;
+
+  const bodySection = getSpineSection(spine, 1);
+  if (!bodySection) return false;
+
+  return !views.some(
+    (view) => view.section != null && !isMatchingSection(view, firstSection)
+  );
+};
+
 interface InitialScrolledBodyView {
   displayed?: boolean;
   display?: (request: unknown) => Promise<unknown> | unknown;
