@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   createInitialScrolledBodyCoordinator,
   createInitialScrolledBodyViewAttacher,
+  createScrolledResizeLocationRestorer,
   getScrolledResizeCfi,
   shouldDeferInitialScrolledLastPageHost,
 } from "./initialScrolledBodyCoordinator.ts";
@@ -15,6 +16,8 @@ type ScheduledCallback = {
 const scheduled: ScheduledCallback[] = [];
 let managerReady = false;
 let attemptCount = 0;
+const flushAsyncWork = () =>
+  new Promise<void>((resolve) => globalThis.setImmediate(resolve));
 
 assert.equal(
   getScrolledResizeCfi(undefined),
@@ -482,4 +485,225 @@ assert.equal(scheduled[0].cancelled, true);
     [250],
     "a queued manager-owned view must fall back to the existing bounded retry"
   );
+}
+
+{
+  const frames: Array<{ callback: () => void; cancelled: boolean }> = [];
+  const barrierResolvers: Array<() => void> = [];
+  const layoutResolvers: Array<() => void> = [];
+  const restoredAnchors: unknown[] = [];
+  let resolveRestore: (() => void) | null = null;
+  let idleCalls = 0;
+  const restorer = createScrolledResizeLocationRestorer({
+    enqueueAfterRenditionWork: () =>
+      new Promise<void>((resolve) => barrierResolvers.push(resolve)),
+    waitForStableLayout: () =>
+      new Promise<void>((resolve) => layoutResolvers.push(resolve)),
+    restoreAnchor: (anchor) => {
+      restoredAnchors.push(anchor);
+      return new Promise<void>((resolve) => {
+        resolveRestore = resolve;
+      });
+    },
+    scheduleFrame: (callback) => {
+      frames.push({ callback, cancelled: false });
+      return frames.length;
+    },
+    cancelFrame: (handle) => {
+      const frame = frames[handle - 1];
+      if (frame) frame.cancelled = true;
+    },
+    onIdle: () => {
+      idleCalls += 1;
+    },
+  });
+
+  assert.equal(
+    restorer.onResized({ kind: "cfi", cfi: "epubcfi(/6/4!/4/10:0)" }),
+    true
+  );
+  assert.equal(restorer.isBusy(), true);
+  await Promise.resolve();
+  assert.equal(barrierResolvers.length, 1);
+
+  restorer.onResized({ kind: "cfi", cfi: "epubcfi(/6/4!/4/20:0)" });
+  await Promise.resolve();
+  assert.equal(barrierResolvers.length, 2);
+
+  barrierResolvers[0]?.();
+  await flushAsyncWork();
+  assert.equal(
+    layoutResolvers.length,
+    0,
+    "an older queue barrier must not start font settlement"
+  );
+
+  barrierResolvers[1]?.();
+  await flushAsyncWork();
+  assert.equal(layoutResolvers.length, 1);
+  assert.equal(frames.length, 0, "font settlement must precede the restore");
+  layoutResolvers[0]?.();
+  await flushAsyncWork();
+  assert.equal(frames.length, 1);
+  frames[0].callback();
+  await Promise.resolve();
+  assert.deepEqual(
+    restoredAnchors,
+    [{ kind: "cfi", cfi: "epubcfi(/6/4!/4/10:0)" }],
+    "overlapping resizes must retain the first semantic anchor"
+  );
+  assert.equal(
+    restorer.isBusy(),
+    true,
+    "the loading gate must remain busy until corrective display settles"
+  );
+  assert.equal(
+    barrierResolvers.length,
+    2,
+    "corrective display completion must not start another restore cycle"
+  );
+
+  resolveRestore?.();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(restorer.isBusy(), false);
+  assert.equal(idleCalls, 1);
+}
+
+{
+  const frames: Array<{ callback: () => void; cancelled: boolean }> = [];
+  const barrierResolvers: Array<() => void> = [];
+  const restoreResolvers: Array<() => void> = [];
+  const restoredAnchors: unknown[] = [];
+  const restorer = createScrolledResizeLocationRestorer({
+    enqueueAfterRenditionWork: () =>
+      new Promise<void>((resolve) => barrierResolvers.push(resolve)),
+    waitForStableLayout: async () => undefined,
+    restoreAnchor: (anchor) => {
+      restoredAnchors.push(anchor);
+      return new Promise<void>((resolve) => restoreResolvers.push(resolve));
+    },
+    scheduleFrame: (callback) => {
+      frames.push({ callback, cancelled: false });
+      return frames.length;
+    },
+    cancelFrame: (handle) => {
+      const frame = frames[handle - 1];
+      if (frame) frame.cancelled = true;
+    },
+  });
+
+  restorer.onResized({ kind: "cfi", cfi: "epubcfi(/6/4!/4/30:0)" });
+  await Promise.resolve();
+  barrierResolvers[0]?.();
+  await flushAsyncWork();
+  frames[0].callback();
+  await Promise.resolve();
+  assert.equal(restoredAnchors.length, 1);
+
+  restorer.onResized({ kind: "cfi", cfi: "epubcfi(/6/4!/4/40:0)" });
+  await Promise.resolve();
+  assert.equal(
+    frames.length,
+    1,
+    "a newer resize must wait behind its own rendition queue barrier"
+  );
+  assert.equal(barrierResolvers.length, 2);
+
+  restoreResolvers[0]?.();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(restorer.isBusy(), true);
+
+  barrierResolvers[1]?.();
+  await flushAsyncWork();
+  assert.equal(frames.length, 2);
+  frames[1].callback();
+  await Promise.resolve();
+  assert.deepEqual(restoredAnchors[1], {
+    kind: "cfi",
+    cfi: "epubcfi(/6/4!/4/30:0)",
+  });
+  restoreResolvers[1]?.();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(restorer.isBusy(), false);
+}
+
+{
+  const frames: Array<{ callback: () => void; cancelled: boolean }> = [];
+  let resolveBarrier: (() => void) | null = null;
+  let resolveLayout: (() => void) | null = null;
+  let restoreCalls = 0;
+  let idleCalls = 0;
+  const restorer = createScrolledResizeLocationRestorer({
+    enqueueAfterRenditionWork: () =>
+      new Promise<void>((resolve) => {
+        resolveBarrier = resolve;
+      }),
+    waitForStableLayout: () =>
+      new Promise<void>((resolve) => {
+        resolveLayout = resolve;
+      }),
+    restoreAnchor: () => {
+      restoreCalls += 1;
+    },
+    scheduleFrame: (callback) => {
+      frames.push({ callback, cancelled: false });
+      return frames.length;
+    },
+    cancelFrame: (handle) => {
+      const frame = frames[handle - 1];
+      if (frame) frame.cancelled = true;
+    },
+    onIdle: () => {
+      idleCalls += 1;
+    },
+  });
+
+  restorer.onResized({ kind: "last-page", viewportTop: -120 });
+  await Promise.resolve();
+  resolveBarrier?.();
+  await flushAsyncWork();
+  restorer.cancel();
+  resolveLayout?.();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(frames.length, 0);
+  assert.equal(restoreCalls, 0);
+  assert.equal(idleCalls, 0, "cancellation must not reveal stale viewer state");
+  assert.equal(restorer.isBusy(), false);
+}
+
+{
+  const frames: Array<{ callback: () => void; cancelled: boolean }> = [];
+  const restoredAnchors: unknown[] = [];
+  const restorer = createScrolledResizeLocationRestorer({
+    enqueueAfterRenditionWork: async () => undefined,
+    waitForStableLayout: async () => undefined,
+    restoreAnchor: (anchor) => {
+      restoredAnchors.push(anchor);
+    },
+    scheduleFrame: (callback) => {
+      frames.push({ callback, cancelled: false });
+      return frames.length;
+    },
+    cancelFrame: (handle) => {
+      const frame = frames[handle - 1];
+      if (frame) frame.cancelled = true;
+    },
+  });
+
+  assert.equal(restorer.onResized(null), false);
+  assert.equal(restorer.onResized({ kind: "cfi", cfi: "" }), false);
+  assert.equal(restorer.isBusy(), false);
+
+  restorer.onResized({ kind: "last-page", viewportTop: 180 });
+  await flushAsyncWork();
+  assert.equal(frames.length, 1);
+  restorer.cancel();
+  assert.equal(frames[0].cancelled, true);
+  frames[0].callback();
+  await Promise.resolve();
+  assert.deepEqual(restoredAnchors, []);
 }
