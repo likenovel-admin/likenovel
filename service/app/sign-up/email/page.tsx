@@ -29,7 +29,7 @@ const Email = () => {
   const methods = useForm<IForm>({
     defaultValues: {
       ...defaultValues,
-      birthDate: "1980-01-01",
+      birthDate: "",
       gender: "M",
     },
   });
