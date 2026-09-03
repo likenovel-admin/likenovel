@@ -27,6 +27,7 @@ const Email = () => {
   const FOURTEEN_YEARS_IN_MS = 14 * 365.25 * 24 * 60 * 60 * 1000;
 
   const methods = useForm<IForm>({
+    shouldFocusError: true,
     defaultValues: {
       ...defaultValues,
       birthDate: "",
@@ -40,7 +41,6 @@ const Email = () => {
     watch,
     setError,
     clearErrors,
-    setValue,
     formState: { errors },
   } = methods;
 
@@ -80,10 +80,14 @@ const Email = () => {
         }
 
         // 정상 응답 형태가 아니면 사용자에게 명확히 안내
-        setError("email", {
-          type: "manual",
-          message: "회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.",
-        });
+        setError(
+          "email",
+          {
+            type: "manual",
+            message: "회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.",
+          },
+          { shouldFocus: true }
+        );
       } catch (error: any) {
         // 서버에서 내려준 message를 우선 노출(예: 409 이미 존재하는 이메일)
         const message =
@@ -91,7 +95,7 @@ const Email = () => {
           "회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.";
 
         setIsCheckedEmail(false);
-        setError("email", { type: "manual", message });
+        setError("email", { type: "manual", message }, { shouldFocus: true });
       }
     } else {
       console.error("No form data found in session storage.");
@@ -107,21 +111,29 @@ const Email = () => {
     } catch (error: any) {
       console.log("error", error);
       setIsCheckedEmail(false);
-      setError("email", {
-        type: "manual",
-        message:
-          error?.response?.data?.message || "이미 사용중인 이메일입니다.",
-      });
+      setError(
+        "email",
+        {
+          type: "manual",
+          message:
+            error?.response?.data?.message || "이미 사용중인 이메일입니다.",
+        },
+        { shouldFocus: true }
+      );
       return false;
     }
   };
 
   const validateEmail = async (email: string) => {
     if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-      setError("email", {
-        type: "manual",
-        message: "유효한 이메일 주소를 입력해주세요.",
-      });
+      setError(
+        "email",
+        {
+          type: "manual",
+          message: "유효한 이메일 주소를 입력해주세요.",
+        },
+        { shouldFocus: true }
+      );
       return false;
     }
     return await onCheckEmail(email);
@@ -260,10 +272,9 @@ const Email = () => {
               }}
               render={({ field }) => (
                 <BirthdateSelector
+                  focusRef={field.ref}
                   value={field.value ? new Date(field.value) : null}
-                  onChange={(date) =>
-                    setValue(field.name, date ? date.toString() : "")
-                  }
+                  onChange={(date) => field.onChange(date.toString())}
                   errorText={errors.birthDate?.message || ""}
                   isError={!!errors.birthDate}
                 />
