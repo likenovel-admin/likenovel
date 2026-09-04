@@ -127,6 +127,26 @@ selects env by runtime directory:
 
 ## Batch Safety Notes
 
+- AUTO 주인공챗 공개 목록은 request에서 전체 캐릭터를 다시 계산하거나 프로세스
+  cache를 채우지 않는다. `tb_public_character_catalog_generation`의 활성 N/Y 세대와
+  `tb_public_character_catalog_snapshot`의 추천순 item만 읽는다. 메인은 같은 reader에
+  `LIMIT 12`를 적용하고, 전체 목록은 같은 세대를 끝까지 읽은 뒤 로그인 사용자 진도만
+  실시간으로 합친다.
+- `scripts/refresh_public_character_catalog_snapshot.py`가 N/Y 목록을 하나의
+  `REPEATABLE READ` view에서 만들고, 두 scope가 모두 비어 있지 않을 때만 같은
+  generation ID로 한 transaction에 발행한다. 발행 또는 정리 실패 시 request가
+  무거운 producer로 fallback하지 않으며, 이전 활성 세대가 계속 last-known-good다.
+- 갱신은 MySQL advisory lock으로 single-flight이며 wrapper timeout은 120초다.
+  `PUBLIC_CHARACTER_CATALOG_SNAPSHOT_AUTO_REFRESH_ENABLE=1`일 때만 Prod source
+  schedule 매시 `7,22,37,52`분과 story-context 성공 후 hook이 활성화된다. 기본값은
+  `0`이며 이때 기존 snapshot cron도 제거한다. 수동 wrapper 실행은 gate와 무관하다.
+  DEV cron source는 명시적으로 주석 상태다. 실제 활성 여부는 반드시 해당 환경의
+  `crontab -l`과 최신 batch log로 확인한다.
+- 배포 순서는 반드시 2단계다. 먼저 schema/writer/batch만 배포하고 N/Y 활성 세대,
+  item count, hash를 DB에서 확인한다. 그 다음 snapshot-only reader와 frontend를
+  배포한다. 실제 refresh 시간과 reader 실행계획/latency를 확인한 뒤에만 gate를 `1`로
+  바꾼다. 초기 seed 전에 reader를 먼저 배포하거나 request-time producer fallback을
+  추가하지 않는다.
 - 웹소챗과 storyctx의 실제 모델 요청 비용은 append-only
   `tb_ai_provider_usage_call`(`109-create-ai-provider-usage-call.sql`)에 물리 호출별로
   기록한다. 기존 `tb_story_agent_usage_log` 등 기능 로그는 사용자 요청/차감 단위이므로
@@ -250,6 +270,25 @@ selects env by runtime directory:
   readable.
 - Batch docs must be refreshed whenever cron timing, lock behavior, max parallel,
   cost gates, runtime paths, or output tables change.
+
+AUTO 주인공챗 snapshot 확인용 read-only SQL:
+
+```sql
+SELECT
+    generation_id,
+    adult_yn,
+    active_scope,
+    item_count,
+    content_sha256,
+    published_date
+FROM tb_public_character_catalog_generation
+WHERE active_scope IN ('N', 'Y')
+ORDER BY adult_yn;
+```
+
+N/Y가 각각 정확히 한 row이고 같은 `generation_id`, 양수 `item_count`, 비어 있지 않은
+`content_sha256`를 가져야 reader 전환이 가능하다. 하나라도 없으면 seed 실패로 보고
+reader 배포를 중단한다.
 
 ## Batch Log Triage
 

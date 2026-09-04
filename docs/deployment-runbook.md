@@ -616,6 +616,67 @@ Story context 비용 가드:
 - 코드 fallback 기준은 `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`의 `STORYCTX_CRON_LINE`이며, 현재 파일상 fallback은 `STORYCTX_MAX_PARALLEL=2`만 명시한다. 기존 active line이 있으면 이 fallback이 덮어쓰지 않는다.
 - 따라서 story context cron은 "문서상 기대값", "`likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh` fallback", "현재 crontab active line"을 분리해서 보고한다.
 
+### 6.3.1 AUTO 주인공챗 추천 snapshot
+
+AUTO 주인공챗 메인/전체 목록은 동일한 버전형 추천순 snapshot을 읽는다.
+
+- producer: `scripts/refresh_public_character_catalog_snapshot.py`
+- wrapper/log: `dist/batch/public_character_catalog_snapshot_batch.sh`,
+  `/home/ln-admin/likenovel/batch/public_character_catalog_snapshot_batch.log`
+- storage: `tb_public_character_catalog_generation`,
+  `tb_public_character_catalog_snapshot`
+- prod source schedule: `PUBLIC_CHARACTER_CATALOG_SNAPSHOT_AUTO_REFRESH_ENABLE=1`일
+  때만 매시 `7,22,37,52`분 exact line을 `dist/run_be.sh`가 보장하며, story-context
+  batch도 하나 이상의 작품 성공 뒤 refresh를 시도한다. 기본값 `0`에서는 기존 cron
+  line을 제거하고 post-success hook을 실행하지 않는다.
+- dev source schedule: `dist/batch/cron_job.dev.sh`에 주석으로만 존재하며 자동 활성화하지
+  않는다.
+
+생성기는 MySQL advisory lock으로 single-flight를 보장하고, N/Y 두 목록을 같은
+`REPEATABLE READ` transaction view에서 만든다. 두 scope 중 하나라도 비거나 identity
+검증이 실패하면 새 generation을 발행하지 않는다. 발행은 기존 활성 표시 해제와 새
+N/Y 활성화를 한 transaction에서 수행하므로 일부 scope만 바뀌지 않는다. cleanup
+실패도 이미 발행된 활성 세대를 지우지 않는다.
+
+공개 request는 snapshot-only다. AUTO 메인은 현재 공개·비블라인드·AI 동의·성인
+scope·최소 공개회차 조건을 재확인한 뒤 추천순 `LIMIT 12`만 읽는다. 전체 목록은 같은
+reader로 같은 순서를 읽고 로그인 사용자 진도만 별도 query로 합친다. request에서
+전체 후보/장면/이미지를 재계산하는 producer fallback이나 프로세스 TTL cache를 두지
+않는다. 갱신 실패 시 이전 활성 세대가 last-known-good다.
+
+배포는 한 번에 reader까지 넘기지 않는다.
+
+1. gate 기본값 `0`을 유지한 채 migration + snapshot writer/script/wrapper/cron
+   wiring만 먼저 배포한다.
+2. 최초 refresh가 성공한 뒤 아래 read-only query로 N/Y가 같은 generation ID이며 각각
+   양수 item count와 hash를 갖는지 확인한다.
+3. 그 다음 snapshot reader backend를 배포하고 메인 API 12개/전체 catalog의 앞 12개가
+   같은 identity/order인지 확인한다.
+4. 마지막으로 메인 스크롤/load 전체-catalog prefetch를 제거한 frontend를 배포한다.
+5. refresh wall time과 reader 실행계획/latency 기준을 통과한 뒤에만 gate를 `1`로
+   전환하고 cron exact line과 story-context 후속 실행을 readback한다.
+
+```sql
+SELECT
+    generation_id,
+    adult_yn,
+    active_scope,
+    item_count,
+    content_sha256,
+    published_date
+FROM tb_public_character_catalog_generation
+WHERE active_scope IN ('N', 'Y')
+ORDER BY adult_yn;
+```
+
+N/Y row가 하나라도 없거나 generation ID가 다르면 seed 실패다. reader 배포를 중단하고
+`failed`, `Traceback`, `timeout`, `lock_busy`와 마지막 `published` marker를 같은 실행
+구간에서 확인한다. `lock_busy`는 다른 refresh가 실행 중이라는 뜻이므로 활성 generation
+readback 없이 성공으로 간주하지 않는다. wrapper가 Python 실패 code 또는 timeout
+`124`를 그대로 반환하는지도 확인한다. `GET_LOCK()`의 `NULL`은 lock-busy가 아니라
+실패다. rollback은 gate를 `0`으로 내려 자동 실행을 중단하고 reader/frontend를 이전
+commit으로 되돌리며 snapshot table과 마지막 활성 세대는 진단 근거로 보존한다.
+
 ## 6.4 Batch/Cron 경로 매트릭스
 
 | 구분 | 기준 파일 | 실제 실행 경로 | 활성화 방식 |

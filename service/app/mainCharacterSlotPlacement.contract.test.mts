@@ -53,22 +53,17 @@ assert.match(
 assert.match(
   characterSlotSource,
   /queryClient\.prefetchQuery\(\s*getCharacterChatCatalogQueryOptions\(/,
-  "CharacterSlot should prefetch the canonical catalog query"
+  "The more action should prefetch the canonical catalog query"
 );
-assert.match(
+assert.doesNotMatch(
   characterSlotSource,
-  /new IntersectionObserver\([\s\S]*isSectionVisible =\s*entry\?\.isIntersecting === true &&\s*entry\.intersectionRatio >= 0\.2;[\s\S]*maybePrefetchCatalog\(\)/,
-  "Catalog prefetch should require at least 20% of the character slot to be visible"
+  /new IntersectionObserver/,
+  "Scrolling the home page must not prefetch the full character catalog"
 );
-assert.match(
+assert.doesNotMatch(
   characterSlotSource,
-  /document\.readyState !== "complete"[\s\S]*prefetchCharacterCatalog\(\)/,
-  "Catalog prefetch should wait until the home load is complete"
-);
-assert.match(
-  characterSlotSource,
-  /window\.addEventListener\("load", maybePrefetchCatalog\)[\s\S]*window\.removeEventListener\("load", maybePrefetchCatalog\)/,
-  "The load gate should be cleaned up when leaving home"
+  /window\.addEventListener\("load"/,
+  "Loading the home page must not prefetch the full character catalog"
 );
 assert.match(
   characterSlotSource,
