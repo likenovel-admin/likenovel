@@ -630,6 +630,19 @@ Story context 비용 가드:
 - `batch`이면 `/home/ln-admin/likenovel/api/.env`
 - Docker 환경 fallback은 `/proc/1/environ`
 
+AI DNA 운영 게이트:
+- 자동 `extract_product_dna.py` 후보는 `--force`/`--product-id`에서도 공개·비블라인드·
+  AI 콘텐츠 동의 작품으로 제한한다. 관리자 exact 재분석은 자동 후보 선별과 별도다.
+- 저장 전 7축 라벨·confidence·라벨별 score의 키 완전성, score-label 1:1 일치,
+  허용 라벨, 유한한 0~1 숫자를 확인한다. 핵심 계약 위반 결과를 success로 저장하지
+  않는다.
+- AI 사서 intro·points·chips 중 하나라도 품질 기준을 충족하지 못하면 세 필드를
+  함께 `NULL`로 저장해 consumer fallback을 사용한다. 이 사서 전용 결함만으로 전체
+  DNA provider 호출을 반복하지 않는다.
+- 수동 재분석 전에는 대상 product_id, AI 동의 상태, 예상 provider 비용 상한을 먼저
+  readback하고 승인된 exact 범위만 실행한다. 실행 후 DB의 status·7축·score·사서
+  세 필드와 실제 consumer 노출을 분리해 확인한다.
+
 `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/free_episode_campaign_expire_batch.sh`는 active
 `tb_product_free_episode_campaign` row를 5분 주기로 만료 처리하고, 작품 무료회차 범위를 row의 restore 범위로 복구한다. 현재 partner UI 기본 restore 범위는 1~25다.
 
