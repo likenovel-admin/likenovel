@@ -141,7 +141,19 @@ selects env by runtime directory:
   `episode_no`, `episode_id` 순으로 판단한다. 공개 회차가 3개 이상이고 첫 공개
   회차 본문이 500자 이상일 때만 수집하며, 공개 회차가 없으면 수집하지 않는다.
   갱신 기준도 회차 번호 10이 아니라 같은 정렬의 열 번째 공개 회차다. 관리자
-  재분석 결과의 AI 사서 intro·points·chips는 DNA와 함께 저장한다.
+  재분석 결과의 AI 사서 intro·points·chips는 DNA와 함께 저장한다. 자동 배치는
+  `--force`/`--product-id`를 포함해 AI 콘텐츠 동의가 켜진 작품만 고르며, 관리자가
+  지정한 exact 작품 재분석은 이 자동 후보 조건과 분리한다.
+- 배치와 관리자 재분석은 7축 라벨·confidence·라벨별 score의 완전성과 1:1 일치,
+  허용 라벨, 유한한 0~1 confidence를 저장 전에 검사한다. 핵심 DNA 계약 위반은
+  success로 저장하지 않는다. AI 사서 카피만 품질 검사를 통과하지 못하면 분석
+  전체를 재호출하지 않고 intro·points·chips 세 필드를 함께 `NULL` fallback한다.
+  특수 문자 표기는 모델에 실제 전달된 제목·장르·태그·줄거리 앞 1,000자·회차
+  본문에 같은 토큰이 있을 때만 허용한다.
+- 추천 계산은 `overall_confidence`가 없거나 유효한 0~1 숫자가 아니면 해당 DNA를
+  제외한다. `axis_label_scores`가 존재하는 row는 축별 명시 점수 0.55 이상인 라벨만
+  사용하고 누락·비정상·낮은 점수를 overall confidence로 보충하지 않는다. 점수
+  구조가 없거나 빈 legacy row만 기존 confidence fallback을 사용한다.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/episode_state_transition_minute_batch.sh`
   needs `EPISODE_STATE_TRANSITION_BATCH_ENABLE=1` in cron.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/free_episode_campaign_expire_batch.sh`
