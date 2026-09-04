@@ -541,6 +541,42 @@ PRODUCT_IDS=1102,1106 INTERVAL_SEC=30 ITERATIONS=20 /home/hongsan/work/likenovel
 
 주의:
 - read-only 관측 도구다. 배치/DB 상태를 수정하지 않는다.
+
+Provider 호출 비용 계측이 포함된 배포에서는 migration 적용 후 아래를 추가 확인한다.
+
+```sql
+SELECT migration_name, applied_at
+FROM tb_schema_migration
+WHERE migration_name = '109-create-ai-provider-usage-call.sql';
+
+SELECT feature_key, stage_key, provider,
+       COUNT(*) AS attempts,
+       COUNT(DISTINCT operation_id) AS operations,
+       SUM(attempt_no > 1) AS retries,
+       SUM(cost_usd IS NULL) AS untracked,
+       SUM(cost_usd) AS tracked_cost_usd
+FROM tb_ai_provider_usage_call
+WHERE attempt_started_at >= UTC_TIMESTAMP() - INTERVAL 24 HOUR
+GROUP BY feature_key, stage_key, provider
+ORDER BY tracked_cost_usd DESC, attempts DESC;
+```
+
+- `call_id`와 `(operation_id, attempt_no)` unique key가 모두 존재하는지
+  `information_schema.statistics`로 확인한다.
+- 웹소챗 stream 빈 응답 후 nonstream fallback, storyctx Provider fallback은 각각
+  같은 operation의 별도 row여야 한다. 로컬 설정 거부처럼 모델 요청이 전송되지 않은
+  경우에는 row를 만들지 않는다.
+- 통계 API `/v1/query/statistics/ai-api-usage`의 `provider_attempt_summary`와
+  `provider_attempts`는 기존 `summary/results/model_summary`와 별도 집계다. CMS에서
+  두 합계를 더하지 않는 안내와 기능·단계별 표를 확인한다.
+- `cost_source='provider_reported'`는 Provider 반환 비용,
+  `cost_source='rate_card'`는 버전이 명시된 요율표 추정이다. `cost_usd IS NULL`은
+  미집계이며 0원과 다르다.
+- `ai_provider_usage persist_failed`, `connection_failed`,
+  `persistence_invariant_failed`가 새로 발생하면 비용 원장 공백으로 보고한다. 본 기능이
+  성공했다는 이유로 계측도 정상이라고 판정하지 않는다.
+- 애플리케이션 rollback 시 원장 table과 기존 row는 감사 근거로 유지한다. table drop은
+  데이터 삭제이므로 자동 rollback에 포함하지 않는다.
 - 중간 진행률은 `ready_episode_count`보다 `로그 + recent summaries + summary count`를 우선 신뢰한다.
 
 현재 운영 기준(2026-07-19):

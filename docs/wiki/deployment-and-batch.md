@@ -127,6 +127,23 @@ selects env by runtime directory:
 
 ## Batch Safety Notes
 
+- 웹소챗과 storyctx의 실제 모델 요청 비용은 append-only
+  `tb_ai_provider_usage_call`(`109-create-ai-provider-usage-call.sql`)에 물리 호출별로
+  기록한다. 기존 `tb_story_agent_usage_log` 등 기능 로그는 사용자 요청/차감 단위이므로
+  이 원장의 호출 건수나 비용과 합산하지 않는다.
+- 원장은 `feature_key`, `stage_key`, provider, 요청/응답 모델, operation 내
+  `attempt_no`, terminal status, 토큰, 비용 출처를 저장한다. 프롬프트·응답 원문,
+  user/guest 식별자는 저장하지 않는다. OpenRouter 반환 비용은
+  `provider_reported`, 검증된 직접 Provider 요율은 `rate_card`, 나머지는 NULL
+  `unavailable`로 구분하며 명시적인 0원은 알려진 0원으로 유지한다.
+- 웹소챗은 본 요청과 별도 async transaction을, storyctx는 작품 transaction과
+  분리된 배치 수명 PyMySQL connection을 사용한다. 계측 저장 실패는 모델 호출이나
+  작품 transaction을 실패시키지 않으며 `ai_provider_usage persist_failed` 또는
+  `connection_failed` 구조화 로그로 감시한다.
+- CMS `/statistics/ai-api-usage`의 `Provider 물리 호출 원장`은 한국 시간 날짜 범위로
+  조회한다. 기존 기능 로그 합계와 별도 surface이며, retry/fallback은 같은
+  `operation_id`의 증가하는 `attempt_no`로 표시한다.
+
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/ai_dna_extract_daily_batch.sh`
   is enabled in container `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/cron_job.sh`
   but commented out in dev server
