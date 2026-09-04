@@ -312,6 +312,37 @@ export interface IStatisticAiApiUsageModel {
   untracked_count: number;
 }
 
+export interface IStatisticAiProviderAttemptSummary {
+  attempt_count: number;
+  operation_count: number;
+  retry_attempt_count: number;
+  success_count: number;
+  failure_count: number;
+  exact_cost_usd: number;
+  estimated_cost_usd: number;
+  tracked_cost_usd: number;
+  untracked_count: number;
+}
+
+export interface IStatisticAiProviderAttempt {
+  feature_key: string;
+  stage_key: string;
+  provider: string;
+  model_name: string;
+  attempt_count: number;
+  operation_count: number;
+  retry_attempt_count: number;
+  success_count: number;
+  failure_count: number;
+  input_tokens: number;
+  cached_input_tokens: number;
+  output_tokens: number;
+  reasoning_tokens: number;
+  exact_cost_usd: number;
+  estimated_cost_usd: number;
+  untracked_count: number;
+}
+
 export interface IStatisticAiProviderHealth {
   provider: string;
   model: string | null;

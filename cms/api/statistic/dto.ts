@@ -20,6 +20,8 @@ import {
   IStatisticAiReaderSummary,
   IStatisticAiReaderTimelineAction,
   IStatisticAiApiUsageModel,
+  IStatisticAiProviderAttempt,
+  IStatisticAiProviderAttemptSummary,
   IStatisticAiProviderHealth,
   IStatisticAiApiUsageSource,
   IStatisticAiApiUsageSummary,
@@ -199,6 +201,8 @@ export interface IGetStatisticAiApiUsageResponse {
   summary: IStatisticAiApiUsageSummary;
   results: IStatisticAiApiUsageSource[];
   model_summary: IStatisticAiApiUsageModel[];
+  provider_attempt_summary?: IStatisticAiProviderAttemptSummary;
+  provider_attempts?: IStatisticAiProviderAttempt[];
   provider_health: IStatisticAiProviderHealth[];
 }
 

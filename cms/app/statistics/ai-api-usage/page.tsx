@@ -37,11 +37,62 @@ const modelColumns: Column[] = [
   { header: "비용 미집계", key: "untracked_count", render: (value) => formatNumber(value) },
 ];
 
+const providerAttemptColumns: Column[] = [
+  { header: "기능", key: "feature_key", render: (value) => formatFeatureKey(value) },
+  { header: "단계", key: "stage_key", render: (value) => formatStageKey(value) },
+  { header: "Provider", key: "provider", render: (value) => formatProviderName(String(value || "")) },
+  { header: "모델", key: "model_name", render: (value) => formatUnknown(value) },
+  { header: "물리 호출", key: "attempt_count", render: (value) => formatNumber(value) },
+  { header: "논리 작업", key: "operation_count", render: (value) => formatNumber(value) },
+  { header: "재시도", key: "retry_attempt_count", render: (value) => formatNumber(value) },
+  { header: "성공", key: "success_count", render: (value) => formatNumber(value) },
+  { header: "실패", key: "failure_count", render: (value) => formatNumber(value) },
+  { header: "입력 토큰", key: "input_tokens", render: (value) => formatNumber(value) },
+  { header: "캐시 입력", key: "cached_input_tokens", render: (value) => formatNumber(value) },
+  { header: "출력 토큰", key: "output_tokens", render: (value) => formatNumber(value) },
+  { header: "추론 토큰", key: "reasoning_tokens", render: (value) => formatNumber(value) },
+  { header: "Provider 비용", key: "exact_cost_usd", render: (value) => formatUsd(value) },
+  { header: "요율표 추정", key: "estimated_cost_usd", render: (value) => formatUsd(value) },
+  { header: "비용 미집계", key: "untracked_count", render: (value) => formatNumber(value) },
+];
+
 const sourceKeyLabels: Record<string, string> = {
   dna_batch: "DNA 배치",
   ai_reader_batch: "AI독자 배치",
   websochat_chat: "웹소챗 채팅",
   ai_librarian_chat: "AI사서 채팅",
+};
+
+const featureKeyLabels: Record<string, string> = {
+  websochat: "웹소챗",
+  websochat_eval: "웹소챗 평가",
+  storyctx: "스토리컨텍스트",
+};
+
+const stageKeyLabels: Record<string, string> = {
+  qa_reply: "작품 질문 답변",
+  next_episode_write: "다음 회차 생성",
+  character_chat_reply: "캐릭터챗 답변",
+  character_chat_opening: "캐릭터챗 시작 장면",
+  character_chat_choices: "캐릭터챗 선택지",
+  game_host_reply: "게임 진행 답변",
+  game_candidate_selection: "게임 후보 선별",
+  active_character_resolution: "캐릭터명 해석",
+  reference_resolution: "지시 대상 해석",
+  qa_correction: "대화 교정 추출",
+  intent_routing: "질문 라우팅",
+  rp_recall_decision: "원문 회상 판단",
+  episode_summary: "회차 요약",
+  episode_character_signals: "캐릭터 신호 추출",
+  episode_scene_extraction: "장면 추출",
+  work_protagonist_resolution: "주인공 확정",
+  rp_character_plan: "RP 캐릭터 계획",
+  rp_dialogue_collection: "RP 대사 수집",
+  rp_profile: "RP 프로필",
+  character_chat_internal_prompt: "캐릭터챗 내부 프롬프트",
+  provider_preflight: "Provider 사전 점검",
+  chat: "기타 웹소챗 호출",
+  rp_json: "기타 RP JSON",
 };
 
 const providerStatusLabels: Record<string, string> = {
@@ -88,6 +139,16 @@ function formatSourceKey(value: unknown) {
   return sourceKeyLabels[key] ?? key;
 }
 
+function formatFeatureKey(value: unknown) {
+  const key = String(value || "");
+  return featureKeyLabels[key] ?? key;
+}
+
+function formatStageKey(value: unknown) {
+  const key = String(value || "");
+  return stageKeyLabels[key] ?? key;
+}
+
 function formatDateTime(value?: string | null) {
   if (!value) return "-";
   return String(value).replace("T", " ").slice(0, 19);
@@ -128,6 +189,7 @@ export default function Page() {
   } = useGetStatisticAiApiUsage(queryParams);
   const healthCheckMutation = usePostStatisticAiProviderHealthCheck();
   const summary = data?.summary;
+  const providerAttemptSummary = data?.provider_attempt_summary;
   const isLoading = isLoadingData || isFetching;
 
   const handleRunHealthCheck = async () => {
@@ -161,7 +223,9 @@ export default function Page() {
           onCheck={handleRunHealthCheck}
         />
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+        <div>
+          <h2 className="mb-3 text-sm font-semibold">기존 기능 로그</h2>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
           <SummaryCard label="전체 건수" value={formatNumber(summary?.request_count)} />
           <SummaryCard label="성공" value={formatNumber(summary?.success_count)} />
           <SummaryCard label="실패" value={formatNumber(summary?.failure_count)} />
@@ -169,11 +233,36 @@ export default function Page() {
           <SummaryCard label="추정 비용" value={formatUsd(summary?.estimated_cost_usd)} />
           <SummaryCard label="비용 미집계" value={formatNumber(summary?.untracked_count)} />
           <SummaryCard label="차감 캐시" value={formatNumber(summary?.charged_cash)} />
+          </div>
         </div>
 
         <div className="rounded-lg border bg-white p-4 text-sm text-muted-foreground">
-          비용은 정확 비용, 추정 비용, 미집계로 분리합니다. 웹소챗/AI사서는 현재 provider token/cost 로그가 없어 건수만 집계하고
-          비용은 미집계로 표시합니다.
+          기존 기능 로그와 아래 물리 호출 원장은 집계 단위가 달라 서로 합산하지 않습니다. 물리 호출 비용은 Provider가 반환한 비용,
+          고정 요율표 추정, 미집계로 구분하며 조회 날짜는 한국 시간 기준입니다.
+        </div>
+
+        <div>
+          <h2 className="mb-3 text-sm font-semibold">Provider 물리 호출 원장</h2>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
+            <SummaryCard label="물리 호출" value={formatNumber(providerAttemptSummary?.attempt_count)} />
+            <SummaryCard label="논리 작업" value={formatNumber(providerAttemptSummary?.operation_count)} />
+            <SummaryCard label="재시도" value={formatNumber(providerAttemptSummary?.retry_attempt_count)} />
+            <SummaryCard label="성공" value={formatNumber(providerAttemptSummary?.success_count)} />
+            <SummaryCard label="실패" value={formatNumber(providerAttemptSummary?.failure_count)} />
+            <SummaryCard label="Provider 비용" value={formatUsd(providerAttemptSummary?.exact_cost_usd)} />
+            <SummaryCard label="요율표 추정" value={formatUsd(providerAttemptSummary?.estimated_cost_usd)} />
+            <SummaryCard label="비용 미집계" value={formatNumber(providerAttemptSummary?.untracked_count)} />
+          </div>
+        </div>
+
+        <div className="rounded-lg border bg-white p-4">
+          <h2 className="mb-3 text-sm font-semibold">기능 · 단계 · Provider · 모델별 물리 호출</h2>
+          <CommonTable
+            columns={providerAttemptColumns}
+            data={data?.provider_attempts || []}
+            loading={isLoading}
+            emptyMessage="기록된 Provider 물리 호출이 없습니다."
+          />
         </div>
 
         <div className="rounded-lg border bg-white p-4">
