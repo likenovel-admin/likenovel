@@ -139,6 +139,7 @@ FROM tb_story_agent_context_product sacp
 JOIN tb_product p ON p.product_id=sacp.product_id
 WHERE sacp.context_status='failed'
   AND p.price_type='free'
+  AND COALESCE(p.ai_content_service_enabled_yn,'N')='Y'
   AND p.open_yn='Y'
   AND p.blind_yn='N';
 SQL
@@ -149,10 +150,19 @@ FROM (
     p.product_id,
     SUM(CASE WHEN sacs.summary_id IS NULL THEN 1 ELSE 0 END) AS missing_open_episode_count
   FROM tb_product p
-  JOIN tb_product_episode pe
+  JOIN (
+    SELECT ranked_episode.*
+    FROM (
+      SELECT product_id, episode_id,
+             ROW_NUMBER() OVER (
+               PARTITION BY product_id ORDER BY episode_no, episode_id
+             ) AS public_episode_rank
+      FROM tb_product_episode
+      WHERE use_yn='Y' AND open_yn='Y'
+    ) ranked_episode
+    WHERE ranked_episode.public_episode_rank <= 30
+  ) pe
     ON pe.product_id=p.product_id
-   AND pe.use_yn='Y'
-   AND pe.open_yn='Y'
   LEFT JOIN tb_story_agent_context_product sacp
     ON sacp.product_id=p.product_id
   LEFT JOIN tb_story_agent_context_summary sacs
@@ -161,6 +171,8 @@ FROM (
    AND sacs.is_active='Y'
    AND sacs.scope_key=CONCAT('episode:', pe.episode_id)
   WHERE p.price_type='free'
+    AND COALESCE(p.ai_content_service_enabled_yn,'N')='Y'
+    AND p.status_code IN ('ongoing','end')
     AND p.open_yn='Y'
     AND p.blind_yn='N'
     AND COALESCE(sacp.context_status,'pending') <> 'disabled'
