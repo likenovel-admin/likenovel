@@ -23,7 +23,7 @@ fi
 
 audit_out=$(cd "$api_dir" && "$python_bin" "$audit_script" \
   --env-file "$api_dir/.env" \
-  --fail-on-actionable 2>&1)
+  --scheduled --fail-on-actionable 2>&1)
 audit_rc=$?
 echo "AUDIT_RC=$audit_rc"
 printf '%s\n' "$audit_out"

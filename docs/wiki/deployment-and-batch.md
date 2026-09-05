@@ -247,9 +247,17 @@ selects env by runtime directory:
   for seven days, and must not become an AI taste factor.
 - `tb_story_agent_context_product.ready_episode_count` is maintained as the
   latest contiguous prepared public episode number, not a raw summary-row count.
-- Websochat foundation selection includes every open, ongoing, AI-consented
-  title. Character scene/RP expansion remains guarded by the existing
-  character-chat cohort policy.
+- Scheduled websochat foundation selection and execution (`--scheduled`) use
+  only the first 30 public episode ordinals of open, non-blind, AI-consented
+  ongoing or ended titles. Explicit manual collection/full backfill is not capped.
+  Character repair uses the existing cohort and generator target selector
+  (configured default: 2), after filtering inventory to signals in that window.
+  Episode-level scene completeness remains independent of the RP target count.
+- A read-only, versioned `--scheduled-action-ids` audit manifest supplies repair
+  and identity-blocked product IDs before batch ordering/LIMIT; lookup or manifest
+  failure stops selection. Scheduled monitoring retains full readiness diagnostics
+  and reports automatic/residual scope counts separately. Consumer gates and
+  existing assets are unchanged. Deploy the backend audit before the new monitor.
 - Story context exit code `75` means `deferred_budget`. Preflight and mid-run
   reserve exhaustion both propagate to that result. The batch wrapper reports it
   as `deferred`, not `failed`; non-reserve provider and processing errors keep
