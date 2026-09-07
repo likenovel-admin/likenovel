@@ -507,6 +507,10 @@ ORDER BY tracked_cost_usd DESC, attempts DESC;
 ```
 
 Story context 비용 가드:
+- 첫 3화 주인공 충돌 재판정(`work_protagonist_resolution`)은 추론 `low`를 유지하며
+  추론과 최종 JSON을 합친 출력 한도는 4,096토큰이다. 일반 캐릭터 신호 추출의
+  추론 `none`/출력 한도와 별개다. `finish_reason=length`로 JSON이 없으면 판정
+  성공으로 보지 않는다. 이 값은 소스 기준이며 운영 반영 여부는 배포 readback으로 확인한다.
 - 코드 우선순위는 `DNA·AI reader/추천 핵심 데이터 > 30화 이내 채팅 자산 > 30화를 채운 작품의 추가 채팅 자산`이다. 공통 reserve와 in-flight buffer가 기본 3달러일 때 storyctx는 각각 1달러/2달러 headroom을 추가로 남긴다.
 - 작품별 주인공챗 자산 목표는 `min(공개 회차 수, 30)`이다. 회차 번호 자체가 아니라 공개 회차 정렬 순번의 앞 30개를 세므로 번호 gap이 있어도 목표가 어긋나지 않는다. 최근 7일 `websochat_asset_request` 중 요청 회차가 아직 준비되지 않은 작품을 먼저 보고, 그다음 목표 미달 작품을 준비 자산 수 오름차순으로 처리한다. 목표를 채운 작품은 후순위다. `ready_episode_count`는 단순 row 수가 아니라 앞선 공개 회차에 웹소챗 요약 누락이 없는 최신 연속 준비 회차 번호다.
 - 웹소챗 foundation 대상 작품은 AI 콘텐츠 동의가 켜진 공개·비블라인드 연재작과 완결작이다. 정기 delta의 후보 선정과 실행(`--scheduled`)은 공개 회차 순번 앞 30개로 제한한다. 회차 번호 30 이하라는 뜻이 아니다. 명시적인 수동 실행과 승인된 full backfill은 이 자동 수집 상한을 적용하지 않는다.
@@ -536,6 +540,109 @@ Story context 비용 가드:
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`의 cron 보장 로직은 기존 crontab에 같은 batch path가 있으면 건드리지 않는다. prod 배포 전후에는 반드시 `crontab -l`로 실제 active line이 위 기준인지 readback한다.
 - 코드 fallback 기준은 `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`의 `STORYCTX_CRON_LINE`이며, 현재 파일상 fallback은 `STORYCTX_MAX_PARALLEL=2`만 명시한다. 기존 active line이 있으면 이 fallback이 덮어쓰지 않는다.
 - 따라서 story context cron은 "문서상 기대값", "`likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh` fallback", "현재 crontab active line"을 분리해서 보고한다.
+
+> 2026-09-07 추가 로컬 미배포 구조 변경: `character_registry_v1` / `registry_observations_v1`
+>
+> 새 신호 producer는 첫 3공개 원문으로 고정 ID를 식별하고 최대 30공개 회차를
+> 순차 관측한다. 회차요약은 재사용하며 새 inventory/RP는 이름으로 재군집하지 않는다.
+> 기존 summary 테이블의 `work_character_registry`를 사용하고 추가 migration은 없다.
+> bootstrap receipt는 migration 111의 기존 `protagonist_resolution` stage를 사용한다.
+> 기존 inventory가 있지만 registry가 없거나 identity review가 활성화된 작품은
+> `registry_existing_identity_requires_explicit_rebuild`로 자동 교체를 차단한다.
+> 명시적 reset/withdraw 전환은 기존 작품 transaction 안에서 검증해야 하며,
+> 이미 있는 registry를 reset으로 재발급하지 않는다. 첫 3회차 원문이 바뀌면 별도
+> 검토가 필요하다. 0 이하 회차가 포함되면 현재 소비 계약 미지원으로 유료 호출 전에
+> 차단한다. 기존 request receipt 삭제·hash 우회·운영 DB 테스트는 허용하지 않는다.
+> 현재 기능 회귀는 합성 HTTP/SQLite 외부 경계 검증이며 실작품·MySQL·배포는 미검증이다.
+> 최신 상세 범위는 `docs/character-chat-end-to-end-flow.md` §7.2를 따른다.
+>
+> 아래 2026-09-06 이후 수치와 실제 DB/Oracle 기록은 이전 계약의 역사 기록이며
+> 현재 registry diff의 실작품 품질 또는 독립 검수 승인으로 재사용하지 않는다.
+
+> 2026-09-06 로컬 미배포 계약 변경: signals v5 / grounded RP v1
+>
+> 위의 legacy RP 성격·말투·대사 개수 기준은 완전히 unmarked인 기존 자산에만
+> 유지한다. 새 v1은 inventory/profile/examples의 같은 identity·generation 계약과
+> 독자 열람 범위 안의 원문/요약 근거를 함께 검사하며, profile/dialogue 추가 LLM
+> 호출 없이 조립한다. 일부 자산에만 v1 marker가 있거나 generation이 다르면
+> legacy fallback으로 통과시키지 않는다. 기존 PROD 자산은 재생성하지 않았다.
+>
+> 이 코드의 apply 배치 실행 전에는 backend migration
+> `dist/init/111-create-character-asset-attempt.sql` 적용·스키마 확인이 필요하다.
+> batch는 serving transaction과 분리한 autocommit connection 1개를 유지하고,
+> preflight 실패 시 provider 호출 전에 중단한다. receipt는 요청 단위
+> `inflight -> accepted | terminal_invalid` 상태이며 accepted payload는 serving
+> rollback 뒤에도 재사용한다. 동일 입력의 inflight/invalid는 자동 재시도하지
+> 않는다. 운영자가 원인을 확인하지 않고 row 삭제/reset 또는 input hash 변경으로
+> 우회해서는 안 된다. 새 계약이 검증되기 전에는 기존 serving 자산을 비활성화하지
+> 않는다. 배포 전 정기 delta/manual full 종료코드, schema, 실제 runtime 계약과
+> 제한된 shadow 원문 품질 검증을 별도로 닫아야 한다.
+>
+> 검증은 기존 로컬 MySQL `likenovel-mysql:3806`의 synthetic scratch schema에서만
+> 수행했으며 임시 schema는 제거했다. DEV/PROD migration·배치 실행·ENV 변경은
+> 하지 않았다. 상세 테스트 범위와 기존 실험 이력은
+> `docs/wiki/ai-and-websochat.md`의 Local verification 절에 구분한다.
+>
+> 2026-09-07 배포 사전점검에서 DEV·PROD workflow 모두 필수 helper
+> `scripts/character_asset_attempt.py` 복사가 누락된 것을 발견해 각각 `cp`를 추가했다.
+> 실제 workflow 복사 명령으로 만든 패키지를 checkout 밖에서 `python -I -S`로
+> import하는 회귀는 두 환경 모두 RED 후 GREEN이며 standalone 배포 gate에도 포함된다.
+> 이는 로컬 패키징 검증이며 DEV/PROD 배포 또는 실제 작품 품질 검증은 아니다.
+>
+> 사용자 확정: "공개된 첫 30개 회차"가 기준이다. 이를 "회차 번호 1~30"과 같은
+> 제한으로 해석한 것이 이번 검수의 실패 모드였으며, 잘못 추가한 숫자 상한은
+> producer·wrapper·runtime/public consumer에서 제거했다. 결번으로 31화 이후가
+> 포함될 수 있지만 공개 순서 31번째 자산은 자동 수집하지 않는다. 실제 독자
+> 경계는 계속 회차 번호로 검사하며, 기존 ordinal 회귀 기대값은 보존했다.
+> 현재 관련 통합 회귀는 916 passed + 369 subtests, opt-in 실제 MySQL은 별도로
+> 167 passed다. 같은 DB의 producer scope-map/scene binding과 공개 SQL을 연결한
+> 기존 17개 사례도 추가 assertion 후 통과했고 임시 schema·연결 0개를 확인했다.
+> 프런트 전체 `yarn test:utils`와 TypeScript 검사는 이전 통과 후 변경이 없다.
+> 관측 근거의 exact scope 소실·복구 대상 오선택·scene receipt 수용 조건 누락·
+> scene header 불일치·익명 source suffix 및 동일 번호 회차 권한 누락을 로컬에서
+> 보강했다. 사용자 승인으로 이전 5.6 실행 기록을 보존해 종료하고, 실제
+> `6 Pro` 선택을 확인한 Astra 실행 `20260906T154838Z-365b492e-40b717`에서
+> 처음 `CHANGES_REQUESTED`를 받았다. 로컬 수정·위 검증 후 같은 대화의 후속
+> 2차에서 최종 `APPROVED`, harness `complete`와 owner 해제를 확인했다. 이는
+> 한정된 로컬 계약 검수 통과이며 배포 승인이 아니다. scene-invalid부터 full/delta 전체를
+> 새로 실행한 검증은 없으며 실제 scene wrapper·기존 rollback 회귀·호출 코드의
+> 결합 근거와 구분한다.
+> 후속 1차에서 남은 cached replacement의 옛 인물 키 보존 불일치도 재현 후
+> 수정했다. fresh/v1/v2 응답 재사용과 동료 누락 6개 사례가 위 통합 결과에
+> 포함되어 있으며 요청 버전·영수증·hash 정책은 바꾸지 않았다. Astra 후속
+> 2차에서도 해당 잔여 문제를 닫았으며, 합성 저장소의 rollback replay를 새 실제
+> MySQL cached replacement transaction 검증으로 해석하지 않는다.
+> 기존 0화 프롤로그의 signals 생성 제외는 별도 baseline 제약으로 보존했다. 이 로컬 검증을
+> 실제 작품의 의미 품질·배포 검증으로 해석하지 않는다.
+>
+> signals/scenes 원문·요청 scope는 full/delta/repair 전 구간에서 정확한
+> `episode:<episode_id>`로 연결한다. active doc/chunk 재조회도 해당 공개 회차와
+> 일치해야 하며, 같은 회차 번호의 다른 원문을 합치거나 덮어쓰지 않는다.
+> scene hash에는 scope·원문 해시가 포함되어 기존 해시와 달라질 수 있다.
+> 향후 승인된 실행에서 재생성 범위·비용을 검증해야 하며 이번에는 실행하지 않았다.
+> 번호 기반 변환은 이미 선택한 공개 원문을 소비하는 unmarked legacy RP 경계에만
+> 남기고 해당 legacy 소비자를 제거할 때 함께 제거한다.
+> 관리자 roster·작품 품질의 scene count도 공개 catalog의 공통 쿼리를 사용한다.
+> 복구 전후 준비 판정은 회차 번호가 아닌 정확한 episode scope 집합으로 계산하며,
+> 공개 첫 30개 중 free인 대상과 교집합한다. 진단 JSON의 번호 목록은 남지만
+> 복구 선택·완료 판정에는 사용하지 않는다. 같은 번호의 유료 장면은 무료 원문을
+> 대신 충족할 수 없고, 같은 번호라도 서로 다른 유효 ID는 각각 센다.
+> 익명 1인칭의 장면 후보 판정은 inventory가 실제 저장하는
+> `first_person_evidence`와 기존 generic source helper를 소비한다. 별도 저장되지
+> 않는 top-level bool에 의존하지 않으며 공용 직업·호칭을 허용하는 우회는 없다.
+>
+> 공개 preview는 공통 작품 조건과 전체 수집 범위의 5개 장면 준비 조건을 먼저
+> 검사한 뒤, 선택 회차 이하의 정확한 장면·identity metadata만 반환한다. 기본
+> 진입 1화를 유지하기 위해 "선택 회차 이하 5장면"으로 혼동하지 않는다. 이 공개
+> route의 선택 회차는 계정 독서 권한 검증값이 아니다. 실제 chat 권한 검증은
+> 별도 유지한다. 프런트 캐시도 작품·캐릭터·요청 회차별로 분리하며, 무범위
+> catalog 성격·말투 fallback을 preview에서 사용하지 않는다. 실제 브라우저 화면과
+> 운영 SQL 성능은 미검증이다.
+>
+> 공개 catalog/AUTO 메인은 기존 snapshot 소비 경로를 유지한다. 새 자산 생성만으로
+> 이미 발행된 snapshot이 갱신되지는 않으므로, 향후 승인된 배포에서는 기존
+> snapshot refresh 경로의 재생성과 실제 공개 소비 결과를 별도 검증한다.
+> 이번 로컬 작업은 snapshot refresh를 실행하지 않았다.
 
 ### 6.3.1 AUTO 주인공챗 추천 snapshot
 

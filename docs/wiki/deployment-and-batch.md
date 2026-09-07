@@ -190,6 +190,11 @@ selects env by runtime directory:
 - Story context prod cron has live-state history and source fallback differences.
   Do not infer current max parallel from one file; verify active `crontab -l` and
   then compare with `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`.
+- 현재 로컬 미배포 registry producer는 첫 3공개 회차로 고정 ID를 식별하고
+  최대 30공개 회차의 순차 관측을 기존 요약과 함께 처리한다. 기존 serving ID의
+  자동 교체는 차단하며 명시적 작품별 재구축이 필요하다. 0화 소비 계약은 미지원이다.
+  배포·실작품 검증 상태와 전환 조건은 [전체 흐름 §7.2](../character-chat-end-to-end-flow.md#72-인물-registry-구조-변경--현재-로컬-구현검증) 및
+  [배포 런북 §6.3](../deployment-runbook.md#63-story-context-배치-모니터링)을 따른다.
 - Story context delta cron automatically reaggregates character/relation inventory
   from existing active character signals when signal coverage advances or inventory
   v1/v3 is missing. Reaggregation itself has no provider call, preserves LKG/RP
