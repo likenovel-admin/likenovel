@@ -6,7 +6,7 @@ import { SHOW_PRODUCT_EVALUATION_SURFACE, TYPE_MODAL } from "@/constants/common"
 import { useAuthWrapper } from "@/hooks/useAuthWrapper";
 import useAuthStore from "@/store/authStore";
 import useModalStore from "@/store/modalStore";
-import { IEpisode, INotice } from "@/types";
+import { INotice } from "@/types";
 import { formatKoreanNumber } from "@/utils/formatKoreanNumber";
 import { getEpisodeBadge } from "@/utils/getEpisodeBadge";
 import { getFormattingDate } from "@/utils/getFormattingDate";
@@ -32,32 +32,6 @@ const PAGE_SIZE = 25;
 
 type ProductEpisodeListItem = ISelectEpisodeObject;
 
-const normalizeOwnerEpisode = (
-  episode: IEpisode
-): ProductEpisodeListItem => ({
-  episodeId: episode.episodeId,
-  productId: episode.productId,
-  episodeNo: episode.episodeNo,
-  episodeTitle: episode.episodeTitle,
-  episodeTextCount: episode.episodeTextCount,
-  commentOpenYn: episode.commentOpenYn,
-  countEvaluation: episode.countEvaluation,
-  countComment: episode.countComment,
-  priceType: episode.priceType,
-  evaluationOpenYn: episode.evaluationOpenYn,
-  publishReserveDate: episode.publishReserveDate,
-  countHit: episode.countHit,
-  countRecommend: episode.countRecommend,
-  episodeOpenYn: episode.episodeOpenYn,
-  ownType: episode.ownType ?? "",
-  createdDate: episode.createdDate,
-  rentalRemaining: null,
-  usage: {
-    readYn: "N",
-    recommendYn: "N",
-  },
-});
-
 interface Props {
   priceType?: "free" | "paid";
   episodeCount?: number;
@@ -71,7 +45,6 @@ interface Props {
   bulkPurchasePrice?: number;
   bulkPurchaseEpisodeCount?: number;
   entrySource?: ProductDetailEntrySource | null;
-  initialOwnerEpisodes?: IEpisode[];
 }
 
 const ProductEpisodes = ({
@@ -87,7 +60,6 @@ const ProductEpisodes = ({
   bulkPurchasePrice = 0,
   bulkPurchaseEpisodeCount = 0,
   entrySource,
-  initialOwnerEpisodes,
 }: Props) => {
   const router = useRouter();
   const { withLoginRequired } = useAuthWrapper();
@@ -105,7 +77,6 @@ const ProductEpisodes = ({
     user?.userRole === "editor" ||
     user?.userRole === "admin";
   const canSeeEpisodeStats = !!user && (isAuthor || isAdminCPEditor);
-  const shouldUseOwnerEpisodes = (isAuthor || isAdminCPEditor) && !!initialOwnerEpisodes;
   const { setTypeModal } = useModalStore();
   const hasResolvedPriceType = priceType === "paid" || priceType === "free";
   const defaultIsDescSort = priceType !== "paid";
@@ -210,23 +181,12 @@ const ProductEpisodes = ({
     PAGE_SIZE,
     "episodeNo",
     isDescSort ? "desc" : "asc",
-    isEpisodeQueryEnabled && !shouldUseOwnerEpisodes
+    isEpisodeQueryEnabled
   );
 
-  const sortedOwnerEpisodes = useMemo(() => {
-    if (!shouldUseOwnerEpisodes) return [];
-    return [...(initialOwnerEpisodes ?? [])]
-      .map(normalizeOwnerEpisode)
-      .sort((a, b) =>
-        isDescSort
-          ? (b.episodeNo || 0) - (a.episodeNo || 0)
-          : (a.episodeNo || 0) - (b.episodeNo || 0)
-      );
-  }, [initialOwnerEpisodes, isDescSort, shouldUseOwnerEpisodes]);
-
   const allEpisodes = useMemo(() => {
-    return shouldUseOwnerEpisodes ? sortedOwnerEpisodes : episodes?.pages.map((page) => page.data.episodes).flat() ?? [];
-  }, [episodes, shouldUseOwnerEpisodes, sortedOwnerEpisodes]);
+    return episodes?.pages.map((page) => page.data.episodes).flat() ?? [];
+  }, [episodes]);
 
   const visibleEpisodes = useMemo(() => {
     return allEpisodes.slice(0, visibleCount);
@@ -247,7 +207,7 @@ const ProductEpisodes = ({
     setVisibleCount(newCount);
 
     // Fetch more from API if we're approaching the end of current data
-    if (!shouldUseOwnerEpisodes && newCount >= allEpisodes.length - 5) {
+    if (newCount >= allEpisodes.length - 5) {
       fetchNextPage();
     }
   };

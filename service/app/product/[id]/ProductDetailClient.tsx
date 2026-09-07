@@ -282,7 +282,6 @@ export default function ProductDetailClient({
     productData,
     evaluationData,
     noticeData,
-    ownerEpisodes,
     episodeTypePaidCount,
     issuedVouchers,
   } = useMemo(() => {
@@ -294,21 +293,10 @@ export default function ProductDetailClient({
       productData: (data?.data.product ?? initialProduct) as IProduct,
       evaluationData: data?.data.evaluations ?? ({} as IEvaluation),
       noticeData: data?.data.notices,
-      ownerEpisodes: data?.data.episodes ?? [],
       episodeTypePaidCount: episodeTypePaidCount,
       issuedVouchers: data?.data.issuedVouchers ?? [],
     };
   }, [data, initialProduct]);
-  const isProductOwner =
-    !!user?.userId && !!productData?.authorId && user.userId === productData.authorId;
-  const isAdminCPEditor =
-    user?.userRole === "CP" ||
-    user?.userRole === "editor" ||
-    user?.userRole === "admin";
-  const shouldUseOwnerEpisodeList = canUseUserScope && (isProductOwner || isAdminCPEditor);
-  const displayEpisodeCount = shouldUseOwnerEpisodeList
-    ? ownerEpisodes.length
-    : episodeCount;
   const productWaitForFreeYn =
     productData?.badge?.waitForFreeYn === "Y" ||
     productData?.badge?.waitingForFreeYn === "Y"
@@ -895,7 +883,7 @@ export default function ProductDetailClient({
             latestEpisodeNo={effectiveLatestEpisodeNo}
             isWebsochatReadScopeReady={isWebsochatReadScopeReady}
             latestEpisodeTitle={effectiveLatestEpisodeTitle}
-            episodeCount={displayEpisodeCount}
+            episodeCount={episodeCount}
             firstEpisodeId={firstEpisodeId}
             firstEpisodeTitle={firstEpisodeTitle}
             entrySource={viewerEntrySource}
@@ -932,7 +920,7 @@ export default function ProductDetailClient({
                         activeTab === "episode" ? "text-primary-100" : ""
                       } `}
                     >
-                      &nbsp;{displayEpisodeCount || 0}
+                      &nbsp;{episodeCount || 0}
                     </span>
                   </>
                 ),
@@ -967,7 +955,7 @@ export default function ProductDetailClient({
               authorId={productData?.authorId}
               notices={noticeData || []}
               priceType={productData?.priceType}
-              episodeCount={displayEpisodeCount}
+              episodeCount={episodeCount}
               paidEpisodeNo={productData?.paidEpisodeNo}
               waitForFreeYn={productWaitForFreeYn}
               episodeOwnPrice={serialEpisodeOwnPrice}
@@ -978,7 +966,6 @@ export default function ProductDetailClient({
               }
               bulkPurchaseEpisodeCount={episodeTypePaidCount}
               entrySource={viewerEntrySource}
-              initialOwnerEpisodes={shouldUseOwnerEpisodeList ? ownerEpisodes : undefined}
             />
             <div
               ref={commentRef}
