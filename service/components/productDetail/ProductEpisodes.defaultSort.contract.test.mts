@@ -54,30 +54,15 @@ assert.match(
   /isDescSort \? "desc" : "asc",\s*isEpisodeQueryEnabled/,
   "ProductEpisodes should request descending or ascending episode order from the API"
 );
-assert.match(
+assert.doesNotMatch(
   source,
-  /initialOwnerEpisodes\?: IEpisode\[\];/,
-  "ProductEpisodes should accept details-group episodes for owner/admin views"
+  /initialOwnerEpisodes|shouldUseOwnerEpisodes|sortedOwnerEpisodes/,
+  "Reader detail must never substitute the management episode list, including for authors/admins"
 );
 assert.match(
   source,
-  /const shouldUseOwnerEpisodes = \(isAuthor \|\| isAdminCPEditor\) && !!initialOwnerEpisodes;/,
-  "ProductEpisodes should only switch to details-group episodes for owner/admin views"
-);
-assert.match(
-  source,
-  /isEpisodeQueryEnabled && !shouldUseOwnerEpisodes/,
-  "ProductEpisodes should not call the public episode list when owner/admin details-group episodes are available"
-);
-assert.match(
-  source,
-  /shouldUseOwnerEpisodes \? sortedOwnerEpisodes :/,
-  "ProductEpisodes should render sorted owner/admin episodes from details-group when available"
-);
-assert.match(
-  source,
-  /if \(!shouldUseOwnerEpisodes && newCount >= allEpisodes.length - 5\)/,
-  "ProductEpisodes should only fetch more pages for the public episode list"
+  /if \(newCount >= allEpisodes.length - 5\)/,
+  "Reader detail should paginate the same episode query for every role"
 );
 assert.match(
   source,
@@ -224,3 +209,73 @@ assert.doesNotMatch(
   /rounded-\[28px\]/,
   "WFF modal should not use Kakao-style pill radius"
 );
+
+// Execute the real component with API/auth boundaries controlled; keep React hooks
+// and local formatting/visibility helpers real so role-dependent rendering is tested.
+const { createRequire } = await import("node:module");
+const { runInNewContext } = await import("node:vm");
+const { fileURLToPath } = await import("node:url");
+const { dirname, resolve } = await import("node:path");
+const require = createRequire(import.meta.url);
+const ts = require("typescript");
+const React = require("react");
+const { renderToStaticMarkup } = require("react-dom/server");
+const serviceRoot = fileURLToPath(new URL("../../", import.meta.url));
+const managementEpisodes = Array.from({ length: 200 }, (_, index) => ({
+  episodeId: index + 1, productId: 1248, episodeNo: index + 1,
+  episodeTitle: `EPISODE_${String(index + 1).padStart(3, "0")}`,
+  episodeOpenYn: index < 5 ? "Y" : "N", priceType: "free",
+  createdDate: "2026-09-07", publishReserveDate: index < 5 ? null : "2026-09-08T18:00:00",
+  usage: { readYn: "N", recommendYn: "N" },
+}));
+const Empty = () => null;
+const Children = ({ children }: { children?: unknown }) => React.createElement("span", null, children);
+for (const role of ["guest", "reader", "author", "admin", "CP", "editor"]) {
+  const auth = {
+    user: role === "guest" ? null : { userId: role === "author" ? 2314 : 99, userRole: role },
+    accessToken: role === "guest" ? null : "test-session", isAuthenticated: role !== "guest",
+  };
+  const calls: unknown[][] = [];
+  const modules: Record<string, unknown> = {
+    "@/app/api/query/episode": { useSelectEpisodes: (...args: unknown[]) => {
+      calls.push(args);
+      return { data: { pages: [{ data: { episodes: managementEpisodes.slice(0, 5).reverse() } }] }, fetchNextPage() {} };
+    } },
+    "@/app/api/query/product": { useGetAvailableTickets: () => ({}) },
+    "@tanstack/react-query": { useQueryClient: () => ({}) },
+    "@/store/authStore": { default: (select: (state: typeof auth) => unknown) => select(auth) },
+    "@/store/modalStore": { default: () => ({ setTypeModal() {} }) },
+    "@/hooks/useAuthWrapper": { useAuthWrapper: () => ({ withLoginRequired() {} }) },
+    "next/navigation": { useRouter: () => ({ push() {} }) },
+    "next/image": { default: Empty },
+  };
+  function loadComponent(filename: string): Record<string, unknown> {
+    const module = { exports: {} };
+    const output = ts.transpileModule(readFileSync(filename, "utf8"), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
+      fileName: filename,
+    }).outputText;
+    runInNewContext(output, { module, exports: module.exports, require: (name: string) => {
+      if (name in modules) return { __esModule: true, ...modules[name] as object };
+      if (name.endsWith(".svg")) return { __esModule: true, default: Empty };
+      if (["../common/Button", "../common/MoreReadButton", "../common/SquareBadge", "./ProductNotice"].includes(name))
+        return { __esModule: true, default: name.includes("Button") ? Children : Empty };
+      if (name.startsWith("@/")) return loadComponent(resolve(serviceRoot, name.slice(2) + ".ts"));
+      if (name.startsWith(".")) return loadComponent(resolve(dirname(filename), name + ".ts"));
+      return require(name);
+    } });
+    return module.exports;
+  }
+  const component = loadComponent(fileURLToPath(new URL("./ProductEpisodes.tsx", import.meta.url))).default;
+  const markup = renderToStaticMarkup(React.createElement(component, {
+    productId: 1248, authorId: 2314, priceType: "free", episodeCount: 5,
+    notices: [], initialOwnerEpisodes: managementEpisodes,
+  }));
+  assert.equal(calls.length, 1, `${role}: use the reader episode API`);
+  assert.equal(calls[0][6], true, `${role}: do not disable the reader episode query`);
+  assert.equal((markup.match(/EPISODE_\d{3}/g) ?? []).length, 5, `${role}: render exactly five published episodes`);
+  assert.ok(markup.includes("EPISODE_001") && markup.includes("EPISODE_005"), `${role}: published bounds`);
+  assert.ok(!markup.includes("EPISODE_006") && !markup.includes("EPISODE_200"), `${role}: reservations stay outside reader detail`);
+  assert.ok(markup.includes("총 5화"), `${role}: visible count matches the reader list`);
+}
+console.log("PASS: reader detail renders five public episodes for all six auth roles");

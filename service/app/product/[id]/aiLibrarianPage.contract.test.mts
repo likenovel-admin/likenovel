@@ -160,26 +160,13 @@ assert.match(
   /useSelectProductDetail\(\s*productId,\s*productDetailCacheIdentity,\s*isAuthInitialized && !isUserScopePending\s*\)/,
   "Product detail should wait for auth initialization before fetching details-group"
 );
-assert.match(
+assert.doesNotMatch(
   source,
-  /const shouldUseOwnerEpisodeList = canUseUserScope && \(isProductOwner \|\| isAdminCPEditor\);/,
-  "Product detail should distinguish hydrated owner/admin episode list scope from public reader scope"
+  /shouldUseOwnerEpisodeList|initialOwnerEpisodes|ownerEpisodes|displayEpisodeCount/,
+  "Reader detail must not count or render management-only episodes"
 );
-assert.match(
-  source,
-  /initialOwnerEpisodes=\{shouldUseOwnerEpisodeList \? ownerEpisodes : undefined\}/,
-  "Product detail should pass details-group episodes only for owner/admin episode lists"
-);
-assert.match(
-  source,
-  /episodeCount=\{displayEpisodeCount\}/,
-  "Product detail should show an owner/admin episode count when rendering owner/admin episodes"
-);
-assert.match(
-  source,
-  /&nbsp;\{displayEpisodeCount \|\| 0\}/,
-  "Product detail episode tab count should match the owner/admin episode list count"
-);
+assert.match(source, /episodeCount=\{episodeCount\}/);
+assert.match(source, /&nbsp;\{episodeCount \|\| 0\}/);
 assert.match(
   commentQuerySource,
   /enabled: enabled && !Number\.isNaN\(productId\)/,
