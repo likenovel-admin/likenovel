@@ -250,12 +250,12 @@ for (const role of ["guest", "reader", "author", "admin", "CP", "editor"]) {
     "next/image": { default: Empty },
   };
   function loadComponent(filename: string): Record<string, unknown> {
-    const module = { exports: {} };
+    const componentModule = { exports: {} };
     const output = ts.transpileModule(readFileSync(filename, "utf8"), {
       compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
       fileName: filename,
     }).outputText;
-    runInNewContext(output, { module, exports: module.exports, require: (name: string) => {
+    runInNewContext(output, { module: componentModule, exports: componentModule.exports, require: (name: string) => {
       if (name in modules) return { __esModule: true, ...modules[name] as object };
       if (name.endsWith(".svg")) return { __esModule: true, default: Empty };
       if (["../common/Button", "../common/MoreReadButton", "../common/SquareBadge", "./ProductNotice"].includes(name))
@@ -264,7 +264,7 @@ for (const role of ["guest", "reader", "author", "admin", "CP", "editor"]) {
       if (name.startsWith(".")) return loadComponent(resolve(dirname(filename), name + ".ts"));
       return require(name);
     } });
-    return module.exports;
+    return componentModule.exports;
   }
   const component = loadComponent(fileURLToPath(new URL("./ProductEpisodes.tsx", import.meta.url))).default;
   const markup = renderToStaticMarkup(React.createElement(component, {
