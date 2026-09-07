@@ -29,11 +29,16 @@
 - 위 파일은 git ignore 대상이며 비밀번호를 포함할 수 있다. 비밀번호를 채팅, tracked 문서, 커밋, PR 본문에 출력하지 않는다.
 - CMS/admin 계정 작업은 해당 문서의 계정으로 로그인한 뒤 대상 이메일 exact search, `latest_signed_type`, `use_yn`, reset, signin 검증 순서로 진행한다.
 
+## 0.3.1) Execution Continuity
+
+- 작업 연속성과 턴 종료는 전역 `~/.codex/AGENTS.md`의 `0.2.1) Execution Continuity And Steering`을 따른다. 진행 중 설명·상태 질문에는 commentary로 답하고 같은 턴에서 승인된 다음 작업을 실행한다.
+- 원인 확인, 로컬 수정, 테스트 통과를 사용자가 요청한 최종 결과와 혼동하지 않는다. 아래 Stop Rules는 무관한 추가 작업을 막는 규칙이며 필요한 구현·검증·승인된 반영을 중간에 끝내는 근거가 아니다.
+
 ## 0.4) User-Facing File Deliverables
 
-- 사용자에게 생성/수정한 파일을 보여주거나 전달할 때는 repo/output 경로만 말하지 말고, 먼저 Windows 다운로드 폴더 `/mnt/c/Users/Hongsan/Downloads`에 복사한다.
-- 완료 보고에는 Windows 경로 `C:\Users\Hongsan\Downloads\...`를 포함하고, `ls`, `test -f`, workbook readback 등으로 복사 여부를 확인한다.
-- repo 내부 산출물 경로는 보조 정보로만 보고한다. Windows 다운로드 폴더 접근이 실패하면 실패 이유와 미복사 상태를 명시한다.
+- Windows 다운로드 폴더 `/mnt/c/Users/Hongsan/Downloads`에는 사용자가 해당 저장을 요청했거나, 현재 작업에 적용 중인 스킬이 해당 산출물의 다운로드 폴더 저장을 명시한 경우에만 저장·복사한다. 사용자 지시가 스킬보다 우선한다.
+- 코드·설정·지침을 수정했다는 이유, 파일 링크로 보고한다는 이유, 에이전트가 전달용 산출물이라고 판단했다는 이유만으로 다운로드 사본을 만들지 않는다.
+- 위 조건으로 다운로드 폴더에 저장한 경우에만 실제 파일 존재를 확인하고 Windows 경로를 보고한다. 저장 요청·스킬 명시가 없으면 원래 작업 경로에서 수정·검증하고 그 경로로 보고한다.
 
 ## 1) Source Of Truth
 
@@ -275,7 +280,7 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
 역할별 목표:
 
 - Global goal은 사용자의 실제 목표를 먼저 좁히고, 작업을 독립 단위로 나눈 뒤, 필요한 경우 병렬로 실행하고 결과를 통합하는 것이다.
-- `[ROLE: default]`: 상위 오케스트레이션 전담. 목표 정리, 작업 분배, 승인/중단 판단, 최종 통합만 수행한다.
+- `[ROLE: default]`: 작업 전체를 책임진다. 직접 구현·검증하며, 필요한 경우 허용된 하위 에이전트에 독립 작업을 위임하고 결과를 통합한다. 하위 에이전트 사용 가능 여부를 직접 실행의 전제조건으로 삼지 않는다.
 - `[ROLE: worker]`: 구현 전담. 할당된 파일 범위 안에서 최소 변경으로 구현하고, 테스트/빌드 등 검증 evidence와 변경 파일을 보고한다.
 - `[ROLE: explorer]`: 코드 탐색/근거 수집 전담. 구조, 흐름, 리스크, 관련 파일을 근거 중심으로 보고하며 직접 수정하지 않는다.
 - `[ROLE: reviewer]`: 회귀, 리스크, 테스트 누락 검토 전담. 버그 가능성, 운영 리스크, 테스트 공백을 우선순위와 파일 위치 중심으로 보고한다.
