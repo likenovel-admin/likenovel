@@ -507,7 +507,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
 
   const handleUpdate = async (formData: IMakeEpisodeForm) => {
     // Prevent duplicate submissions
-    if (isMutating) return;
+    if (!productId || isMutating) return;
     if (formData.hasPublishEpisodeDate === "Y") {
       const validationMessage = getReserveValidationMessage(
         formData.publishEpisodeDate
@@ -546,7 +546,7 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
       } else {
         const requestData = transformFormDataToRequestData(formData);
         await updateEpisode(
-          { episodeId: episodeId || 0, data: requestData },
+          { productId, episodeId: episodeId || 0, data: requestData },
           {
             onSuccess: () => {
               persistCommentSettingIfNeeded(formData);

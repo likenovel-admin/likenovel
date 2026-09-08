@@ -13,6 +13,7 @@ const letterPattern = new RegExp("\\p{L}", "u");
 const hanNumberToken = "[〇零一二三四五六七八九十百千]+";
 const numberToken = "(?:[0-9]+|" + hanNumberToken + ")";
 const leadingPatterns = [
+  /^([0-9]+)$/,
   new RegExp("^#\\s*(" + numberToken + ")(?:\\s|[.:)]|$)"),
   new RegExp("^\\(\\s*(" + numberToken + ")\\s*\\)"),
   new RegExp("^\\[\\s*(" + numberToken + ")\\s*\\]"),

@@ -9,6 +9,12 @@ const entries = (titles: string[]) => titles.map((episodeTitle, index) => ({
 }));
 
 const cases: [string, string[], string, boolean][] = [
+  ["숫자만 있는 제목 연속", ["18", "19"], "20", false],
+  ["숫자만 있는 제목 누락", ["18", "19"], "21", true],
+  ["숫자만 있는 제목 중복", ["18", "19"], "19", true],
+  ["숫자만 있는 제목 역전", ["18", "19"], "17", true],
+  ["숫자만 있는 제목과 명시적 번호 혼합", ["18", "제19화. 성장"], "21", true],
+  ["숫자만 있는 전각 제목", ["１８", "１９"], "２１", true],
   ["연속 번호", ["블러튼제국 3", "블러튼제국 4"], "블러튼제국 5", false],
   ["누락", ["블러튼제국 3", "블러튼제국 4"], "블러튼제국 6", true],
   ["중복", ["블러튼제국 3", "블러튼제국 4"], "블러튼제국 4", true],
@@ -74,6 +80,15 @@ test("수정은 원래 위치에서 자신을 제외하고 앞뒤를 검사", ()
   assert.equal(normal.rows[1].episodeId, 102);
   assert.equal(reviewEpisodeTitleOrder(previous, "#4 성장", 102).hasWarning, true);
   assert.equal(reviewEpisodeTitleOrder(previous, "#2 환생", 101).hasWarning, true);
+});
+
+test("19를 기존 다음 회차 제목인 20으로 수정하면 중복 경고", () => {
+  const previous = entries(["18", "19", "20"]);
+  const result = reviewEpisodeTitleOrder(previous, "20", 102);
+  assert.equal(result.hasWarning, true);
+  assert.deepEqual(result.rows.map((row) => row.episodeTitle), ["18", "20", "20"]);
+  assert.equal(result.rows[1].episodeId, 102);
+  assert.equal(reviewEpisodeTitleOrder(previous, "19", 102).hasWarning, false);
 });
 
 test("수정으로 기존 누락을 채운 경우 경고가 사라짐", () => {
