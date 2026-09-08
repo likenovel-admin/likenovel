@@ -13,13 +13,15 @@ import {
   ISelectNoticeResponse,
 } from "@/app/api/query/author/episode/dto";
 import useToastStore from "@/store/toastStore";
+import { fetchProductDetail } from "@/app/api/query/product";
+import { reviewEpisodeTitleOrder, type EpisodeOrderRow } from "@/utils/episodeTitleOrder";
 import useViewStore from "@/store/viewerStore";
 import { hasRenderableEpisodePreviewContent } from "@/utils/episodePreviewDocument";
 import { normalizeViewerContentHtml } from "@/utils/normalizeViewerContentHtml";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, FieldErrors } from "react-hook-form";
 import Checkbox from "../common/CheckBox";
 import Button from "../common/Button";
@@ -29,6 +31,7 @@ import Input from "../form/input";
 import TextArea from "../form/textarea";
 import BottomButton from "./BottomButton";
 import EpisodePreviewDialog from "./EpisodePreviewDialog";
+import EpisodeOrderDialog from "./EpisodeOrderDialog";
 dayjs.extend(utc);
 
 export interface IMakeEpisodeForm {
@@ -91,6 +94,14 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
   const { setToast } = useToastStore();
   const viewerSettings = useViewStore((state) => state.settings);
   const router = useRouter();
+  const orderActionRef = useRef(false);
+  const orderTriggerRef = useRef<HTMLElement | null>(null);
+  const [isOrderActionPending, setIsOrderActionPending] = useState(false);
+  const [orderConfirmation, setOrderConfirmation] = useState<{
+    rows: EpisodeOrderRow[];
+    formData: IMakeEpisodeForm;
+    action: "submit" | "update";
+  } | null>(null);
   const [previewSnapshot, setPreviewSnapshot] = useState<{
     title: string;
     contentHtml: string;
@@ -563,6 +574,44 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
     }
   };
 
+  const runEpisodeAction = async (
+    formData: IMakeEpisodeForm,
+    action: "submit" | "update",
+    confirmed = false
+  ) => {
+    if (!productId || isMutating || orderActionRef.current) return;
+    if (!confirmed) {
+      orderTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
+    orderActionRef.current = true;
+    setIsOrderActionPending(true);
+    try {
+      if (!confirmed && formData.category === "episode") {
+        const detail = await fetchProductDetail(productId);
+        if (!Array.isArray(detail.data?.episodes)) {
+          throw new Error("회차목록을 불러오지 못했습니다.");
+        }
+        const review = reviewEpisodeTitleOrder(
+          detail.data.episodes,
+          formData.title,
+          action === "update" ? episodeId : undefined
+        );
+        if (review.hasWarning) {
+          setOrderConfirmation({ rows: review.rows, formData, action });
+          return;
+        }
+      }
+      if (action === "submit") await handleSubmitForm(formData);
+      else await handleUpdate(formData);
+      setOrderConfirmation(null);
+    } catch {
+      setToast({ message: "회차목록을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.", type: "error" });
+    } finally {
+      orderActionRef.current = false;
+      setIsOrderActionPending(false);
+    }
+  };
+
   const labelBaseClassName =
     "text-13pxr md:text-16pxr text-dark-gray-500 font-semibold";
   const labelClassName = `${labelBaseClassName} mb-10pxr`;
@@ -773,23 +822,32 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
           <BottomButton
             actionType="save"
             productId={productId}
-            isSubmitting={isMutating}
+            isSubmitting={isMutating || isOrderActionPending || !!orderConfirmation}
             isActionDisabled={isReserveScheduleInvalid}
             onSave={() => handleSubmit(handleSave, onError)()}
-            onSubmit={() => handleSubmit(handleSubmitForm, onError)()}
+            onSubmit={() => handleSubmit((data) => runEpisodeAction(data, "submit"), onError)()}
           />
         ) : (
           <BottomButton
             actionType="submit"
             productId={productId}
-            isSubmitting={isMutating}
+            isSubmitting={isMutating || isOrderActionPending || !!orderConfirmation}
             isActionDisabled={isReserveScheduleInvalid}
             onSave={() => handleSubmit(handleSave, onError)()}
-            onSubmit={() => handleSubmit(handleSubmitForm, onError)()}
-            onUpdate={() => handleSubmit(handleUpdate, onError)()}
+            onSubmit={() => handleSubmit((data) => runEpisodeAction(data, "submit"), onError)()}
+            onUpdate={() => handleSubmit((data) => runEpisodeAction(data, "update"), onError)()}
           />
         )}
       </form>
+      {orderConfirmation && (
+        <EpisodeOrderDialog
+          rows={orderConfirmation.rows}
+          returnFocusTo={orderTriggerRef.current}
+          isSubmitting={isMutating || isOrderActionPending}
+          onCancel={() => setOrderConfirmation(null)}
+          onConfirm={() => runEpisodeAction(orderConfirmation.formData, orderConfirmation.action, true)}
+        />
+      )}
       {previewSnapshot && (
         <EpisodePreviewDialog
           title={previewSnapshot.title}
