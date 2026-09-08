@@ -164,6 +164,11 @@ export const useSelectBannerPromotion = (): any => {
   };
 };
 
+export const fetchProductDetail = async (productId: number): Promise<IUseSelectProductDetailResponse> => {
+  const response = await instance.get(`/v1/query/products/${productId}/details-group`);
+  return response.data;
+};
+
 export const useSelectProductDetail = (
   productId: number,
   cacheIdentity: string = "guest",
@@ -171,12 +176,7 @@ export const useSelectProductDetail = (
 ) => {
   return useQuery<IUseSelectProductDetailResponse, unknown>({
     queryKey: ["selectProductDetail", productId, cacheIdentity],
-    queryFn: async () => {
-      const response = await instance.get(
-        `/v1/query/products/${productId}/details-group`
-      );
-      return response.data;
-    },
+    queryFn: () => fetchProductDetail(productId),
     enabled: enabled && !!productId,
     staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
     gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
