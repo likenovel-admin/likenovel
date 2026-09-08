@@ -1,5 +1,5 @@
 import { instance } from "@/app/api/axios";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   IAuthorBulkPublishReserveRequest,
   ICreateAuthorEpisodePredictionRequest,
@@ -34,6 +34,7 @@ export const useSelectStoragePath = () => {
 };
 
 export const useMakeEpisode = () => {
+  const queryClient = useQueryClient();
   return useMutation<
     unknown,
     Error,
@@ -85,6 +86,8 @@ export const useMakeEpisode = () => {
         price_type,
       });
     },
+    onSuccess: (_data, { productId }) =>
+      queryClient.invalidateQueries({ queryKey: ["selectProductDetail", productId] }),
   });
 };
 
@@ -175,14 +178,17 @@ export const useGetProductNoticeDetail = (
 };
 
 export const useUpdateEpisode = () => {
+  const queryClient = useQueryClient();
   return useMutation<
     unknown,
     Error,
-    { episodeId: number; data: IMakeEpisodeRequest }
+    { productId: number; episodeId: number; data: IMakeEpisodeRequest }
   >({
     mutationFn: async ({ episodeId, data }) => {
       return await instance.put(`/v1/command/episodes/${episodeId}`, data);
     },
+    onSuccess: (_data, { productId }) =>
+      queryClient.invalidateQueries({ queryKey: ["selectProductDetail", productId] }),
   });
 };
 
