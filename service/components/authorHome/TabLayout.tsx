@@ -29,7 +29,7 @@ export default function TabLayout({
   return (
     <div className="flex flex-col w-full max-w-[1120px] mx-auto bg-white">
       <span className="text-17pxr md:text-24pxr font-bold md:mb-15pxr pl-16pxr md:pl-0">
-        작가 홈
+        작가홈
       </span>
       <div className="md:hidden">
         <Tab
