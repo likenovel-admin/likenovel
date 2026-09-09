@@ -116,3 +116,36 @@ test("한자 자리수와 괄호 종류를 실제 숫자와 동일하게 비교"
     }
   }
 });
+
+test("행에 회차관리 목록과 같은 공개 상태와 일시를 담는다", () => {
+  const previous = [
+    { episodeId: 1, episodeNo: 1, episodeTitle: "1", openYn: "Y" as const, publishReserveDate: null, createdDate: "2026-09-01T10:00:00" },
+    { episodeId: 2, episodeNo: 2, episodeTitle: "2", openYn: "N" as const, publishReserveDate: "2026-09-10T18:00:00", createdDate: "2026-09-02T10:00:00" },
+    { episodeId: 3, episodeNo: 3, episodeTitle: "3", openYn: "N" as const, publishReserveDate: null, createdDate: "2026-09-03T10:00:00" },
+  ];
+  const { rows } = reviewEpisodeTitleOrder(previous, "5");
+  assert.deepEqual(rows.map((row) => row.releaseState), ["open", "reserve", "private", "open"]);
+  assert.deepEqual(rows.map((row) => row.publishReserveDate), [null, "2026-09-10T18:00:00", null, null]);
+  assert.deepEqual(rows.map((row) => row.createdDate), ["2026-09-01T10:00:00", "2026-09-02T10:00:00", "2026-09-03T10:00:00", null]);
+});
+
+test("수정·등록 중인 회차는 저장될 공개 상태와 예약일시를 보여준다", () => {
+  const previous = [
+    { episodeId: 1, episodeNo: 1, episodeTitle: "1", openYn: "Y" as const, publishReserveDate: null },
+    { episodeId: 2, episodeNo: 2, episodeTitle: "2", openYn: "N" as const, publishReserveDate: "2026-09-10T18:00:00" },
+  ];
+  const updated = reviewEpisodeTitleOrder(previous, "4", 2, {
+    releaseState: "reserve",
+    publishReserveDate: "2026-09-20T18:00:00",
+  });
+  assert.equal(updated.rows[1].releaseState, "reserve");
+  assert.equal(updated.rows[1].publishReserveDate, "2026-09-20T18:00:00");
+  assert.equal(updated.rows[0].publishReserveDate, null);
+
+  const created = reviewEpisodeTitleOrder(previous, "9", undefined, {
+    releaseState: "private",
+    publishReserveDate: null,
+  });
+  assert.equal(created.rows.at(-1)?.releaseState, "private");
+  assert.equal(created.rows.at(-1)?.publishReserveDate, null);
+});

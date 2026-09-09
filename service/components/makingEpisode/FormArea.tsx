@@ -594,7 +594,19 @@ const FormArea = ({ productId, episodeId, type, actionType }: Props) => {
         const review = reviewEpisodeTitleOrder(
           detail.data.episodes,
           formData.title,
-          action === "update" ? episodeId : undefined
+          action === "update" ? episodeId : undefined,
+          {
+            releaseState:
+              formData.hasPublishEpisodeDate === "Y"
+                ? "reserve"
+                : formData.isEpisodeOpen === "Y"
+                  ? "open"
+                  : "private",
+            publishReserveDate:
+              formData.hasPublishEpisodeDate === "Y" && formData.publishEpisodeDate
+                ? dayjs(formData.publishEpisodeDate).toISOString()
+                : null,
+          }
         );
         if (review.hasWarning) {
           setOrderConfirmation({ rows: review.rows, formData, action });

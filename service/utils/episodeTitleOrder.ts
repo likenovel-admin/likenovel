@@ -1,12 +1,28 @@
 import type { IEpisode } from "@/types";
 
 type EpisodeTitleEntry = Pick<IEpisode, "episodeId" | "episodeNo" | "episodeTitle"> &
-  Partial<Pick<IEpisode, "useYn">>;
+  Partial<Pick<IEpisode, "useYn" | "openYn" | "publishReserveDate" | "createdDate">>;
 
-export type EpisodeOrderRow = Omit<EpisodeTitleEntry, "episodeId" | "useYn"> & {
+export type EpisodeReleaseState = "open" | "reserve" | "private";
+
+export type EpisodeOrderRow = Pick<EpisodeTitleEntry, "episodeNo" | "episodeTitle"> & {
   episodeId: number | null;
   isCurrent: boolean;
+  releaseState: EpisodeReleaseState;
+  publishReserveDate: string | null;
+  createdDate: string | null;
 };
+
+export type EpisodeOrderCurrentRelease = {
+  releaseState: EpisodeReleaseState;
+  publishReserveDate: string | null;
+};
+
+// 회차관리 목록과 같은 기준으로 공개 상태를 판정한다.
+function readReleaseState(episode: EpisodeTitleEntry): EpisodeReleaseState {
+  if (episode.openYn === "Y") return "open";
+  return episode.publishReserveDate ? "reserve" : "private";
+}
 
 type TitleNumber = { group: string; number: number };
 const letterPattern = new RegExp("\\p{L}", "u");
@@ -107,16 +123,27 @@ function hasCurrentOrderWarning(rows: readonly EpisodeOrderRow[]): boolean {
 export function reviewEpisodeTitleOrder(
   episodes: readonly EpisodeTitleEntry[],
   title: string,
-  episodeId?: number
+  episodeId?: number,
+  currentRelease?: EpisodeOrderCurrentRelease
 ): { rows: EpisodeOrderRow[]; hasWarning: boolean } {
   const rows: EpisodeOrderRow[] = episodes
     .filter((episode) => episode.useYn !== "N")
-    .map((episode) => ({
-      episodeId: episode.episodeId,
-      episodeNo: episode.episodeNo,
-      episodeTitle: episode.episodeId === episodeId ? title : episode.episodeTitle,
-      isCurrent: episode.episodeId === episodeId,
-    }))
+    .map((episode) => {
+      const isCurrent = episode.episodeId === episodeId;
+      return {
+        episodeId: episode.episodeId,
+        episodeNo: episode.episodeNo,
+        episodeTitle: isCurrent ? title : episode.episodeTitle,
+        isCurrent,
+        releaseState:
+          isCurrent && currentRelease ? currentRelease.releaseState : readReleaseState(episode),
+        publishReserveDate:
+          isCurrent && currentRelease
+            ? currentRelease.publishReserveDate
+            : episode.publishReserveDate ?? null,
+        createdDate: episode.createdDate ?? null,
+      };
+    })
     .sort((a, b) => a.episodeNo - b.episodeNo);
 
   if (episodeId !== undefined && !rows.some((row) => row.isCurrent)) {
@@ -128,6 +155,9 @@ export function reviewEpisodeTitleOrder(
       episodeNo: (rows.at(-1)?.episodeNo ?? 0) + 1,
       episodeTitle: title,
       isCurrent: true,
+      releaseState: currentRelease?.releaseState ?? "open",
+      publishReserveDate: currentRelease?.publishReserveDate ?? null,
+      createdDate: null,
     });
   }
   return { rows, hasWarning: hasCurrentOrderWarning(rows) };
