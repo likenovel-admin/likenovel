@@ -266,7 +266,7 @@ const GlobalNav = () => {
               </button>
               <GlobalMenu />
             </div>
-            <div className="ml-27pxr">
+            <div className={user?.userRole ? "ml-27pxr" : "ml-20pxr"}>
               <button
                 className="flex justify-center items-center w-[79px] h-[36px] gap-1 rounded-xl border border-dark-gray-100 hover:bg-light-gray-100"
                 onClick={() => {
@@ -278,7 +278,7 @@ const GlobalNav = () => {
                 }}
               >
                 <Pen />
-                <span className="text-14pxr">글쓰기</span>
+                <span className="text-14pxr">작가홈</span>
               </button>
             </div>
           </div>

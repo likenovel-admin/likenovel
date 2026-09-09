@@ -75,8 +75,12 @@ const GlobalMenu = () => {
               height={24}
               className="w-[24px] h-[24px] rounded-full object-cover"
             />
-          ) : (
+          ) : user?.userRole ? (
             <MenuIcon menu={<Person />} dotColor="red" />
+          ) : (
+            <span className="flex items-center text-16pxr font-medium leading-none pt-[1px] hover:text-dark-gray-400">
+              로그인
+            </span>
           )}
         </div>
         <div className="md:hidden contents">
@@ -228,9 +232,9 @@ const GlobalMenuModal = ({ isOpen, setIsOpen, onClose }: CommonModalProps) => {
                 src={"/images/write.svg"}
                 width={18}
                 height={18}
-                alt="글쓰기"
+                alt="작가홈"
               />
-              글쓰기
+              작가홈
             </button>
           </div>
           <div className="w-w-[410px] px-5 py-2 md:py-5 flex justify-between items-center border-b-8 md:border-b">
