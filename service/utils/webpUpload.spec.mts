@@ -171,4 +171,25 @@ const createDeps = (env: FakeEnv, width: number, height: number) => ({
   );
 }
 
+// Episode images have no resize target, so a webp source used to upload without
+// being decoded. Browsers that cannot decode webp must keep that path working.
+{
+  const env = createFakeEnv([]);
+  const result = await prepareImageUpload(
+    createFile("scene.webp", "image/webp"),
+    {},
+    {
+      ...createDeps(env, 800, 1200),
+      decodeImage: async () => {
+        throw new Error("Failed to decode image file.");
+      },
+    }
+  );
+
+  assert.equal(result.uploadFile.type, "image/webp");
+  assert.equal(result.uploadFileName, "scene.webp");
+  assert.equal(result.contentType, "image/webp");
+  assert.deepEqual(env.encodeCalls, []);
+}
+
 console.log("webpUpload.spec.mts passed");

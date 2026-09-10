@@ -136,6 +136,16 @@ export const prepareImageUpload = async (
   options: PrepareImageUploadOptions = {},
   deps: ImageUploadDeps = browserImageUploadDeps
 ): Promise<PreparedImageUpload> => {
+  // A webp upload with no resize target never needed decoding, and browsers
+  // that cannot decode webp at all still have to be able to send it through.
+  if (!options.maxDimension && file.type === WEBP_MIME_TYPE) {
+    return {
+      uploadFile: file,
+      uploadFileName: file.name,
+      contentType: WEBP_MIME_TYPE,
+    };
+  }
+
   const source = await deps.decodeImage(file);
 
   if (source.width <= 0 || source.height <= 0) {
