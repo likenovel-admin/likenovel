@@ -112,6 +112,13 @@ const encodeImageInBrowser = async (
     throw new Error("Failed to get canvas context.");
   }
 
+  // jpeg has no alpha channel, so transparent source pixels would otherwise
+  // flatten to black. webp keeps its alpha channel and needs no fill.
+  if (options.mimeType === JPEG_MIME_TYPE) {
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, options.width, options.height);
+  }
+
   context.drawImage(drawable, 0, 0, options.width, options.height);
 
   return new Promise<Blob | null>((resolve) => {
