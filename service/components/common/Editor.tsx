@@ -5,7 +5,7 @@ import {
 import useToastStore from "@/store/toastStore";
 import { recoverPlainTextFromClipboardHtml } from "@/utils/clipboardPlainTextRecovery";
 import { plainTextToTiptapParagraphs } from "@/utils/plainTextToTiptapParagraphs";
-import { prepareWebpUpload } from "@/utils/webpUpload";
+import { prepareImageUpload } from "@/utils/webpUpload";
 import Bold from "@tiptap/extension-bold";
 import BulletList from "@tiptap/extension-bullet-list";
 import CharacterCount from "@tiptap/extension-character-count";
@@ -194,13 +194,15 @@ const Editor = ({ value, onChange, preferPlainTextPaste = false }: Props) => {
     try {
       setIsUploading(true);
       if (file) {
-        const { uploadFile, uploadFileName } = await prepareWebpUpload(file);
+        const { uploadFile, uploadFileName, contentType } =
+          await prepareImageUpload(file);
         const response = await mutateAsync(uploadFileName);
 
         await handleUpload(
           response.data.episodeImageUploadPath,
           uploadFile,
-          response.data.episodeImageFileId
+          response.data.episodeImageFileId,
+          contentType
         );
       } else {
         setToast({
@@ -224,11 +226,16 @@ const Editor = ({ value, onChange, preferPlainTextPaste = false }: Props) => {
     }
   };
 
-  const handleUpload = async (filePath: string, file: File, fileId: number) => {
+  const handleUpload = async (
+    filePath: string,
+    file: File,
+    fileId: number,
+    contentType: string
+  ) => {
     try {
       await axios.put(filePath, file, {
         headers: {
-          "Content-Type": "image/webp",
+          "Content-Type": contentType,
         },
       });
       const response = await selectStoragePath(fileId);

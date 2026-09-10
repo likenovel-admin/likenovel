@@ -3,7 +3,7 @@ import { resolveProductCoverImage } from "@/constants/common";
 import useToastStore from "@/store/toastStore";
 import {
   PRODUCT_COVER_MAX_IMAGE_DIMENSION,
-  prepareWebpUpload,
+  prepareImageUpload,
 } from "@/utils/webpUpload";
 import axios from "axios";
 import Image from "next/image";
@@ -50,14 +50,16 @@ const PhotoArea = ({ onFileId, imagePath, onUploadingChange }: Props) => {
   const processAndUploadFile = async (file: File): Promise<boolean> => {
     setUploadingState(true);
     try {
-      const { uploadFile, uploadFileName } = await prepareWebpUpload(file, {
-        maxDimension: PRODUCT_COVER_MAX_IMAGE_DIMENSION,
-      });
+      const { uploadFile, uploadFileName, contentType } =
+        await prepareImageUpload(file, {
+          maxDimension: PRODUCT_COVER_MAX_IMAGE_DIMENSION,
+        });
       const response = await mutateAsync(uploadFileName);
       return await handleUpload(
         response.data.coverImageUploadPath,
         uploadFile,
-        response.data.coverImageFileId
+        response.data.coverImageFileId,
+        contentType
       );
     } catch (error) {
       setToast({
@@ -88,12 +90,13 @@ const PhotoArea = ({ onFileId, imagePath, onUploadingChange }: Props) => {
   const handleUpload = async (
     filePath: string,
     file: File,
-    fileId: number
+    fileId: number,
+    contentType: string
   ): Promise<boolean> => {
     try {
       await axios.put(filePath, file, {
         headers: {
-          "Content-Type": "image/webp",
+          "Content-Type": contentType,
         },
       });
 
