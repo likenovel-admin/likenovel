@@ -3,6 +3,7 @@ import {
   clearAuthorizationHeaders,
   clearStaleAuthSession,
 } from "@/utils/authSession";
+import { reportServiceUnavailable } from "@/utils/serviceAvailability";
 import axios, { type AxiosRequestConfig } from "axios";
 import { IRefreshTokenRequest } from "../auth/dto";
 
@@ -83,6 +84,7 @@ instance.interceptors.response.use(
     return response;
   },
   async (error) => {
+    reportServiceUnavailable(error);
     const originalRequest = (error.config || {}) as AxiosRequestConfigWithAuthBypass;
     // if (
     //   error.response &&
@@ -213,7 +215,9 @@ instance.interceptors.response.use(
             requestHeaders["Authorization"] = `Bearer ${newAccessToken}`;
             return instance(originalRequest);
           }
-        } catch (_) {}
+        } catch (refreshError) {
+          reportServiceUnavailable(refreshError);
+        }
 
         // 재발급 실패 → stale auth만 정리 후 로그인 리다이렉트
         clearStaleAuth();
