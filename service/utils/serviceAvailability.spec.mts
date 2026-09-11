@@ -4,6 +4,7 @@ import {
   classifyGlobalError,
   getServiceUnavailableSnapshot,
   markServiceUnavailable,
+  reportServiceUnavailable,
   resetServiceUnavailable,
   subscribeServiceUnavailable,
 } from "./serviceAvailability.ts";
@@ -35,6 +36,23 @@ assert.equal(
   "generic",
   "unrelated client errors must not be mislabeled as a service outage"
 );
+
+resetServiceUnavailable();
+assert.equal(reportServiceUnavailable(apiError(500), false), false);
+assert.equal(
+  getServiceUnavailableSnapshot(),
+  false,
+  "optional API failures must stay local to their caller"
+);
+assert.equal(reportServiceUnavailable(apiError(500), true), true);
+assert.equal(
+  getServiceUnavailableSnapshot(),
+  true,
+  "required API failures must activate the maintenance surface"
+);
+resetServiceUnavailable();
+assert.equal(reportServiceUnavailable(apiError(403), true), false);
+assert.equal(getServiceUnavailableSnapshot(), false);
 
 resetServiceUnavailable();
 let notifications = 0;

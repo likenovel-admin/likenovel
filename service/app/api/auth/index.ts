@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { instance } from "../axios";
+import { instance, requiredServiceRequestConfig } from "../axios";
 import {
   IEmailSignUpRequest,
   IPasswordResetRequest,
@@ -14,7 +14,11 @@ import {
 export const useEmailSignIn = () => {
   return useMutation<ISignInResponse, Error, ISignInRequest>({
     mutationFn: async (data: ISignInRequest) => {
-      return await instance.post("/v1/command/auth/signin", data);
+      return await instance.post(
+        "/v1/command/auth/signin",
+        data,
+        requiredServiceRequestConfig
+      );
     },
   });
 };
@@ -51,7 +55,10 @@ export const useSelectUser = () => {
   return useQuery<ISelectUserResponse>({
     queryKey: ["selectUser"],
     queryFn: async () => {
-      const response = await instance.get("/v1/query/user");
+      const response = await instance.get(
+        "/v1/query/user",
+        requiredServiceRequestConfig
+      );
       return response.data;
     },
   });
