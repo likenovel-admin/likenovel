@@ -3,6 +3,8 @@
 import {
   IAiReaderBootstrapRequest,
   IAiReaderBootstrapResponse,
+  IAiReaderCommentConfigRequest,
+  IAiReaderCommentConfigResponse,
   IAiReaderPauseAllResponse,
   IAiReaderRefreshSchedulesRequest,
   IAiReaderRefreshSchedulesResponse,
@@ -100,6 +102,30 @@ export const useRestartAiReaderAgents = () => {
       return await apiClient.request<IAiReaderRestartResponse>({
         url: "/v1/command/admins/ai-readers/restart",
         method: "POST",
+        body,
+      });
+    },
+  });
+};
+
+export const useGetAiReaderCommentConfig = () => {
+  return useQuery<IAiReaderCommentConfigResponse>({
+    queryKey: ["GetAiReaderCommentConfig"],
+    queryFn: async () => {
+      return await apiClient.request<IAiReaderCommentConfigResponse>({
+        url: "/v1/query/admins/ai-readers/comment-config",
+        method: "GET",
+      });
+    },
+  });
+};
+
+export const useUpdateAiReaderCommentConfig = () => {
+  return useMutation<IAiReaderCommentConfigResponse, Error, IAiReaderCommentConfigRequest>({
+    mutationFn: async (body: IAiReaderCommentConfigRequest) => {
+      return await apiClient.request<IAiReaderCommentConfigResponse>({
+        url: "/v1/command/admins/ai-readers/comment-config",
+        method: "PUT",
         body,
       });
     },

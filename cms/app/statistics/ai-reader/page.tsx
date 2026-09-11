@@ -8,11 +8,13 @@ import { ChevronDown, ChevronRight, CirclePause, Play, RefreshCw, X } from "luci
 
 import {
   useBootstrapAiReaderAgents,
+  useGetAiReaderCommentConfig,
   useGetAiReaderAgents,
   usePauseAllAiReaderAgents,
   useRefreshAiReaderSchedules,
   useResumePausedAiReaderAgents,
   useRestartAiReaderAgents,
+  useUpdateAiReaderCommentConfig,
 } from "@/api/aiReader";
 import {
   AiReaderActivityScheduleMode,
@@ -31,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PageHeader from "@/components/ui/page-header";
 import { SidebarInset } from "@/components/ui/sidebar";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { formatAiReaderDisplayName } from "@/lib/ai-reader-display-name";
 import { calculatePageCount, cn } from "@/lib/utils";
@@ -671,6 +674,9 @@ export default function Page() {
   const resumePausedMutation = useResumePausedAiReaderAgents();
   const refreshSchedulesMutation = useRefreshAiReaderSchedules();
   const restartMutation = useRestartAiReaderAgents();
+  const commentConfigQuery = useGetAiReaderCommentConfig();
+  const updateCommentConfigMutation = useUpdateAiReaderCommentConfig();
+  const commentAllowed = commentConfigQuery.data?.data?.commentAllowYn !== "N";
 
   const bootstrapCountValue = Number(bootstrapCount || 0);
   const resumeCountValue = Number(resumeCount || 0);
@@ -1277,6 +1283,33 @@ export default function Page() {
       await refreshAiReaderState();
     } catch (error) {
       setOperationMessage(error instanceof Error ? error.message : "전체 일시정지에 실패했습니다.");
+    }
+  };
+
+  const handleToggleAiReaderComments = async (nextAllowed: boolean) => {
+    if (
+      !nextAllowed &&
+      !window.confirm(
+        "AI 독자 댓글 작성을 멈춥니다. 읽기와 조회수 집계는 그대로 유지되고 이미 등록된 댓글도 삭제되지 않습니다. 진행할까요?"
+      )
+    ) {
+      return;
+    }
+    try {
+      setOperationMessage(null);
+      await updateCommentConfigMutation.mutateAsync({
+        comment_allow_yn: nextAllowed ? "Y" : "N",
+      });
+      await commentConfigQuery.refetch();
+      setOperationMessage(
+        nextAllowed
+          ? "AI 독자 댓글 작성을 재개했습니다."
+          : "AI 독자 댓글 작성을 멈췄습니다. 읽기 활동은 계속됩니다."
+      );
+    } catch (error) {
+      setOperationMessage(
+        error instanceof Error ? error.message : "AI 독자 댓글 설정 변경에 실패했습니다."
+      );
     }
   };
 
@@ -2060,15 +2093,30 @@ export default function Page() {
                   설정값을 조정한 뒤 운영을 시작·재개하고, 독자 로그로 반응을 확인합니다.
                 </p>
               </div>
-              <Button
-                variant="outline"
-                onClick={handlePauseAllAgents}
-                disabled={pendingOperation}
-                className="text-destructive hover:text-destructive"
-              >
-                <CirclePause className="mr-2 h-4 w-4" />
-                운영 멈추기
-              </Button>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-2 rounded-md border px-3 py-2">
+                  <Switch
+                    checked={commentAllowed}
+                    onCheckedChange={handleToggleAiReaderComments}
+                    disabled={
+                      commentConfigQuery.isLoading || updateCommentConfigMutation.isPending
+                    }
+                    aria-label="AI 독자 댓글 작성"
+                  />
+                  <span className="text-xs font-medium">
+                    댓글 작성 {commentAllowed ? "켜짐" : "꺼짐"}
+                  </span>
+                </label>
+                <Button
+                  variant="outline"
+                  onClick={handlePauseAllAgents}
+                  disabled={pendingOperation}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <CirclePause className="mr-2 h-4 w-4" />
+                  운영 멈추기
+                </Button>
+              </div>
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(280px,360px)_1fr]">

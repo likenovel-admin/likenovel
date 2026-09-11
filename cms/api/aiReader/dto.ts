@@ -196,3 +196,15 @@ export interface IAiReaderRestartResponse extends Omit<
   paused_agent_count?: number;
   cancelled_action_count?: number;
 }
+
+export type AiReaderCommentAllowYn = "Y" | "N";
+
+export interface IAiReaderCommentConfigResponse {
+  data: {
+    commentAllowYn: AiReaderCommentAllowYn;
+  };
+}
+
+export interface IAiReaderCommentConfigRequest {
+  comment_allow_yn: AiReaderCommentAllowYn;
+}
