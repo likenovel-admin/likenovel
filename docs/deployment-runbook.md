@@ -927,13 +927,14 @@ docker compose up -d --force-recreate api
 오류 응답은 상태 의미와 응답 형식을 보존한 채 아래 세 계층에서 처리한다.
 
 1. 운영 Nginx는 일반 브라우저 문서 요청의 `500/502/503/504`만 `/var/www/likenovel-errors/__likenovel_5xx.html`로 내부 치환한다. API, RSC, 정적 자산, 다운로드, prefetch, HTML이 아닌 요청과 `POST`는 원래 상태·본문·헤더를 유지한다. 현재 런타임 설정 파일은 `/etc/nginx/conf.d/ln_rp.conf`다.
-2. Next.js가 살아 있지만 DB 또는 인증 API가 실패하는 경우, `service/app/api/axios/index.ts`가 LikeNovel API의 `5xx`와 연결 단절을 `service/utils/serviceAvailability.ts`에 보고한다. 루트 Error Boundary는 로그인 여부와 무관하게 이미 번들에 포함된 정적 점검 화면을 표시한다. API 응답 자체를 HTML로 바꾸지 않는다.
+2. Next.js가 살아 있지만 DB 또는 인증 API가 실패하는 경우, `service/app/api/axios/index.ts`가 로그인·사용자 초기화·토큰 재발급처럼 화면을 계속 사용할 수 없는 필수 요청의 `5xx`와 연결 단절만 `service/utils/serviceAvailability.ts`에 보고한다. 루트 Error Boundary는 로그인 여부와 무관하게 이미 번들에 포함된 정적 점검 화면을 표시한다. 배너 등 선택 요청의 실패는 호출부에 남기며, 토큰 재발급 서버 장애는 기존 세션을 삭제하지 않는다. API 응답 자체를 HTML로 바꾸지 않는다.
 3. `401/403/404`는 각각 로그인 필요, 접근 불가, 찾을 수 없음으로 표시하며 점검 화면으로 합치지 않는다. 실제 없는 페이지는 HTTP `404`를 유지한다.
 
 검증 게이트:
 
 - 로컬 API가 실제로 꺼진 상태에서 `/login`이 원문 오류코드 대신 점검 화면으로 자연 전환하는지 확인한다.
 - 로그인 초기 조회는 성공시키고 `/v1/command/auth/signin`만 `503`으로 만들어 로그인 제출도 같은 점검 화면으로 전환되는지 확인한다.
+- 배너 같은 선택 요청만 `500`으로 만들어도 정상 페이지가 전역 점검 화면으로 교체되지 않는지 확인한다.
 - `403`, API `404`, 실제 없는 경로 `404`가 점검 화면이 아니며 원문 예외 메시지를 노출하지 않는지 확인한다.
 - 390px 모바일에서 가로 overflow가 없고 주 CTA 높이가 44px 이상인지 확인한다.
 

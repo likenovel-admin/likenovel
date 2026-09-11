@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const axiosSource = readFileSync(new URL("./axios/index.ts", import.meta.url), "utf8");
+const authApiSource = readFileSync(new URL("./auth/index.ts", import.meta.url), "utf8");
 const authStoreSource = readFileSync(new URL("../../store/authStore.ts", import.meta.url), "utf8");
 const authorHomeSource = readFileSync(
   new URL("../product/author/page.tsx", import.meta.url),
@@ -33,6 +34,36 @@ assert.match(
   axiosSource,
   /setRefreshToken/,
   "axios refresh interceptor should read setRefreshToken from auth store"
+);
+
+const refreshFailureMatch = axiosSource.match(
+  /catch \(refreshError\) \{(?<body>[\s\S]*?)\n\s*\}\n\n\s*\/\/ 재발급 실패/
+);
+assert.ok(
+  refreshFailureMatch?.groups?.body,
+  "axios refresh interceptor should handle refresh transport failures explicitly"
+);
+assert.match(
+  refreshFailureMatch.groups.body,
+  /return Promise\.reject\(refreshError\)/,
+  "a refresh service outage must stop before stale-session cleanup"
+);
+assert.doesNotMatch(refreshFailureMatch.groups.body, /clearStaleAuth\(\)/);
+assert.doesNotMatch(refreshFailureMatch.groups.body, /window\.location/);
+assert.match(
+  axiosSource,
+  /axios\.put\([\s\S]*?\{ withCredentials: true, timeout: API_TIMEOUT_MS \}\)/,
+  "the bare refresh request must use the configured API timeout"
+);
+assert.match(
+  authApiSource,
+  /instance\.post\(\s*"\/v1\/command\/auth\/signin",\s*data,\s*requiredServiceRequestConfig\s*\)/,
+  "sign-in failures must use the global maintenance surface"
+);
+assert.match(
+  authApiSource,
+  /instance\.get\(\s*"\/v1\/query\/user",\s*requiredServiceRequestConfig\s*\)/,
+  "the required user bootstrap must use the global maintenance surface"
 );
 assert.match(
   axiosSource,

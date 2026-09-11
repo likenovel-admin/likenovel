@@ -10,11 +10,18 @@ import { IRefreshTokenRequest } from "../auth/dto";
 export type AxiosRequestConfigWithAuthBypass = AxiosRequestConfig & {
   _retry?: boolean;
   skipAuthRedirectOn401?: boolean;
+  reportGlobalServiceUnavailable?: boolean;
 };
+
+export const requiredServiceRequestConfig: AxiosRequestConfigWithAuthBypass = {
+  reportGlobalServiceUnavailable: true,
+};
+
+const API_TIMEOUT_MS = 3 * 60 * 1000;
 
 export const instance = axios.create({
   baseURL: "/api",
-  timeout: 3 * 60 * 1000,
+  timeout: API_TIMEOUT_MS,
   headers: {
     "Content-Type": "application/json",
     // "Access-Control-Allow-Credentials": "true",
@@ -26,7 +33,7 @@ export const instance = axios.create({
 // Public instance without authentication
 export const publicInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_SERVER_URI,
-  timeout: 3 * 60 * 1000,
+  timeout: API_TIMEOUT_MS,
   headers: {
     "Content-Type": "application/json",
   },
@@ -84,8 +91,11 @@ instance.interceptors.response.use(
     return response;
   },
   async (error) => {
-    reportServiceUnavailable(error);
     const originalRequest = (error.config || {}) as AxiosRequestConfigWithAuthBypass;
+    reportServiceUnavailable(
+      error,
+      originalRequest.reportGlobalServiceUnavailable === true
+    );
     // if (
     //   error.response &&
     //   error.response.status === 401 &&
@@ -192,7 +202,7 @@ instance.interceptors.response.use(
           const res = await axios.put("/api/v1/command/auth/token/reissue", {
             access_token: accessToken || "",
             refresh_token: refreshToken,
-          }, { withCredentials: true });
+          }, { withCredentials: true, timeout: API_TIMEOUT_MS });
 
           const newAccessToken =
             res?.data?.data?.token?.accessToken ||
@@ -216,7 +226,9 @@ instance.interceptors.response.use(
             return instance(originalRequest);
           }
         } catch (refreshError) {
-          reportServiceUnavailable(refreshError);
+          if (reportServiceUnavailable(refreshError, true)) {
+            return Promise.reject(refreshError);
+          }
         }
 
         // 재발급 실패 → stale auth만 정리 후 로그인 리다이렉트

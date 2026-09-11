@@ -80,10 +80,14 @@ export const markServiceUnavailable = (): void => {
   serviceUnavailableListeners.forEach((listener) => listener());
 };
 
-export const reportServiceUnavailable = (error: unknown): void => {
-  if (classifyGlobalError(error) === "maintenance") {
-    markServiceUnavailable();
-  }
+export const reportServiceUnavailable = (
+  error: unknown,
+  required: boolean
+): boolean => {
+  if (!required || classifyGlobalError(error) !== "maintenance") return false;
+
+  markServiceUnavailable();
+  return true;
 };
 
 export const resetServiceUnavailable = (): void => {
