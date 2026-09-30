@@ -3,7 +3,7 @@ export const NOTICE_TOP_BAR_TEXT_MAX_LENGTH = 80;
 export interface NoticeTopBarState {
   enabled: boolean;
   text: string;
-  startAt: string; // datetime-local value (YYYY-MM-DDTHH:mm, KST)
+  startAt: string; // datetime-local value (YYYY-MM-DDTHH:mm[:ss], KST)
   endAt: string;
 }
 
@@ -21,8 +21,12 @@ export const EMPTY_NOTICE_TOP_BAR: NoticeTopBarState = {
   endAt: "",
 };
 
+// 초까지 유지한다. 잘라내면 재저장만으로 시작 시각이 당겨져 겹치는 띠의 노출 순서가 바뀐다.
 const toDateTimeLocal = (value?: string | null) =>
-  value ? value.replace(" ", "T").slice(0, 16) : "";
+  value ? value.replace(" ", "T").slice(0, 19) : "";
+
+// datetime-local 값은 초가 0이면 "HH:mm", 아니면 "HH:mm:ss"로 온다. 비교 전에 초를 맞춘다.
+const withSeconds = (value: string) => (value.length === 16 ? `${value}:00` : value);
 
 const toServerDateTime = (value: string) =>
   value ? value.replace("T", " ") : null;
@@ -46,7 +50,7 @@ export const validateNoticeTopBar = (state: NoticeTopBarState): string | null =>
   if (text.length > NOTICE_TOP_BAR_TEXT_MAX_LENGTH) {
     return `상단 띠 문구는 ${NOTICE_TOP_BAR_TEXT_MAX_LENGTH}자 이내로 입력해주세요.`;
   }
-  if (state.startAt && state.endAt && state.endAt <= state.startAt) {
+  if (state.startAt && state.endAt && withSeconds(state.endAt) <= withSeconds(state.startAt)) {
     return "상단 띠 종료 시각은 시작 시각보다 뒤여야 합니다.";
   }
   return null;

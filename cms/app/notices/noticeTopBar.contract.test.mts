@@ -32,7 +32,38 @@ assert.deepEqual(
     top_bar_start_date: "2026-09-30T18:00:00",
     top_bar_end_date: null,
   }),
-  { enabled: true, text: "안내", startAt: "2026-09-30T18:00", endAt: "" }
+  { enabled: true, text: "안내", startAt: "2026-09-30T18:00:00", endAt: "" }
+);
+// 수정 화면을 열고 그대로 저장해도 초까지 유지돼야 겹치는 띠의 노출 순서가 바뀌지 않는다.
+assert.deepEqual(
+  buildNoticeTopBarRequest(
+    noticeTopBarFromDetail({
+      top_bar_yn: "Y",
+      top_bar_text: "안내",
+      top_bar_start_date: "2026-09-30T18:30:50",
+      top_bar_end_date: "2026-10-07 23:59:00",
+    })
+  ),
+  {
+    top_bar_yn: "Y",
+    top_bar_text: "안내",
+    top_bar_start_date: "2026-09-30 18:30:50",
+    top_bar_end_date: "2026-10-07 23:59:00",
+  }
+);
+assert.equal(
+  validateNoticeTopBar({ enabled: true, text: "안내", startAt: "2026-10-01T10:00:30", endAt: "2026-10-01T10:00" }),
+  "상단 띠 종료 시각은 시작 시각보다 뒤여야 합니다.",
+  "compare minute and second precision values in time order"
+);
+assert.equal(
+  validateNoticeTopBar({ enabled: true, text: "안내", startAt: "2026-10-01T10:00", endAt: "2026-10-01T10:00:00" }),
+  "상단 띠 종료 시각은 시작 시각보다 뒤여야 합니다.",
+  "the same time written with and without seconds is not later"
+);
+assert.equal(
+  validateNoticeTopBar({ enabled: true, text: "안내", startAt: "2026-10-01T10:00", endAt: "2026-10-01T10:00:01" }),
+  null
 );
 assert.equal(validateNoticeTopBar({ ...EMPTY_NOTICE_TOP_BAR, enabled: true }), "상단 띠 문구를 입력해주세요.");
 assert.equal(
@@ -84,6 +115,11 @@ const editSource = readFileSync(new URL("./[noticeId]/page.tsx", import.meta.url
 assert.match(editSource, /noticeTopBarFromDetail\(data\.data\)/, "edit page should load the saved top bar");
 const fieldsSource = readFileSync(new URL("./NoticeTopBarFields.tsx", import.meta.url), "utf8");
 assert.match(fieldsSource, /<label htmlFor="top-bar-text"/, "the bar text input needs a visible label");
+assert.equal(
+  (fieldsSource.match(/type="datetime-local"[\s\S]*?step=\{1\}/g) ?? []).length,
+  2,
+  "period inputs must keep seconds so re-saving keeps the saved start"
+);
 const tableSource = readFileSync(new URL("./DataTable.tsx", import.meta.url), "utf8");
 assert.match(tableSource, /useGetLiveNoticeTopBar\(\)/, "the list should read the bar the site shows now");
 assert.match(tableSource, /resolveNoticeTopBarStatus\(/, "the list should label each bar's status");
