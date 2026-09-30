@@ -94,5 +94,6 @@ test("CMS 변경은 열린 화면에 1분 안에 반영된다", () => {
   const query = read("../app/api/query/notice/index.ts");
   assert.match(read("./topNoticeBar.ts"), /TOP_NOTICE_BAR_REFRESH_MS = 60 \* 1000/);
   assert.match(query, /refetchOnWindowFocus: true/);
+  assert.match(query, /refetchOnMount: "always"/);
   assert.match(read("../../cms/app/notices/NoticeTopBarFields.tsx"), /최대 1분 안에 반영/);
 });
