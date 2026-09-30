@@ -9,9 +9,18 @@ const UNSAFE_LINK_CHARS =
 // https 호스트는 영문·숫자·하이픈·점만, 마지막 조각은 영문자로 시작해야 한다(포트·IP·"@" 사용자 정보·"xn--" 조각은 거절).
 const HTTPS_LINK = /^https:\/\/(?:(?!xn--)[a-z0-9-]+\.)*(?!xn--)[a-z][a-z0-9-]*(?:[/?#]|$)/i;
 const DOT_SEGMENT = /\/\.\.?(?:\/|$)/;
+// 짝 없는 서로게이트는 DB(utf8mb4)에 저장할 수 없다. encodeURIComponent가 이런 문자열에서 예외를 낸다.
+const isWellFormed = (value: string) => {
+  try {
+    encodeURIComponent(value);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const isAllowedTopBarLink = (link: string) => {
-  if (UNSAFE_LINK_CHARS.test(link)) return false;
+  if (UNSAFE_LINK_CHARS.test(link) || !isWellFormed(link)) return false;
   if (HTTPS_LINK.test(link)) return true;
   if (!link.startsWith("/") || link.startsWith("//")) return false;
   // 사이트 경로는 이 사이트 안에 머물게 한다: 쿼리 앞 경로에 "//", 점 세그먼트, 인코딩된 점을 받지 않는다.

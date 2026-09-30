@@ -65,6 +65,8 @@ test("CMS 링크가 있으면 그 주소로, 허용되지 않는 형식이면 �
     "/a\u0085b",
     "/a\ufeffb",
     "/a\u200bb",
+    "/\ud800",
+    "/a\udfffb",
     "/" + "a".repeat(500),
   ]) {
     assert.equal(

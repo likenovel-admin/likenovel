@@ -27,9 +27,20 @@ const UNSAFE_LINK_CHARS =
   /[\\\u0000-\u0020\u007f-\u00a0\u00ad\u1680\u180e\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff\ufff0-\uffff]/;
 const HTTPS_LINK = /^https:\/\/(?:(?!xn--)[a-z0-9-]+\.)*(?!xn--)[a-z][a-z0-9-]*(?:[/?#]|$)/i;
 const DOT_SEGMENT = /\/\.\.?(?:\/|$)/;
+// 짝 없는 서로게이트는 encodeURIComponent가 예외를 내므로 그대로 쓰지 않는다.
+const isWellFormed = (value: string) => {
+  try {
+    encodeURIComponent(value);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const isAllowedTopNoticeBarLink = (link: string) => {
-  if (Array.from(link).length > TOP_NOTICE_BAR_LINK_MAX_LENGTH || UNSAFE_LINK_CHARS.test(link)) return false;
+  if (Array.from(link).length > TOP_NOTICE_BAR_LINK_MAX_LENGTH || UNSAFE_LINK_CHARS.test(link) || !isWellFormed(link)) {
+    return false;
+  }
   if (HTTPS_LINK.test(link)) return true;
   if (!link.startsWith("/") || link.startsWith("//")) return false;
   const path = link.split(/[?#]/, 1)[0];
