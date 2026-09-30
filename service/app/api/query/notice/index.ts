@@ -19,6 +19,8 @@ export const useGetNoticeTopBar = (enabled: boolean = true) => {
     enabled,
     staleTime: TOP_NOTICE_BAR_REFRESH_MS,
     refetchInterval: TOP_NOTICE_BAR_REFRESH_MS,
+    // 페이지를 옮길 때마다 다시 확인해, 해제된 띠가 남는 시간을 다음 이동까지로 줄인다.
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     retry: false,
     // 선택 기능이라 실패해도 전역 오류 화면으로 보내지 않고 띠만 숨긴다.
