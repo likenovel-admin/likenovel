@@ -43,3 +43,11 @@ assert.match(
   /<WebsochatCashBalance[\s\S]*eventCashBalance=/,
   "the composer should show paid and event cash balances to members"
 );
+
+const cashBalanceSource = readFileSync(
+  new URL("../../components/websochat/WebsochatCashBalance.tsx", import.meta.url),
+  "utf8"
+);
+assert.match(cashBalanceSource, /flex-wrap/, "balances must wrap on narrow screens instead of being clipped");
+assert.match(cashBalanceSource, /role="group"/, "the labelled balance container needs a group role");
+assert.doesNotMatch(cashBalanceSource, /text-dark-gray-300/, "balance labels need at least 4.5:1 contrast");
