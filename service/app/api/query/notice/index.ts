@@ -19,6 +19,7 @@ export const useGetNoticeTopBar = (enabled: boolean = true) => {
     enabled,
     staleTime: TOP_NOTICE_BAR_REFRESH_MS,
     refetchInterval: TOP_NOTICE_BAR_REFRESH_MS,
+    refetchOnWindowFocus: true,
     retry: false,
     // 선택 기능이라 실패해도 전역 오류 화면으로 보내지 않고 띠만 숨긴다.
     throwOnError: false,

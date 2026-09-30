@@ -2,8 +2,9 @@ export const TOP_NOTICE_BAR_HEIGHT_PX = 36;
 export const TOP_NOTICE_BAR_CSS_VAR = "--top-notice-bar-h";
 export const TOP_NOTICE_BAR_DISMISS_STORAGE_KEY = "likenovel:top-notice-bar:dismissed-list";
 export const TOP_NOTICE_BAR_DISMISS_LIMIT = 20;
-// 예약 시작/종료가 열린 화면에도 반영되도록 주기적으로 다시 조회한다.
-export const TOP_NOTICE_BAR_REFRESH_MS = 5 * 60 * 1000;
+// CMS 변경과 예약 시작/종료가 열린 화면에도 1분 안에 반영되도록 다시 조회한다.
+// 페이지 이동마다 띠를 숨겼다 다시 그리지 않도록, 이 범위 안의 지연은 허용한다.
+export const TOP_NOTICE_BAR_REFRESH_MS = 60 * 1000;
 
 export interface ITopNoticeBar {
   noticeId: number;
