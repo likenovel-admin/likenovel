@@ -89,3 +89,10 @@ test("띠가 보이면 고정 헤더, 검색창, 본문 여백이 같이 내려�
     assert.match(source, /md:pt-\[calc\(115px_\+_var\(--top-notice-bar-h,0px\)\)\]/, path);
   }
 });
+
+test("CMS 변경은 열린 화면에 1분 안에 반영된다", () => {
+  const query = read("../app/api/query/notice/index.ts");
+  assert.match(read("./topNoticeBar.ts"), /TOP_NOTICE_BAR_REFRESH_MS = 60 \* 1000/);
+  assert.match(query, /refetchOnWindowFocus: true/);
+  assert.match(read("../../cms/app/notices/NoticeTopBarFields.tsx"), /최대 1분 안에 반영/);
+});

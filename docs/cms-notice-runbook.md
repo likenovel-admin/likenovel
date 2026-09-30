@@ -108,7 +108,7 @@ the UI reflects an API/DB change.
   it is turned off. Turning it off clears text and period.
 - Public read: `GET /v1/query/notices/top-bar` returns the single active bar
   (latest start wins, with its KST end time) or `data: null`. The service web
-  refetches every 5 minutes, hides the bar on `/websochat`, and remembers
+  refetches every minute (and on window focus), hides the bar on `/websochat`, and remembers
   dismissal per notice and text.
 - Verify the API, the CMS list `상단 띠` column after refresh, and the public bar on
   desktop and mobile, including the click-through to the notice.

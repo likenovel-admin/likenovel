@@ -71,7 +71,7 @@ export default function NoticeTopBarFields({ value, onChange }: Props) {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                시작을 비우면 저장한 시각부터, 종료를 비우면 체크를 끌 때까지 노출됩니다. 노출 중인 띠가 여러 개면 가장 최근에 시작한 1개만 보입니다. 사이트에는 최대 5분 안에 반영됩니다.
+                시작을 비우면 저장한 시각부터, 종료를 비우면 체크를 끌 때까지 노출됩니다. 노출 중인 띠가 여러 개면 가장 최근에 시작한 1개만 보입니다. 이미 열려 있는 화면에는 최대 1분 안에 반영됩니다.
               </p>
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground">미리보기</span>
