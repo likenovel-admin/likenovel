@@ -6,8 +6,8 @@ const NOTICE_TOP_BAR_LINK_FORMAT_MESSAGE =
 // 역슬래시는 브라우저가 /처럼 읽고, 공백·제어·보이지 않는 서식 문자는 받지 않는다.
 const UNSAFE_LINK_CHARS =
   /[\\\u0000-\u0020\u007f-\u00a0\u00ad\u1680\u180e\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff\ufff0-\uffff]/;
-// https 호스트는 영문·숫자·하이픈·점만, 마지막 조각은 영문자로 시작해야 한다(포트·IP·"@" 사용자 정보는 거절).
-const HTTPS_LINK = /^https:\/\/(?:[a-z0-9-]+\.)*[a-z][a-z0-9-]*(?:[/?#]|$)/i;
+// https 호스트는 영문·숫자·하이픈·점만, 마지막 조각은 영문자로 시작해야 한다(포트·IP·"@" 사용자 정보·"xn--" 조각은 거절).
+const HTTPS_LINK = /^https:\/\/(?:(?!xn--)[a-z0-9-]+\.)*(?!xn--)[a-z][a-z0-9-]*(?:[/?#]|$)/i;
 const DOT_SEGMENT = /\/\.\.?(?:\/|$)/;
 
 const isAllowedTopBarLink = (link: string) => {
@@ -71,7 +71,8 @@ export const noticeTopBarFromDetail = (detail?: {
 export const validateNoticeTopBarLink = (value: string): string | null => {
   const link = value.trim();
   if (!link) return null;
-  if (link.length > NOTICE_TOP_BAR_LINK_MAX_LENGTH) {
+  // DB(utf8mb4 VARCHAR)처럼 글자 수로 센다.
+  if (Array.from(link).length > NOTICE_TOP_BAR_LINK_MAX_LENGTH) {
     return `상단 띠 링크는 ${NOTICE_TOP_BAR_LINK_MAX_LENGTH}자 이내로 입력해주세요.`;
   }
   return isAllowedTopBarLink(link) ? null : NOTICE_TOP_BAR_LINK_FORMAT_MESSAGE;
