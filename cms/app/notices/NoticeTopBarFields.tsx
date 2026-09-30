@@ -56,7 +56,8 @@ export default function NoticeTopBarFields({ value, onChange }: Props) {
                   type="datetime-local"
                   id="top-bar-start"
                   aria-label="상단 띠 노출 시작"
-                  className="w-[220px]"
+                  className="w-[260px]"
+                  step={1}
                   value={value.startAt}
                   onChange={(e) => update({ startAt: e.target.value })}
                 />
@@ -65,7 +66,8 @@ export default function NoticeTopBarFields({ value, onChange }: Props) {
                   type="datetime-local"
                   id="top-bar-end"
                   aria-label="상단 띠 노출 종료"
-                  className="w-[220px]"
+                  className="w-[260px]"
+                  step={1}
                   value={value.endAt}
                   onChange={(e) => update({ endAt: e.target.value })}
                 />
