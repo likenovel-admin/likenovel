@@ -3,6 +3,8 @@ import test from "node:test";
 
 import {
   buildWebsochatModelUsageHint,
+  canPayWebsochatMessage,
+  formatWebsochatCashAmount,
   resolveWebsochatModelOption,
   resolveWebsochatModelOptions,
 } from "./websochatModelSelection.ts";
@@ -54,4 +56,17 @@ test("구버전 응답은 서버가 준 기존 과금값으로 스피드 한 개
       },
     ]
   );
+});
+
+test("이벤트 캐시만으로도 메시지 비용을 낼 수 있다", () => {
+  assert.equal(canPayWebsochatMessage({ cashBalance: 0, eventCashBalance: 20, cashCost: 20 }), true);
+  assert.equal(canPayWebsochatMessage({ cashBalance: 25, eventCashBalance: 0, cashCost: 25 }), true);
+  assert.equal(canPayWebsochatMessage({ cashBalance: 10, eventCashBalance: 10, cashCost: 20 }), false);
+  assert.equal(canPayWebsochatMessage({ cashBalance: null, eventCashBalance: undefined, cashCost: 35 }), false);
+});
+
+test("캐시 금액은 천 단위로 표기하고 음수는 0으로 본다", () => {
+  assert.equal(formatWebsochatCashAmount(1200), "1,200");
+  assert.equal(formatWebsochatCashAmount(-5), "0");
+  assert.equal(formatWebsochatCashAmount(null), "0");
 });

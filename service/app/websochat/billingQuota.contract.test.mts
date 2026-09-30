@@ -27,3 +27,19 @@ assert.doesNotMatch(
   /오늘 무료 3회를 모두 썼어요/,
   "login guidance should not hard-code the regular websochat quota"
 );
+
+assert.match(
+  pageSource,
+  /canPayWebsochatMessage\(\{[\s\S]*cashBalance: billingStatus\.cashBalance,[\s\S]*eventCashBalance: billingStatus\.eventCashBalance,/,
+  "the pre-send check must count chat-only event cash before asking to charge"
+);
+assert.doesNotMatch(
+  pageSource,
+  /\(billingStatus\.cashBalance \?\? 0\) < billingStatus\.cashCostPerMessage/,
+  "paid cash alone must not block a message that event cash can pay for"
+);
+assert.match(
+  pageSource,
+  /<WebsochatCashBalance[\s\S]*eventCashBalance=/,
+  "the composer should show paid and event cash balances to members"
+);

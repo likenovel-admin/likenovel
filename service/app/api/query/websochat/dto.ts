@@ -33,6 +33,7 @@ export interface IGetWebsochatBillingStatusResponse {
     requiresCashForNextMessage: boolean;
     requiresLoginForNextMessage: boolean;
     cashBalance: number | null;
+    eventCashBalance?: number | null;
     selectedModelKey?: WebsochatModelKey;
     modelOptions?: IWebsochatModelOption[];
   };

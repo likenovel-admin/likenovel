@@ -50,3 +50,20 @@ export const buildWebsochatModelUsageHint = (
   }
   return `${Math.max(Number(option.cashCostPerMessage || 0), 0)}C`;
 };
+
+// 백엔드와 같은 규칙: 이벤트 캐시가 비용 이상이면 이벤트 캐시로, 아니면 유료 캐시로 낸다.
+export const canPayWebsochatMessage = ({
+  cashBalance,
+  eventCashBalance,
+  cashCost,
+}: {
+  cashBalance?: number | null;
+  eventCashBalance?: number | null;
+  cashCost?: number | null;
+}) => {
+  const cost = Math.max(Number(cashCost ?? 0), 0);
+  return Number(eventCashBalance ?? 0) >= cost || Number(cashBalance ?? 0) >= cost;
+};
+
+export const formatWebsochatCashAmount = (value?: number | null) =>
+  Math.max(Number(value ?? 0), 0).toLocaleString("ko-KR");
