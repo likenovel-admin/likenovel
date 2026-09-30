@@ -2,8 +2,22 @@ import {
   SelectNoticesResponse,
   SelectRollingNoticeResponse,
 } from "@/app/api/query/notice/dto";
+import type { ITopNoticeBar } from "@/utils/topNoticeBar";
 import { useQuery } from "@tanstack/react-query";
 import { instance } from "../../axios";
+
+export const useGetNoticeTopBar = (enabled: boolean = true) => {
+  return useQuery<{ data: ITopNoticeBar | null }>({
+    queryKey: ["noticeTopBar"],
+    queryFn: async () => {
+      const response = await instance.get(`/v1/query/notices/top-bar`);
+      return response.data;
+    },
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+};
 
 export const useSelectRollingNotice = () => {
   return useQuery<SelectRollingNoticeResponse>({

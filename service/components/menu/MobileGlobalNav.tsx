@@ -85,6 +85,7 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
       className={`fixed top-0 left-0 flex flex-col bg-white z-50 w-full border border-b-light-gray-300 ${
         isVisible ? "h-[118px]" : "h-[50px]"
       }  gap-28pxr px-16pxr`}
+      style={{ top: "var(--top-notice-bar-h, 0px)" }}
     >
       {isVisible && (
         <div className="flex justify-between mt-28pxr">

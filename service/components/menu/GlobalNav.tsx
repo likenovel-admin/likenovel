@@ -22,6 +22,7 @@ import AlarmMenu from "./AlarmMenu";
 import GlobalMenu from "./GlobalMenu";
 import MenuIcon from "./MenuIcon";
 import MobileGlobalNav from "./MobileGlobalNav";
+import TopNoticeBar from "./TopNoticeBar";
 import Gift from "/public/images/gift.svg";
 import LogoIcon from "/public/images/logos/logo-icon.svg";
 import Logo from "/public/images/logos/logo.svg";
@@ -104,6 +105,7 @@ const GlobalNav = () => {
 
   return (
     <div className="relative">
+      <TopNoticeBar />
       <div className="md:hidden">
         <MobileGlobalNav isVisible={isVisible} />
       </div>
@@ -112,6 +114,7 @@ const GlobalNav = () => {
       ${isVisible ? "h-[100px]" : "h-[66px]"}  */}
       <div
         className={`hidden fixed top-0 left-0 md:flex flex-col justify-between bg-white z-50 w-full border border-b-light-gray-300 px-60pxr md:px-20pxr lg:px-60pxr`}
+        style={{ top: "var(--top-notice-bar-h, 0px)" }}
       >
         {/* TODO: 추후 상단바 알림 추가 후 주석 풀어서 적용 */}
         {/* {isVisible && (

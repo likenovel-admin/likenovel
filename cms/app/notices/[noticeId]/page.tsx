@@ -16,6 +16,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { catchErrorMessage, getFileName, showAlert } from "@/lib/utils";
+import NoticeTopBarFields from "../NoticeTopBarFields";
+import {
+  EMPTY_NOTICE_TOP_BAR,
+  noticeTopBarFromDetail,
+  buildNoticeTopBarRequest,
+  validateNoticeTopBar,
+  type NoticeTopBarState,
+} from "../noticeTopBar";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -31,6 +39,7 @@ export default function Page() {
   const [content, setContent] = useState("");
   const [primary, setPrimary] = useState(false);
   const [attachment, setAttachment] = useState<File | null>(null);
+  const [topBar, setTopBar] = useState<NoticeTopBarState>(EMPTY_NOTICE_TOP_BAR);
   const updateNotice = useEditNotice();
   const createUpload = useCreateUpload();
   const updateUpload = useUpdateUpload();
@@ -41,6 +50,7 @@ export default function Page() {
       setTitle(data.data?.subject);
       setContent(data.data.content);
       setPrimary(data.data.primary_yn === "Y");
+      setTopBar(noticeTopBarFromDetail(data.data));
     }
   }, [data]);
 
@@ -57,6 +67,11 @@ export default function Page() {
 
     if (!content.trim()) {
       return showAlert("알림", "본문을 입력해주세요.", "확인");
+    }
+
+    const topBarError = validateNoticeTopBar(topBar);
+    if (topBarError) {
+      return showAlert("알림", topBarError, "확인");
     }
 
     // start upload
@@ -96,6 +111,7 @@ export default function Page() {
           content: content,
           primary_yn: primary ? "Y" : "N",
           file_id: attachmentId || undefined,
+          ...buildNoticeTopBarRequest(topBar),
         },
       },
       {
@@ -224,6 +240,7 @@ export default function Page() {
                   </TableCell>
                 </TableRow>
               ) : null}
+              <NoticeTopBarFields value={topBar} onChange={setTopBar} />
             </TableBody>
           </Table>
         </div>
