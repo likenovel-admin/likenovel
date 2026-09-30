@@ -61,6 +61,7 @@ export default function NoticesTable({
     deleteNotice.mutate(id, {
       onSuccess: () => {
         refetch();
+        liveTopBar.refetch();
       },
       onError: (err: any) => {
         showAlert("오류", catchErrorMessage(err), "확인");
@@ -92,7 +93,12 @@ export default function NoticesTable({
         if (row.top_bar_yn !== "Y") return "";
         const status = resolveNoticeTopBarStatus(row, liveNoticeId, Date.now());
         return (
-          <div className="flex flex-col text-xs" title={row.top_bar_text || ""}>
+          <div
+            className="flex flex-col text-xs"
+            title={[row.top_bar_text, row.top_bar_link_url ? `링크: ${row.top_bar_link_url}` : null]
+              .filter(Boolean)
+              .join("\n")}
+          >
             {status ? (
               <span
                 className={TOP_BAR_STATUS_STYLE[status].className}

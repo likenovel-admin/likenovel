@@ -9,6 +9,7 @@ export const TOP_NOTICE_BAR_REFRESH_MS = 60 * 1000;
 export interface ITopNoticeBar {
   noticeId: number;
   text: string;
+  linkUrl?: string | null; // CMS 링크, 없으면 공지 상세로 이동
   endAt?: string | null; // KST "YYYY-MM-DD HH:mm:ss", 없으면 종료 없음
 }
 
@@ -20,8 +21,14 @@ export const buildTopNoticeBarDismissToken = (bar: ITopNoticeBar) =>
 export const isTopNoticeBarHiddenOnPath = (pathname?: string | null) =>
   Boolean(pathname && pathname.startsWith("/websochat"));
 
-export const buildTopNoticeBarHref = (noticeId: number) =>
-  `/product/customer-service/notice/${noticeId}`;
+// CMS 링크가 있으면 그 주소로 보낸다. 비었거나 사이트 경로·https 주소가 아니면 공지 상세로 보낸다.
+export const buildTopNoticeBarHref = ({ noticeId, linkUrl }: Pick<ITopNoticeBar, "noticeId" | "linkUrl">) => {
+  const link = (linkUrl ?? "").trim();
+  const isSitePath = link.startsWith("/") && !link.startsWith("//");
+  const isHttpsUrl = /^https:\/\/[^/?#]+/i.test(link);
+  if (link && !/[\s\\]/.test(link) && (isSitePath || isHttpsUrl)) return link;
+  return `/product/customer-service/notice/${noticeId}`;
+};
 
 const parseJson = (raw: string | null): unknown => {
   if (!raw) return null;

@@ -25,6 +25,7 @@ export interface INoticeRequest {
   top_bar_text?: string;
   top_bar_start_date?: string | null;
   top_bar_end_date?: string | null;
+  top_bar_link_url?: string | null;
 }
 
 export interface IAddEditNoticeResponse {

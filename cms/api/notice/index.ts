@@ -42,10 +42,12 @@ export const useGetNoticeDetail = (id: string) => {
 };
 
 // 목록에서 어떤 띠가 실제로 떠 있는지 보여주려고 공개 API를 그대로 읽는다.
+// 기본값(throwOnError: true)이면 조회 실패가 목록 화면 전체를 깨뜨리므로 기간만 보여주도록 끈다.
 export const useGetLiveNoticeTopBar = () => {
   return useQuery<IGetLiveNoticeTopBarResponse>({
     queryKey: ["GetLiveNoticeTopBar"],
     refetchOnMount: "always",
+    throwOnError: false,
     queryFn: async () => {
       return await apiClient.request<IGetLiveNoticeTopBarResponse>({
         url: "/v1/query/notices/top-bar",
