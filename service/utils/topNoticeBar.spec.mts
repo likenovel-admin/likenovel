@@ -54,6 +54,8 @@ test("CMS 링크가 있으면 그 주소로, 허용되지 않는 형식이면 �
     "https://\u017fite.example",
     "https://b.1",
     "https://127.0.0.1/x",
+    "https://xn--",
+    "https://xn--a.example",
     "https://www.likenovel.net/a b",
     "/%2e%2e//evil.example",
     "/a//b",
@@ -71,6 +73,13 @@ test("CMS 링크가 있으면 그 주소로, 허용되지 않는 형식이면 �
       unsafe
     );
   }
+  // 길이는 백엔드처럼 글자 수로 센다.
+  const emojiLink = "/search?q=" + "\u{1F600}".repeat(246);
+  assert.equal(buildTopNoticeBarHref({ noticeId: 89, linkUrl: emojiLink }), emojiLink);
+  assert.equal(
+    buildTopNoticeBarHref({ noticeId: 89, linkUrl: "/" + "\u{1F600}".repeat(500) }),
+    "/product/customer-service/notice/89"
+  );
 });
 
 test("여러 띠를 닫아도 각각 기억한다 (A 닫기 -> B 닫기 -> A 다시 선택)", () => {

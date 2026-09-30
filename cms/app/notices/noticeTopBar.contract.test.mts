@@ -93,6 +93,8 @@ for (const bad of [
   "https://\u017fite.example",
   "https://b.1",
   "https://127.0.0.1/x",
+  "https://xn--",
+  "https://xn--a.example",
   "https://www.likenovel.net/a b",
   "/%2e%2e//evil.example",
   "/a//b",
@@ -108,6 +110,13 @@ for (const bad of [
 }
 assert.equal(
   validateNoticeTopBar({ ...EMPTY_NOTICE_TOP_BAR, enabled: true, text: "안내", linkUrl: "javascript:alert(1)" }),
+  "상단 띠 링크는 /로 시작하는 사이트 주소나 https:// 주소만 넣을 수 있습니다."
+);
+// 길이는 utf8mb4 VARCHAR(500)처럼 글자 수로 센다(이모지 1개 = 1자).
+assert.equal(validateNoticeTopBarLink("/search?q=" + "\u{1F600}".repeat(246)), null);
+assert.notEqual(validateNoticeTopBarLink("/" + "\u{1F600}".repeat(500)), null);
+assert.equal(
+  validateNoticeTopBar({ ...EMPTY_NOTICE_TOP_BAR, enabled: true, text: "안내", linkUrl: "https://xn--a.example" }),
   "상단 띠 링크는 /로 시작하는 사이트 주소나 https:// 주소만 넣을 수 있습니다."
 );
 assert.equal(
