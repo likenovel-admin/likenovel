@@ -22,7 +22,7 @@ function ContentWrapper({ children }: { children: React.ReactNode }) {
     <div
       className={`relative min-h-screen ${
         bgColor !== "bg-white" ? `${bgColor}` : ""
-      } pt-[130px] md:pt-[115px] pb-[94px]`}
+      } pt-[calc(130px_+_var(--top-notice-bar-h,0px))] md:pt-[calc(115px_+_var(--top-notice-bar-h,0px))] pb-[94px]`}
     >
       {children}
     </div>

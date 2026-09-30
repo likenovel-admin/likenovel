@@ -21,6 +21,10 @@ export interface INoticeRequest {
   content: string;
   primary_yn: string;
   file_id?: number;
+  top_bar_yn?: "Y" | "N";
+  top_bar_text?: string;
+  top_bar_start_date?: string | null;
+  top_bar_end_date?: string | null;
 }
 
 export interface IAddEditNoticeResponse {

@@ -9,6 +9,7 @@ import { INotice } from "@/types/notice";
 import { format } from "date-fns";
 import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { describeNoticeTopBarPeriod } from "./noticeTopBar";
 
 interface Props {
   data: INotice[];
@@ -69,6 +70,18 @@ export default function NoticesTable({
       render: (_, row: INotice) => (row.primary_yn === "Y" ? <Check /> : ""),
     },
     { header: "제목", key: "subject" },
+    {
+      header: "상단 띠",
+      key: "top_bar_yn",
+      render: (_, row: INotice) =>
+        row.top_bar_yn === "Y" ? (
+          <span className="text-xs text-blue-600" title={row.top_bar_text || ""}>
+            {describeNoticeTopBarPeriod(row)}
+          </span>
+        ) : (
+          ""
+        ),
+    },
     {
       header: "조회수",
       key: "views",

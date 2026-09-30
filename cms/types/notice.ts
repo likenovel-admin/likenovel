@@ -12,6 +12,10 @@ export interface INotice {
   updated_date: string;
   file_path: string | null;
   file_name: string | null;
+  top_bar_yn?: "Y" | "N";
+  top_bar_text?: string | null;
+  top_bar_start_date?: string | null;
+  top_bar_end_date?: string | null;
 }
 
 export interface INoticeDetail {
@@ -28,4 +32,8 @@ export interface INoticeDetail {
   updated_date: string;
   file_path: string;
   file_name: string;
+  top_bar_yn?: "Y" | "N";
+  top_bar_text?: string | null;
+  top_bar_start_date?: string | null;
+  top_bar_end_date?: string | null;
 }
