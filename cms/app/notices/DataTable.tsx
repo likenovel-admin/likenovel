@@ -17,8 +17,8 @@ import {
 
 const TOP_BAR_STATUS_STYLE: Record<NoticeTopBarStatus, { className: string; hint: string }> = {
   "노출 중": { className: "font-semibold text-blue-600", hint: "지금 사이트 맨 위에 보이는 띠입니다." },
-  예약: { className: "text-amber-600", hint: "시작 시각이 되면 자동으로 보입니다." },
-  대기: { className: "text-muted-foreground", hint: "더 늦게 시작한 다른 띠가 보이는 중입니다. 그 띠가 끝나면 이어서 보입니다." },
+  예약: { className: "text-amber-600", hint: "시작 시각부터 노출 대상이 됩니다. 기간이 겹치면 가장 최근에 시작한 1개만 보입니다." },
+  대기: { className: "text-muted-foreground", hint: "더 최근에 시작한 다른 띠가 보이는 중입니다. 그 띠가 먼저 끝나고 이 띠의 기간이 남아 있으면 이어서 보입니다." },
   종료: { className: "text-muted-foreground", hint: "종료 시각이 지나 더 이상 보이지 않습니다." },
 };
 

@@ -124,6 +124,7 @@ const NOW = Date.parse("2026-10-01T12:00:00+09:00");
 const bar = {
   id: 90,
   top_bar_yn: "Y",
+  top_bar_text: "안내",
   top_bar_start_date: "2026-09-30T20:05:00",
   top_bar_end_date: "2026-10-07 23:59:00",
 };
@@ -150,6 +151,11 @@ assert.equal(
   resolveNoticeTopBarStatus({ ...bar, use_yn: "N" }, 91, NOW),
   null,
   "the public API never shows a hidden notice, so do not call it waiting"
+);
+assert.equal(
+  resolveNoticeTopBarStatus({ ...bar, top_bar_text: null }, 91, NOW),
+  null,
+  "the public API skips a bar without text"
 );
 assert.equal(
   resolveNoticeTopBarStatus({ ...bar, top_bar_end_date: "2026-10-01 11:59:00" }, 90, NOW),

@@ -122,14 +122,15 @@ export const resolveNoticeTopBarStatus = (
     id: number;
     use_yn?: string | null;
     top_bar_yn?: string | null;
+    top_bar_text?: string | null;
     top_bar_start_date?: string | null;
     top_bar_end_date?: string | null;
   },
   liveNoticeId: number | null | undefined,
   now: number
 ): NoticeTopBarStatus | null => {
-  // 공개 API는 숨긴 공지(use_yn=N)의 띠를 내보내지 않는다.
-  if (notice.top_bar_yn !== "Y" || notice.use_yn === "N") return null;
+  // 공개 API는 숨긴 공지(use_yn=N)나 문구 없는 띠를 내보내지 않는다.
+  if (notice.top_bar_yn !== "Y" || notice.use_yn === "N" || !notice.top_bar_text) return null;
   const end = parseKstDateTime(notice.top_bar_end_date);
   if (end !== null && end <= now) return "종료";
   if (liveNoticeId !== undefined && liveNoticeId === notice.id) return "노출 중";
