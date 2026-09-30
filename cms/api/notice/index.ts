@@ -2,6 +2,7 @@
 
 import {
   IAddEditNoticeResponse,
+  IGetLiveNoticeTopBarResponse,
   IGetNoticeDetailResponse,
   IGetNoticeParams,
   IGetNoticeResponse,
@@ -36,6 +37,21 @@ export const useGetNoticeDetail = (id: string) => {
         method: "GET",
       });
       return res;
+    },
+  });
+};
+
+// 목록에서 어떤 띠가 실제로 떠 있는지 보여주려고 공개 API를 그대로 읽는다.
+export const useGetLiveNoticeTopBar = () => {
+  return useQuery<IGetLiveNoticeTopBarResponse>({
+    queryKey: ["GetLiveNoticeTopBar"],
+    refetchOnMount: "always",
+    queryFn: async () => {
+      return await apiClient.request<IGetLiveNoticeTopBarResponse>({
+        url: "/v1/query/notices/top-bar",
+        method: "GET",
+        notAuth: true,
+      });
     },
   });
 };
