@@ -2,7 +2,10 @@ import {
   SelectNoticesResponse,
   SelectRollingNoticeResponse,
 } from "@/app/api/query/notice/dto";
-import type { ITopNoticeBar } from "@/utils/topNoticeBar";
+import {
+  TOP_NOTICE_BAR_REFRESH_MS,
+  type ITopNoticeBar,
+} from "@/utils/topNoticeBar";
 import { useQuery } from "@tanstack/react-query";
 import { instance } from "../../axios";
 
@@ -14,8 +17,11 @@ export const useGetNoticeTopBar = (enabled: boolean = true) => {
       return response.data;
     },
     enabled,
-    staleTime: 5 * 60 * 1000,
+    staleTime: TOP_NOTICE_BAR_REFRESH_MS,
+    refetchInterval: TOP_NOTICE_BAR_REFRESH_MS,
     retry: false,
+    // 선택 기능이라 실패해도 전역 오류 화면으로 보내지 않고 띠만 숨긴다.
+    throwOnError: false,
   });
 };
 
