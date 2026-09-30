@@ -5,6 +5,7 @@ export const TOP_NOTICE_BAR_DISMISS_LIMIT = 20;
 // CMS 변경과 예약 시작/종료가 열린 화면에도 1분 안에 반영되도록 다시 조회한다.
 // 페이지 이동마다 띠를 숨겼다 다시 그리지 않도록, 이 범위 안의 지연은 허용한다.
 export const TOP_NOTICE_BAR_REFRESH_MS = 60 * 1000;
+export const TOP_NOTICE_BAR_LINK_MAX_LENGTH = 500;
 
 export interface ITopNoticeBar {
   noticeId: number;
@@ -21,13 +22,24 @@ export const buildTopNoticeBarDismissToken = (bar: ITopNoticeBar) =>
 export const isTopNoticeBarHiddenOnPath = (pathname?: string | null) =>
   Boolean(pathname && pathname.startsWith("/websochat"));
 
-// CMS 링크가 있으면 그 주소로 보낸다. 비었거나 사이트 경로·https 주소가 아니면 공지 상세로 보낸다.
+// 백엔드(notice_top_bar.py)·CMS(noticeTopBar.ts)와 같은 링크 규칙이다. 셋을 함께 고친다.
+const UNSAFE_LINK_CHARS =
+  /[\\\u0000-\u0020\u007f-\u00a0\u00ad\u1680\u180e\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff\ufff0-\uffff]/;
+const HTTPS_LINK = /^https:\/\/(?:[a-z0-9-]+\.)*[a-z][a-z0-9-]*(?:[/?#]|$)/i;
+const DOT_SEGMENT = /\/\.\.?(?:\/|$)/;
+
+const isAllowedTopNoticeBarLink = (link: string) => {
+  if (link.length > TOP_NOTICE_BAR_LINK_MAX_LENGTH || UNSAFE_LINK_CHARS.test(link)) return false;
+  if (HTTPS_LINK.test(link)) return true;
+  if (!link.startsWith("/") || link.startsWith("//")) return false;
+  const path = link.split(/[?#]/, 1)[0];
+  return !path.includes("//") && !/%2e/i.test(path) && !DOT_SEGMENT.test(path);
+};
+
+// CMS 링크가 있으면 그 주소로 보낸다. 비었거나 규칙에 맞지 않으면 공지 상세로 보낸다.
 export const buildTopNoticeBarHref = ({ noticeId, linkUrl }: Pick<ITopNoticeBar, "noticeId" | "linkUrl">) => {
   const link = (linkUrl ?? "").trim();
-  const isSitePath = link.startsWith("/") && !link.startsWith("//");
-  const isHttpsUrl = /^https:\/\/[^/?#]+/i.test(link);
-  if (link && !/[\s\\]/.test(link) && (isSitePath || isHttpsUrl)) return link;
-  return `/product/customer-service/notice/${noticeId}`;
+  return link && isAllowedTopNoticeBarLink(link) ? link : `/product/customer-service/notice/${noticeId}`;
 };
 
 const parseJson = (raw: string | null): unknown => {
