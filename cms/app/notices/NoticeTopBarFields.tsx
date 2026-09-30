@@ -3,6 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import {
+  NOTICE_TOP_BAR_LINK_MAX_LENGTH,
   NOTICE_TOP_BAR_TEXT_MAX_LENGTH,
   type NoticeTopBarState,
 } from "./noticeTopBar";
@@ -12,11 +13,12 @@ interface Props {
   onChange: (next: NoticeTopBarState) => void;
 }
 
-// 공지 작성/수정 화면의 "상단 띠 공지" 입력. 띠를 누르면 이 공지 상세로 이동한다.
+// 공지 작성/수정 화면의 "상단 띠 공지" 입력. 띠를 누르면 링크로, 링크가 없으면 이 공지 상세로 이동한다.
 export default function NoticeTopBarFields({ value, onChange }: Props) {
   const update = (patch: Partial<NoticeTopBarState>) =>
     onChange({ ...value, ...patch });
   const textLength = value.text.trim().length;
+  const linkUrl = value.linkUrl.trim();
 
   return (
     <TableRow>
@@ -31,7 +33,7 @@ export default function NoticeTopBarFields({ value, onChange }: Props) {
               checked={value.enabled}
               onChange={(e) => update({ enabled: e.target.checked })}
             />
-            <span>사이트 맨 위에 띠로 노출합니다. 띠를 누르면 이 공지로 이동합니다.</span>
+            <span>사이트 맨 위에 띠로 노출합니다. 띠를 누르면 아래 링크로, 링크가 없으면 이 공지로 이동합니다.</span>
           </label>
           {value.enabled ? (
             <>
@@ -49,6 +51,19 @@ export default function NoticeTopBarFields({ value, onChange }: Props) {
                 <span className="w-[64px] shrink-0 text-right text-xs text-muted-foreground tabular-nums">
                   {textLength}/{NOTICE_TOP_BAR_TEXT_MAX_LENGTH}
                 </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <label htmlFor="top-bar-link" className="w-[56px] shrink-0 text-sm">
+                  링크
+                </label>
+                <Input
+                  id="top-bar-link"
+                  value={value.linkUrl}
+                  maxLength={NOTICE_TOP_BAR_LINK_MAX_LENGTH}
+                  placeholder="비우면 이 공지로 이동 (예: /event/12 또는 https://...)"
+                  onChange={(e) => update({ linkUrl: e.target.value })}
+                />
+                <span className="w-[64px] shrink-0" aria-hidden />
               </div>
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="shrink-0">노출 기간</span>
@@ -85,6 +100,9 @@ export default function NoticeTopBarFields({ value, onChange }: Props) {
                     ×
                   </span>
                 </div>
+                <span className="break-all text-xs text-muted-foreground">
+                  누르면 이동: {linkUrl || "이 공지 상세"}
+                </span>
               </div>
             </>
           ) : null}

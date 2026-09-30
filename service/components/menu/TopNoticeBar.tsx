@@ -83,7 +83,7 @@ const TopNoticeBar = () => {
       style={{ height: TOP_NOTICE_BAR_HEIGHT_PX }}
     >
       <Link
-        href={buildTopNoticeBarHref(bar.noticeId)}
+        href={buildTopNoticeBarHref(bar)}
         className="flex h-full w-full items-center justify-center px-44pxr text-13pxr font-medium md:text-14pxr hover:bg-primary-200 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white"
       >
         <span className="min-w-0 truncate">{bar.text}</span>

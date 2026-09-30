@@ -8,6 +8,7 @@ import {
   noticeTopBarFromDetail,
   resolveNoticeTopBarStatus,
   validateNoticeTopBar,
+  validateNoticeTopBarLink,
 } from "./noticeTopBar.ts";
 
 assert.deepEqual(buildNoticeTopBarRequest(EMPTY_NOTICE_TOP_BAR), { top_bar_yn: "N" });
@@ -17,13 +18,20 @@ assert.deepEqual(
     text: "  웹소챗 장애 보상 안내 ",
     startAt: "2026-09-30T18:00",
     endAt: "",
+    linkUrl: "  ",
   }),
   {
     top_bar_yn: "Y",
     top_bar_text: "웹소챗 장애 보상 안내",
     top_bar_start_date: "2026-09-30 18:00",
     top_bar_end_date: null,
+    top_bar_link_url: null,
   }
+);
+assert.equal(
+  buildNoticeTopBarRequest({ ...EMPTY_NOTICE_TOP_BAR, enabled: true, text: "안내", linkUrl: " /event/12 " })
+    .top_bar_link_url,
+  "/event/12"
 );
 assert.deepEqual(
   noticeTopBarFromDetail({
@@ -31,8 +39,15 @@ assert.deepEqual(
     top_bar_text: "안내",
     top_bar_start_date: "2026-09-30T18:00:00",
     top_bar_end_date: null,
+    top_bar_link_url: "https://www.likenovel.net/event/12",
   }),
-  { enabled: true, text: "안내", startAt: "2026-09-30T18:00:00", endAt: "" }
+  {
+    enabled: true,
+    text: "안내",
+    startAt: "2026-09-30T18:00:00",
+    endAt: "",
+    linkUrl: "https://www.likenovel.net/event/12",
+  }
 );
 // 수정 화면을 열고 그대로 저장해도 초까지 유지돼야 겹치는 띠의 노출 순서가 바뀌지 않는다.
 assert.deepEqual(
@@ -49,28 +64,55 @@ assert.deepEqual(
     top_bar_text: "안내",
     top_bar_start_date: "2026-09-30 18:30:50",
     top_bar_end_date: "2026-10-07 23:59:00",
+    top_bar_link_url: null,
   }
 );
+
+// 링크 규칙은 백엔드와 같다: 비우면 공지로, /로 시작하는 사이트 주소나 https:// 주소만.
+for (const ok of ["", "  ", "/event/12", "/product/1231?tab=episode", "https://www.likenovel.net/event/12"]) {
+  assert.equal(validateNoticeTopBarLink(ok), null, ok);
+}
+for (const bad of [
+  "javascript:alert(1)",
+  "http://example.com",
+  "//evil.example",
+  "/\\evil.example",
+  "event/12",
+  "https://",
+  "https://www.likenovel.net/a b",
+  "/" + "a".repeat(500),
+]) {
+  assert.notEqual(validateNoticeTopBarLink(bad), null, bad);
+}
 assert.equal(
-  validateNoticeTopBar({ enabled: true, text: "안내", startAt: "2026-10-01T10:00:30", endAt: "2026-10-01T10:00" }),
+  validateNoticeTopBar({ ...EMPTY_NOTICE_TOP_BAR, enabled: true, text: "안내", linkUrl: "javascript:alert(1)" }),
+  "상단 띠 링크는 /로 시작하는 사이트 주소나 https:// 주소만 넣을 수 있습니다."
+);
+assert.equal(
+  validateNoticeTopBar({ ...EMPTY_NOTICE_TOP_BAR, enabled: false, linkUrl: "javascript:alert(1)" }),
+  null,
+  "a turned-off bar ignores the link field"
+);
+assert.equal(
+  validateNoticeTopBar({ ...EMPTY_NOTICE_TOP_BAR, enabled: true, text: "안내", startAt: "2026-10-01T10:00:30", endAt: "2026-10-01T10:00" }),
   "상단 띠 종료 시각은 시작 시각보다 뒤여야 합니다.",
   "compare minute and second precision values in time order"
 );
 assert.equal(
-  validateNoticeTopBar({ enabled: true, text: "안내", startAt: "2026-10-01T10:00", endAt: "2026-10-01T10:00:00" }),
+  validateNoticeTopBar({ ...EMPTY_NOTICE_TOP_BAR, enabled: true, text: "안내", startAt: "2026-10-01T10:00", endAt: "2026-10-01T10:00:00" }),
   "상단 띠 종료 시각은 시작 시각보다 뒤여야 합니다.",
   "the same time written with and without seconds is not later"
 );
 assert.equal(
-  validateNoticeTopBar({ enabled: true, text: "안내", startAt: "2026-10-01T10:00", endAt: "2026-10-01T10:00:01" }),
+  validateNoticeTopBar({ ...EMPTY_NOTICE_TOP_BAR, enabled: true, text: "안내", startAt: "2026-10-01T10:00", endAt: "2026-10-01T10:00:01" }),
   null
 );
 assert.equal(validateNoticeTopBar({ ...EMPTY_NOTICE_TOP_BAR, enabled: true }), "상단 띠 문구를 입력해주세요.");
 assert.equal(
-  validateNoticeTopBar({ enabled: true, text: "안내", startAt: "2026-10-01T10:00", endAt: "2026-10-01T10:00" }),
+  validateNoticeTopBar({ ...EMPTY_NOTICE_TOP_BAR, enabled: true, text: "안내", startAt: "2026-10-01T10:00", endAt: "2026-10-01T10:00" }),
   "상단 띠 종료 시각은 시작 시각보다 뒤여야 합니다."
 );
-assert.equal(validateNoticeTopBar({ enabled: false, text: "", startAt: "", endAt: "" }), null);
+assert.equal(validateNoticeTopBar({ ...EMPTY_NOTICE_TOP_BAR, enabled: false, text: "", startAt: "", endAt: "" }), null);
 assert.equal(describeNoticeTopBarPeriod({}), "즉시 ~ 계속");
 assert.equal(
   describeNoticeTopBarPeriod({ top_bar_start_date: "2026-09-30T18:00:00", top_bar_end_date: null }),
@@ -104,6 +146,16 @@ assert.equal(
   "a bar starting now is already in its window"
 );
 assert.equal(resolveNoticeTopBarStatus({ ...bar, top_bar_yn: "N" }, 90, NOW), null);
+assert.equal(
+  resolveNoticeTopBarStatus({ ...bar, use_yn: "N" }, 91, NOW),
+  null,
+  "the public API never shows a hidden notice, so do not call it waiting"
+);
+assert.equal(
+  resolveNoticeTopBarStatus({ ...bar, top_bar_end_date: "2026-10-01 11:59:00" }, 90, NOW),
+  "종료",
+  "a live id read before the end time must not keep an ended bar live"
+);
 
 for (const page of ["./add/page.tsx", "./[noticeId]/page.tsx"]) {
   const source = readFileSync(new URL(page, import.meta.url), "utf8");
@@ -115,6 +167,7 @@ const editSource = readFileSync(new URL("./[noticeId]/page.tsx", import.meta.url
 assert.match(editSource, /noticeTopBarFromDetail\(data\.data\)/, "edit page should load the saved top bar");
 const fieldsSource = readFileSync(new URL("./NoticeTopBarFields.tsx", import.meta.url), "utf8");
 assert.match(fieldsSource, /<label htmlFor="top-bar-text"/, "the bar text input needs a visible label");
+assert.match(fieldsSource, /<label htmlFor="top-bar-link"/, "the link input needs a visible label");
 assert.equal(
   (fieldsSource.match(/type="datetime-local"[\s\S]*?step=\{1\}/g) ?? []).length,
   2,
@@ -123,4 +176,11 @@ assert.equal(
 const tableSource = readFileSync(new URL("./DataTable.tsx", import.meta.url), "utf8");
 assert.match(tableSource, /useGetLiveNoticeTopBar\(\)/, "the list should read the bar the site shows now");
 assert.match(tableSource, /resolveNoticeTopBarStatus\(/, "the list should label each bar's status");
+assert.match(tableSource, /liveTopBar\.refetch\(\)/, "deleting a notice must re-read the live bar");
+const apiSource = readFileSync(new URL("../../api/notice/index.ts", import.meta.url), "utf8");
+assert.match(
+  apiSource,
+  /useGetLiveNoticeTopBar[\s\S]*?throwOnError: false/,
+  "a failed live-bar read must fall back to the period instead of breaking the list"
+);
 console.log("noticeTopBar tests passed");

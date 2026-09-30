@@ -16,11 +16,27 @@ import {
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
 test("띠는 공지 상세로 이동하고 문구가 바뀌면 다시 보인다", () => {
-  assert.equal(buildTopNoticeBarHref(89), "/product/customer-service/notice/89");
+  assert.equal(buildTopNoticeBarHref({ noticeId: 89 }), "/product/customer-service/notice/89");
+  assert.equal(buildTopNoticeBarHref({ noticeId: 89, linkUrl: null }), "/product/customer-service/notice/89");
   assert.notEqual(
     buildTopNoticeBarDismissToken({ noticeId: 89, text: "장애 안내" }),
     buildTopNoticeBarDismissToken({ noticeId: 89, text: "장애 해결 안내" })
   );
+});
+
+test("CMS 링크가 있으면 그 주소로, 허용되지 않는 형식이면 공지로 이동한다", () => {
+  assert.equal(buildTopNoticeBarHref({ noticeId: 89, linkUrl: "/event/12" }), "/event/12");
+  assert.equal(
+    buildTopNoticeBarHref({ noticeId: 89, linkUrl: "https://www.likenovel.net/event/12?utm=bar" }),
+    "https://www.likenovel.net/event/12?utm=bar"
+  );
+  for (const unsafe of ["javascript:alert(1)", "//evil.example", "/\\evil.example", "http://example.com", "event/12", "https://"]) {
+    assert.equal(
+      buildTopNoticeBarHref({ noticeId: 89, linkUrl: unsafe }),
+      "/product/customer-service/notice/89",
+      unsafe
+    );
+  }
 });
 
 test("여러 띠를 닫아도 각각 기억한다 (A 닫기 -> B 닫기 -> A 다시 선택)", () => {
