@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeleteNotice } from "@/api/notice";
+import { useDeleteNotice, useGetLiveNoticeTopBar } from "@/api/notice";
 import CommonTable, { Column } from "@/components/common/CommonTable";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,18 @@ import { INotice } from "@/types/notice";
 import { format } from "date-fns";
 import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { describeNoticeTopBarPeriod } from "./noticeTopBar";
+import {
+  describeNoticeTopBarPeriod,
+  resolveNoticeTopBarStatus,
+  type NoticeTopBarStatus,
+} from "./noticeTopBar";
+
+const TOP_BAR_STATUS_STYLE: Record<NoticeTopBarStatus, { className: string; hint: string }> = {
+  "노출 중": { className: "font-semibold text-blue-600", hint: "지금 사이트 맨 위에 보이는 띠입니다." },
+  예약: { className: "text-amber-600", hint: "시작 시각이 되면 자동으로 보입니다." },
+  대기: { className: "text-muted-foreground", hint: "더 늦게 시작한 다른 띠가 보이는 중입니다. 그 띠가 끝나면 이어서 보입니다." },
+  종료: { className: "text-muted-foreground", hint: "종료 시각이 지나 더 이상 보이지 않습니다." },
+};
 
 interface Props {
   data: INotice[];
@@ -30,6 +41,10 @@ export default function NoticesTable({
 }: Props) {
   const router = useRouter();
   const deleteNotice = useDeleteNotice();
+  const liveTopBar = useGetLiveNoticeTopBar();
+  const liveNoticeId = liveTopBar.isSuccess
+    ? liveTopBar.data?.data?.noticeId ?? null
+    : undefined;
 
   const handleDelete = async (id: string) => {
     if (deleteNotice.isPending) {
@@ -73,14 +88,25 @@ export default function NoticesTable({
     {
       header: "상단 띠",
       key: "top_bar_yn",
-      render: (_, row: INotice) =>
-        row.top_bar_yn === "Y" ? (
-          <span className="text-xs text-blue-600" title={row.top_bar_text || ""}>
-            {describeNoticeTopBarPeriod(row)}
-          </span>
-        ) : (
-          ""
-        ),
+      render: (_, row: INotice) => {
+        if (row.top_bar_yn !== "Y") return "";
+        const status = resolveNoticeTopBarStatus(row, liveNoticeId, Date.now());
+        return (
+          <div className="flex flex-col text-xs" title={row.top_bar_text || ""}>
+            {status ? (
+              <span
+                className={TOP_BAR_STATUS_STYLE[status].className}
+                title={TOP_BAR_STATUS_STYLE[status].hint}
+              >
+                {status}
+              </span>
+            ) : null}
+            <span className="text-muted-foreground tabular-nums">
+              {describeNoticeTopBarPeriod(row)}
+            </span>
+          </div>
+        );
+      },
     },
     {
       header: "조회수",

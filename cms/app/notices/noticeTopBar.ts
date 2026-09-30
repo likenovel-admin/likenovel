@@ -73,6 +73,37 @@ export const describeNoticeTopBarPeriod = (notice: {
 }) => {
   const start = shortDateTime(notice.top_bar_start_date);
   const end = shortDateTime(notice.top_bar_end_date);
-  if (!start && !end) return "노출";
   return `${start || "즉시"} ~ ${end || "계속"}`;
+};
+
+export type NoticeTopBarStatus = "노출 중" | "대기" | "예약" | "종료";
+
+// 띠 시각은 KST로 저장된다. "YYYY-MM-DD HH:mm[:ss]"와 "T" 구분 형식을 모두 받는다.
+const parseKstDateTime = (value?: string | null): number | null => {
+  const match = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(:\d{2})?/.exec(value ?? "");
+  if (!match) return null;
+  const time = Date.parse(`${match[1]}T${match[2]}${match[3] ?? ":00"}+09:00`);
+  return Number.isNaN(time) ? null : time;
+};
+
+// liveNoticeId는 공개 API가 지금 내려주는 띠의 공지 ID다(없으면 null, 조회 전·실패면 undefined).
+// 사이트에는 1개만 뜨므로 그 공지만 "노출 중"이고, 기간 안인데 밀린 띠는 "대기"다.
+export const resolveNoticeTopBarStatus = (
+  notice: {
+    id: number;
+    top_bar_yn?: string | null;
+    top_bar_start_date?: string | null;
+    top_bar_end_date?: string | null;
+  },
+  liveNoticeId: number | null | undefined,
+  now: number
+): NoticeTopBarStatus | null => {
+  if (notice.top_bar_yn !== "Y") return null;
+  if (liveNoticeId !== undefined && liveNoticeId === notice.id) return "노출 중";
+  const end = parseKstDateTime(notice.top_bar_end_date);
+  if (end !== null && end <= now) return "종료";
+  const start = parseKstDateTime(notice.top_bar_start_date);
+  if (start !== null && start > now) return "예약";
+  // 다른 공지가 실제로 떠 있을 때만 "대기"로 본다. 그 밖의 경우는 기간만 보여준다.
+  return typeof liveNoticeId === "number" ? "대기" : null;
 };

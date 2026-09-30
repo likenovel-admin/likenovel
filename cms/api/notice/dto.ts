@@ -38,3 +38,12 @@ export interface IDeleteNoticeResponse {
     message: string;
   };
 }
+
+// GET /v1/query/notices/top-bar: 사이트에 지금 떠 있는 상단 띠(없으면 null)
+export interface IGetLiveNoticeTopBarResponse {
+  data: {
+    noticeId: number;
+    text: string;
+    endAt?: string | null;
+  } | null;
+}

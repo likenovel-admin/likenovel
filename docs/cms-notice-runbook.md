@@ -110,6 +110,13 @@ the UI reflects an API/DB change.
   (latest start wins, with its KST end time) or `data: null`. The service web
   refetches every minute (and on window focus), hides the bar on `/websochat`, and remembers
   dismissal per notice and text.
+- When periods overlap, only the latest-started bar shows; when it ends, an older
+  bar still inside its period shows again. Changing the text shows the bar again
+  to users who dismissed the old text. Deleting the notice removes its bar.
+- The CMS list `상단 띠` column shows a status above the period: `노출 중` (the bar
+  the public API returns now), `예약` (start in the future), `대기` (inside its
+  period but hidden by a newer bar), `종료` (end passed; still checked until an
+  operator turns it off). If the live bar cannot be read, only 예약/종료 are shown.
 - Verify the API, the CMS list `상단 띠` column after refresh, and the public bar on
   desktop and mobile, including the click-through to the notice.
 
