@@ -12,6 +12,8 @@ import {
   isTopNoticeBarHiddenOnPath,
   parseCachedTopNoticeBar,
   parseDismissedTopNoticeBarTokens,
+  resolveTopNoticeBar,
+  serializeCachedTopNoticeBar,
   type ITopNoticeBar,
 } from "@/utils/topNoticeBar";
 import Link from "next/link";
@@ -44,18 +46,18 @@ const TopNoticeBar = () => {
   const { data, isError } = useGetNoticeTopBar(!hiddenOnPath);
   // 지난번 띠를 먼저 보여줘 재방문 시 레이아웃이 밀리지 않게 한다.
   const [cachedBar] = useState<ITopNoticeBar | null>(() =>
-    parseCachedTopNoticeBar(readStorage(TOP_NOTICE_BAR_CACHE_STORAGE_KEY))
+    parseCachedTopNoticeBar(readStorage(TOP_NOTICE_BAR_CACHE_STORAGE_KEY), Date.now())
   );
   const [dismissedTokens, setDismissedTokens] = useState<string[]>(() =>
     parseDismissedTopNoticeBarTokens(readStorage(TOP_NOTICE_BAR_DISMISS_STORAGE_KEY))
   );
-  const bar: ITopNoticeBar | null = data ? data.data : isError ? null : cachedBar;
+  const bar = resolveTopNoticeBar({ data, isError, cachedBar, now: Date.now() });
 
   useEffect(() => {
     if (!data) return;
     writeStorage(
       TOP_NOTICE_BAR_CACHE_STORAGE_KEY,
-      data.data ? JSON.stringify(data.data) : null
+      data.data ? serializeCachedTopNoticeBar(data.data, Date.now()) : null
     );
   }, [data]);
 
