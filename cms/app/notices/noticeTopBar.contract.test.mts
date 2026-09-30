@@ -104,6 +104,8 @@ for (const bad of [
   "/a\u0085b",
   "/a\ufeffb",
   "/a\u200bb",
+  "/\ud800",
+  "/a\udfffb",
   "/" + "a".repeat(500),
 ]) {
   assert.notEqual(validateNoticeTopBarLink(bad), null, bad);
