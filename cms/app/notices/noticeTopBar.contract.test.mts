@@ -53,4 +53,6 @@ for (const page of ["./add/page.tsx", "./[noticeId]/page.tsx"]) {
 }
 const editSource = readFileSync(new URL("./[noticeId]/page.tsx", import.meta.url), "utf8");
 assert.match(editSource, /noticeTopBarFromDetail\(data\.data\)/, "edit page should load the saved top bar");
+const fieldsSource = readFileSync(new URL("./NoticeTopBarFields.tsx", import.meta.url), "utf8");
+assert.match(fieldsSource, /<label htmlFor="top-bar-text"/, "the bar text input needs a visible label");
 console.log("noticeTopBar tests passed");

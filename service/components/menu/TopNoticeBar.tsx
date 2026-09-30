@@ -2,48 +2,71 @@
 
 import { useGetNoticeTopBar } from "@/app/api/query/notice";
 import {
+  TOP_NOTICE_BAR_CACHE_STORAGE_KEY,
   TOP_NOTICE_BAR_CSS_VAR,
   TOP_NOTICE_BAR_DISMISS_STORAGE_KEY,
   TOP_NOTICE_BAR_HEIGHT_PX,
+  addDismissedTopNoticeBarToken,
   buildTopNoticeBarDismissToken,
   buildTopNoticeBarHref,
   isTopNoticeBarHiddenOnPath,
+  parseCachedTopNoticeBar,
+  parseDismissedTopNoticeBarTokens,
+  type ITopNoticeBar,
 } from "@/utils/topNoticeBar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
-const readDismissedToken = () => {
+const readStorage = (key: string) => {
+  if (typeof window === "undefined") return null;
   try {
-    return window.localStorage.getItem(TOP_NOTICE_BAR_DISMISS_STORAGE_KEY);
+    return window.localStorage.getItem(key);
   } catch (error) {
-    // 저장소를 못 쓰는 환경에서는 띠를 계속 보여준다.
+    // 저장소를 못 쓰는 환경에서는 저장값 없이 동작한다.
     console.warn("top notice bar: localStorage unavailable", error);
     return null;
+  }
+};
+
+const writeStorage = (key: string, value: string | null) => {
+  try {
+    if (value === null) window.localStorage.removeItem(key);
+    else window.localStorage.setItem(key, value);
+  } catch (error) {
+    console.warn("top notice bar: failed to write localStorage", error);
   }
 };
 
 const TopNoticeBar = () => {
   const pathname = usePathname();
   const hiddenOnPath = isTopNoticeBarHiddenOnPath(pathname);
-  const { data } = useGetNoticeTopBar(!hiddenOnPath);
-  const bar = data?.data ?? null;
-  const [dismissedToken, setDismissedToken] = useState<string | null>(null);
-  const [isStorageRead, setIsStorageRead] = useState(false);
+  const { data, isError } = useGetNoticeTopBar(!hiddenOnPath);
+  // 지난번 띠를 먼저 보여줘 재방문 시 레이아웃이 밀리지 않게 한다.
+  const [cachedBar] = useState<ITopNoticeBar | null>(() =>
+    parseCachedTopNoticeBar(readStorage(TOP_NOTICE_BAR_CACHE_STORAGE_KEY))
+  );
+  const [dismissedTokens, setDismissedTokens] = useState<string[]>(() =>
+    parseDismissedTopNoticeBarTokens(readStorage(TOP_NOTICE_BAR_DISMISS_STORAGE_KEY))
+  );
+  const bar: ITopNoticeBar | null = data ? data.data : isError ? null : cachedBar;
 
   useEffect(() => {
-    setDismissedToken(readDismissedToken());
-    setIsStorageRead(true);
-  }, []);
+    if (!data) return;
+    writeStorage(
+      TOP_NOTICE_BAR_CACHE_STORAGE_KEY,
+      data.data ? JSON.stringify(data.data) : null
+    );
+  }, [data]);
 
   const isVisible = Boolean(
     bar
-      && isStorageRead
       && !hiddenOnPath
-      && dismissedToken !== buildTopNoticeBarDismissToken(bar)
+      && !dismissedTokens.includes(buildTopNoticeBarDismissToken(bar))
   );
 
-  useEffect(() => {
+  // 그리기 전에 헤더/본문 오프셋을 맞춰 헤더가 띠를 덮는 순간이 없게 한다.
+  useLayoutEffect(() => {
     const root = document.documentElement;
     root.style.setProperty(
       TOP_NOTICE_BAR_CSS_VAR,
@@ -57,13 +80,12 @@ const TopNoticeBar = () => {
   if (!isVisible || !bar) return null;
 
   const handleDismiss = () => {
-    const token = buildTopNoticeBarDismissToken(bar);
-    setDismissedToken(token);
-    try {
-      window.localStorage.setItem(TOP_NOTICE_BAR_DISMISS_STORAGE_KEY, token);
-    } catch (error) {
-      console.warn("top notice bar: failed to remember dismissal", error);
-    }
+    const next = addDismissedTopNoticeBarToken(
+      dismissedTokens,
+      buildTopNoticeBarDismissToken(bar)
+    );
+    setDismissedTokens(next);
+    writeStorage(TOP_NOTICE_BAR_DISMISS_STORAGE_KEY, JSON.stringify(next));
   };
 
   return (

@@ -73,7 +73,9 @@ const SearchModal = () => {
       className={`fixed inset-0 z-50 flex justify-center ${
         // TODO: 추후 상단바 알림 추가 후 isScrolled true일 때 높이 조정 필요
         // md:mt-[90px]
-        isScrolled ? "md:mt-[60px]" : "md:mt-[60px]"
+        isScrolled
+          ? "md:mt-[calc(60px_+_var(--top-notice-bar-h,0px))]"
+          : "md:mt-[calc(60px_+_var(--top-notice-bar-h,0px))]"
       }`}
     >
       <div
