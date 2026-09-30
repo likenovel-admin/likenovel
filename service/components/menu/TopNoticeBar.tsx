@@ -2,7 +2,6 @@
 
 import { useGetNoticeTopBar } from "@/app/api/query/notice";
 import {
-  TOP_NOTICE_BAR_CACHE_STORAGE_KEY,
   TOP_NOTICE_BAR_CSS_VAR,
   TOP_NOTICE_BAR_DISMISS_STORAGE_KEY,
   TOP_NOTICE_BAR_HEIGHT_PX,
@@ -10,15 +9,12 @@ import {
   buildTopNoticeBarDismissToken,
   buildTopNoticeBarHref,
   isTopNoticeBarHiddenOnPath,
-  parseCachedTopNoticeBar,
   parseDismissedTopNoticeBarTokens,
   resolveTopNoticeBar,
-  serializeCachedTopNoticeBar,
-  type ITopNoticeBar,
 } from "@/utils/topNoticeBar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 
 const readStorage = (key: string) => {
   if (typeof window === "undefined") return null;
@@ -44,22 +40,11 @@ const TopNoticeBar = () => {
   const pathname = usePathname();
   const hiddenOnPath = isTopNoticeBarHiddenOnPath(pathname);
   const { data, isError } = useGetNoticeTopBar(!hiddenOnPath);
-  // 지난번 띠를 먼저 보여줘 재방문 시 레이아웃이 밀리지 않게 한다.
-  const [cachedBar] = useState<ITopNoticeBar | null>(() =>
-    parseCachedTopNoticeBar(readStorage(TOP_NOTICE_BAR_CACHE_STORAGE_KEY), Date.now())
-  );
   const [dismissedTokens, setDismissedTokens] = useState<string[]>(() =>
     parseDismissedTopNoticeBarTokens(readStorage(TOP_NOTICE_BAR_DISMISS_STORAGE_KEY))
   );
-  const bar = resolveTopNoticeBar({ data, isError, cachedBar, now: Date.now() });
-
-  useEffect(() => {
-    if (!data) return;
-    writeStorage(
-      TOP_NOTICE_BAR_CACHE_STORAGE_KEY,
-      data.data ? serializeCachedTopNoticeBar(data.data, Date.now()) : null
-    );
-  }, [data]);
+  // 서버 응답으로 확인된 띠만 보여준다. 해제된 띠가 캐시로 잠깐이라도 다시 보이지 않게 한다.
+  const bar = resolveTopNoticeBar({ data, isError, now: Date.now() });
 
   const isVisible = Boolean(
     bar
