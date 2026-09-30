@@ -69,7 +69,8 @@ assert.deepEqual(
 );
 
 // 링크 규칙은 백엔드와 같다: 비우면 공지로, /로 시작하는 사이트 주소나 https:// 주소만.
-for (const ok of ["", "  ", "/event/12", "/product/1231?tab=episode", "https://www.likenovel.net/event/12"]) {
+// 백엔드 tests/test_notice_top_bar.py와 같은 사례다.
+for (const ok of ["", "  ", "/event/12", "/product/1231?tab=episode", "/search?keyword=회귀&next=https://x.example//y", "https://www.likenovel.net/event/12", "HTTPS://example.com/path", "https://www.likenovel.net/x#y"]) {
   assert.equal(validateNoticeTopBarLink(ok), null, ok);
 }
 for (const bad of [
@@ -79,7 +80,28 @@ for (const bad of [
   "/\\evil.example",
   "event/12",
   "https://",
+  "https:evil",
+  "https:/x",
+  "https://[",
+  "https://[bad]",
+  "https://@",
+  "https://:443",
+  "https://example.com:bad",
+  "https://www.likenovel.net:443/x",
+  "https://%09.example",
+  "https://www.likenovel.net@evil.example",
+  "https://\u017fite.example",
+  "https://b.1",
+  "https://127.0.0.1/x",
   "https://www.likenovel.net/a b",
+  "/%2e%2e//evil.example",
+  "/a//b",
+  "/../x",
+  "/a/./b",
+  "/a\tb",
+  "/a\u0085b",
+  "/a\ufeffb",
+  "/a\u200bb",
   "/" + "a".repeat(500),
 ]) {
   assert.notEqual(validateNoticeTopBarLink(bad), null, bad);

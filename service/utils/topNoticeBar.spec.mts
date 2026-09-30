@@ -30,7 +30,41 @@ test("CMS 링크가 있으면 그 주소로, 허용되지 않는 형식이면 �
     buildTopNoticeBarHref({ noticeId: 89, linkUrl: "https://www.likenovel.net/event/12?utm=bar" }),
     "https://www.likenovel.net/event/12?utm=bar"
   );
-  for (const unsafe of ["javascript:alert(1)", "//evil.example", "/\\evil.example", "http://example.com", "event/12", "https://"]) {
+  // 백엔드·CMS와 같은 사례다.
+  for (const ok of ["", "  ", "/event/12", "/product/1231?tab=episode", "/search?keyword=회귀&next=https://x.example//y", "https://www.likenovel.net/event/12", "HTTPS://example.com/path", "https://www.likenovel.net/x#y"].filter((link) => link.trim())) {
+    assert.equal(buildTopNoticeBarHref({ noticeId: 89, linkUrl: ok }), ok.trim(), ok);
+  }
+  for (const unsafe of [
+    "javascript:alert(1)",
+    "http://example.com",
+    "//evil.example",
+    "/\\evil.example",
+    "event/12",
+    "https://",
+    "https:evil",
+    "https:/x",
+    "https://[",
+    "https://[bad]",
+    "https://@",
+    "https://:443",
+    "https://example.com:bad",
+    "https://www.likenovel.net:443/x",
+    "https://%09.example",
+    "https://www.likenovel.net@evil.example",
+    "https://\u017fite.example",
+    "https://b.1",
+    "https://127.0.0.1/x",
+    "https://www.likenovel.net/a b",
+    "/%2e%2e//evil.example",
+    "/a//b",
+    "/../x",
+    "/a/./b",
+    "/a\tb",
+    "/a\u0085b",
+    "/a\ufeffb",
+    "/a\u200bb",
+    "/" + "a".repeat(500),
+  ]) {
     assert.equal(
       buildTopNoticeBarHref({ noticeId: 89, linkUrl: unsafe }),
       "/product/customer-service/notice/89",

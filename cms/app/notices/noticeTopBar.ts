@@ -2,6 +2,22 @@ export const NOTICE_TOP_BAR_TEXT_MAX_LENGTH = 80;
 export const NOTICE_TOP_BAR_LINK_MAX_LENGTH = 500;
 const NOTICE_TOP_BAR_LINK_FORMAT_MESSAGE =
   "상단 띠 링크는 /로 시작하는 사이트 주소나 https:// 주소만 넣을 수 있습니다.";
+// 백엔드(notice_top_bar.py)·서비스(topNoticeBar.ts)와 같은 링크 규칙이다. 셋을 함께 고친다.
+// 역슬래시는 브라우저가 /처럼 읽고, 공백·제어·보이지 않는 서식 문자는 받지 않는다.
+const UNSAFE_LINK_CHARS =
+  /[\\\u0000-\u0020\u007f-\u00a0\u00ad\u1680\u180e\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff\ufff0-\uffff]/;
+// https 호스트는 영문·숫자·하이픈·점만, 마지막 조각은 영문자로 시작해야 한다(포트·IP·"@" 사용자 정보는 거절).
+const HTTPS_LINK = /^https:\/\/(?:[a-z0-9-]+\.)*[a-z][a-z0-9-]*(?:[/?#]|$)/i;
+const DOT_SEGMENT = /\/\.\.?(?:\/|$)/;
+
+const isAllowedTopBarLink = (link: string) => {
+  if (UNSAFE_LINK_CHARS.test(link)) return false;
+  if (HTTPS_LINK.test(link)) return true;
+  if (!link.startsWith("/") || link.startsWith("//")) return false;
+  // 사이트 경로는 이 사이트 안에 머물게 한다: 쿼리 앞 경로에 "//", 점 세그먼트, 인코딩된 점을 받지 않는다.
+  const path = link.split(/[?#]/, 1)[0];
+  return !path.includes("//") && !/%2e/i.test(path) && !DOT_SEGMENT.test(path);
+};
 
 export interface NoticeTopBarState {
   enabled: boolean;
@@ -58,10 +74,7 @@ export const validateNoticeTopBarLink = (value: string): string | null => {
   if (link.length > NOTICE_TOP_BAR_LINK_MAX_LENGTH) {
     return `상단 띠 링크는 ${NOTICE_TOP_BAR_LINK_MAX_LENGTH}자 이내로 입력해주세요.`;
   }
-  if (/[\s\\\u0000-\u001f\u007f]/.test(link)) return NOTICE_TOP_BAR_LINK_FORMAT_MESSAGE;
-  if (link.startsWith("/") && !link.startsWith("//")) return null;
-  if (/^https:\/\/[^/?#]+/i.test(link)) return null;
-  return NOTICE_TOP_BAR_LINK_FORMAT_MESSAGE;
+  return isAllowedTopBarLink(link) ? null : NOTICE_TOP_BAR_LINK_FORMAT_MESSAGE;
 };
 
 export const validateNoticeTopBar = (state: NoticeTopBarState): string | null => {
