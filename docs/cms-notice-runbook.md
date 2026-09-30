@@ -96,6 +96,23 @@ service-impact notices.
 `cms/app/notices/DataTable.tsx`; stale browser state may require refresh before
 the UI reflects an API/DB change.
 
+## Site Top Bar (상단 띠 공지)
+
+- A general notice can carry one site-wide top bar. In CMS add/edit, turn on
+  `상단 띠 공지`, enter `띠 문구` (80 chars max), and optionally set a KST period.
+  Clicking the bar opens `/product/customer-service/notice/{id}`.
+- Storage: `tb_notice.top_bar_yn`, `top_bar_text`, `top_bar_start_date`,
+  `top_bar_end_date` (DDL `dist/init/114-add-notice-top-bar.sql`, applied
+  manually to local/DEV/PROD before code deploy).
+- An empty start is saved as the KST save time; an empty end keeps the bar until
+  it is turned off. Turning it off clears text and period.
+- Public read: `GET /v1/query/notices/top-bar` returns the single active bar
+  (latest start wins, with its KST end time) or `data: null`. The service web
+  refetches every 5 minutes, hides the bar on `/websochat`, and remembers
+  dismissal per notice and text.
+- Verify the API, the CMS list `상단 띠` column after refresh, and the public bar on
+  desktop and mobile, including the click-through to the notice.
+
 ## Verification Report
 
 Report the layers separately:

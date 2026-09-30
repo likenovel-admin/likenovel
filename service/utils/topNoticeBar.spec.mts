@@ -4,12 +4,16 @@ import test from "node:test";
 
 import {
   TOP_NOTICE_BAR_DISMISS_LIMIT,
+  TOP_NOTICE_BAR_CACHE_MAX_AGE_MS,
   addDismissedTopNoticeBarToken,
   buildTopNoticeBarDismissToken,
   buildTopNoticeBarHref,
   isTopNoticeBarHiddenOnPath,
   parseCachedTopNoticeBar,
   parseDismissedTopNoticeBarTokens,
+  parseKstDateTime,
+  resolveTopNoticeBar,
+  serializeCachedTopNoticeBar,
 } from "./topNoticeBar.ts";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
@@ -35,9 +39,50 @@ test("여러 띠를 닫아도 각각 기억한다 (A 닫기 -> B 닫기 -> A 다
 test("손상된 저장값은 무시한다", () => {
   assert.deepEqual(parseDismissedTopNoticeBarTokens("{broken"), []);
   assert.deepEqual(parseDismissedTopNoticeBarTokens(JSON.stringify(["1:A", 3])), ["1:A"]);
-  assert.equal(parseCachedTopNoticeBar("not json"), null);
-  assert.equal(parseCachedTopNoticeBar(JSON.stringify({ noticeId: "1", text: "A" })), null);
-  assert.deepEqual(parseCachedTopNoticeBar(JSON.stringify({ noticeId: 8, text: "안내" })), { noticeId: 8, text: "안내" });
+  assert.equal(parseCachedTopNoticeBar("not json", Date.now()), null);
+  assert.equal(
+    parseCachedTopNoticeBar(JSON.stringify({ bar: { noticeId: "1", text: "A" }, savedAt: 1 }), 2),
+    null
+  );
+});
+
+test("캐시는 최근 저장분이면서 아직 끝나지 않은 띠만 쓴다", () => {
+  const now = parseKstDateTime("2026-09-30 19:00:00") as number;
+  assert.equal(now, Date.parse("2026-09-30T10:00:00Z"));
+  const live = { noticeId: 8, text: "안내", endAt: "2026-10-07 23:59:00" };
+  assert.deepEqual(parseCachedTopNoticeBar(serializeCachedTopNoticeBar(live, now - 60_000), now), live);
+  assert.equal(
+    parseCachedTopNoticeBar(serializeCachedTopNoticeBar(live, now - TOP_NOTICE_BAR_CACHE_MAX_AGE_MS - 1), now),
+    null,
+    "재방문 시 오래된 캐시는 쓰지 않는다"
+  );
+  assert.equal(
+    parseCachedTopNoticeBar(
+      serializeCachedTopNoticeBar({ ...live, endAt: "2026-09-30 18:59:59" }, now - 60_000),
+      now
+    ),
+    null,
+    "종료된 띠는 캐시에서 다시 뜨지 않는다"
+  );
+  assert.equal(parseCachedTopNoticeBar(serializeCachedTopNoticeBar(live, now + 60_000), now), null);
+});
+
+test("조회 실패는 이전 성공 데이터가 있어도 띠를 숨긴다", () => {
+  const now = parseKstDateTime("2026-09-30 19:00:00") as number;
+  const bar = { noticeId: 8, text: "안내", endAt: null };
+  assert.equal(resolveTopNoticeBar({ data: { data: bar }, isError: true, cachedBar: bar, now }), null);
+  assert.deepEqual(resolveTopNoticeBar({ data: undefined, isError: false, cachedBar: bar, now }), bar);
+  assert.equal(resolveTopNoticeBar({ data: { data: null }, isError: false, cachedBar: bar, now }), null);
+  assert.equal(
+    resolveTopNoticeBar({
+      data: { data: { ...bar, endAt: "2026-09-30 18:00:00" } },
+      isError: false,
+      cachedBar: null,
+      now,
+    }),
+    null,
+    "열린 화면에서도 종료 시각이 지나면 숨긴다"
+  );
 });
 
 test("웹소챗 화면에서는 띠를 숨긴다", () => {
@@ -53,7 +98,7 @@ test("띠 조회 실패는 페이지를 멈추지 않고, 예약 변경을 주�
   assert.match(query, /useGetNoticeTopBar[\s\S]*refetchInterval: TOP_NOTICE_BAR_REFRESH_MS/);
   const bar = read("../components/menu/TopNoticeBar.tsx");
   assert.match(bar, /useLayoutEffect\(/, "offset must be applied before paint");
-  assert.match(bar, /isError \? null/, "a failed request hides the bar");
+  assert.match(bar, /resolveTopNoticeBar\(\{ data, isError, cachedBar/, "a failed request hides the bar");
 });
 
 test("띠가 보이면 고정 헤더, 검색창, 본문 여백이 같이 내려간다", () => {
