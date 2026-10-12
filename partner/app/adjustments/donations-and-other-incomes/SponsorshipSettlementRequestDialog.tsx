@@ -102,7 +102,7 @@ export default function SponsorshipSettlementRequestDialog({
     ? ""
     : eligibility.requested_this_month
       ? "이번 달에는 이미 정산신청을 하셨습니다. 다음 달에 다시 신청할 수 있습니다."
-      : `정산신청은 신청 가능 금액이 ${formatWon(eligibility.min_amount)} 이상일 때 할 수 있습니다. (현재 신청 가능 금액 ${formatWon(eligibility.requestable_amount)})`;
+      : `정산신청은 월 1회, 신청 가능 금액이 ${formatWon(eligibility.min_amount)} 이상일 때 할 수 있습니다. (현재 신청 가능 금액 ${formatWon(eligibility.requestable_amount)})`;
 
   return (
     <div className="flex items-center gap-3">
