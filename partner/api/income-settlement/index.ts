@@ -3,6 +3,7 @@ import {
   IGetIncomeSettlementParams,
   IGetIncomeSettlementsResponse,
   IGetIncomeSettlementSummaryResponse,
+  IGetSponsorshipSettlementEligibilityResponse,
   IRequestSponsorshipSettlementBody,
   IRequestSponsorshipSettlementResponse,
 } from "@/api/income-settlement/dto";
@@ -64,6 +65,21 @@ export const useRequestSponsorshipSettlement = () => {
         method: "POST",
         body,
       });
+    },
+  });
+};
+
+export const useGetSponsorshipSettlementEligibility = (enabled: boolean) => {
+  return useQuery<IGetSponsorshipSettlementEligibilityResponse>({
+    queryKey: ["GetSponsorshipSettlementEligibility"],
+    enabled,
+    queryFn: async () => {
+      return await apiClient.request<IGetSponsorshipSettlementEligibilityResponse>(
+        {
+          url: "/v1/query/partners/sponsorship-settlement-requests/eligibility",
+          method: "GET",
+        }
+      );
     },
   });
 };

@@ -32,7 +32,20 @@ export interface IRequestSponsorshipSettlementResponse {
   data: {
     requested: boolean;
     request_month: string;
+    requestable_amount: number;
     total_donation: number;
     confirmed_final: number;
   };
+}
+
+export interface ISponsorshipSettlementEligibility {
+  min_amount: number;
+  requestable_amount: number;
+  confirmed_final: number;
+  requested_this_month: boolean;
+  can_request: boolean;
+}
+
+export interface IGetSponsorshipSettlementEligibilityResponse {
+  data: ISponsorshipSettlementEligibility;
 }
