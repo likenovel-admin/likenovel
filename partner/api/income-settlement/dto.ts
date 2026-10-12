@@ -25,11 +25,13 @@ export interface IRequestSponsorshipSettlementBody {
   account_holder: string;
   bank_name: string;
   account_number: string;
+  resident_registration_number: string;
 }
 
 export interface IRequestSponsorshipSettlementResponse {
   data: {
     requested: boolean;
+    request_month: string;
     total_donation: number;
     confirmed_final: number;
   };
