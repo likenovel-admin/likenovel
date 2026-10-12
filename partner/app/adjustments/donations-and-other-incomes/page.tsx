@@ -3,6 +3,7 @@ import {
   getDownloadIncomeSettlements,
   useGetIncomeSettlements,
   useGetIncomeSettlementSummary,
+  useGetSponsorshipSettlementEligibility,
 } from "@/api/income-settlement";
 import { IGetIncomeSettlementParams } from "@/api/income-settlement/dto";
 import AdminDonationTable, {
@@ -252,6 +253,8 @@ function AuthorPage() {
   const route = useRouter();
   // CP 계약 작품을 포함해 후원금 정산신청은 작가 계정만 할 수 있다.
   const { isPartner } = useProfile();
+  const { data: eligibility, refetch: refetchEligibility } =
+    useGetSponsorshipSettlementEligibility(isPartner === false);
   const [searchMonth, setSearchMonth] = useState<Date | undefined>(new Date());
 
   const {
@@ -287,7 +290,12 @@ function AuthorPage() {
               showFourColumnMonthYearPicker
               className="border px-3 py-2 rounded text-sm w-[140px]"
             />
-            {isPartner === false && <SponsorshipSettlementRequestDialog />}
+            {isPartner === false && (
+              <SponsorshipSettlementRequestDialog
+                eligibility={eligibility?.data}
+                onRequested={() => refetchEligibility()}
+              />
+            )}
           </div>
           <AuthorDonationTable data={data ?? defaultSummary} />
           <FullPageLoader isLoading={isLoadingData || isFetching} />
