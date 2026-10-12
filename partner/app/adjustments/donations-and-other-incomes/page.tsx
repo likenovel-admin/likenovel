@@ -250,6 +250,8 @@ const defaultSummary: IIncomeSettlementSummary = {
 function AuthorPage() {
   // const isMobile = useIsMobile()
   const route = useRouter();
+  // CP 계약 작품을 포함해 후원금 정산신청은 작가 계정만 할 수 있다.
+  const { isPartner } = useProfile();
   const [searchMonth, setSearchMonth] = useState<Date | undefined>(new Date());
 
   const {
@@ -285,7 +287,7 @@ function AuthorPage() {
               showFourColumnMonthYearPicker
               className="border px-3 py-2 rounded text-sm w-[140px]"
             />
-            <SponsorshipSettlementRequestDialog />
+            {isPartner === false && <SponsorshipSettlementRequestDialog />}
           </div>
           <AuthorDonationTable data={data ?? defaultSummary} />
           <FullPageLoader isLoading={isLoadingData || isFetching} />
