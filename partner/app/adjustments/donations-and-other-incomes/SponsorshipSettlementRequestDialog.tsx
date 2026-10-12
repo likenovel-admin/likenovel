@@ -9,8 +9,14 @@ import { X } from "lucide-react";
 import { FormEvent, useState } from "react";
 
 const ACCOUNT_NUMBER_PATTERN = /^[0-9-]{5,30}$/;
+const RESIDENT_REGISTRATION_NUMBER_PATTERN = /^\d{6}-?\d{7}$/;
 
-const emptyForm = { account_holder: "", bank_name: "", account_number: "" };
+const emptyForm = {
+  account_holder: "",
+  bank_name: "",
+  account_number: "",
+  resident_registration_number: "",
+};
 
 export default function SponsorshipSettlementRequestDialog() {
   const [open, setOpen] = useState(false);
@@ -37,13 +43,29 @@ export default function SponsorshipSettlementRequestDialog() {
       account_holder: form.account_holder.trim(),
       bank_name: form.bank_name.trim(),
       account_number: form.account_number.trim(),
+      resident_registration_number: form.resident_registration_number.trim(),
     };
-    if (!body.account_holder || !body.bank_name || !body.account_number) {
-      setFormError("예금주명, 은행명, 계좌번호를 모두 입력해 주세요.");
+    if (
+      !body.account_holder ||
+      !body.bank_name ||
+      !body.account_number ||
+      !body.resident_registration_number
+    ) {
+      setFormError(
+        "예금주명, 은행명, 계좌번호, 주민등록번호를 모두 입력해 주세요."
+      );
       return;
     }
     if (!ACCOUNT_NUMBER_PATTERN.test(body.account_number)) {
       setFormError("계좌번호는 숫자와 하이픈(-)만 5~30자로 입력해 주세요.");
+      return;
+    }
+    if (
+      !RESIDENT_REGISTRATION_NUMBER_PATTERN.test(
+        body.resident_registration_number
+      )
+    ) {
+      setFormError("주민등록번호는 숫자 13자리로 입력해 주세요.");
       return;
     }
     setFormError("");
@@ -78,7 +100,7 @@ export default function SponsorshipSettlementRequestDialog() {
               </DialogPrimitive.Title>
               <DialogPrimitive.Description className="mt-1 text-sm text-muted-foreground">
                 입금받을 계좌를 입력해 주세요. 확정된 후원 정산액을 확인한 뒤
-                입금해 드립니다.
+                입금해 드립니다. 정산신청은 한 달에 한 번 할 수 있습니다.
               </DialogPrimitive.Description>
             </div>
             <DialogPrimitive.Close
@@ -116,6 +138,21 @@ export default function SponsorshipSettlementRequestDialog() {
                 inputMode="numeric"
                 placeholder="숫자와 하이픈(-)만 입력"
               />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              주민등록번호
+              <Input
+                value={form.resident_registration_number}
+                onChange={handleChange("resident_registration_number")}
+                maxLength={14}
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="900101-1234567"
+              />
+              <span className="text-xs text-muted-foreground">
+                후원금 원천징수 세금 신고에만 사용하며 서비스에 저장하지
+                않습니다.
+              </span>
             </label>
             {formError && (
               <p className="text-sm text-red-600" role="alert">
