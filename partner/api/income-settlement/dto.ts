@@ -20,3 +20,17 @@ export interface IGetIncomeSettlementParams {
 }
 
 export type IGetIncomeSettlementSummaryResponse = IIncomeSettlementSummary;
+
+export interface IRequestSponsorshipSettlementBody {
+  account_holder: string;
+  bank_name: string;
+  account_number: string;
+}
+
+export interface IRequestSponsorshipSettlementResponse {
+  data: {
+    requested: boolean;
+    total_donation: number;
+    confirmed_final: number;
+  };
+}

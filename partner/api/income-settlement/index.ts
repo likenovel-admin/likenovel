@@ -3,9 +3,11 @@ import {
   IGetIncomeSettlementParams,
   IGetIncomeSettlementsResponse,
   IGetIncomeSettlementSummaryResponse,
+  IRequestSponsorshipSettlementBody,
+  IRequestSponsorshipSettlementResponse,
 } from "@/api/income-settlement/dto";
 import apiClient from "@/lib/apiClient";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 export const useGetIncomeSettlements = (params: IGetIncomeSettlementParams) => {
   return useQuery<IGetIncomeSettlementsResponse>({
@@ -46,6 +48,22 @@ export const useGetIncomeSettlementSummary = (params: {
         queryParams: params,
       });
       return res;
+    },
+  });
+};
+
+export const useRequestSponsorshipSettlement = () => {
+  return useMutation<
+    IRequestSponsorshipSettlementResponse,
+    Error,
+    IRequestSponsorshipSettlementBody
+  >({
+    mutationFn: async (body) => {
+      return await apiClient.request<IRequestSponsorshipSettlementResponse>({
+        url: "/v1/command/partners/sponsorship-settlement-requests",
+        method: "POST",
+        body,
+      });
     },
   });
 };

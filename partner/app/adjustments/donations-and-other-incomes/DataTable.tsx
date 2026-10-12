@@ -181,19 +181,24 @@ export const AuthorDonationTable: React.FC<AuthorTableProps> = ({ data }) => {
             </TableCell>
           </TableRow>
           <TableRow>
-            <TableHead>정산 가능액</TableHead>
+            <TableHead>확정 대기액</TableHead>
             <TableCell className="border-l">
               {formatNumber(accumulated.enable_settlement_price)}
             </TableCell>
           </TableRow>
           <TableRow>
-            <TableHead>정산 완료액</TableHead>
+            <TableHead>정산 확정액</TableHead>
             <TableCell className="border-l">
               {formatNumber(accumulated.completed_settlement_price)}
             </TableCell>
           </TableRow>
         </TableBody>
       </Table>
+      <p className="mt-2 text-sm text-muted-foreground">
+        정산 확정액은 매월 1일 전월 후원분이 확정된 누적 금액이고, 확정
+        대기액은 다음 달 1일에 확정될 금액입니다. 후원금 정산신청을 하시면
+        확인 후 입력하신 계좌로 입금해 드립니다.
+      </p>
     </>
   );
 };

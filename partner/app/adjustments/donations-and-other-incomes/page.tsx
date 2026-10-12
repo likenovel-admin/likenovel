@@ -8,6 +8,7 @@ import { IGetIncomeSettlementParams } from "@/api/income-settlement/dto";
 import AdminDonationTable, {
   AuthorDonationTable,
 } from "@/app/adjustments/donations-and-other-incomes/DataTable";
+import SponsorshipSettlementRequestDialog from "@/app/adjustments/donations-and-other-incomes/SponsorshipSettlementRequestDialog";
 import FullPageLoader from "@/components/common/FullPageLoader";
 import PaginationControls from "@/components/common/PaginationControls";
 import { SearchDateNText } from "@/components/common/SearchDateNText";
@@ -274,7 +275,7 @@ function AuthorPage() {
           child="후원 및 기타 정산"
         />
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="flex items-center gap-2 px-4">
+          <div className="flex items-center justify-between gap-2 px-4">
             <ReactDatePicker
               selected={searchMonth}
               onChange={(date) => setSearchMonth(date || undefined)}
@@ -284,6 +285,7 @@ function AuthorPage() {
               showFourColumnMonthYearPicker
               className="border px-3 py-2 rounded text-sm w-[140px]"
             />
+            <SponsorshipSettlementRequestDialog />
           </div>
           <AuthorDonationTable data={data ?? defaultSummary} />
           <FullPageLoader isLoading={isLoadingData || isFetching} />
