@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test:auth-session": "node tests/authSession.browser.spec.mjs",
     "test:e2e:perf": "playwright test e2e/performance-surfaces.spec.ts",
     "test:naver-verification": "node --experimental-strip-types app/naverSiteVerification.contract.test.mts",
     "test:middle-menu": "node --experimental-strip-types components/main/MiddleMenu.protagonistChatShortcut.contract.test.mts",

@@ -1,4 +1,4 @@
-import useAuthStore from "@/store/authStore";
+import useAuthStore, { isCurrentAuthSession } from "@/store/authStore";
 import {
   clearAuthorizationHeaders,
   clearStaleAuthSession,
@@ -9,6 +9,7 @@ import { IRefreshTokenRequest } from "../auth/dto";
 
 export type AxiosRequestConfigWithAuthBypass = AxiosRequestConfig & {
   _retry?: boolean;
+  _authSessionVersion?: number;
   skipAuthRedirectOn401?: boolean;
   reportGlobalServiceUnavailable?: boolean;
 };
@@ -40,8 +41,58 @@ export const publicInstance = axios.create({
   withCredentials: false,
 });
 
+// One refresh per session; an older session's completion cannot clear a newer one.
+let pendingTokenRefresh: {
+  sessionVersion: number;
+  promise: Promise<boolean>;
+} | undefined;
+
+const refreshAuthSession = (sessionVersion: number) => {
+  if (pendingTokenRefresh?.sessionVersion === sessionVersion) {
+    return pendingTokenRefresh.promise;
+  }
+  const { accessToken, refreshToken, setAccessToken, setRefreshToken } =
+    useAuthStore.getState();
+  const promise: Promise<boolean> = axios.put("/api/v1/command/auth/token/reissue", {
+    access_token: accessToken || "",
+    refresh_token: refreshToken,
+  }, { withCredentials: true, timeout: API_TIMEOUT_MS }).then((res) => {
+    if (!isCurrentAuthSession(sessionVersion)) return false;
+    const newAccessToken =
+      res?.data?.data?.token?.accessToken ||
+      res?.data?.data?.auth?.accessToken ||
+      res?.data?.token?.access_token ||
+      res?.data?.token?.accessToken;
+    const newRefreshToken =
+      res?.data?.data?.token?.refreshToken ||
+      res?.data?.data?.auth?.refreshToken ||
+      res?.data?.token?.refresh_token ||
+      res?.data?.token?.refreshToken;
+    if (!newAccessToken) return false;
+    setAccessToken(newAccessToken);
+    if (newRefreshToken) {
+      setRefreshToken(newRefreshToken);
+    }
+    instance.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
+    return true;
+  }).finally(() => {
+    if (pendingTokenRefresh?.promise === promise) pendingTokenRefresh = undefined;
+  });
+  pendingTokenRefresh = { sessionVersion, promise };
+  return promise;
+};
+
 instance.interceptors.request.use(
   (config) => {
+    const authConfig = config as AxiosRequestConfigWithAuthBypass;
+    if (authConfig._authSessionVersion === undefined) {
+      authConfig._authSessionVersion = useAuthStore.getState().authSessionVersion;
+    } else if (!isCurrentAuthSession(authConfig._authSessionVersion)) {
+      // A replay must not inherit a different account's bearer token.
+      const canceled = new axios.CanceledError("Authentication session changed");
+      canceled.config = config;
+      throw canceled;
+    }
     // Check both localStorage and sessionStorage for access token
     const accessToken =
       localStorage.getItem("access_token") ||
@@ -92,6 +143,14 @@ instance.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = (error.config || {}) as AxiosRequestConfigWithAuthBypass;
+    const belongsToCurrentSession = () =>
+      originalRequest._authSessionVersion === undefined ||
+      isCurrentAuthSession(originalRequest._authSessionVersion);
+    // Keep the original failure for the caller, but never let an old request
+    // refresh/clear the new session or trigger the global maintenance signal.
+    if (!belongsToCurrentSession()) {
+      return Promise.reject(error);
+    }
     reportServiceUnavailable(
       error,
       originalRequest.reportGlobalServiceUnavailable === true
@@ -178,8 +237,12 @@ instance.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const { accessToken, refreshToken, setAccessToken, setRefreshToken, setState } =
+      const { accessToken, refreshToken, authSessionVersion, setState } =
         useAuthStore.getState();
+      // A late 401 may refer to the token another request has already rotated.
+      if (accessToken && originalRequest.headers?.Authorization !== `Bearer ${accessToken}`) {
+        return instance(originalRequest);
+      }
 
       const clearStaleAuth = () => {
         clearStaleAuthSession({
@@ -199,33 +262,15 @@ instance.interceptors.response.use(
       // refresh token이 있으면 재발급 시도
       if (refreshToken) {
         try {
-          const res = await axios.put("/api/v1/command/auth/token/reissue", {
-            access_token: accessToken || "",
-            refresh_token: refreshToken,
-          }, { withCredentials: true, timeout: API_TIMEOUT_MS });
-
-          const newAccessToken =
-            res?.data?.data?.token?.accessToken ||
-            res?.data?.data?.auth?.accessToken ||
-            res?.data?.token?.access_token ||
-            res?.data?.token?.accessToken;
-          const newRefreshToken =
-            res?.data?.data?.token?.refreshToken ||
-            res?.data?.data?.auth?.refreshToken ||
-            res?.data?.token?.refresh_token ||
-            res?.data?.token?.refreshToken;
-
-          if (newAccessToken) {
-            setAccessToken(newAccessToken);
-            if (newRefreshToken) {
-              setRefreshToken(newRefreshToken);
-            }
-            instance.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
-            const requestHeaders = originalRequest.headers ?? (originalRequest.headers = {});
-            requestHeaders["Authorization"] = `Bearer ${newAccessToken}`;
-            return instance(originalRequest);
+          const refreshed = await refreshAuthSession(authSessionVersion);
+          if (!belongsToCurrentSession()) {
+            return Promise.reject(error);
           }
+          if (refreshed) return instance(originalRequest);
         } catch (refreshError) {
+          if (!belongsToCurrentSession()) {
+            return Promise.reject(refreshError);
+          }
           if (reportServiceUnavailable(refreshError, true)) {
             return Promise.reject(refreshError);
           }

@@ -7,6 +7,8 @@ import { ISocialLoginProvider, ITokens, IUser } from "@/types";
 import { create } from "zustand";
 
 interface IAuthState {
+  // Changes at login/logout boundaries, not during token rotation.
+  authSessionVersion: number;
   isAuthInitialized: boolean;
   isAuthenticated: boolean;
   user: IUser | null;
@@ -25,6 +27,7 @@ interface IAuthState {
 }
 
 const useAuthStore = create<IAuthState>((set) => ({
+  authSessionVersion: 0,
   isAuthInitialized: false,
   isAuthenticated: false,
   user: null,
@@ -42,13 +45,14 @@ const useAuthStore = create<IAuthState>((set) => ({
         }
       : null;
 
-    set({
+    set((state) => ({
+      authSessionVersion: state.authSessionVersion + 1,
       isAuthInitialized: true,
       isAuthenticated: true,
       user,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-    });
+    }));
 
     // Store tokens based on keep_signin_yn preference
     if (keepSignIn === "Y") {
@@ -85,12 +89,13 @@ const useAuthStore = create<IAuthState>((set) => ({
   },
 
   signOut: () => {
-    set({
+    set((state) => ({
+      authSessionVersion: state.authSessionVersion + 1,
       isAuthenticated: false,
       user: null,
       accessToken: null,
       refreshToken: null,
-    });
+    }));
     // Avoid broad sessionStorage clearing; analytics/session attribution keys are not auth-owned.
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
@@ -148,6 +153,10 @@ const useAuthStore = create<IAuthState>((set) => ({
       const updatedState = {
         ...state,
         ...newState,
+        authSessionVersion:
+          newState.accessToken !== undefined && newState.accessToken !== state.accessToken
+            ? state.authSessionVersion + 1
+            : state.authSessionVersion,
       };
       if (updatedState.user) {
         sessionStorage.setItem("user", JSON.stringify(updatedState.user));
@@ -158,3 +167,7 @@ const useAuthStore = create<IAuthState>((set) => ({
 }));
 
 export default useAuthStore;
+
+// Shared by query effects and transport callbacks; tokens never enter cache keys.
+export const isCurrentAuthSession = (version: number) =>
+  version === useAuthStore.getState().authSessionVersion;
