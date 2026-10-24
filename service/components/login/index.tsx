@@ -11,7 +11,6 @@ import {
   setLocalStorage,
   STORAGE_KEYS,
 } from "@/utils/localStorage";
-import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -39,7 +38,6 @@ interface Props {
 const Login = ({ pageType, setIsOpen }: Props) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const queryClient = useQueryClient();
   const methods = useForm<ILoginForm>({
     defaultValues: {
       isKeepSignIn: true,
@@ -110,9 +108,6 @@ const Login = ({ pageType, setIsOpen }: Props) => {
           },
           requestData.keep_signin_yn
         );
-
-        // Invalidate user query to fetch fresh userRole from API
-        queryClient.invalidateQueries({ queryKey: ["selectUser"] });
 
         setIsOpen?.(false);
 

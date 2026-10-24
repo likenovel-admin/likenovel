@@ -1,7 +1,7 @@
 "use client";
 import { useSelectUser } from "@/app/api/auth";
 import { instance } from "@/app/api/axios";
-import useAuthStore from "@/store/authStore";
+import useAuthStore, { isCurrentAuthSession } from "@/store/authStore";
 import {
   clearStaleAuthSession,
   hasStoredAuthToken,
@@ -9,7 +9,7 @@ import {
 import { useEffect } from "react";
 
 const useInitializeAuth = () => {
-  const { setState } = useAuthStore();
+  const { setState, authSessionVersion } = useAuthStore();
   const { data } = useSelectUser();
 
   useEffect(() => {
@@ -50,6 +50,8 @@ const useInitializeAuth = () => {
 
   useEffect(() => {
     if (data === undefined) return;
+    // A login/logout can happen after render but before this effect runs.
+    if (!isCurrentAuthSession(authSessionVersion)) return;
     const hasToken = hasStoredAuthToken(localStorage, sessionStorage);
 
     /**
@@ -106,7 +108,7 @@ const useInitializeAuth = () => {
         refreshToken: null,
       });
     }
-  }, [data, setState]);
+  }, [data, setState, authSessionVersion]);
 };
 
 export default useInitializeAuth;

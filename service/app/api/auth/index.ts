@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
+import useAuthStore from "@/store/authStore";
 import { instance, requiredServiceRequestConfig } from "../axios";
 import {
   IEmailSignUpRequest,
@@ -52,8 +53,11 @@ export const useSignOut = () => {
 };
 
 export const useSelectUser = () => {
+  const { authSessionVersion, isAuthInitialized } = useAuthStore();
   return useQuery<ISelectUserResponse>({
-    queryKey: ["selectUser"],
+    // A new login must never reuse the previous guest/account response.
+    queryKey: ["selectUser", authSessionVersion],
+    enabled: isAuthInitialized,
     queryFn: async () => {
       const response = await instance.get(
         "/v1/query/user",
