@@ -1093,3 +1093,11 @@ Legacy PM2 dev/prod env copy flows are preserved only as historical reference in
 - DB/배치 정책: schema/runbook/verified-index 관련 문서
 - 검증된 현재 상태: `/home/hongsan/.claude/projects/-home-hongsan-work-likenovel/memory/verified-index.md`
 - 반복 실수 방지: `AGENTS.md`, 관련 Codex skill, memory note
+
+
+## AI 모델 관리 · Hive/River 라우팅 반영
+
+기능별 모델 설정, 작업 시작 snapshot, 다계정 크레딧 폴백 및 migration 117/118의
+적용 전 검증은 [AI 모델 라우팅 계약](ai-model-routing.md)을 따른다.
+이 계약의 로컬 구현·합성 테스트 통과는 운영 migration·계정 설치·배포 완료를 의미하지 않는다.
+기존 inflight를 삭제하거나 모델 변경으로 우회하지 않으며, 118 DDL 실패 시 코드 반영을 중단한다.

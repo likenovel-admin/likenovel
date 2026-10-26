@@ -244,7 +244,8 @@ const data = {
         pathname.includes("/notices") ||
         pathname.includes("/faqs") ||
         pathname.includes("/adjust-ratio") ||
-        pathname.includes("/platform-service-rate"),
+        pathname.includes("/platform-service-rate") ||
+        pathname.includes("/ai-models"),
       items: [
         {
           title: "배너 및 팝업 관리",
@@ -261,6 +262,10 @@ const data = {
         {
           title: "플랫폼 수수료",
           url: "/platform-service-rate",
+        },
+        {
+          title: "AI 모델 관리",
+          url: "/ai-models",
         },
       ],
     },
