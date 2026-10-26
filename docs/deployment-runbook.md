@@ -748,8 +748,10 @@ N/Y 활성화를 한 transaction에서 수행하므로 일부 scope만 바뀌지
 실패도 이미 발행된 활성 세대를 지우지 않는다.
 
 공개 request는 snapshot-only다. AUTO 메인은 현재 공개·비블라인드·AI 동의·성인
-scope·최소 공개회차 조건을 재확인한 뒤 추천순 `LIMIT 12`만 읽는다. 전체 목록은 같은
-reader로 같은 순서를 읽고 로그인 사용자 진도만 별도 query로 합친다. request에서
+scope·최소 공개회차 조건을 재확인한 전체 snapshot 후보에서 중복 없이 최대 12명을
+무작위로 선정하고 응답의 `cardOrder`를 선정 순서로 부여한다. 구좌 API 응답에는
+`Cache-Control: no-store`를 적용한다. 전체 목록은 같은
+reader의 추천순을 그대로 읽고 로그인 사용자 진도만 별도 query로 합친다. request에서
 전체 후보/장면/이미지를 재계산하는 producer fallback이나 프로세스 TTL cache를 두지
 않는다. 갱신 실패 시 이전 활성 세대가 last-known-good다.
 
@@ -759,8 +761,9 @@ reader로 같은 순서를 읽고 로그인 사용자 진도만 별도 query로 
    wiring만 먼저 배포한다.
 2. 최초 refresh가 성공한 뒤 아래 read-only query로 N/Y가 같은 generation ID이며 각각
    양수 item count와 hash를 갖는지 확인한다.
-3. 그 다음 snapshot reader backend를 배포하고 메인 API 12개/전체 catalog의 앞 12개가
-   같은 identity/order인지 확인한다.
+3. 그 다음 snapshot reader backend를 배포하고 자동 모드 메인 API가 전체 catalog의
+   공개 후보 중 최대 12개를 중복 없이 반환하는지 확인한다. 전체 catalog의 추천순과
+   수동 편성 순서는 유지되어야 한다. 자동 모드의 반복 요청은 일부 후보가 겹칠 수 있다.
 4. 마지막으로 메인 스크롤/load 전체-catalog prefetch를 제거한 frontend를 배포한다.
 5. refresh wall time과 reader 실행계획/latency 기준을 통과한 뒤에만 gate를 `1`로
    전환하고 cron exact line과 story-context 후속 실행을 readback한다.

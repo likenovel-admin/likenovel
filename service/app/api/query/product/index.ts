@@ -822,7 +822,8 @@ export const getMainCharacterSlotsQueryKey = (
 export const useGetMainCharacterSlots = (
   adult_yn?: string,
   enabled: boolean = true,
-  cacheIdentity: string = "guest"
+  cacheIdentity: string = "guest",
+  refreshOnEntry: boolean = false
 ) => {
   const adultYnParam = adult_yn || "N";
   return useQuery<IGetMainCharacterSlotsResponse>({
@@ -835,6 +836,9 @@ export const useGetMainCharacterSlots = (
     },
     staleTime: PUBLIC_PRODUCT_STALE_TIME_MS,
     gcTime: PUBLIC_PRODUCT_GC_TIME_MS,
+    refetchOnMount: refreshOnEntry ? "always" : true,
+    refetchOnWindowFocus: !refreshOnEntry,
+    refetchOnReconnect: !refreshOnEntry,
     enabled,
   });
 };

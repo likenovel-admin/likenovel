@@ -127,10 +127,14 @@ export default function HomePageClient() {
     homeQueryState.enabled,
     mainProductCacheIdentity
   );
-  const { data: mainCharacterSlotsData } = useGetMainCharacterSlots(
+  const {
+    data: mainCharacterSlotsData,
+    isFetchedAfterMount: hasFetchedMainCharacterSlots,
+  } = useGetMainCharacterSlots(
     adultYn,
     homeQueryState.enabled,
-    mainProductCacheIdentity
+    mainProductCacheIdentity,
+    true
   );
   const { data: companyNoticeBannerData } = useSelectPanels({
     division: COMPANY_NOTICE_BANNER_POSITION,
@@ -274,7 +278,9 @@ export default function HomePageClient() {
   );
   const companyNoticeItems =
     companyNoticeCmsItems.length > 0 ? companyNoticeCmsItems : undefined;
-  const mainCharacterSlotItems = mainCharacterSlotsData?.data ?? [];
+  const mainCharacterSlotItems = hasFetchedMainCharacterSlots
+    ? mainCharacterSlotsData?.data ?? []
+    : [];
 
   return (
     <>
