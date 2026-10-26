@@ -30,6 +30,8 @@ marked as an absolute server path.
 - [AI And Websochat](ai-and-websochat.md)
 - [CMS Notice Runbook](../cms-notice-runbook.md)
 
+- [AI 모델 관리와 선충전 라우팅](../ai-model-routing.md) — 로컬 구현 계약; 운영 적용 별도 검증
+
 ## Rules
 
 1. If this wiki conflicts with code, trust code.
