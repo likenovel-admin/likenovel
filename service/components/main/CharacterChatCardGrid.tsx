@@ -170,11 +170,11 @@ const CharacterChatCardGrid = ({
                     </span>
                   )}
                 </div>
-                <span className="mt-10pxr block w-full truncate text-12pxr font-normal leading-[16px] text-dark-gray-400 md:text-13pxr">
-                  {item.productTitle}
-                </span>
-                <span className="mt-5pxr block w-full truncate text-14pxr font-bold leading-[19px] text-black-100 md:text-15pxr">
+                <span className="mt-10pxr block w-full truncate text-14pxr font-bold leading-[19px] text-black-100 md:text-15pxr">
                   {item.characterName}
+                </span>
+                <span className="mt-5pxr block w-full truncate text-12pxr font-normal leading-[16px] text-dark-gray-400 md:text-13pxr">
+                  {item.productTitle}
                 </span>
               </button>
             </li>

@@ -1,3 +1,4 @@
+import "./api/query/product/mainCharacterSlots.spec.mts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
@@ -107,8 +108,8 @@ assert.match(
 );
 assert.match(
   characterGridSource,
-  /text-dark-gray-400[^>]*>\s*\{item\.productTitle\}\s*<\/span>\s*<span[^>]*text-black-100[^>]*>\s*\{item\.characterName\}/,
-  "CharacterSlot should show the work title as context before the emphasized character name"
+  /text-black-100[^>]*>\s*\{item\.characterName\}\s*<\/span>\s*<span[^>]*text-dark-gray-400[^>]*>\s*\{item\.productTitle\}/,
+  "CharacterSlot should emphasize the character name and show the original work title underneath"
 );
 assert.match(
   characterGridSource,

@@ -95,18 +95,18 @@ assert.match(
 );
 assert.match(
   pageSource,
-  /추천순 상위 12명[\s\S]*같은 순서/,
+  /전체 공개 후보에서 중복 없이 최대 12명을 무작위로 선정/,
   "CMS should explain the automatic home-slot behavior"
-);
-assert.doesNotMatch(
-  pageSource,
-  /무작위|홈 요청마다 편성/,
-  "CMS should not describe automatic mode as rotating a random pool"
 );
 assert.match(
   pageSource,
-  /기본 이미지가 아닌 실제 이미지[\s\S]*자산 준비[\s\S]*주인공/,
-  "CMS should expose the automatic recommendation priority to operators"
+  /메인에 다시 방문하면 새로 선정하며, 전체 목록의 추천순은 유지/,
+  "CMS should explain redraw on re-entry and preserve catalog ranking"
+);
+assert.match(
+  pageSource,
+  /아래 메인 12명 편성의 공개 순서대로 홈에 노출합니다/,
+  "CMS should preserve the manual home-slot order explanation"
 );
 assert.match(
   pageSource,
