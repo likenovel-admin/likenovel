@@ -45,6 +45,7 @@ import {
   ONBOARDING_STATUS_CHANGED_EVENT,
 } from "@/constants/onboarding";
 import useAuthStore from "@/store/authStore";
+import { isExternalDistributionPlatform } from "@/constants/externalDistribution";
 import { getHomeQueryState } from "@/utils/homeQueryState";
 import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
 
@@ -178,6 +179,11 @@ export default function HomePageClient() {
         suggestName: directProduct?.title || "",
         suggestTarget: "",
         suggestTitle: directProduct?.title || "",
+        externalPlatform:
+          directProduct?.sourceType === "external_distribution" &&
+          isExternalDistributionPlatform(directProduct.sourcePlatform)
+            ? directProduct.sourcePlatform
+            : undefined,
       })) ?? [];
     const suggestSections = suggestProducts.map((suggestProduct) => suggestProduct.sectionData);
     const combined = [...directSections, ...suggestSections];

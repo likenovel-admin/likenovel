@@ -34,6 +34,8 @@ export const PRODUCT_DETAIL_ENTRY_SOURCE = {
   PAID_PROMOTION: "paid_promotion",
   HOME_BOTTOM_SUGGEST: "home_bottom_suggest",
   HOME_BOTTOM_INTEREST: "home_bottom_interest",
+  HOME_EXTERNAL_DISTRIBUTION: "home_external_distribution",
+  EXTERNAL_DISTRIBUTION_LIST: "external_distribution_list",
   PRODUCT_DETAIL_CONTENT_SUGGEST: "product_detail_content_suggest",
   PRODUCT_DETAIL_CART_SUGGEST: "product_detail_cart_suggest",
   PRODUCT_DETAIL_SAME_AUTHOR: "product_detail_same_author",

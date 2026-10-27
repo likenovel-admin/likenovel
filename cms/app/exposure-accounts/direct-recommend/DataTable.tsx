@@ -14,6 +14,7 @@ import {
 import { IDirectRecommend } from "@/types/directRecommend";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
+import { describeDirectRecommendSource } from "./sourceFields";
 
 interface Props {
   data: IDirectRecommend[];
@@ -57,7 +58,12 @@ export default function DirectRecommendTable({
       key: "name",
     },
     { header: "노출 순서", key: "order" },
-    { header: "작품 리스트", key: "product_ids" },
+    {
+      header: "작품 리스트",
+      key: "product_ids",
+      render: (value, row: IDirectRecommend) =>
+        describeDirectRecommendSource(row) ?? value,
+    },
     {
       header: "노출기간",
       key: "date",

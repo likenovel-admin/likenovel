@@ -127,6 +127,9 @@ selects env by runtime directory:
 
 ## Batch Safety Notes
 
+- 외부 유통(카카오페이지·리디) 자동 구좌는 cron 배치가 아니다. 수집기
+  `devtools/external-distribution/collect.mjs`를 수동으로 실행해 관리자 sync API로
+  매핑을 갱신한다. 실행/판정 기준은 `docs/deployment-runbook.md` 6.3.2를 따른다.
 - AUTO 주인공챗 공개 목록은 request에서 전체 캐릭터를 다시 계산하거나 프로세스
   cache를 채우지 않는다. `tb_public_character_catalog_generation`의 활성 N/Y 세대와
   `tb_public_character_catalog_snapshot`의 추천순 item만 읽는다. 메인은 같은 reader에

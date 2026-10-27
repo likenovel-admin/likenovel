@@ -9,6 +9,8 @@ export interface IDirectRecommend {
   exposure_end_time_weekday: string;
   exposure_start_time_weekend: string;
   exposure_end_time_weekend: string;
+  source_type?: "manual" | "external_distribution";
+  source_platform?: "kakaopage" | "ridi" | null;
   created_date: string;
   updated_date: string;
 }
