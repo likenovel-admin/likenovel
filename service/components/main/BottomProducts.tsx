@@ -76,9 +76,13 @@ const BottomProducts = ({ suggestionData, productType = "suggest" }: Props) => {
     <div className="relative max-w-[1120px] md:h-[350px]">
       <MainHeader
         headerText={
-          productType === "suggest"
-            ? suggestionData.suggestTitle
-            : "관심 끊기기 임박"
+          productType !== "suggest" ? (
+            "관심 끊기기 임박"
+          ) : externalPlatform ? (
+            <span className="break-keep">{suggestionData.suggestTitle}</span>
+          ) : (
+            suggestionData.suggestTitle
+          )
         }
         hasMoreButton={productType === "interest" || Boolean(externalPlatform)}
         compactMobileMore
