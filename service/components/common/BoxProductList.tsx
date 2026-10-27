@@ -2,6 +2,7 @@ import { useAdultCoverImage } from "@/hooks/useAdultCoverImage";
 import { IProduct } from "@/types";
 import { getIsNewEpisode } from "@/utils/getIsNewEpisode";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
+import type { ExternalDistributionPlatform } from "@/constants/externalDistribution";
 import {
   buildProductDetailPath,
   ProductDetailEntrySource,
@@ -9,6 +10,7 @@ import {
 } from "@/utils/productPath";
 import { useRouter } from "next/navigation";
 import AdultAgeBadge from "./AdultAgeBadge";
+import ExternalPlatformBadge from "./ExternalPlatformBadge";
 import RankingBadge from "../common/RankingBadge";
 import SquareBadge from "../common/SquareBadge";
 import InterestBadge from "./InterestBadge";
@@ -18,12 +20,14 @@ interface Props {
   pageType: "free" | "paid";
   hasLank?: boolean;
   entrySource?: ProductDetailEntrySource;
+  externalPlatform?: ExternalDistributionPlatform;
 }
 const BoxProductList = ({
   data,
   pageType,
   hasLank = false,
   entrySource,
+  externalPlatform,
 }: Props) => {
   const router = useRouter();
   const renderAdultCoverImage = useAdultCoverImage();
@@ -52,6 +56,9 @@ const BoxProductList = ({
                 "object-cover min-w-[95px] md:min-w-[148px] min-h-[150px] md:h-[215px] rounded-[10px]"
               )}
               <AdultAgeBadge product={product} />
+              {externalPlatform && !hasLank && (
+                <ExternalPlatformBadge platform={externalPlatform} />
+              )}
               <InterestBadge
                 product={product as unknown as IProduct}
                 width={10}

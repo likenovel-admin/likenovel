@@ -1,4 +1,5 @@
 import { ISectionData } from "@/app/api/query/product/dto";
+import { buildExternalDistributionPath } from "@/constants/externalDistribution";
 import useMediaDevice from "@/hooks/useMediaDevice";
 import { IProduct } from "@/types";
 import { PRODUCT_DETAIL_ENTRY_SOURCE } from "@/utils/productPath";
@@ -45,6 +46,14 @@ const BottomProducts = ({ suggestionData, productType = "suggest" }: Props) => {
 
   const totalItems = suggestionData.products.length;
   const showArrows = isDesktop && totalItems > itemsPerPage;
+  const externalPlatform =
+    productType === "suggest" ? suggestionData.externalPlatform : undefined;
+  const cardEntrySource =
+    productType === "interest"
+      ? PRODUCT_DETAIL_ENTRY_SOURCE.HOME_BOTTOM_INTEREST
+      : externalPlatform
+        ? PRODUCT_DETAIL_ENTRY_SOURCE.HOME_EXTERNAL_DISTRIBUTION
+        : PRODUCT_DETAIL_ENTRY_SOURCE.HOME_BOTTOM_SUGGEST;
 
   // Old logic: Calculate total pages
   // const lastPage = Math.ceil(totalItems / itemsPerPage) - 1;
@@ -67,14 +76,22 @@ const BottomProducts = ({ suggestionData, productType = "suggest" }: Props) => {
     <div className="relative max-w-[1120px] md:h-[350px]">
       <MainHeader
         headerText={
-          productType === "suggest"
-            ? suggestionData.suggestTitle
-            : "관심 끊기기 임박"
+          productType !== "suggest" ? (
+            "관심 끊기기 임박"
+          ) : externalPlatform ? (
+            <span className="break-keep">{suggestionData.suggestTitle}</span>
+          ) : (
+            suggestionData.suggestTitle
+          )
         }
-        hasMoreButton={productType === "interest"}
+        hasMoreButton={productType === "interest" || Boolean(externalPlatform)}
         compactMobileMore
         moreButtonOnClick={() => {
-          router.push("/product/preference/interest-drop");
+          router.push(
+            externalPlatform
+              ? buildExternalDistributionPath(externalPlatform)
+              : "/product/preference/interest-drop"
+          );
         }}
       />
       <div className="flex gap-10pxr md:gap-20pxr mt-10pxr md:mt-20pxr scroll-hidden overflow-x-auto lg:overflow-hidden pl-16pxr md:pl-0">
@@ -82,11 +99,8 @@ const BottomProducts = ({ suggestionData, productType = "suggest" }: Props) => {
           <ProductCoverCard
             key={product.productId}
             data={product as unknown as IProduct}
-            entrySource={
-              productType === "interest"
-                ? PRODUCT_DETAIL_ENTRY_SOURCE.HOME_BOTTOM_INTEREST
-                : PRODUCT_DETAIL_ENTRY_SOURCE.HOME_BOTTOM_SUGGEST
-            }
+            entrySource={cardEntrySource}
+            externalPlatform={externalPlatform}
           />
         ))}
       </div>

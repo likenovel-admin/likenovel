@@ -6,6 +6,7 @@ import useMediaDevice from "@/hooks/useMediaDevice";
 import { IProduct } from "@/types";
 import { getPromotionBadgeType } from "@/utils/getPromotionBadgeType";
 import { shouldShowProductUpBadge } from "@/utils/productBadge";
+import type { ExternalDistributionPlatform } from "@/constants/externalDistribution";
 import {
   buildProductDetailPath,
   ProductDetailEntrySource,
@@ -14,6 +15,7 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import AdultAgeBadge from "./AdultAgeBadge";
+import ExternalPlatformBadge from "./ExternalPlatformBadge";
 import InterestBadge from "./InterestBadge";
 import SquareBadge from "./SquareBadge";
 import UserNickname from "./UserNickname";
@@ -21,11 +23,13 @@ interface Props {
   data: IProduct;
   hasInterestBadge?: boolean;
   entrySource?: ProductDetailEntrySource;
+  externalPlatform?: ExternalDistributionPlatform;
 }
 const ProductCoverCard = ({
   data,
   hasInterestBadge = false,
   entrySource,
+  externalPlatform,
 }: Props) => {
   const router = useRouter();
   const device = useMediaDevice();
@@ -66,6 +70,9 @@ const ProductCoverCard = ({
             className="block object-cover w-[108px] md:w-[142px] h-[164px] md:h-[217px] rounded-[10px]"
           />
           <AdultAgeBadge product={data} />
+          {externalPlatform && (
+            <ExternalPlatformBadge platform={externalPlatform} />
+          )}
           <div className="absolute flex bottom-[5px] left-[5px] gap-[2px]">
             {data.priceType === "paid" && (
               <SquareBadge

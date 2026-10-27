@@ -8,6 +8,7 @@ import {
   IGetAvailableTicketsResponse,
   IGetDirectRecommendResponse,
   IGetEpisodeProductParams,
+  IGetExternalDistributionProductsResponse,
   IGetHomeTickerResponse,
   IGetMainCharacterSlotsResponse,
   IGetMainSingleSlotsResponse,
@@ -22,6 +23,7 @@ import {
   IUseSelectSuggestMainProductsResponse,
   IUseSelectWaitForFreeProductsResponse,
 } from "./dto";
+import type { ExternalDistributionPlatform } from "@/constants/externalDistribution";
 
 export const PUBLIC_PRODUCT_STALE_TIME_MS = 5 * 60 * 1000;
 export const PUBLIC_PRODUCT_GC_TIME_MS = 30 * 60 * 1000;
@@ -745,6 +747,49 @@ export const useGetDirectRecommend = (
         `/v1/query/products/direct-recommend?adult_yn=${adultYnParam}`
       );
       return response.data;
+    },
+    enabled,
+  });
+};
+
+export const EXTERNAL_DISTRIBUTION_PAGE_LIMIT = 30;
+
+export const useGetExternalDistributionProductsInfinite = (
+  platform: ExternalDistributionPlatform,
+  adult_yn?: string,
+  enabled: boolean = true,
+  cacheIdentity: string = "guest"
+) => {
+  const adultYnParam = adult_yn || "N";
+  return useInfiniteQuery<
+    IGetExternalDistributionProductsResponse,
+    unknown,
+    InfiniteData<IGetExternalDistributionProductsResponse, number>,
+    readonly unknown[],
+    number
+  >({
+    queryKey: [
+      "getExternalDistributionProducts",
+      platform,
+      adultYnParam,
+      cacheIdentity,
+    ],
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => {
+      const response = await instance.get(
+        `/v1/query/products/external-distribution?platform=${platform}&page=${pageParam}&limit=${EXTERNAL_DISTRIBUTION_PAGE_LIMIT}&adult_yn=${adultYnParam}`
+      );
+      return response.data;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce(
+        (sum, page) => sum + (page?.data?.products?.length ?? 0),
+        0
+      );
+      const total = lastPage?.data?.totalCount ?? 0;
+      const lastCount = lastPage?.data?.products?.length ?? 0;
+      if (lastCount === 0 || loaded >= total) return undefined;
+      return allPages.length + 1;
     },
     enabled,
   });

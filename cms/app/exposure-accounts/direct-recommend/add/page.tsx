@@ -25,6 +25,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ReactDatePicker from "react-datepicker";
 import ProductIdPreview from "../ProductIdPreview";
+import DirectRecommendSourceRows, {
+  type DirectRecommendExternalPlatform,
+  type DirectRecommendSourceType,
+  isExternalSource,
+} from "../sourceFields";
 
 export default function Page() {
   // const isMobile = useIsMobile()
@@ -39,6 +44,11 @@ export default function Page() {
   const [startTimeWeekend, setStartTimeWeekend] = useState<string>("");
   const [endTimeWeekend, setEndTimeWeekend] = useState<string>("");
   const [product, setProduct] = useState<string>("");
+  const [sourceType, setSourceType] =
+    useState<DirectRecommendSourceType>("manual");
+  const [platform, setPlatform] =
+    useState<DirectRecommendExternalPlatform>("kakaopage");
+  const isExternal = isExternalSource(sourceType);
 
   const handleSubmit = async () => {
     if (addAddDirectRecommend.isPending) {
@@ -80,7 +90,7 @@ export default function Page() {
       );
       return;
     }
-    if (!product.trim()) {
+    if (!isExternal && !product.trim()) {
       showAlert("오류", "노출 작품을 입력해주세요.", "확인");
       return;
     }
@@ -96,10 +106,14 @@ export default function Page() {
         exposure_end_time_weekday: endTimeWeekday,
         exposure_start_time_weekend: startTimeWeekend,
         exposure_end_time_weekend: endTimeWeekend,
-        product_ids: product
-          .split(",")
-          .filter((item) => item && item.trim())
-          .map((id) => Number(id.trim())),
+        source_type: sourceType,
+        source_platform: isExternal ? platform : null,
+        product_ids: isExternal
+          ? []
+          : product
+              .split(",")
+              .filter((item) => item && item.trim())
+              .map((id) => Number(id.trim())),
       },
       {
         onSuccess: () => {
@@ -156,6 +170,12 @@ export default function Page() {
                       />
                     </TableCell>
                   </TableRow>
+                  <DirectRecommendSourceRows
+                    sourceType={sourceType}
+                    platform={platform}
+                    onSourceTypeChange={setSourceType}
+                    onPlatformChange={setPlatform}
+                  />
                   <TableRow>
                     <TableHead className="require">노출 기간</TableHead>
                     <TableCell className="flex items-center gap-2">
@@ -211,21 +231,23 @@ export default function Page() {
                       </div>
                     </TableCell>
                   </TableRow>
-                  <TableRow>
-                    <TableHead className="require">노출 작품</TableHead>
-                    <TableCell>
-                      <Textarea
-                        className="h-[100px]"
-                        value={product}
-                        onChange={(e) => setProduct(e.target.value)}
-                        placeholder="작품명을 입력하세요"
-                      />
-                      <ProductIdPreview
-                        productInput={product}
-                        onProductInputChange={setProduct}
-                      />
-                    </TableCell>
-                  </TableRow>
+                  {!isExternal && (
+                    <TableRow>
+                      <TableHead className="require">노출 작품</TableHead>
+                      <TableCell>
+                        <Textarea
+                          className="h-[100px]"
+                          value={product}
+                          onChange={(e) => setProduct(e.target.value)}
+                          placeholder="작품명을 입력하세요"
+                        />
+                        <ProductIdPreview
+                          productInput={product}
+                          onProductInputChange={setProduct}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

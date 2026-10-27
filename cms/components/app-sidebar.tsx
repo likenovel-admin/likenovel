@@ -177,6 +177,10 @@ const data = {
           url: "/exposure-accounts/direct-recommend",
         },
         {
+          title: "외부 유통 현황",
+          url: "/exposure-accounts/external-distributions",
+        },
+        {
           title: "단일구좌 관리",
           url: "/exposure-accounts/main-single-slots",
         },

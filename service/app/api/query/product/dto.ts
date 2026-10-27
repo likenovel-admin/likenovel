@@ -7,6 +7,7 @@ import {
   IRentalTicket,
 } from "@/types";
 import type { CharacterChatRole } from "@/utils/characterChatRole";
+import type { ExternalDistributionPlatform } from "@/constants/externalDistribution";
 
 export interface IUseSelectProductsResponse {
   data: IProduct[];
@@ -48,6 +49,7 @@ export interface ISectionData {
   suggestName: string;
   suggestTarget: string;
   suggestTitle: string;
+  externalPlatform?: ExternalDistributionPlatform;
 }
 
 interface SelectSuggestMainProductsResponseObject {
@@ -143,8 +145,22 @@ export interface IGetDirectRecommendResponse {
     // order: number;
     // products: IProduct[];
     title: string;
+    sourceType?: "manual" | "external_distribution";
+    sourcePlatform?: string | null;
     productList: IProduct[];
   }[];
+}
+
+export interface IGetExternalDistributionProductsResponse {
+  data: {
+    platform: ExternalDistributionPlatform;
+    platformLabel: string;
+    minOpenEpisodes: number;
+    totalCount: number;
+    page: number;
+    limit: number;
+    products: IProduct[];
+  };
 }
 
 export type HomeTickerFreshness =

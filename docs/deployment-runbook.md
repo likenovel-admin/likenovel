@@ -708,6 +708,40 @@ readback 없이 성공으로 간주하지 않는다. wrapper가 Python 실패 co
 실패다. rollback은 gate를 `0`으로 내려 자동 실행을 중단하고 reader/frontend를 이전
 commit으로 되돌리며 snapshot table과 마지막 활성 세대는 진단 근거로 보존한다.
 
+### 6.3.2 외부 유통(카카오페이지·리디) 자동 구좌
+
+유료연재 작품 중 카카오페이지·리디에 **연재본**이 있는 작품을 직접 추천구좌
+(`tb_direct_recommend.source_type = 'external_distribution'`)와
+`/product/external-distribution?platform=kakaopage|ridi` 더보기 페이지에 노출한다.
+
+- storage: `tb_product_external_distribution` (migration
+  `dist/init/119-create-product-external-distribution.sql`)
+- 매칭/노출 SSOT: `app/services/product/external_distribution_service.py`
+  - 후보: `price_type='paid'`, `open_yn='Y'`, 비블라인드 작품
+  - 매칭: 정규화한 작가명이 같은 작품 중 정규화 제목 일치, 없으면 제목 유사도
+    1위(0.6 이상, 2위와 0.3 이상 차이). 단행본은 무시한다.
+  - 노출: `status='active'`, `miss_count < 3`, 공개 회차 카카오 50화·리디 100화 이상
+  - 관리자 수동 등록 매핑은 자동 매칭이 덮어쓰지 않고 미관측 카운트도 올리지 않는다.
+- 수집기: `devtools/external-distribution/collect.mjs` (headless Playwright,
+  `service/node_modules`의 기존 의존성 사용). 카카오는 "라이크노벨" 검색, 리디는
+  `출판사:라이크노벨` 검색 뒤 빠진 작품만 작품명으로 재검색한다.
+- 실행은 자동 cron이 아니다. 수 분이 걸리므로 herdr pane에서 실행한다.
+
+```bash
+cd /home/hongsan/work/likenovel
+node devtools/external-distribution/collect.mjs \
+  --api https://api.likenovel.dev \
+  --credentials-file output/local-credentials/likenovel-cms-admin.md \
+  --dry-run            # 관측만 확인. sync하려면 --dry-run 제거
+```
+
+수집 중 오류나 파싱 실패가 하나라도 있으면 `complete=false`로 sync하고 종료 코드
+`2`를 반환한다. 이때는 미관측 카운트를 올리지 않는다. 결과 판정은 CMS
+`외부 유통 현황`의 노출 여부(Y/N)와 공개 API
+`GET /v1/query/products/external-distribution?platform=...`의 `totalCount`로 한다.
+rollback은 해당 직접 추천구좌를 삭제하거나 노출 기간을 종료한다. 매핑 테이블은
+진단 근거로 보존한다.
+
 ## 6.4 Batch/Cron 경로 매트릭스
 
 | 구분 | 기준 파일 | 실제 실행 경로 | 활성화 방식 |
