@@ -1,11 +1,9 @@
 export const EXTERNAL_DISTRIBUTION_PLATFORMS = {
   kakaopage: {
     label: "카카오페이지",
-    badgeClassName: "bg-[#FFE300] text-black-100",
   },
   ridi: {
     label: "리디",
-    badgeClassName: "bg-[#1E9EFF] text-white",
   },
 } as const;
 
