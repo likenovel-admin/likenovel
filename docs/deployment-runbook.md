@@ -569,6 +569,24 @@ ORDER BY tracked_cost_usd DESC, attempts DESC;
 - 통계 API `/v1/query/statistics/ai-api-usage`의 `provider_attempt_summary`와
   `provider_attempts`는 기존 `summary/results/model_summary`와 별도 집계다. CMS에서
   두 합계를 더하지 않는 안내와 기능·단계별 표를 확인한다.
+- AI독자는 `feature_key='ai_reader'`, `stage_key='decision'`으로 같은 원장을 사용한다.
+  판단 한 건의 JSON/응답 형식 재시도와 계정 잔액 부족 전환은 같은 `operation_id`의
+  별도 `attempt_no`로 기록한다. 실제 전송 전 reserve 거부는 호출 건수에 넣지 않는다.
+  HTTP 응답 수신 성공과 독자 판단 JSON 검증 성공은 별도 상태다.
+- 입력/출력 토큰과 비용은 독립적으로 보존한다. Hive/River 응답에 `usage.cost`가
+  없더라도 토큰을 버리지 않는다. 확인된 요율표가 없는 모델의 비용은 NULL이며,
+  크레딧 잔액 차감액으로 추정하거나 누락된 과거 사용량을 임의로 복원하지 않는다.
+  재시도 합계에서 어느 호출의 필드가 누락되면 해당 합계만 NULL로 둔다.
+  알려진 개별 호출 수치는 물리 원장에 남는다.
+- 원장의 provider/model은 실제 호출 대상이다. 계정 별칭은 `ai_provider_attempt` 로그의
+  `account_alias`와 `call_id`로 연결하며 키 값은 기록하지 않는다. 기존 독자 기능 로그의
+  provider는 저장된 `_ai_model_routes`를 사용한다. 서로 다르면 `mixed`, 근거가 없으면
+  `unknown`이며 OpenRouter로 추정하지 않는다.
+- CMS API 사용량은 화면 활성 상태에서 60초마다 조회한다. 마지막 성공 시각과 조회 오류를
+  표시하며, 갱신 중에는 기존 표를 유지한다. 자동 갱신은 유료 Provider 상태 점검을 실행하지 않는다.
+- 원장 저장은 기존 멱등 저장 경로를 사용하고 호출당 2초로 제한한다. DB 오류/타임아웃은
+  로그로 남기며 추론을 재호출하지 않는다. 프로세스 강제 종료나 저장 실패 시 원장이
+  누락될 수 있으므로 원장과 실제 결제 차감이 항상 일치한다고 판정하지 않는다.
 - `cost_source='provider_reported'`는 Provider 반환 비용,
   `cost_source='rate_card'`는 버전이 명시된 요율표 추정이다. `cost_usd IS NULL`은
   미집계이며 0원과 다르다.

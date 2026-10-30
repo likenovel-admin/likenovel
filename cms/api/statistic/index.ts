@@ -260,6 +260,8 @@ export const useGetStatisticAiApiUsage = (
 ) => {
   return useQuery<IGetStatisticAiApiUsageResponse>({
     queryKey: ["GetStatisticAiApiUsage", JSON.stringify(params)],
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
 
     queryFn: async () => {
       const res = await apiClient.request<IGetStatisticAiApiUsageResponse>({
