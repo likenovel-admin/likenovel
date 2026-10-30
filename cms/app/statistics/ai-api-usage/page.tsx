@@ -64,12 +64,14 @@ const sourceKeyLabels: Record<string, string> = {
 };
 
 const featureKeyLabels: Record<string, string> = {
+  ai_reader: "AI독자",
   websochat: "웹소챗",
   websochat_eval: "웹소챗 평가",
   storyctx: "스토리컨텍스트",
 };
 
 const stageKeyLabels: Record<string, string> = {
+  decision: "독자 판단",
   qa_reply: "작품 질문 답변",
   next_episode_write: "다음 회차 생성",
   character_chat_reply: "캐릭터챗 답변",
@@ -164,6 +166,8 @@ function formatProviderName(value: string) {
     claude: "Claude",
     openrouter: "OpenRouter",
     deepseek: "DeepSeek",
+    hive: "Hive",
+    river: "River",
   };
   return labels[value] ?? value;
 }
@@ -186,11 +190,13 @@ export default function Page() {
     refetch,
     isLoading: isLoadingData,
     isFetching,
+    dataUpdatedAt,
+    isError,
   } = useGetStatisticAiApiUsage(queryParams);
   const healthCheckMutation = usePostStatisticAiProviderHealthCheck();
   const summary = data?.summary;
   const providerAttemptSummary = data?.provider_attempt_summary;
-  const isLoading = isLoadingData || isFetching;
+  const isLoading = isLoadingData;
 
   const handleRunHealthCheck = async () => {
     setHealthMessage(null);
@@ -214,6 +220,16 @@ export default function Page() {
             setStartDate={setStartDate}
             setEndDate={setEndDate}
           />
+          <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+            {isFetching ? "갱신 중" : "사용량 새로고침"}
+          </Button>
+        </div>
+
+        <div className="text-sm text-muted-foreground" role="status">
+          60초마다 자동 갱신 · 마지막 성공: {dataUpdatedAt
+            ? new Date(dataUpdatedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) + " (한국 시간)"
+            : "아직 없음"}
+          {isError && <p className="text-red-700" role="alert">사용량 조회에 실패했습니다. 표시된 데이터의 마지막 갱신 시각을 확인해 주세요.</p>}
         </div>
 
         <ProviderHealthPanel
