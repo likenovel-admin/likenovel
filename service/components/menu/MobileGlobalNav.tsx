@@ -104,6 +104,8 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
           <div className="flex gap-18pxr">
             <button
               className="hover:text-dark-gray-400"
+              aria-label="작품 검색 열기"
+              aria-expanded={isOpen}
               onClick={() => setIsOpen(!isOpen)}
             >
               <Search className="w-[20px] h-[20px]" />
@@ -200,6 +202,8 @@ const MobileGlobalNav = ({ isVisible }: Props) => {
           <div className="flex gap-18pxr">
             <button
               className="hover:text-dark-gray-400"
+              aria-label="작품 검색 열기"
+              aria-expanded={isOpen}
               onClick={() => setIsOpen(!isOpen)}
             >
               <Search className="w-[20px] h-[20px]" />

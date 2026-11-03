@@ -70,6 +70,17 @@ const AiChatPanel = () => {
     clearChat,
   } = useChatStore();
 
+  // Opening from search must move focus out of the closing search dialog.
+  useEffect(() => {
+    if (!isOpen) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const frame = window.requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
+  }, [isOpen]);
+
   const { mutate: chat, isPending } = usePostAiChat();
   const canLoadHistory = isOpen && messages.length === 0 && !!accessToken && !!user?.userId;
   const { data: historyData } = useGetChatHistory(canLoadHistory);
@@ -360,7 +371,7 @@ const AiChatPanel = () => {
                 초기화
               </button>
             )}
-            <button className="p-4pxr" onClick={() => setIsOpen(false)}>
+            <button aria-label="AI 사서 패널 닫기" className="p-4pxr" onClick={() => setIsOpen(false)}>
               <svg className="w-6 h-6 text-dark-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>

@@ -226,6 +226,8 @@ const GlobalNav = () => {
               )}
               <button
                 className="hover:text-dark-gray-400"
+                aria-label="작품 검색 열기"
+                aria-expanded={isOpen}
                 onClick={() => setIsOpen(!isOpen)}
               >
                 <Search
