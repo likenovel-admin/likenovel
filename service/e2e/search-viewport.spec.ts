@@ -65,15 +65,65 @@ async function openSearch(page: Page) {
 
 async function record(page: Page, info: TestInfo, label: string, data: unknown) {
   await info.attach(label, { body: JSON.stringify(data, null, 2), contentType: "application/json" });
-  await info.attach(`${label}-screen`, { body: await page.screenshot(), contentType: "image/png" });
+  const screenshot = info.outputPath(`${label}.png`);
+  await page.screenshot({ path: screenshot });
+  await info.attach(`${label}-screen`, { path: screenshot, contentType: "image/png" });
 }
+
+test("keyword discovery exposes every group and all keywords without counts", async ({ page }, info) => {
+  const { calls, errors } = await setup(page);
+  const dialog = await openSearch(page);
+  const discovery = dialog.getByRole("region", { name: "이야기로 찾아보기" });
+  await expect(discovery.getByRole("button", { name: facets[0].label, exact: true })).toBeVisible();
+  for (const group of groupNames) {
+    const section = discovery.getByRole("group", { name: group, exact: true });
+    const groupFacets = facets.filter(f => f.group === group);
+    await expect(section.getByRole("button")).toHaveCount(13); // 12 keywords + progressive disclosure.
+    for (const facet of groupFacets.slice(0, 12)) {
+      await expect(section.getByRole("button", { name: facet.label, exact: true })).toBeAttached();
+    }
+    const more = section.getByRole("button", { name: `${group} 키워드 더 보기`, exact: true });
+    while (await more.count()) await more.click();
+    for (const facet of groupFacets) {
+      await expect(section.getByRole("button", { name: facet.label, exact: true })).toBeAttached();
+    }
+  }
+  await record(page, info, "all-keywords", { count: await discovery.getByRole("button").count(), calls });
+  expect(calls).toEqual([""]); // Disclosure uses already-fetched assets.
+  expect(errors).toEqual([]);
+});
+
+test("keyword selection brings results forward and allows additional conditions", async ({ page }, info) => {
+  const { errors } = await setup(page);
+  const dialog = await openSearch(page);
+  await dialog.getByRole("button", { name: facets[1].label, exact: true }).click();
+  const toggle = dialog.getByRole("button", { name: "조건 좁히기", exact: true });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(dialog.getByRole("region", { name: "검색 작품" }).getByRole("heading")).toBeInViewport();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await dialog.getByRole("button", { name: facets[2].label, exact: true }).click();
+  await expect(dialog.getByRole("button", { name: `${facets[2].label} 조건 해제` })).toBeVisible();
+  await dialog.getByRole("button", { name: "조건 초기화", exact: true }).click();
+  await expect(dialog.getByRole("button", { name: facets[1].label, exact: true })).toBeVisible();
+  // Revisit the final group twice: the second selection uses the query cache.
+  const backgroundY = await page.evaluate(() => window.scrollY);
+  for (let visit = 0; visit < 2; visit += 1) {
+    await dialog.getByRole("button", { name: facets[7].label, exact: true }).click();
+    await expect(dialog.getByRole("region", { name: "검색 작품" }).getByRole("heading")).toBeInViewport();
+    await dialog.getByRole("button", { name: "조건 초기화", exact: true }).click();
+  }
+  expect(await page.evaluate(() => window.scrollY)).toBe(backgroundY);
+  await record(page, info, "discovery-reset", {});
+  expect(errors).toEqual([]);
+});
 
 for (const [width, height] of [[320, 568], [390, 844], [767, 540], [768, 540], [844, 390], [1024, 320], [1440, 900]]) {
   test(`QA viewport ${width}x${height}: long content, notice and bounded modal`, async ({ page }, info) => {
     await page.setViewportSize({ width, height });
     const { errors } = await setup(page);
     const dialog = await openSearch(page);
-    await dialog.getByRole("button", { name: "태그 더 보기", exact: true }).click();
+    await dialog.getByRole("button", { name: "작품 태그 키워드 더 보기", exact: true }).click();
     const before = await dialog.evaluate(el => {
       const rect = el.getBoundingClientRect();
       const scroll = el.querySelector<HTMLElement>(".overflow-y-auto")!;
@@ -83,7 +133,7 @@ for (const [width, height] of [[320, 568], [390, 844], [767, 540], [768, 540], [
     expect.soft(before.bottom).toBeLessThanOrEqual(height + 1);
     expect.soft(before.top).toBeGreaterThanOrEqual(0);
     expect.soft(before.scrollWidth).toBeLessThanOrEqual(before.clientWidth + 1);
-    expect(await dialog.getByRole("region", { name: "이야기로 찾아보기" }).getByRole("button").count()).toBeLessThanOrEqual(65);
+    expect(await dialog.getByRole("region", { name: "이야기로 찾아보기" }).getByRole("button").count()).toBeLessThanOrEqual(128);
     await dialog.getByRole("searchbox").fill("공포");
     await expect(dialog.getByRole("region", { name: "검색 작품" })).toBeVisible();
     const content = await dialog.evaluate(el => {
@@ -170,7 +220,7 @@ test("QA 4x CPU: 401 facets, input paint and stale result cancellation", async (
     observer.observe(document.body, { subtree: true, childList: true });
   });
   const dialog = await openSearch(page);
-  await dialog.getByRole("button", { name: "태그 더 보기", exact: true }).click();
+  await dialog.getByRole("button", { name: "작품 태그 키워드 더 보기", exact: true }).click();
   const input = dialog.getByRole("searchbox");
   await input.fill("이전");
   await expect.poll(() => calls.includes("이전")).toBe(true);

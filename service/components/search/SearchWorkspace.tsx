@@ -1,6 +1,7 @@
 "use client";
 
 import { useSelectSearchResult } from "@/app/api/query/search";
+import { ONBOARDING_SELECTED_TAG_CHIP_CLASS } from "@/components/recommendation/tagChipStyles";
 import { resolveProductCoverImage } from "@/constants/common";
 import useAuthStore from "@/store/authStore";
 import useChatStore from "@/store/chatStore";
@@ -10,14 +11,17 @@ import { buildProductDetailPath, PRODUCT_DETAIL_ENTRY_SOURCE, setPendingProductD
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useState, useTransition } from "react";
 import OngoingEvent from "./OngoingEvent";
+import ArrowDown from "/public/images/arrow-down.svg";
+import Close from "/public/images/close.svg";
 
 interface Props {
   initialState: ContentSearchState;
   compact?: boolean;
   onNavigate?: () => void;
+  onSearchChange?: () => void;
 }
 
-export default function SearchWorkspace({ initialState, compact = false, onNavigate }: Props) {
+export default function SearchWorkspace({ initialState, compact = false, onNavigate, onSearchChange }: Props) {
   const router = useRouter();
   const inputId = useId();
   const [navigating, startNavigation] = useTransition();
@@ -25,22 +29,29 @@ export default function SearchWorkspace({ initialState, compact = false, onNavig
   const [state, setState] = useState(initialState);
   const [draft, setDraft] = useState(initialState.keyword);
   const [composing, setComposing] = useState(false);
-  const [showAllTags, setShowAllTags] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, number>>({});
+  const [showConditions, setShowConditions] = useState(false);
+  const conditionsId = useId();
   const initialKey = JSON.stringify(initialState);
 
   useEffect(() => {
     const next: ContentSearchState = JSON.parse(initialKey);
     setState(next);
     setDraft(next.keyword);
+    setExpandedGroups({});
+    setShowConditions(false);
   }, [initialKey]);
 
   useEffect(() => {
     if (composing) return;
-    const timer = window.setTimeout(() => setState((previous) =>
-      previous.keyword === draft ? previous : { ...previous, keyword: draft, page: 1 }
-    ), 300);
+    const timer = window.setTimeout(() => {
+      if (state.keyword === draft) return;
+      setState((previous) => ({ ...previous, keyword: draft, page: 1 }));
+      setExpandedGroups({});
+      setShowConditions(false);
+    }, 300);
     return () => window.clearTimeout(timer);
-  }, [draft, composing]);
+  }, [draft, composing, state.keyword]);
 
   const { data, isPending, isError, refetch } = useSelectSearchResult(
     state, user?.isOnAdult ? "Y" : "N", authSessionVersion, compact ? 6 : 10
@@ -53,7 +64,9 @@ export default function SearchWorkspace({ initialState, compact = false, onNavig
     const grouped = new Map<string, NonNullable<typeof result>["facets"]>();
     for (const facet of result?.facets || []) {
       if (state.tags.includes(facet.id)) continue;
-      grouped.set(facet.group, [...(grouped.get(facet.group) || []), facet]);
+      const group = grouped.get(facet.group);
+      if (group) group.push(facet);
+      else grouped.set(facet.group, [facet]);
     }
     return Array.from(grouped);
   }, [result?.facets, state.tags]);
@@ -63,8 +76,10 @@ export default function SearchWorkspace({ initialState, compact = false, onNavig
     router.push(contentSearchPath(next));
   };
   const changeState = (next: ContentSearchState) => {
+    onSearchChange?.();
     setState(next);
-    setShowAllTags(false);
+    setExpandedGroups({});
+    setShowConditions(false);
     if (!compact) startNavigation(() => router.push(contentSearchPath(next), { scroll: false }));
   };
   const toggleTag = (id: string) => changeState({
@@ -73,7 +88,7 @@ export default function SearchWorkspace({ initialState, compact = false, onNavig
   });
 
   return (
-    <div className="w-full text-black-100 [overflow-wrap:anywhere]">
+    <div className="w-full text-black-100 tracking-[-2%] [overflow-wrap:anywhere]">
       <form onSubmit={(event) => {
         event.preventDefault();
         if (!composing) navigate({ ...state, keyword: draft, page: 1 });
@@ -85,14 +100,15 @@ export default function SearchWorkspace({ initialState, compact = false, onNavig
           onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)}
           onKeyDown={(event) => { if (event.key === "Enter" && (event.nativeEvent.isComposing || composing)) event.preventDefault(); }}
           className="min-w-0 flex-1 rounded-[8px] border border-light-gray-600 px-14pxr py-12pxr text-16pxr focus:outline-none focus:ring-2 focus:ring-primary-100" />
-        <button type="submit" disabled={navigating} className="shrink-0 rounded-[8px] bg-primary-100 px-16pxr text-white font-semibold">검색</button>
+        <button type="submit" disabled={navigating} className="shrink-0 rounded-[8px] bg-primary-100 px-16pxr text-white font-bold hover:bg-primary-200 disabled:opacity-50">검색</button>
       </form>
 
       {state.tags.length > 0 && <div className="mt-12pxr flex flex-wrap gap-8pxr" aria-label="선택한 조건">
         {state.tags.map((id) => <button key={id} type="button" disabled={navigating} onClick={() => toggleTag(id)}
-          className="rounded-[6px] border border-primary-100 px-10pxr py-6pxr text-14pxr text-primary-100"
+          className={`${ONBOARDING_SELECTED_TAG_CHIP_CLASS} min-h-[36px] max-w-full text-left focus-visible:outline-primary-100 disabled:opacity-50`}
           aria-label={`${result?.selectedTags?.find((tag) => tag.id === id)?.label || searchTagLabel(id)} 조건 해제`}>
-          {result?.selectedTags?.find((tag) => tag.id === id)?.label || searchTagLabel(id)} ×
+          <span className="min-w-0">{result?.selectedTags?.find((tag) => tag.id === id)?.label || searchTagLabel(id)}</span>
+          <Close aria-hidden="true" className="h-[10px] w-[10px] shrink-0" />
         </button>)}
         <button type="button" disabled={navigating} onClick={() => changeState({ ...state, keyword: draft, tags: [], page: 1 })} className="text-13pxr underline">조건 초기화</button>
       </div>}
@@ -108,23 +124,35 @@ export default function SearchWorkspace({ initialState, compact = false, onNavig
       {!busy && !isError && <>
         {!active && compact && result?.totalCount === 0 && <p className="py-20pxr text-14pxr text-dark-gray-500">아직 검색할 수 있는 작품이 없습니다.</p>}
         {groups.length > 0 && <section aria-label="이야기로 찾아보기" className="mt-16pxr border-b border-light-gray-400 pb-20pxr">
-          <h3 className="mb-12pxr text-16pxr font-semibold">{active ? "조건 좁히기" : "이야기로 찾아보기"}</h3>
-          {(showAllTags ? groups : groups.slice(0, 4)).map(([group, facets]) => <div key={group} className="mb-12pxr">
-            <p className="mb-6pxr text-13pxr text-dark-gray-500">{group}</p>
-            <div className="flex flex-wrap gap-6pxr">{facets.slice(0, showAllTags ? 8 : 4).map((facet) =>
-              <button key={facet.id} type="button" disabled={navigating || state.tags.length >= 12} onClick={() => toggleTag(facet.id)}
-                className="rounded-[6px] border border-light-gray-500 px-10pxr py-6pxr text-14pxr hover:border-primary-100 focus-visible:outline-primary-100 disabled:opacity-50">
-                {facet.label} <span className="text-dark-gray-500">{facet.count}</span>
-              </button>
-            )}</div>
-          </div>)}
-          {(groups.length > 4 || groups.some(([, facets]) => facets.length > 4)) && <button type="button" onClick={() => setShowAllTags(!showAllTags)}
-            aria-expanded={showAllTags} className="text-13pxr underline">{showAllTags ? "태그 접기" : "태그 더 보기"}</button>}
+          {active ? <h3><button type="button" aria-expanded={showConditions} aria-controls={conditionsId}
+            onClick={() => setShowConditions(!showConditions)}
+            className="flex min-h-[40px] w-full items-center justify-between gap-12pxr text-14pxr font-medium focus-visible:outline-primary-100">
+            조건 좁히기 <ArrowDown aria-hidden="true" className={`h-[7px] w-[12px] shrink-0 ${showConditions ? "rotate-180" : ""}`} />
+          </button></h3> : <h3 className="mb-16pxr text-16pxr font-bold">이야기로 찾아보기</h3>}
+          {(!active || showConditions) && <div id={conditionsId} className={`space-y-20pxr ${active ? "mt-16pxr" : ""}`}>
+            {groups.map(([group, facets]) => {
+              const visibleCount = expandedGroups[group] || 12;
+              return <div key={group} role="group" aria-label={group}>
+                <p className="mb-8pxr text-13pxr font-medium text-dark-gray-500">{group}</p>
+                <div className="flex flex-wrap gap-8pxr">{facets.slice(0, visibleCount).map((facet) =>
+                  <button key={facet.id} type="button" disabled={navigating || state.tags.length >= 12} onClick={() => toggleTag(facet.id)}
+                    className="min-h-[36px] max-w-full rounded-full border border-light-gray-400 bg-white px-12pxr py-8pxr text-left text-13pxr font-medium text-dark-gray-500 hover:border-primary-100 hover:text-primary-100 focus-visible:outline-primary-100 disabled:cursor-not-allowed disabled:opacity-50">
+                    {facet.label}
+                  </button>
+                )}</div>
+                {facets.length > visibleCount && <button type="button" aria-label={`${group} 키워드 더 보기`}
+                  onClick={() => setExpandedGroups(previous => ({ ...previous, [group]: visibleCount + 24 }))}
+                  className="mt-8pxr inline-flex min-h-[36px] items-center gap-6pxr text-13pxr text-dark-gray-500 hover:text-primary-100 focus-visible:outline-primary-100">
+                  더 보기 <ArrowDown aria-hidden="true" className="h-[7px] w-[12px]" />
+                </button>}
+              </div>;
+            })}
+          </div>}
         </section>}
 
         {(active || !compact) && <section aria-label="검색 작품" className="mt-20pxr">
           <div className="mb-12pxr flex items-center justify-between gap-12pxr">
-            <h3 className="text-16pxr font-semibold">{active ? "검색 결과" : "둘러볼 작품"}</h3>
+            <h3 className="text-16pxr font-bold">{active ? "검색 결과" : "둘러볼 작품"}</h3>
             <label className="text-13pxr">정렬 <select disabled={navigating} value={state.orderby} onChange={(event) => changeState({ ...state, keyword: draft, orderby: event.target.value === "update" ? "update" : "relevance", page: 1 })}
               className="ml-6pxr rounded border border-light-gray-500 p-1"><option value="relevance">검색 관련순</option><option value="update">최근 업데이트순</option></select></label>
           </div>
@@ -136,7 +164,7 @@ export default function SearchWorkspace({ initialState, compact = false, onNavig
             }} className="flex w-full gap-14pxr text-left focus-visible:outline-primary-100">
               <img src={resolveProductCoverImage(product.image?.coverImagePath)} alt="" width={64} height={96} className="h-[96px] w-[64px] shrink-0 rounded-[6px] object-cover" />
               <span className="min-w-0 flex-1">
-                <span className="block text-16pxr font-semibold">{product.title}</span>
+                <span className="block text-16pxr font-bold">{product.title}</span>
                 <span className="mt-4pxr block text-13pxr text-dark-gray-500">{product.authorNickname}</span>
                 <span className="mt-6pxr block line-clamp-2 text-14pxr leading-relaxed">{buildListSynopsisPreview(product.synopsis)}</span>
                 {product.searchMatchReasons?.length > 0 && <span className="mt-8pxr block text-13pxr text-primary-100">{product.searchMatchReasons.join(" · ")}</span>}

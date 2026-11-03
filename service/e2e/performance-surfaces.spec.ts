@@ -258,7 +258,7 @@ test("search modal loads asset facets without popularity or history requests", a
     await expect(dialog.getByText("작품을 찾고 있습니다…")).toBeVisible();
     await expect(dialog.getByRole("searchbox")).toBeVisible();
   } finally { release(); }
-  await dialog.getByRole("button", { name: "퇴마 12", exact: true }).click();
+  await dialog.getByRole("button", { name: "퇴마", exact: true }).click();
   await expect(dialog.getByText("주인공 목표: 퇴마", { exact: true })).toBeVisible();
   await expect(dialog.getByRole("button", { name: "퇴마 조건 해제" })).toBeVisible();
   await page.keyboard.press("Escape");
@@ -276,7 +276,8 @@ test("search preserves tags, sort and pagination in the URL and handles empty re
   await expect.poll(() => counters.search).toEqual(["테스트:relevance"]);
   await page.getByRole("combobox", { name: "정렬" }).selectOption("update");
   await expect(page).toHaveURL(/orderby=update/);
-  await page.getByRole("button", { name: "퇴마 12", exact: true }).click();
+  await page.getByRole("button", { name: "조건 좁히기", exact: true }).click();
+  await page.getByRole("button", { name: "퇴마", exact: true }).click();
   await expect(page.getByRole("button", { name: "퇴마 조건 해제" })).toBeVisible();
   await page.getByRole("button", { name: "다음", exact: true }).click();
   await expect(page).toHaveURL(/page=2/);
@@ -332,7 +333,7 @@ test("desktop search keeps keyboard focus inside and carries facets to full resu
   await page.locator('button:visible:has(svg[viewBox="0 0 20 20"])').first().click();
   const dialog = page.getByRole("dialog", { name: "작품 찾기" });
   await expect(dialog.getByRole("searchbox")).toBeFocused();
-  await dialog.getByRole("button", { name: "퇴마 12", exact: true }).click();
+  await dialog.getByRole("button", { name: "퇴마", exact: true }).click();
   await expect(dialog.getByText("주인공 목표: 퇴마", { exact: true })).toBeVisible();
   await dialog.getByRole("button", { name: "원하는 이야기를 말로 설명하려면 AI 사서" }).focus();
   await page.keyboard.press("Tab");
