@@ -142,7 +142,7 @@ test("띠가 보이면 고정 헤더, 검색창, 본문 여백이 같이 내려�
   assert.match(globalNav, /<TopNoticeBar \/>/);
   assert.match(globalNav, /top: "var\(--top-notice-bar-h, 0px\)"/);
   assert.match(mobileNav, /top: "var\(--top-notice-bar-h, 0px\)"/);
-  assert.match(read("../components/search/SearchModal.tsx"), /md:mt-\[calc\(60px_\+_var\(--top-notice-bar-h,0px\)\)\]/);
+  assert.match(read("../components/search/SearchModal.tsx"), /md:pt-\[calc\(80px_\+_var\(--top-notice-bar-h,0px\)\)\]/);
   assert.doesNotMatch(read("../components/search/SearchModal.tsx"), /"md:mt-\[60px\]"/);
   for (const path of ["../app/HomePageClient.tsx", "../app/product/layout.tsx"]) {
     const source = read(path);

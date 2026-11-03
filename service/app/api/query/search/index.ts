@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { instance } from "../../axios";
+import { contentSearchParams, type ContentSearchState } from "@/utils/contentSearch";
 import {
   IUseSelectProductSuggestByRecentViewedResponse,
   IUseSelectSearchProductReviewResponse,
@@ -26,24 +27,22 @@ export const useSelectAutoComplete = (keyword: string, adult_yn: string) => {
 };
 
 export const useSelectSearchResult = (
-  keyword: string,
-  adult_yn: string,
-  orderby: string
-) => {
-  return useQuery<IUseSelectSearchResultResponse, unknown>({
-    queryKey: ["selectSearchResult", keyword, adult_yn, orderby],
-    queryFn: async () => {
-      const response = await instance.get(
-        `/v1/query/search?keyword=${keyword}&adult_yn=${
-          adult_yn || "N"
-        }&orderby=${orderby}`
-      );
-
-      return response.data;
-    },
-    enabled: !!keyword,
-  });
-};
+  state: ContentSearchState,
+  adultYn: string,
+  authSessionVersion: number,
+  limit = 10
+) => useQuery<IUseSelectSearchResultResponse>({
+  queryKey: ["selectSearchResult", state, adultYn, authSessionVersion, limit],
+  throwOnError: false,
+  retry: 1,
+  queryFn: async ({ signal }) => {
+    const params = contentSearchParams(state);
+    params.set("adult_yn", adultYn);
+    params.set("limit", String(limit));
+    const response = await instance.get(`/v1/query/search?${params}`, { signal });
+    return response.data;
+  },
+});
 
 export const useSelectSearchProductReview = (
   keyword: string,
