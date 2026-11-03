@@ -1,6 +1,7 @@
 "use client";
 
 import { useSelectSearchResult } from "@/app/api/query/search";
+import Button from "@/components/common/Button";
 import { ONBOARDING_SELECTED_TAG_CHIP_CLASS } from "@/components/recommendation/tagChipStyles";
 import { resolveProductCoverImage } from "@/constants/common";
 import useAuthStore from "@/store/authStore";
@@ -99,9 +100,15 @@ export default function SearchWorkspace({ initialState, compact = false, onNavig
           onChange={(event) => setDraft(event.target.value)}
           onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)}
           onKeyDown={(event) => { if (event.key === "Enter" && (event.nativeEvent.isComposing || composing)) event.preventDefault(); }}
-          className="min-w-0 flex-1 rounded-[8px] border border-light-gray-600 px-14pxr py-12pxr text-16pxr focus:outline-none focus:ring-2 focus:ring-primary-100" />
+          className="min-w-0 flex-1 rounded-[8px] border border-light-gray-600 px-14pxr py-12pxr text-16pxr focus:border-dark-gray-500 focus:outline-none" />
         <button type="submit" disabled={navigating} className="shrink-0 rounded-[8px] bg-primary-100 px-16pxr text-white font-bold hover:bg-primary-200 disabled:opacity-50">검색</button>
       </form>
+
+      <Button type="button" variant="secondary" size="md"
+        onClick={() => { onNavigate?.(); useChatStore.getState().setIsOpen(true); }}
+        className="mt-12pxr w-full text-dark-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dark-gray-500">
+        AI 사서에게 추천받기
+      </Button>
 
       {state.tags.length > 0 && <div className="mt-12pxr flex flex-wrap gap-8pxr" aria-label="선택한 조건">
         {state.tags.map((id) => <button key={id} type="button" disabled={navigating} onClick={() => toggleTag(id)}
@@ -185,7 +192,6 @@ export default function SearchWorkspace({ initialState, compact = false, onNavig
         </section>}
         {!compact && (result?.events?.length || 0) > 0 && <div className="mt-28pxr"><OngoingEvent pageType="result" events={result?.events} /></div>}
       </>}
-      <button type="button" onClick={() => { onNavigate?.(); useChatStore.getState().setIsOpen(true); }} className="mt-24pxr mb-12pxr text-14pxr text-dark-gray-500 underline">원하는 이야기를 말로 설명하려면 AI 사서</button>
     </div>
   );
 }

@@ -335,7 +335,9 @@ test("desktop search keeps keyboard focus inside and carries facets to full resu
   await expect(dialog.getByRole("searchbox")).toBeFocused();
   await dialog.getByRole("button", { name: "퇴마", exact: true }).click();
   await expect(dialog.getByText("주인공 목표: 퇴마", { exact: true })).toBeVisible();
-  await dialog.getByRole("button", { name: "원하는 이야기를 말로 설명하려면 AI 사서" }).focus();
+  await dialog.getByRole("button", { name: "검색 닫기" }).focus();
+  await page.keyboard.press("Shift+Tab");
+  await expect(dialog.getByRole("button", { name: "전체 21개 작품 보기" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(dialog.getByRole("button", { name: "검색 닫기" })).toBeFocused();
   await dialog.getByRole("button", { name: "전체 21개 작품 보기" }).click();

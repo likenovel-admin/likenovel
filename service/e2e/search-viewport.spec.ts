@@ -70,6 +70,51 @@ async function record(page: Page, info: TestInfo, label: string, data: unknown) 
   await info.attach(`${label}-screen`, { path: screenshot, contentType: "image/png" });
 }
 
+for (const [width, height] of [[320, 568], [390, 844], [768, 540], [1440, 900]]) {
+  test(`AI librarian entry is visible before scrolling at ${width}px`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height });
+    const { errors } = await setup(page);
+    const dialog = await openSearch(page);
+    const entry = dialog.getByRole("button", { name: "AI 사서에게 추천받기", exact: true });
+    await expect(entry).toBeInViewport({ ratio: 1 });
+    const input = await dialog.getByRole("searchbox").boundingBox();
+    const button = await entry.boundingBox();
+    expect(button!.y).toBeGreaterThanOrEqual(input!.y + input!.height);
+    await record(page, info, "ai-entry", { width, height, input, button });
+    await entry.click();
+    await expect(dialog).not.toBeVisible();
+    await expect(page.getByPlaceholder("메시지를 입력하세요")).toBeFocused();
+    await expect(page.getByPlaceholder("메시지를 입력하세요")).toHaveValue("");
+    await page.getByRole("button", { name: "AI 사서 패널 닫기" }).click();
+    await expect(page.getByRole("button", { name: "작품 검색 열기" }).filter({ visible: true })).toBeFocused();
+    expect(errors).toEqual([]);
+  });
+}
+
+for (const width of [390, 768, 1440]) {
+  test(`search input focus stays inside its border at ${width}px`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 900 });
+    const { errors } = await setup(page);
+    const dialog = await openSearch(page);
+    const input = dialog.getByRole("searchbox");
+    await input.click();
+    await expect(input).toBeFocused();
+    await expect(input).toHaveCSS("box-shadow", "none");
+    for (const edge of ["top", "right", "bottom", "left"]) {
+      await expect(input).toHaveCSS(`border-${edge}-color`, "rgb(77, 81, 89)");
+      await expect(input).toHaveCSS(`border-${edge}-width`, "1px");
+    }
+    await input.press("Shift+Tab");
+    await expect(dialog.getByRole("button", { name: "검색 닫기" })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(input).toBeFocused();
+    await expect(input).toHaveCSS("border-top-color", "rgb(77, 81, 89)");
+    await expect(input).toHaveCSS("box-shadow", "none");
+    await record(page, info, "input-focus", { width, keyboardFocus: true });
+    expect(errors).toEqual([]);
+  });
+}
+
 test("keyword discovery exposes every group and all keywords without counts", async ({ page }, info) => {
   const { calls, errors } = await setup(page);
   const dialog = await openSearch(page);
@@ -162,7 +207,7 @@ test("QA desktop modal blocks header interaction and hands focus to AI", async (
   });
   await record(page, info, "header-interaction", { backgroundHit });
   expect.soft(backgroundHit).toBe(false);
-  await dialog.getByRole("button", { name: "원하는 이야기를 말로 설명하려면 AI 사서" }).click();
+  await dialog.getByRole("button", { name: "AI 사서에게 추천받기" }).click();
   await expect(dialog).not.toBeVisible();
   await expect(page.getByPlaceholder("메시지를 입력하세요")).toBeInViewport();
   await record(page, info, "ai-handoff", { focus: await page.evaluate(() => document.activeElement?.outerHTML) });
