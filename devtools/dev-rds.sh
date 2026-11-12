@@ -20,9 +20,18 @@ case "${1:-}" in
     exit 0 ;;
   *) echo "[dev-rds] unknown action" >&2; exit 2 ;;
 esac
-key="${DEV_RDS_SSH_KEY:-$HOME/.ssh/ln_kp.pem}"
+key="${DEV_RDS_SSH_KEY:-}"
+if [ -z "$key" ]; then
+  # Existing WSL and teammate Mac key names; never create/copy credentials.
+  for candidate in "$HOME/.ssh/ln_kp.pem" "$HOME/.ssh/likenovel_ln_kp.pem"; do
+    if [ -r "$candidate" ]; then
+      key="$candidate"
+      break
+    fi
+  done
+fi
 if [ ! -r "$key" ]; then
-  echo "[dev-rds] existing SSH key not readable: $key" >&2
+  echo "[dev-rds] existing SSH key not found/readable; set DEV_RDS_SSH_KEY to your existing key" >&2
   exit 1
 fi
 ssh -i "$key" -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=10 \

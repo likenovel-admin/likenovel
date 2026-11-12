@@ -196,6 +196,7 @@ git -C likenovel-service-api/likenovel-service-api status --short --branch
 
 ## 8) DB And Batch
 
+- 사용자가 `devdb 켜`, `dev DB 켜줘`, `개발 DB 켜줘`라고 하면 exact `likenovel-dev` 기동 요청으로 해석하고 `bash devtools/dev-rds.sh work-start`를 실행한다. 같은 기동 승인을 다시 묻거나 태그 갱신을 요구하지 않는다. 장시간 기동 대기는 herdr에서 실행하고 `available` 및 서버의 고정 종료 예정 시각을 확인해 보고한다. 이미 실행 중이면 새로 켜거나 시간을 연장하지 않는다. 스크립트는 기존 WSL/Mac SSH 키 이름을 찾으므로 AWS CLI 설치를 요구하지 않는다. 기존 키가 다른 위치에 있을 때만 그 위치를 확인해 `DEV_RDS_SSH_KEY`로 지정한다.
 - 로컬 백엔드/배치 검증 기본 DB 채널은 `host.docker.internal:13306`이다. 이는 SSH tunnel 뒤 dev RDS다.
 - DEV RDS 시작은 `bash devtools/dev-rds.sh work-start` 공통 경로를 사용한다. SSH로 controller를 직접 호출할 때도 먼저 `LIFECYCLE_PROTOCOL = 2` 확인을 통과해야 하며, 구형 script에 `start` 인자를 전달하지 않는다. 서버 관리 코드는 실행별 기동 기록을 기준으로 1시간 후 종료하며 태그·MySQL Uptime을 사용하지 않는다. 반복 start·엔진 재시작·배포는 시간을 연장하지 않는다. 직접 AWS/Boto3 시작은 실행 기록을 만들지 못하므로 사용하지 않는다. 관리 서버는 2026-11-12 반영했으며 실제 1시간 기동 검증은 남아 있다. 상세는 `docs/deployment-runbook.md` 9.1.2를 따른다. PROD DB에는 사용하지 않는다.
 - `localhost:3806` Docker MySQL은 별도 로컬 격리 DB다. 기본 검증 채널로 가정하지 않는다.

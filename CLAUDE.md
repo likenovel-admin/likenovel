@@ -38,5 +38,10 @@ Do not use nested legacy `CLAUDE.md` files as the main project runbook.
   owned by the shared ln-was start/stop controller (server installed 2026-11-12; full start/stop-cycle validation pending).
   Repeating start or rebooting MySQL does not extend a running DB. Direct AWS
   starts bypass the run record and must not be used. Never use this path for PROD.
+- Treat `devdb 켜`, `dev DB 켜줘`, and `개발 DB 켜줘` as explicit requests to
+  start `likenovel-dev` through that command. Do not ask for the same start
+  approval again or request a lease renewal. Wait in herdr, then report the
+  available state and fixed expiry. The helper discovers existing WSL/Mac SSH
+  key names; it does not require an AWS CLI on the user's PC.
 - Ignored/local-only docs may still be readable in this workspace. Report file
   existence and git tracking separately.
