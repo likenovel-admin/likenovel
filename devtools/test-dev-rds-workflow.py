@@ -12,22 +12,22 @@ def require(needle: str) -> None:
         raise AssertionError(f"dev-rds.yml: missing {needle!r}")
 
 
-for action in ("status", "work-start", "reconcile", "down"):
+for action in ("status", "work-start", "down"):
     require(f"          - {action}")
 
-require('    - cron: "*/5 * * * *"')
+if "schedule:" in CONTENT or "          - reconcile" in CONTENT:
+    raise AssertionError("GitHub must not independently stop the DB")
 require("  contents: read")
 require("  group: dev-rds-lifecycle")
 require("  cancel-in-progress: false")
-require('            action="reconcile"')
-require('          bash devtools/dev-rds.sh "$action"')
+require('          DEV_RDS_SSH_KEY="$HOME/.ssh/deploy_key" bash devtools/dev-rds.sh "$action"')
 require("      - name: Test DEV RDS lifecycle contracts")
 require("          bash devtools/test-dev-rds.sh")
 require("          python3 devtools/test-dev-rds-reconcile.py")
 require("          python3 devtools/test-dev-rds-workflow.py")
 
 test_step = CONTENT.index("      - name: Test DEV RDS lifecycle contracts")
-credentials_step = CONTENT.index("      - name: Configure AWS credentials")
+credentials_step = CONTENT.index("      - name: Prepare existing SSH credentials")
 action_step = CONTENT.index("      - name: Run DEV RDS lifecycle action")
 if not test_step < credentials_step < action_step:
     raise AssertionError(

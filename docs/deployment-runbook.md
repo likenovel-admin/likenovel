@@ -42,7 +42,7 @@ Legacy Windows path: `C:\Users\Hongsan\Downloads\likenovel` (참고용)
 
 2026-07-25 코드·서버 readback 기준:
 - `.github/workflows/docker-dev.yml` and `.github/workflows/docker-prod.yml` checkout the backend submodule recursively, then run hook, service lint, service utility/contract tests, and CMS contract gates before building frontend Docker images. The prod job runs only for `refs/heads/prod`. Both workflows pull images before recreating containers and verify internal ports plus public URLs after deployment.
-- `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml` renews the exact DEV RDS one-hour lease after AWS credential setup, starts the DB only when needed, packages dev backend CodeDeploy, waits for CodeDeploy, then runs `verify_backend_dev_deploy.sh` on ln-was.
+- `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml` starts the exact DEV RDS only when needed after AWS credential setup, packages dev backend CodeDeploy, waits for CodeDeploy, then runs `verify_backend_dev_deploy.sh` on ln-was.
 - `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions.yml` runs only for `refs/heads/prod`, packages prod backend CodeDeploy, waits for deployment success, then runs `verify_backend_prod_deploy.sh` on ln-was.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh` syncs batch files to `/home/ln-admin/likenovel/batch-dev` but keeps `/etc/cron.d/likenovel-dev` manual.
 - `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh` syncs batch files to `/home/ln-admin/likenovel/batch` and guards only selected prod user-crontab lines.
@@ -971,39 +971,36 @@ docker compose -f /home/ln-admin/likenovel/service/prod.docker-compose.yml up -d
 
 ### 9.1.2 DEV RDS 비용 가드
 
-로컬 또는 스테이징 검증 직전에만 아래 명령으로 `likenovel-dev`를 시작한다.
+**2026-11-12 관리 서버 반영: service Result=success/ExecMainStatus=0, timer enabled, DB stopped/run idle 확인. 실제 1시간 기동 주기는 미검증.**
 
-```bash
-cd /home/hongsan/work/likenovel
-bash devtools/dev-rds.sh work-start
-```
+- 서버 원본 백업: `/home/ln-admin/likenovel/dev-rds/backups/20261112T051543Z`.
+- 설치 script SHA-256: `59c72c06314d4c297b9b299cb0bd14f83f793e5e508f065aa50b248a90ae7c29`. service/timer 해시도 검증한 로컬 파일과 일치했다.
+- 이번 작업은 관리 도구 직접 반영이며 전체 웹/API 배포를 실행하지 않는다. workflow 변경 커밋은 `[skip ci]`로 반영하고, 실제 DEV DB 시작을 자동으로 유발하지 않는다.
 
-- `work-start`는 DB가 정지 상태면 시작하고, 마지막 실행 시점부터 1시간 임대를 기록한다.
-- 1시간을 넘겨 검증할 때는 `work-start`를 다시 실행해 임대를 갱신한다.
-- `ln-was`의 `likenovel-dev-rds-reconcile.timer`가 5분마다 `devtools/dev-rds-reconcile.py`를 실행해 만료된 DEV DB를 정지한다. GitHub 예약 실행 지연과 무관한 primary reconcile 경로다.
-- `.github/workflows/dev-rds.yml`도 명목상 5분마다 같은 임대를 확인하는 보조 경로로 유지한다. GitHub 예약 실행은 지연될 수 있으므로 이 경로만으로 정지 시각을 판정하지 않는다.
-- 예약 workflow는 AWS 자격증명을 설정하기 전에 fake-AWS 계약 테스트를 통과해야 한다. 임대 태그가 없거나 숫자가 아니면 DB는 정지하지 않되 workflow를 실패 처리한다.
-- 스테이징 웹 배포는 이미지 빌드가 모두 성공한 뒤 실제 배포 직전에 임대를 시작한다.
-- 스테이징 백엔드 배포는 AWS 자격증명 설정 직후, CodeDeploy 전에 같은 1시간 임대를 갱신한다. DB가 이미 `available`이면 재시작하지 않는다.
-- `down`은 다른 로컬 검증을 끊을 수 있으므로 자동 실행하지 않고, 즉시 종료가 확실히 필요할 때만 수동으로 사용한다.
-- 이 스크립트는 대상이 정확히 `likenovel-dev`가 아니면 실패하며 PROD DB에는 사용하지 않는다.
-- SSH 터널과 로컬 Docker는 별도 수명주기다. `work-start`가 터널이나 컨테이너를 대신 생성하지 않는다.
-- GitHub Actions principal `github-actions-likenovel`에는 exact DEV DB ARN의 `DescribeDBInstances`, `ListTagsForResource`, `AddTagsToResource`, `StartDBInstance`, `StopDBInstance`만 허용한다. `AddTagsToResource`는 `likenovel-dev-work-until-epoch` 키로 제한하고 PROD ARN은 허용하지 않는다.
-- `ln-was` instance role의 `LikeNovelDevRdsReconcileFromWas` inline policy는 exact DEV DB ARN의 `DescribeDBInstances`, `ListTagsForResource`, `StartDBInstance`, `StopDBInstance`만 허용하고, `ec2:SourceInstanceArn`을 exact `ln-was` instance ARN으로 제한한다. 같은 role을 쓰는 `ln-web`과 PROD DB ARN에는 허용하지 않는다.
+- 기준: 공통 controller가 시작한 exact `likenovel-dev` 실행이 `available`로 처음 확인된 시각부터 3600초. 이 시각은 `/var/lib/likenovel-dev-rds/state.json`의 실행 ID와 함께 한 번 기록하고 엔진 재시작·반복 start·배포로 갱신하지 않는다. 5분 timer 관측과 실제 상태 전환 사이에는 지연이 있을 수 있다.
+- `bash devtools/dev-rds.sh work-start`는 기존 SSH 접속을 통해 ln-was controller의 `start`를 호출한다. Mac 등 키 경로가 다르면 `DEV_RDS_SSH_KEY`를 지정한다. GitHub 수동/웹/백엔드 시작도 같은 controller를 호출한다. controller에는 기존 EC2 IAM 역할을 사용하며 PC에 AWS CLI는 필요하지 않다.
+- 서버에 SSH로 접속한 경우에도 먼저 `grep -qx 'LIFECYCLE_PROTOCOL = 2' /home/ln-admin/likenovel/dev-rds/dev-rds-reconcile.py`가 성공해야 한다. 성공한 경우에만 `python3 /home/ln-admin/likenovel/dev-rds/dev-rds-reconcile.py start`를 실행한다. 직접 `boto3.start_db_instance`나 AWS 콘솔/API 시작은 controller 기록을 만들지 못하므로 지원 경로가 아니다. 기록 없는 실행은 예전 시각을 재사용하거나 임의로 새 시간을 부여하지 않고 auto-stop/배포를 차단한다. 이 변경만으로 임의의 AWS 직접 시작까지 자동 관리된다고 보고하지 않는다.
+- 태그·RDS notification 이벤트·MySQL Uptime은 종료 판단에서 제외한다. DB 계정/SQL 접속이나 새로운 IAM 이벤트 조회 권한도 필요하지 않다.
+- 구형 서버 스크립트는 인자를 무시하고 기존 reconcile을 실행할 수 있다. 모든 새 시작/배포 호출은 실행 전에 `LIFECYCLE_PROTOCOL = 2`를 확인해 구형 script를 실행하지 않는다. 이는 현재 배포된 구형 consumer와의 전환 보호다. 전체 서버/호출부가 새 프로토콜로 검증되기 전 제거하지 않는다.
+- `StateDirectory`는 재부팅 후에도 유지한다. 파일 잠금 아래 기록을 atomic replace/fsync하며, 시작·정지 요청 전에 receipt를 저장한다. 응답을 잃으면 재발주하지 않고 실제 상태부터 확인한다. `starting`/`stopping`의 결과가 불명확한 기록을 수동 삭제해서 우회하지 않는다.
+- `start`는 `stopped`에서만 새 실행을 만들고, `available`에서는 남은 시간을 보여 준다. timer는 현재 실행의 1시간 만료를 확인한 뒤 상태와 실행 ID를 다시 검사한다. `starting`을 기다렸다가 종료하지 않는다. 기동 중 중간 상태는 기동 대기에서 허용한다.
+- GitHub의 별도 예약 종료는 제거한다. `ln-was`의 기존 `likenovel-dev-rds-reconcile.timer`만 종료를 판단한다. 실패는 service/journal에 남기며 이번 범위에서 새 알림 시스템은 추가하지 않는다.
 
-Timer source와 runtime path:
+배포 잔여시간 검사:
 
-```text
-devtools/dev-rds-reconcile.py
-  -> /home/ln-admin/likenovel/dev-rds/dev-rds-reconcile.py
-devtools/systemd/likenovel-dev-rds-reconcile.service
-  -> /etc/systemd/system/likenovel-dev-rds-reconcile.service
-devtools/systemd/likenovel-dev-rds-reconcile.timer
-  -> /etc/systemd/system/likenovel-dev-rds-reconcile.timer
-```
+- `python3 /home/ln-admin/likenovel/dev-rds/dev-rds-reconcile.py check-budget --seconds N`은 같은 실행 기록과 현재 RDS 상태를 검사한다. 시간이 부족하거나 시작 기록이 없으면 비정상 종료하며, 연장·재기동을 하지 않는다.
+- 웹: ln-web에서 container 교체 작업 전에 ln-was로 검사한다. 요구 잔여시간 1800초 = 원격 단계 상한 900초 + 공개 health 최대 630초(3 URL × 30회 × (curl 5초 + sleep 2초)) + 여유 270초. 원격 단계는 `timeout 900`으로 제한한다.
+- 백엔드: CodeDeploy `BeforeInstall`의 첫 변경 전에 600초를 요구한다. 현 hook 상한 60초 + 300초에 검증/여유 240초를 더한 값이다. `ApplicationStart` 진입 시에도 360초(자체 상한 300초 + 여유 60초)를 재검사한다. 배포 큐 대기 시간은 설치 직전 검사에 반영된다. hook 시간 제한 변경 시 이 기준도 재검토한다.
 
-설치 또는 갱신 후에는 `systemctl daemon-reload`, `systemctl enable --now likenovel-dev-rds-reconcile.timer`를 실행하고 `systemctl list-timers`, service journal, DEV RDS 상태를 함께 읽는다. 제거 rollback은 timer disable, 두 unit과 runtime script 삭제, daemon-reload, `LikeNovelDevRdsReconcileFromWas` inline policy 삭제 순서다.
-- 최초 활성화나 GitHub AWS 자격증명 교체 후에는 `Dev RDS lifecycle` workflow를 `status`로 먼저 실행한다. `AccessDenied`가 나오면 웹 이미지를 다시 빌드하지 말고 IAM policy readback과 exact DEV ARN 범위를 먼저 복구한다.
+반영/검증 순서:
+
+1. 기존 서버 script/unit과 root/backend 대상 SHA를 보존하고, 구형 GitHub 예약 stopper가 남지 않도록 전환한다. 실제 반영은 별도 승인된 작업으로 진행한다.
+2. 서버 script/unit을 기존 경로에 반영하고 `StateDirectory` 소유권을 준비한다. 현재 DB가 stopped인 상태에서 controller `status`로 idle을 확인한다. 실행 중인 DB를 관측만으로 임의 채택하지 않는다.
+3. CLI/GitHub/팀원 SSH 경로를 새 공통 `start` 명령으로 맞춘다. 무조건 기존 start API를 계속 쓰게 두지 않는다.
+4. 실제 DB 시작 승인을 받은 뒤 start → available 기록 → 1시간 전 미종료 → 이후 timer 정지 요청/완료를 확인한다. 엔진 재시작과 관리 프로세스 재시작에도 기록이 고정됨을 검증한다. 배포 부족 시간 검사 실패가 container/file/service 변경보다 앞서는지 확인한다.
+5. 실패 시 상태와 기록을 보존한다. 구형 태그 stopper를 무조건 복구하면 원래 문제가 돌아오므로 별도 복구 지시 없이 자동 복구하지 않는다.
+
+SSH 터널과 로컬 Docker는 DB 수명주기와 별개다.
 
 ## 9.2 Local DB 세팅 표준
 대상: 로컬 API 개발/검증
@@ -1048,7 +1045,7 @@ docker-compose up -d
 - 이 경우 API 로그에 `Can't connect to MySQL server on '<dev-rds-endpoint>'` 또는 프론트 로그에 proxy `ECONNREFUSED`가 나타난다.
 
 표준 절차:
-1. WSL 저장소에서 DEV RDS 임대를 시작하고 `available` 상태를 확인한다.
+1. WSL 저장소에서 DEV RDS를 시작하고 `available` 상태를 확인한다.
 
 ```bash
 cd /home/hongsan/work/likenovel

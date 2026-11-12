@@ -16,7 +16,7 @@
 
 Code-readback anchors checked on 2026-07-25:
 
-- Dev backend workflow renews the exact DEV RDS one-hour lease without restarting an already available DB, then packages CodeDeploy and runs `verify_backend_dev_deploy.sh` against the exact deployment ID: `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml`
+- Dev backend workflow starts the exact DEV RDS only when stopped and leaves an already available DB unchanged, then packages CodeDeploy and runs `verify_backend_dev_deploy.sh` against the exact deployment ID: `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions_dev.yml`
 - Dev web compose files currently share Compose project name `docker`; never use `--remove-orphans` across their sequential deploys: `.github/workflows/docker-dev.yml`
 - Prod backend workflow packages `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.sh`, `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/verify_backend_prod_deploy.sh`, `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/init/`, and `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/batch/`, then runs on-host verification: `likenovel-service-api/likenovel-service-api/.github/workflows/deploy_be_actions.yml`
 - Dev deploy script syncs batch files to `/home/ln-admin/likenovel/batch-dev` and leaves `/etc/cron.d/likenovel-dev` manual: `likenovel-service-api/likenovel-service-api/fastapi_be_server/dist/run_be.dev.sh`
@@ -89,14 +89,17 @@ as the default dev RDS tunnel channel. Switching to Docker MySQL `3806` needs an
 explicit user decision.
 
 Before a local or staging check uses that channel, run
-`bash devtools/dev-rds.sh work-start`. The command is restricted to
-`likenovel-dev`, starts it when needed, and renews a one-hour lease. The
-DEV-only `ln-was` systemd timer reconciles expired leases every five minutes;
-`.github/workflows/dev-rds.yml` remains a best-effort backup because GitHub
-scheduled runs can be delayed. Re-run `work-start` for checks lasting more than
-one hour. The backend DEV workflow renews the same lease before CodeDeploy and
-does not restart a DB that is already available. Do not use this path for PROD. The SSH tunnel remains a separate
-user-owned process.
+`bash devtools/dev-rds.sh work-start` only when starting DEV is authorized.
+All supported clients invoke the existing ln-was controller over SSH. The
+controller records one immutable start time per RDS run in its StateDirectory.
+Repeated start, MySQL reboot, and deployment do not extend it. No lease tags,
+notification events, or SQL uptime are used. Direct AWS starts have no trusted
+run record and block auto-stop/deployment rather than inheriting an old clock.
+The server timer is the only automatic stopper. Web/backend deployment guards
+recheck the same remaining budget before changing containers/files/services.
+The server controller was installed and verified idle on 2026-11-12. A real
+one-hour start/stop cycle is still unverified; see deployment runbook 9.1.2.
+The SSH tunnel remains a separate user-owned process.
 
 ## Batch And Cron Paths
 

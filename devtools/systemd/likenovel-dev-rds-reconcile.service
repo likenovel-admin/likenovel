@@ -1,9 +1,12 @@
 [Unit]
-Description=Reconcile the LikeNovel DEV RDS work lease
+Description=Stop the LikeNovel DEV RDS after one hour of its recorded RDS run
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=oneshot
 User=ln-admin
+StateDirectory=likenovel-dev-rds
+StateDirectoryMode=0700
+TimeoutStartSec=30
 ExecStart=/usr/bin/python3 /home/ln-admin/likenovel/dev-rds/dev-rds-reconcile.py

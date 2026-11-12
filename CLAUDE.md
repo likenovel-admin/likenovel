@@ -34,8 +34,9 @@ Do not use nested legacy `CLAUDE.md` files as the main project runbook.
   backend deploy context only. Do not execute commands from it.
 - Before local or staging checks that use the dev RDS, run
   `bash devtools/dev-rds.sh work-start`. It starts only `likenovel-dev` and
-  renews a one-hour lease; the DEV-only `ln-was` systemd timer reconciles
-  expired leases every 5 minutes, with the GitHub workflow as a backup. Never
-  use this lifecycle path for PROD.
+  does not renew any deadline. The controller uses a durable per-run clock
+  owned by the shared ln-was start/stop controller (server installed 2026-11-12; full start/stop-cycle validation pending).
+  Repeating start or rebooting MySQL does not extend a running DB. Direct AWS
+  starts bypass the run record and must not be used. Never use this path for PROD.
 - Ignored/local-only docs may still be readable in this workspace. Report file
   existence and git tracking separately.

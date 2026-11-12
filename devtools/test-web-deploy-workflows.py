@@ -146,4 +146,24 @@ require_before(
 if "dev-rds.sh" in prod_content:
     raise AssertionError("docker-prod.yml: DEV RDS lifecycle must not affect PROD")
 
+# Execute the real remote shell with a denied budget; no Docker command may run.
+import os
+import subprocess
+import tempfile
+import textwrap
+
+remote = dev_content.split("<< 'ENDSSH'", 1)[1].split("\n          ENDSSH", 1)[0]
+with tempfile.TemporaryDirectory() as directory:
+    temp = Path(directory)
+    trace = temp / "calls"
+    for name, code in (("ssh", 23), ("docker", 99)):
+        command = temp / name
+        command.write_text('#!/bin/sh\nprintf "%s\n" "' + name + '" >> "$DEV_GUARD_TRACE"\nexit ' + str(code) + '\n')
+        command.chmod(0o700)
+    result = subprocess.run(["/bin/bash"], input=textwrap.dedent(remote), text=True,
+        capture_output=True, timeout=5,
+        env={"PATH": str(temp), "DEV_GUARD_TRACE": str(trace)})
+    if result.returncode != 23 or trace.read_text().splitlines() != ["ssh"]:
+        raise AssertionError("DEV web must reject insufficient runtime before any Docker mutation")
+
 print("web deploy workflow contract tests passed")
