@@ -974,7 +974,9 @@ docker compose -f /home/ln-admin/likenovel/service/prod.docker-compose.yml up -d
 **2026-11-12 관리 서버 반영: service Result=success/ExecMainStatus=0, timer enabled, DB stopped/run idle 확인. 실제 1시간 기동 주기는 미검증.**
 
 - 서버 원본 백업: `/home/ln-admin/likenovel/dev-rds/backups/20261112T051543Z`.
-- 설치 script SHA-256: `59c72c06314d4c297b9b299cb0bd14f83f793e5e508f065aa50b248a90ae7c29`. service/timer 해시도 검증한 로컬 파일과 일치했다.
+- 설치 script SHA-256: `ec701c9d30499853c4feebd30c74f3396462dac6be5bb22ce8cc950433333099`. service/timer 해시도 검증한 로컬 파일과 일치했다.
+- 2026-11-12 첫 실제 기동에서 대기 상태 목록이 좁아 클라이언트가 조기 종료한 실패를 확인했다. 실행 기록은 보존됐고 추가 시작 API 없이 `available`로 전환했다. 대기는 정상 중간 상태를 수용하되 20분으로 제한하고, 기동 명령이 lock을 점유한 timer tick은 정상 건너뛰도록 수정했다. 이 보완 전 script는 `backups/20261112T053100Z`에 보존했다.
+- 첫 실행 ID `47586cbd-3ced-4c50-9e71-bb708457393b`, available 관측 2026-11-12 14:30:02 KST, 고정 종료 기준 15:30:02 KST. 실제 자동 종료 완료 증거는 아직 별도다.
 - 이번 작업은 관리 도구 직접 반영이며 전체 웹/API 배포를 실행하지 않는다. workflow 변경 커밋은 `[skip ci]`로 반영하고, 실제 DEV DB 시작을 자동으로 유발하지 않는다.
 
 - 기준: 공통 controller가 시작한 exact `likenovel-dev` 실행이 `available`로 처음 확인된 시각부터 3600초. 이 시각은 `/var/lib/likenovel-dev-rds/state.json`의 실행 ID와 함께 한 번 기록하고 엔진 재시작·반복 start·배포로 갱신하지 않는다. 5분 timer 관측과 실제 상태 전환 사이에는 지연이 있을 수 있다.

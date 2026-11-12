@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import contextlib
+import fcntl
 import importlib.util
 import io
 import json
 from pathlib import Path
 import tempfile
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -73,6 +75,26 @@ class LifecycleTests(unittest.TestCase):
         self.now = 4600
         m.reconcile(self.rds, self.path, self.clock)
         self.assertEqual(self.rds.stops, 1)
+
+    def test_start_waits_through_reboot_and_configuration(self):
+        m.save_state(self.path, {"db_id": "likenovel-dev", "phase": "starting", "run_id": "pending"})
+        self.rds.statuses = ["configuring-enhanced-monitoring", "rebooting", "configuring-log-exports", "available"]
+        m.start(self.rds, self.path, self.clock, lambda _: None)
+        self.assertEqual(self.rds.starts, 0)
+        self.assertEqual(m.load_state(self.path)["run_id"], "pending")
+
+    def test_wait_is_bounded_for_unknown_intermediate_state(self):
+        m.save_state(self.path, {"db_id": "likenovel-dev", "phase": "starting", "run_id": "pending"})
+        self.rds.statuses = ["configuring-enhanced-monitoring"]
+        with self.assertRaisesRegex(RuntimeError, "timed out"):
+            m.start(self.rds, self.path, self.clock, lambda _: None)
+        self.assertEqual(self.rds.starts, 0)
+
+    def test_timer_skips_busy_lock_without_false_failure(self):
+        with (self.path.parent / "lock").open("a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with patch.object(m, "STATE_DIR", self.path.parent), patch.object(sys, "argv", ["controller", "reconcile"]):
+                m.main()
 
     def test_hour_boundary(self):
         for now, stops in ((4599, 0), (4600, 1)):

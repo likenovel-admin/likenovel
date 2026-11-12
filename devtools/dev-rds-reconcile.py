@@ -104,16 +104,23 @@ def start(rds, path, clock=time.time, sleep=time.sleep):
         save_state(path, {"db_id": DB_ID, "phase": "starting", "run_id": str(uuid.uuid4())})
         rds.start_db_instance(DBInstanceIdentifier=DB_ID)
     elif instance["DBInstanceStatus"] not in {"available", "starting"}:
-        raise RuntimeError("DEV is transitioning; retry start after checking its state")
+        existing = load_state(path)
+        if not existing or existing["phase"] != "starting":
+            raise RuntimeError("DEV is transitioning without a pending start; inspect its state")
+    last_status = None
     for _ in range(120):
         instance, state = observe(rds, path, clock())
         if instance["DBInstanceStatus"] == "available":
             print(f"[dev-rds] available; remaining={remaining_seconds(state, clock())}s")
             return
-        if instance["DBInstanceStatus"] not in {"stopped", "starting", "configuring-enhanced-monitoring", "configuring-iam-database-auth", "backing-up"}:
-            raise RuntimeError("unexpected state while waiting for DEV start")
+        status = instance["DBInstanceStatus"]
+        if status in {"failed", "incompatible-network", "incompatible-restore", "incompatible-parameters"}:
+            raise RuntimeError(f"DEV startup failed: status={status}")
+        if status != last_status:
+            print(f"[dev-rds] waiting for available; status={status}", flush=True)
+            last_status = status
         sleep(10)
-    raise RuntimeError("DEV start wait timed out; retain the run record and inspect status")
+    raise RuntimeError(f"DEV start wait timed out: status={last_status}; retain the run record")
 
 
 def stop(rds, path):
@@ -149,11 +156,17 @@ def main():
     parser.add_argument("action", nargs="?", default="reconcile", choices=("start", "stop", "status", "endpoint", "reconcile", "check-budget"))
     parser.add_argument("--seconds", type=int, default=0)
     args = parser.parse_args()
-    import boto3
-    from botocore.config import Config
     # StateDirectory is provisioned by the service, never a per-client file.
     with (STATE_DIR / "lock").open("a") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            if args.action == "reconcile":
+                print("[dev-rds] lifecycle command in progress; timer skips this tick")
+                return
+            raise RuntimeError("another lifecycle command is in progress; do not submit a duplicate") from None
+        import boto3
+        from botocore.config import Config
         rds = boto3.client("rds", region_name=REGION,
             config=Config(connect_timeout=3, read_timeout=5, retries={"total_max_attempts": 1}))
         path = STATE_DIR / "state.json"
