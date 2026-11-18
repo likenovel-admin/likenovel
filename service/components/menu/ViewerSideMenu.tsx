@@ -16,9 +16,11 @@ const ViewerSideMenu = ({
       <FloatingMenu onClick={(e: React.MouseEvent) => onEpisodeListClick(e)}>
         <EpisodeList />
       </FloatingMenu>
-      <FloatingMenu onClick={(e: React.MouseEvent) => onSettingClick(e)}>
-        <Setting />
-      </FloatingMenu>
+      <div className="hidden md:block">
+        <FloatingMenu onClick={onSettingClick}>
+          <Setting />
+        </FloatingMenu>
+      </div>
     </div>
   );
 };

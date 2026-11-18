@@ -1,10 +1,24 @@
+import useModalStore from "@/store/modalStore";
 import useViewStore from "@/store/viewerStore";
 import { useRef } from "react";
 import SettingLevel from "./SettingLevel";
 import Check from "/public/images/check.svg";
 import Refresh from "/public/images/refresh.svg";
 
-const SettingModal = () => {
+interface Props {
+  isScroll: boolean;
+  onReadingModeChange: (isScroll: boolean) => void;
+  isBingeWatching: boolean;
+  onBingeWatch: () => void;
+}
+
+const SettingModal = ({
+  isScroll,
+  onReadingModeChange,
+  isBingeWatching,
+  onBingeWatch,
+}: Props) => {
+  const closeModal = useModalStore((state) => state.closeModal);
   const { settings, setSettings, resetSettings } = useViewStore((state) => ({
     settings: state.settings,
     setSettings: state.setSettings,
@@ -44,11 +58,46 @@ const SettingModal = () => {
   };
   return (
     <>
-      <div className="mx-6 mt-10pxr">
+      <div className="mx-4 mt-10pxr md:mx-6">
         <h1 className="mt-[-10px] font-bold text-22pxr">설정</h1>
-        <div className="flex justify-between  mt-[37px] mb-[19px]">
-          <span className="font-semibold ">폰트종류</span>
-          <div className="flex gap-[19px]">
+        <div className="mt-4">
+          <h2 className="mb-2 font-semibold">보기 방식</h2>
+          <div role="group" aria-label="보기 방식" className="grid grid-cols-2 gap-2">
+            {([true, false] as const).map((scrollMode) => (
+              <button
+                key={String(scrollMode)}
+                type="button"
+                aria-pressed={isScroll === scrollMode}
+                onClick={() => {
+                  if (isScroll === scrollMode) return;
+                  onReadingModeChange(scrollMode);
+                  closeModal();
+                }}
+                className="min-h-[44px] rounded-md border border-light-gray-400 px-2 text-14pxr aria-pressed:border-black-100 aria-pressed:bg-black-100 aria-pressed:font-semibold aria-pressed:text-white"
+              >
+                {scrollMode ? "세로 스크롤" : "가로 슬라이드"}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center justify-between border-t border-light-gray-200 pt-2 md:hidden">
+            <span className="font-semibold">정주행</span>
+            <button
+              type="button"
+              disabled={isBingeWatching}
+              onClick={() => {
+                closeModal();
+                onBingeWatch();
+              }}
+              className="min-h-[44px] rounded-md border border-light-gray-400 px-3 text-14pxr disabled:opacity-50"
+            >
+              {isBingeWatching ? "정주행 중" : "정주행 시작"}
+            </button>
+          </div>
+        </div>
+        <div className="my-3 border-t border-light-gray-200" />
+        <div className="mb-[19px] flex justify-between gap-3">
+          <span className="shrink-0 font-semibold">폰트종류</span>
+          <div className="flex min-w-0 flex-wrap justify-end gap-x-3 gap-y-2 md:gap-x-[19px]">
             <button onClick={() => handleFontChange("고딕")}>
               <span
                 className={`${
@@ -132,7 +181,7 @@ const SettingModal = () => {
             </button>
           </div>
         </div>
-        <div className="border border-b border-light-gray-200 w-[348px] mb-[12px]" />
+        <div className="mb-3 border-t border-light-gray-200" />
         <div className="flex justify-between items-center">
           <span className="font-semibold">테마</span>
           <div className="flex gap-12pxr">
@@ -162,7 +211,7 @@ const SettingModal = () => {
             </button>
           </div>
         </div>
-        <div className="border border-b border-light-gray-200 w-[348px] my-[12px]" />
+        <div className="my-3 border-t border-light-gray-200" />
         <div className="flex justify-between items-center">
           <span className="font-semibold">폰트크기</span>
           <SettingLevel
@@ -171,7 +220,7 @@ const SettingModal = () => {
             maximum={10}
           />
         </div>
-        <div className="border border-b border-light-gray-200 w-[348px] my-[12px]" />
+        <div className="my-3 border-t border-light-gray-200" />
         <div className="flex justify-between items-center">
           <span className="font-semibold">자간</span>
           <SettingLevel
@@ -179,7 +228,7 @@ const SettingModal = () => {
             setCount={(size) => setSettings({ letterSpacing: size })}
           />
         </div>
-        <div className="border border-b border-light-gray-200 w-[348px] my-[12px]" />
+        <div className="my-3 border-t border-light-gray-200" />
         <div className="flex justify-between items-center">
           <span className="font-semibold">행간</span>
           <SettingLevel
@@ -187,7 +236,7 @@ const SettingModal = () => {
             setCount={(size) => setSettings({ lineHeight: size })}
           />
         </div>
-        <div className="border border-b border-light-gray-200 w-[348px] my-[12px]" />
+        <div className="my-3 border-t border-light-gray-200" />
         <div className="flex justify-between items-center">
           <span className="font-semibold">좌우여백</span>
           <SettingLevel
@@ -195,7 +244,7 @@ const SettingModal = () => {
             setCount={(size) => setSettings({ marginSize: size })}
           />
         </div>
-        <div className="border border-b border-light-gray-200 w-[348px] my-[12px]" />
+        <div className="my-3 border-t border-light-gray-200" />
         <div className="flex justify-between items-center">
           <span className="font-semibold">들여쓰기</span>
           <button
@@ -211,7 +260,7 @@ const SettingModal = () => {
             />
           </button>
         </div>
-        <div className="border border-b border-light-gray-200 w-[348px] my-[12px]" />
+        <div className="my-3 border-t border-light-gray-200" />
         <div className="flex justify-between items-center">
           <span className="font-semibold">표지 표시</span>
           <button
@@ -231,7 +280,7 @@ const SettingModal = () => {
           </button>
         </div>
       </div>
-      <div className="border border-b border-light-gray-200 w-[402px] my-[12px]" />
+      <div className="my-3 border-t border-light-gray-200" />
       <div className="flex justify-center items-center gap-6pxr mb-24pxr">
         <span
           className="text-dark-gray-400 cursor-pointer"

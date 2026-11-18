@@ -15,7 +15,7 @@ const websochatButtonSource = readFileSync(
 
 assert.match(
   bottomNavSource,
-  /className="flex w-full md:hidden items-center justify-between/,
+  /className="flex h-full w-full items-center justify-between md:hidden"/,
   "Mobile viewer bottom nav must use a full-width grouped layout"
 );
 
@@ -38,7 +38,7 @@ assert.match(
 );
 
 const mobileNavStart = bottomNavSource.indexOf(
-  '<div className="flex w-full md:hidden'
+  'aria-label="뷰어 하단 메뉴"'
 );
 const mobileNavEnd = bottomNavSource.indexOf(
   'className="hidden disabled:cursor-not-allowed',
