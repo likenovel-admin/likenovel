@@ -43,7 +43,7 @@ import type { Contents, Rendition } from "epubjs";
 import type React from "react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ReactReader, ReactReaderStyle } from "react-reader";
+import { EpubView, ReactReader, ReactReaderStyle } from "react-reader";
 import ArrowLeft from "/public/images/arrow-left.svg";
 import ArrowRight from "/public/images/arrow-right.svg";
 
@@ -1303,8 +1303,6 @@ const EpubViewer = ({
       host.style.width = "100%";
       host.style.boxSizing = "border-box";
       host.style.padding = "48px 0 64px";
-      // Ensure touch gestures are interpreted as vertical scroll on mobile
-      host.style.touchAction = "auto";
       host.style.overflowY = "visible";
       host.style.minHeight = "100vh";
       lastPageHostRef.current = host;
@@ -1445,8 +1443,6 @@ const EpubViewer = ({
     };
   }, [isScroll, debouncedResize]);
 
-  // ========================= MOBILE SCROLLED: ENABLE DRAG SCROLL ON LastPage =========================
-
   // Report whether the last page is currently visible so the parent can
   // hide floating menus that would cover the comment box.
   useEffect(() => {
@@ -1477,99 +1473,11 @@ const EpubViewer = ({
     };
   }, [isScroll, showLastPage, lastPageHostReady, onLastPageInViewChange]);
 
-  useEffect(() => {
-    // Only apply on real mobile devices and scrolled mode
-    if (!isScroll || device !== "mobile" || !lastPageHostReady) return;
-    const host = lastPageHostRef.current;
-    const container = getScrollContainer();
-
-    if (!host || !container) return;
-
-    let startY = 0;
-    let startScrollTop = 0;
-    let isDragging = false;
-    let bypassInteractiveTouch = false;
-    const isInteractiveTarget = (target: EventTarget | null) =>
-      target instanceof Element &&
-      Boolean(
-        target.closest(
-          '[data-lastpage-interactive="true"], button, a, input, textarea, select, [role="button"]'
-        )
-      );
-
-    // Use native touch events to control the EPUB scroll container
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length !== 1) return;
-      if (isInteractiveTarget(e.target)) {
-        bypassInteractiveTouch = true;
-        isDragging = false;
-        return;
-      }
-      bypassInteractiveTouch = false;
-      // Re-fetch container each time to avoid stale closure
-      const c = getScrollContainer();
-      if (!c) return;
-      isDragging = true;
-      startY = e.touches[0].clientY;
-      startScrollTop = c.scrollTop;
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (bypassInteractiveTouch) return;
-      if (!isDragging || e.touches.length !== 1) return;
-      const currentY = e.touches[0].clientY;
-      const deltaY = startY - currentY;
-
-      if (deltaY < 0) {
-        // 위로 스크롤: preventDefault 호출하지 않아 iOS 네이티브 관성 스크롤 허용
-        isDragging = false;
-        return;
-      }
-
-      // 아래로 스크롤(마지막 페이지 내부): 직접 컨테이너 스크롤
-      const c = getScrollContainer();
-      if (!c) return;
-      c.scrollTop = startScrollTop + deltaY;
-      e.preventDefault();
-      e.stopPropagation();
-    };
-
-    const handleTouchEnd = () => {
-      if (bypassInteractiveTouch) {
-        bypassInteractiveTouch = false;
-        return;
-      }
-      isDragging = false;
-    };
-
-    host.addEventListener("touchstart", handleTouchStart, {
-      passive: true,
-      capture: true,
-    });
-    host.addEventListener("touchmove", handleTouchMove, {
-      passive: false,
-      capture: true,
-    });
-    host.addEventListener("touchend", handleTouchEnd, { capture: true });
-    host.addEventListener("touchcancel", handleTouchEnd, { capture: true });
-
-    return () => {
-      host.removeEventListener("touchstart", handleTouchStart, {
-        capture: true,
-      } as any);
-      host.removeEventListener("touchmove", handleTouchMove, {
-        capture: true,
-      } as any);
-      host.removeEventListener("touchend", handleTouchEnd, {
-        capture: true,
-      } as any);
-      host.removeEventListener("touchcancel", handleTouchEnd, {
-        capture: true,
-      } as any);
-    };
-  }, [isScroll, device, lastPageHostReady]);
-
   // ========================= RENDER =========================
+
+  // ReactReader cancels touchstart in its swipe wrapper, including taps in the
+  // scroll container's last-page controls. EpubView leaves vertical gestures native.
+  const Reader = isScroll ? EpubView : ReactReader;
 
   return (
     <div ref={containerRef}>
@@ -1617,42 +1525,33 @@ const EpubViewer = ({
         >
           {/* MAIN EPUB AREA */}
           <div
-            className="w-full h-full"
-            style={{ display: showLastPage ? "none" : "block" }}
+            className="w-full h-full overflow-hidden"
+            style={{
+              display: showLastPage ? "none" : "block",
+              backgroundColor: isScroll ? "var(--background-gray)" : undefined,
+            }}
           >
-            <ReactReader
+            <Reader
               key={`${epubUrl}-${isScroll ? "scrolled" : "paginated"}`}
               url={epubUrl}
               location={location}
-              locationChanged={(loc) => {
-                setLocation(loc);
-              }}
+              locationChanged={setLocation}
               showToc={false}
               epubOptions={epubOptions}
-              readerStyles={{
-                ...ReactReaderStyle,
-                arrow: { display: "none" },
-                loadingView: { display: "none" },
-                titleArea: isScroll ? { display: "none" } : ReactReaderStyle.titleArea,
-                reader: isScroll
-                  ? { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 }
-                  : ReactReaderStyle.reader,
-                readerArea: {
-                  ...ReactReaderStyle.readerArea,
-                  backgroundColor: "var(--background-gray)",
-                  padding: "0",
-                  margin: "0",
-                  overflowY: "hidden",
-                  overflowX: "hidden",
-                  height: "100%",
+              {...(!isScroll && {
+                readerStyles: {
+                  ...ReactReaderStyle,
+                  arrow: { display: "none" },
+                  loadingView: { display: "none" },
+                  readerArea: {
+                    ...ReactReaderStyle.readerArea,
+                    backgroundColor: "var(--background-gray)",
+                    padding: "0",
+                    margin: "0",
+                    overflow: "hidden",
+                  },
                 },
-                container: {
-                  ...ReactReaderStyle.container,
-                  padding: "0",
-                  margin: "0",
-                  height: "100%",
-                },
-              }}
+              })}
               getRendition={(_rendition) => {
                 initialScrolledBodyCoordinatorRef.current?.cancel();
                 scrolledResizeLocationRestorerRef.current?.cancel();

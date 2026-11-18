@@ -116,6 +116,7 @@ const Viewer = () => {
     isNoticeViewer
   );
   const episodeData = data?.data;
+  const isBingeWatching = episodeData?.bingeWatchYn === "Y";
   const initialWebsochatButtonState = resolveViewerWebsochatButtonState(
     episodeData || {}
   );
@@ -318,12 +319,38 @@ const Viewer = () => {
       />
     );
   };
+  const handleBingeWatch = () => {
+    if (isBingeWatching) return;
+    setConfirm({
+      content: (
+        <div className="flex flex-col items-center">
+          <span className="text-18pxr font-semibold leading-[25px] tracking-[-2%] text-[#111317]">
+            정주행을 시작합니다!
+          </span>
+          <span className="text-14pxr font-normal leading-[20px] tracking-[-2%] text-[#4D5159]">
+            마지막 페이지 없이 다음회차로 곧장 이동하며,
+            <br />
+            가지고 계신 대여권 혹은 캐시가 자동소진됩니다.
+          </span>
+        </div>
+      ),
+      confirmText: "정주행",
+    });
+  };
+
   const handleOpenSetting = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setSuppressViewerClickTick((prev) => prev + 1);
     setModalType("setting");
-    setModal(<SettingModal />);
+    setModal(
+      <SettingModal
+        isScroll={isScroll}
+        onReadingModeChange={setIsScroll}
+        isBingeWatching={isBingeWatching}
+        onBingeWatch={handleBingeWatch}
+      />
+    );
   };
 
   const handleGoFirst = (e: React.MouseEvent) => {
@@ -735,6 +762,8 @@ const Viewer = () => {
       commentState={commentState}
       noticeState={noticeState}
       setIsScroll={setIsScroll}
+      onSettingClick={handleOpenSetting}
+      onBingeWatch={handleBingeWatch}
       showNav={showNav}
       handleCommentState={
         noticeState ? handleNoticeState : handleCommentState
@@ -840,8 +869,6 @@ const Viewer = () => {
               previousEpisodeId={data?.data?.previousEpisodeId}
               nextEpisodeId={data?.data?.nextEpisodeId}
               commentCount={liveCommentCount}
-              productId={data?.data.product_id || Number(productId || 0)}
-              bookmarkYn={data?.data.bookmarkYn}
               likedYN={data?.data.liked}
               handleCommentState={handleCommentState}
               showWebsochatButton={websochatButtonState !== "hidden"}

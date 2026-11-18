@@ -1,4 +1,3 @@
-import BookmarkButton from "@/components/common/BookmarkButton";
 import LikeButton from "@/components/menu/LikeButton";
 import WebsochatButton from "@/components/menu/WebsochatButton";
 import useViewStore from "@/store/viewerStore";
@@ -13,8 +12,6 @@ interface Props {
   previousEpisodeId?: number;
   nextEpisodeId?: number;
   commentCount?: number;
-  productId?: number;
-  bookmarkYn?: "Y" | "N";
   likedYN?: "Y" | "N";
   handleCommentState?: () => void;
   showWebsochatButton?: boolean;
@@ -29,8 +26,6 @@ const ViewerBottomNav = ({
   previousEpisodeId,
   nextEpisodeId,
   commentCount,
-  productId,
-  bookmarkYn,
   likedYN,
   handleCommentState,
   showWebsochatButton,
@@ -60,11 +55,15 @@ const ViewerBottomNav = ({
     >
       {showNav && (
         <>
-          <div className="flex w-full md:hidden items-center justify-between gap-4pxr">
+          <div
+            className="flex h-full w-full items-center justify-between md:hidden"
+            role="navigation"
+            aria-label="뷰어 하단 메뉴"
+          >
             <button
               onClick={handleNavigatePrevChap}
               disabled={!previousEpisodeId}
-              className="flex h-40pxr shrink-0 items-center justify-center rounded-[6px] px-2pxr text-dark-gray-500 disabled:cursor-not-allowed disabled:opacity-35"
+              className="flex h-[44px] min-w-[46px] shrink-0 items-center justify-center rounded-[6px] px-2pxr text-dark-gray-500 disabled:cursor-not-allowed disabled:opacity-35"
               aria-label="이전화"
             >
               <div className="flex items-center gap-4pxr">
@@ -72,51 +71,37 @@ const ViewerBottomNav = ({
                 <span className="text-12pxr leading-none">이전화</span>
               </div>
             </button>
-            <div className="flex min-w-0 shrink items-center justify-center gap-1pxr min-[390px]:gap-2pxr">
-              <button
-                className="relative flex h-40pxr w-32pxr items-center justify-center"
-                onClick={handleCommentState}
-                aria-label="댓글"
-              >
-                <Image
-                  src="/images/comment.svg"
-                  alt=""
-                  width={21}
-                  height={21}
-                />
-                {commentCount && commentCount > 0 ? (
-                  <span className="absolute right-0 top-[4px] flex h-[15px] min-w-[20px] items-center justify-center rounded-[100px] bg-black-100 px-[5px] text-[10px] font-medium text-white">
-                    {commentCount > 99 ? "99+" : commentCount}
-                  </span>
-                ) : null}
-              </button>
-              <LikeButton
-                likeYN={likedYN || "N"}
-                buttonStyle="flex h-40pxr w-32pxr items-center justify-center"
-                likeStyle="h-[21px] w-[23px] text-dark-gray-500 hover:text-dark-gray-600"
-                activeLikeStyle="h-[21px] w-[23px]"
+            <button
+              className="relative flex h-[44px] w-[44px] shrink-0 items-center justify-center"
+              onClick={handleCommentState}
+              aria-label="댓글"
+            >
+              <Image src="/images/comment.svg" alt="" width={21} height={21} />
+              {commentCount && commentCount > 0 ? (
+                <span className="absolute right-0 top-[4px] flex h-[15px] min-w-[20px] items-center justify-center rounded-[100px] bg-black-100 px-[5px] text-[10px] font-medium text-white">
+                  {commentCount > 99 ? "99+" : commentCount}
+                </span>
+              ) : null}
+            </button>
+            <LikeButton
+              likeYN={likedYN || "N"}
+              buttonStyle="flex h-[44px] w-[44px] shrink-0 items-center justify-center"
+              likeStyle="h-[21px] w-[23px] text-dark-gray-500 hover:text-dark-gray-600"
+              activeLikeStyle="h-[21px] w-[23px]"
+            />
+            {shouldShowWebsochatButton && (
+              <WebsochatButton
+                label="웹소챗"
+                onClick={handleWebsochatClick}
+                pending={isWebsochatPending}
+                variant="subtle"
+                className="h-[44px] min-w-[82px] shrink-0 px-10pxr text-13pxr [&>svg]:h-15pxr [&>svg]:w-15pxr min-[390px]:min-w-[88px]"
               />
-              <BookmarkButton
-                productId={productId || 0}
-                bookmarkYn={bookmarkYn || "N"}
-                buttonStyle="flex h-40pxr w-28pxr items-center justify-center"
-                bookmarkStyle="h-[21px] w-[15px] text-dark-gray-500 hover:text-dark-gray-600"
-                activeBookmarkStyle="h-[21px] w-[15px]"
-              />
-              {shouldShowWebsochatButton && (
-                <WebsochatButton
-                  label="웹소챗"
-                  onClick={handleWebsochatClick}
-                  pending={isWebsochatPending}
-                  variant="subtle"
-                  className="ml-3pxr h-34pxr min-w-[82px] px-10pxr text-13pxr [&>svg]:h-15pxr [&>svg]:w-15pxr min-[390px]:ml-5pxr min-[390px]:min-w-[88px]"
-                />
-              )}
-            </div>
+            )}
             <button
               onClick={handleNavigateNextChap}
               disabled={!nextEpisodeId}
-              className="flex h-40pxr shrink-0 items-center justify-center rounded-[6px] px-2pxr font-medium text-black-100 disabled:cursor-not-allowed disabled:opacity-35"
+              className="flex h-[44px] min-w-[46px] shrink-0 items-center justify-center rounded-[6px] px-2pxr font-medium text-black-100 disabled:cursor-not-allowed disabled:opacity-35"
               aria-label="다음화"
             >
               <div className="flex items-center gap-4pxr">

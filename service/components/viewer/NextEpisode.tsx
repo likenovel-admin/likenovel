@@ -19,7 +19,6 @@ import {
   postReaderFunnelEventBestEffort,
 } from "@/utils/readerFunnelSignal";
 import Image from "next/image";
-import { useRef } from "react";
 
 interface NextEpisodeProps {
   currentEpisodeId: number;
@@ -29,7 +28,6 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const entrySource = getProductDetailEntrySource(searchParams.get("entrySource"));
-  const lastTouchTriggeredAtRef = useRef(0);
   const { withLoginRequired } = useAuthWrapper();
   const { setTypeModal } = useModalStore();
   const { settings } = useViewStore((state) => ({
@@ -130,34 +128,18 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
     router.push(nextViewerPath);
   };
 
-  const handleNextEpisodeTouchEnd = (e: React.TouchEvent<HTMLElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    lastTouchTriggeredAtRef.current = Date.now();
-    handleNextEpisode();
-  };
-
-  const handleNextEpisodeClick = () => {
-    if (Date.now() - lastTouchTriggeredAtRef.current < 700) {
-      return;
-    }
-    handleNextEpisode();
-  };
-
   return (
-    <section
-      data-lastpage-interactive="true"
-      className={`w-full rounded-[20px] border border-line px-[22px] py-[21px] sm:p-5 mt-[10px] cursor-pointer transition ${
+    <button
+      type="button"
+      className={`block w-full rounded-[20px] border border-line px-[22px] py-[21px] sm:p-5 mt-[10px] cursor-pointer text-left transition ${
         isDarkTheme
           ? "bg-[#2B2F35] hover:bg-[#343942]"
           : "bg-card/60 hover:bg-gray-50"
       }`}
-      onClick={handleNextEpisodeClick}
-      onTouchEnd={handleNextEpisodeTouchEnd}
-      style={{ touchAction: "manipulation" }}
+      onClick={handleNextEpisode}
     >
-      <div className="flex items-center gap-4">
-        <div className="h-20 w-16 shrink-0 overflow-hidden rounded-md">
+      <span className="flex items-center gap-4">
+        <span className="h-20 w-16 shrink-0 overflow-hidden rounded-md">
           {coverImagePath ? (
             <Image
               src={coverImagePath}
@@ -167,35 +149,35 @@ export default function NextEpisode({ currentEpisodeId }: NextEpisodeProps) {
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="h-full w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+            <span className="h-full w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
               <span className="text-xs text-gray-500">다음화</span>
-            </div>
+            </span>
           )}
-        </div>
+        </span>
 
-        <div className="flex-1">
-          <p
-            className={`text-base font-semibold tracking-[-2%] ${
+        <span className="flex-1">
+          <span
+            className={`block text-base font-semibold tracking-[-2%] ${
               isDarkTheme ? "text-white" : "text-[#111317]"
             }`}
           >
             다음화 보기
-          </p>
-          <p
+          </span>
+          <span
             className={`mt-[9px] text-sm font-normal tracking-[-2%] line-clamp-2 ${
               isDarkTheme ? "text-white/85" : "text-[#4D5159]"
             }`}
           >
             {nextEpisodeData?.data?.title || "다음 에피소드"}
-          </p>
-        </div>
+          </span>
+        </span>
 
         <ArrowRight
           className={`h-[7px] w-[11px] shrink-0 ${
             isDarkTheme ? "text-white" : "text-[#111317]"
           }`}
         />
-      </div>
-    </section>
+      </span>
+    </button>
   );
 }
