@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import subprocess
 from pathlib import Path
 
 
@@ -15,6 +16,29 @@ def require_before(content: str, first: str, second: str, workflow: str) -> None
     require(content, second, workflow)
     if content.index(first) >= content.index(second):
         raise AssertionError(f"{workflow}: {first!r} must precede {second!r}")
+
+
+def verify_dev_budget_ssh_preserves_deploy_script(content: str, workflow: str) -> None:
+    remote_script = content.split("<< 'ENDSSH'\n", 1)[1].split("\n          ENDSSH", 1)[0]
+    budget_check = remote_script.split("            compose_dirs=", 1)[0]
+    result = subprocess.run(
+        ["bash", "-s"],
+        input=(
+            "ssh() {\n"
+            "  printf 'budget check reached\\n'\n"
+            '  for option; do [[ "$option" == -n ]] && return 0; done\n'
+            "  cat >/dev/null\n"
+            "}\n"
+            + budget_check
+            + "printf 'compose stage reached\\n'\n"
+        ),
+        text=True,
+        capture_output=True,
+        check=True,
+        timeout=5,
+    )
+    if result.stdout != "budget check reached\ncompose stage reached\n":
+        raise AssertionError(f"{workflow}: DEV budget SSH consumed the remaining deploy script")
 
 
 def verify_workflow(
@@ -64,6 +88,8 @@ def verify_workflow(
             "  build-and-push:\n    if: github.ref == 'refs/heads/prod'",
             name,
         )
+    else:
+        verify_dev_budget_ssh_preserves_deploy_script(content, name)
 
     if 'printf \'%s\' "${{ secrets.' in content:
         raise AssertionError(f"{name}: secret must not be interpolated into shell source")

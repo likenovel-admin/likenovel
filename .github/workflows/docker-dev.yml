@@ -175,7 +175,7 @@ jobs:
             "EXPECTED_SERVICE_DIGEST='${{ steps.build-service.outputs.digest }}' EXPECTED_PARTNER_DIGEST='${{ steps.build-partner.outputs.digest }}' EXPECTED_CMS_DIGEST='${{ steps.build-cms.outputs.digest }}' timeout 900 bash -s" << 'ENDSSH'
             set -euo pipefail
             # 900s remote cap + up to 630s public checks + 270s margin.
-            ssh -i /home/ln-admin/.ssh/ln_kp.pem -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new ln-admin@10.0.100.110 \
+            ssh -n -i /home/ln-admin/.ssh/ln_kp.pem -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new ln-admin@10.0.100.110 \
               "grep -qx 'LIFECYCLE_PROTOCOL = 2' /home/ln-admin/likenovel/dev-rds/dev-rds-reconcile.py && python3 /home/ln-admin/likenovel/dev-rds/dev-rds-reconcile.py check-budget --seconds 1800"
             compose_dirs=(
               /home/ln-admin/likenovel/service-dev/docker

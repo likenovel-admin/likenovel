@@ -991,7 +991,7 @@ docker compose -f /home/ln-admin/likenovel/service/prod.docker-compose.yml up -d
 배포 잔여시간 검사:
 
 - `python3 /home/ln-admin/likenovel/dev-rds/dev-rds-reconcile.py check-budget --seconds N`은 같은 실행 기록과 현재 RDS 상태를 검사한다. 시간이 부족하거나 시작 기록이 없으면 비정상 종료하며, 연장·재기동을 하지 않는다.
-- 웹: ln-web에서 container 교체 작업 전에 ln-was로 검사한다. 요구 잔여시간 1800초 = 원격 단계 상한 900초 + 공개 health 최대 630초(3 URL × 30회 × (curl 5초 + sleep 2초)) + 여유 270초. 원격 단계는 `timeout 900`으로 제한한다.
+- 웹: ln-web에서 container 교체 작업 전에 ln-was로 검사한다. 내부 SSH는 `ssh -n`으로 호출해 ln-web의 `bash -s`가 뒤따르는 Compose 스크립트를 계속 읽게 한다. 요구 잔여시간 1800초 = 원격 단계 상한 900초 + 공개 health 최대 630초(3 URL × 30회 × (curl 5초 + sleep 2초)) + 여유 270초. 원격 단계는 `timeout 900`으로 제한한다.
 - 백엔드: CodeDeploy `BeforeInstall`의 첫 변경 전에 600초를 요구한다. 현 hook 상한 60초 + 300초에 검증/여유 240초를 더한 값이다. `ApplicationStart` 진입 시에도 360초(자체 상한 300초 + 여유 60초)를 재검사한다. 배포 큐 대기 시간은 설치 직전 검사에 반영된다. hook 시간 제한 변경 시 이 기준도 재검토한다.
 
 반영/검증 순서:
