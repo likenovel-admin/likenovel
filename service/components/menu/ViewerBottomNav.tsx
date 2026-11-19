@@ -94,7 +94,7 @@ const ViewerBottomNav = ({
                 label="웹소챗"
                 onClick={handleWebsochatClick}
                 pending={isWebsochatPending}
-                variant="subtle"
+                variant="toolbar"
                 className="h-[44px] min-w-[82px] shrink-0 px-10pxr text-13pxr [&>svg]:h-15pxr [&>svg]:w-15pxr min-[390px]:min-w-[88px]"
               />
             )}

@@ -27,14 +27,8 @@ assert.match(
 
 assert.match(
   bottomNavSource,
-  /variant="subtle"/,
-  "Viewer bottom nav must use the toned-down Websochat variant"
-);
-
-assert.match(
-  bottomNavSource,
   /label="이번 회차로 웹소챗"[\s\S]*?variant="subtle"/,
-  "Desktop Websochat entry must match the mobile toned-down feel"
+  "Desktop Websochat entry must retain the subtle variant"
 );
 
 const mobileNavStart = bottomNavSource.indexOf(
@@ -48,6 +42,11 @@ assert.notEqual(mobileNavStart, -1, "Mobile viewer bottom nav must exist");
 assert.notEqual(mobileNavEnd, -1, "Desktop viewer nav must follow mobile nav");
 
 const mobileNavSource = bottomNavSource.slice(mobileNavStart, mobileNavEnd);
+assert.match(
+  mobileNavSource,
+  /label="웹소챗"[\s\S]*?variant="toolbar"/,
+  "Mobile Websochat must use the toolbar variant"
+);
 const previousEpisodeIndex = mobileNavSource.indexOf('aria-label="이전화"');
 const commentActionIndex = mobileNavSource.indexOf('src="/images/comment.svg"');
 const nextEpisodeIndex = mobileNavSource.indexOf('aria-label="다음화"');
@@ -64,8 +63,8 @@ assert.doesNotMatch(
 
 assert.match(
   websochatButtonSource,
-  /variant\?: "solid" \| "subtle"/,
-  "WebsochatButton must expose solid and subtle variants"
+  /variant\?: "solid" \| "subtle" \| "toolbar"/,
+  "WebsochatButton must expose the toolbar variant alongside existing variants"
 );
 
 assert.match(

@@ -218,6 +218,12 @@ for (const width of [320, 360, 390]) {
     for (const name of ["이전화", "댓글", "좋아요", "웹소챗", "다음화"]) {
       await expect(footer.getByRole("button", { name, exact: true })).toBeVisible();
     }
+    const websochat = footer.getByRole("button", { name: "웹소챗", exact: true });
+    await expect(websochat).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(websochat).toHaveCSS("border-top-width", "0px");
+    await expect(websochat).toHaveCSS("color", "rgb(77, 81, 89)");
+    await expect(websochat).toHaveCSS("font-weight", "500");
+    await expect(websochat.locator("svg")).toHaveCSS("color", "rgb(77, 81, 89)");
     const settings = header.getByRole("button", { name: "뷰어 설정" });
     const settingsBox = (await settings.boundingBox())!;
     expect(settingsBox.width).toBe(44);
