@@ -2,7 +2,7 @@ interface WebsochatButtonProps {
   label: string;
   onClick?: () => void;
   className?: string;
-  variant?: "solid" | "subtle";
+  variant?: "solid" | "subtle" | "toolbar";
   pending?: boolean;
 }
 
@@ -13,13 +13,23 @@ const WebsochatButton = ({
   variant = "solid",
   pending = false,
 }: WebsochatButtonProps) => {
+  const isToolbar = variant === "toolbar";
+  const shapeClassName = isToolbar
+    ? "border-0 bg-transparent font-medium"
+    : "rounded-[999px] font-semibold";
   const variantClassName =
-    pending
+    isToolbar
+      ? pending
+        ? "cursor-not-allowed text-dark-gray-400"
+        : "text-dark-gray-500 hover:text-black-100"
+      : pending
       ? "border border-light-gray-400 bg-light-gray-100 text-dark-gray-400 cursor-not-allowed"
       : variant === "subtle"
       ? "border border-primary-100 bg-white text-primary-100 hover:bg-light-gray-100 hover:text-primary-200"
       : "border-0 bg-primary-100 text-white hover:bg-primary-200";
-  const iconClassName = pending
+  const iconClassName = isToolbar
+    ? ""
+    : pending
     ? "text-dark-gray-400"
     : variant === "subtle"
       ? "text-primary-100"
@@ -29,7 +39,7 @@ const WebsochatButton = ({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex shrink-0 items-center justify-center gap-7pxr whitespace-nowrap rounded-[999px] font-semibold leading-none tracking-[0] transition-colors ${variantClassName} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center gap-7pxr whitespace-nowrap leading-none tracking-[0] transition-colors ${shapeClassName} ${variantClassName} ${className}`}
       aria-label={label}
     >
       <svg
